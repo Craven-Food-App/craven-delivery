@@ -42,9 +42,11 @@ interface Appointment {
 const normalizeDisplayStatus = (status?: string) => {
   const value = (status || '').toLowerCase();
   if (['active', 'approved', 'appointed', 'fully_appointed_active'].includes(value)) return 'ACTIVE';
+  if (value.includes('documents_sent') || value.includes('pending_signature')) return 'DOCUMENTS SENT';
   if (value.includes('resign')) return 'RESIGNED';
   if (value.includes('remove') || value.includes('terminate')) return 'REMOVED';
   if (value.includes('expire')) return 'EXPIRED';
+  if (value.includes('pending') || value.includes('selected')) return 'PENDING';
   return 'PENDING';
 };
 
@@ -161,6 +163,8 @@ const MyAppointment: React.FC = () => {
     switch (status) {
       case 'ACTIVE':
         return 'green';
+      case 'DOCUMENTS SENT':
+        return 'blue';
       case 'RESIGNED':
         return 'orange';
       case 'REMOVED':

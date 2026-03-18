@@ -37,69 +37,62 @@ const OfficerDirectoryInternal: React.FC = () => {
   const fetchOfficers = async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('corporate_officers')
-        .select(`
-          id,
-          position,
-          status,
-          term_start,
-          term_end,
-          appointed_date,
-          exec_users:executive_id (
-            user_id,
-            title,
-            metadata
-          )
-        `)
-        .order('term_start', { ascending: false });
+      // Fetch from exec_users as the authoritative source
+      const { data: execUsers, error: execError } = await supabase
+        .from('exec_users')
+        .select('id, user_id, role, title, officer_status, metadata');
 
-      if (statusFilter !== 'all') {
-        query = query.ilike('status', statusFilter);
-      }
+      if (execError) throw execError;
 
-      const { data, error } = await query;
-
-      if (error) {
-        if (error.code === '42P01') {
-          setOfficers([]);
-          return;
-        }
-        throw error;
-      }
-
-      const userIds = (data || [])
-        .map((officer: any) => officer.exec_users?.user_id)
-        .filter(Boolean);
-
+      // Get user profiles for names/emails
+      const userIds = (execUsers || []).map(e => e.user_id).filter(Boolean);
       const { data: profiles } = userIds.length
         ? await supabase.from('user_profiles').select('user_id, full_name, email').in('user_id', userIds)
         : { data: [] as any[] };
 
-      const profileMap = new Map((profiles || []).map((profile: any) => [profile.user_id, profile]));
+      // Get corporate_officers for term dates
+      const execIds = (execUsers || []).map(e => e.id).filter(Boolean);
+      const { data: corpOfficers } = execIds.length
+        ? await supabase.from('corporate_officers').select('executive_id, status, term_start, term_end, appointed_date').in('executive_id', execIds)
+        : { data: [] as any[] };
 
-      const transformed = (data || []).map((officer: any) => {
-        const exec = officer.exec_users;
-        const profile = exec?.user_id ? profileMap.get(exec.user_id) : null;
-        const metadata = exec?.metadata || {};
+      // Also get appointments for effective dates
+      const { data: appointments } = execIds.length
+        ? await supabase.from('executive_appointments').select('executive_id, effective_date, status, created_at').in('executive_id', execIds).order('created_at', { ascending: false })
+        : { data: [] as any[] };
+
+      const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+      const corpMap = new Map((corpOfficers || []).map(c => [c.executive_id, c]));
+      const appointmentMap = new Map((appointments || []).map(a => [a.executive_id, a]));
+
+      const transformed: CorporateOfficer[] = (execUsers || []).map(exec => {
+        const profile = profileMap.get(exec.user_id);
+        const corp = corpMap.get(exec.id);
+        const appointment = appointmentMap.get(exec.id);
+        const metadata = exec.metadata || {};
+
+        const status = (corp?.status || exec.officer_status || 'appointed').toUpperCase();
+        const fullName = profile?.full_name || metadata?.proposed_officer_name || exec.title || 'Unknown';
+        const email = profile?.email || metadata?.proposed_officer_email || undefined;
+        const effectiveDate = corp?.term_start || corp?.appointed_date || appointment?.effective_date || appointment?.created_at || new Date().toISOString();
 
         return {
-          id: officer.id,
-          full_name:
-            profile?.full_name ||
-            metadata?.proposed_officer_name ||
-            exec?.title ||
-            officer.position ||
-            'Unknown',
-          email: profile?.email || metadata?.proposed_officer_email || undefined,
-          title: exec?.title || officer.position || 'Officer',
-          effective_date: officer.term_start || officer.appointed_date,
-          term_end: officer.term_end || undefined,
-          status: String(officer.status || '').toUpperCase(),
-        } as CorporateOfficer;
+          id: exec.id,
+          full_name: fullName,
+          email,
+          title: exec.title || exec.role?.toUpperCase() || 'Officer',
+          effective_date: effectiveDate,
+          term_end: corp?.term_end || undefined,
+          status,
+        };
       });
 
-      setOfficers(transformed);
+      // Apply status filter
+      const filtered = statusFilter === 'all'
+        ? transformed
+        : transformed.filter(o => o.status.toLowerCase().includes(statusFilter.toLowerCase()));
+
+      setOfficers(filtered);
     } catch (error: any) {
       console.error('Error fetching officers:', error);
       notifications.show({
