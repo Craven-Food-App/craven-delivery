@@ -49,20 +49,18 @@ const OnboardingPacket: React.FC = () => {
 
       if (!execUser) return;
 
-      // Find their appointment in executive_appointments
+      // Find their appointment by matching executive_id directly
       const { data: appointments, error: appointmentError } = await supabase
         .from('executive_appointments')
         .select('*')
-        .in('status', ['authorized_to_offer', 'offer_accepted', 'documents_generated', 'documents_sent', 'signing_in_progress', 'partially_signed'])
-        .order('created_at', { ascending: false });
+        .eq('executive_id', execUser.id)
+        .not('status', 'in', '("terminated","rejected")')
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       if (appointmentError) throw appointmentError;
 
-      // Find appointment matching this executive's role/title
-      const myAppointment = appointments?.find(apt => 
-        apt.proposed_title?.toLowerCase() === execUser.role?.toLowerCase() ||
-        apt.proposed_title?.toLowerCase().includes(execUser.role?.toLowerCase())
-      );
+      const myAppointment = appointments?.[0];
 
       if (myAppointment) {
         setAppointmentId(myAppointment.id);
