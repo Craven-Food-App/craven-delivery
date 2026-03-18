@@ -60,6 +60,7 @@ const CXOPortal: React.FC = () => {
       { id: 'initiatives', label: 'Initiatives', icon: Target },
       { id: 'incidents', label: 'Incidents', icon: AlertTriangle },
       { id: 'reports', label: 'Reports', icon: FileText },
+      { id: 'c-comms', label: 'C Comms', icon: MessageSquare },
     ],
     []
   );
