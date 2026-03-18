@@ -1,0 +1,7 @@
+INSERT INTO public.user_roles (user_id, role)
+VALUES 
+  ('06847119-d5e5-44dc-a5f4-6b3b677d9423', 'INTERN_SPONSOR'),
+  ('06847119-d5e5-44dc-a5f4-6b3b677d9423', 'INTERN_PROGRAM_ADMIN'),
+  ('06847119-d5e5-44dc-a5f4-6b3b677d9423', 'INTERN'),
+  ('06847119-d5e5-44dc-a5f4-6b3b677d9423', 'INTERN_MANAGER')
+ON CONFLICT (user_id, role) DO NOTHING;
