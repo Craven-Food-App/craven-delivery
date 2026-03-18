@@ -21,10 +21,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import { usePermission } from '@/hooks/usePermission';
 
+const JASON_EMAIL = 'jparcell2022@gmail.com';
+
 const CompanySidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [userEmail, setUserEmail] = useState<string>('');
   
   // Permission checks for specific tabs
   const hasExecutivesAccess = usePermission('company.executives.view');
@@ -39,6 +42,9 @@ const CompanySidebar: React.FC = () => {
       try {
         // Check if user is tstroman.ceo@cravenusa.com first (CEO executive account)
         const { data: { user } } = await supabase.auth.getUser();
+        if (mounted && user?.email) {
+          setUserEmail(user.email.toLowerCase());
+        }
         if (user?.email === 'tstroman.ceo@cravenusa.com' && mounted) {
           setUserRoles([
             'CRAVEN_FOUNDER',
