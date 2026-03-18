@@ -8,6 +8,9 @@ import {
   IconShield,
   IconUsers,
   IconUserCheck,
+  IconBuildingSkyscraper,
+  IconUsersGroup,
+  IconBook,
 } from '@tabler/icons-react';
 
 interface PortalSection {
