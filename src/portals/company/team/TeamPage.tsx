@@ -308,6 +308,8 @@ const TeamPage: React.FC = () => {
                         setSelectedExecutive(exec);
                         setEditModalOpen(true);
                       }}
+                      disabled={isReadOnly}
+                      style={{ flex: 1, display: isReadOnly ? 'none' : undefined }}
                     >
                       Edit
                     </Button>

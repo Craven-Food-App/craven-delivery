@@ -149,6 +149,12 @@ const CompanySidebar: React.FC = () => {
         </Box>
 
         {navItems.map((item) => {
+          // JASON PARCELL: Only show Team tab (read-only)
+          const isJason = userEmail === JASON_EMAIL;
+          if (isJason && item.label !== 'Team') {
+            return null;
+          }
+
           // Check if user has access via roles OR permissions
           let hasAccess =
             item.roles.includes('all') ||
