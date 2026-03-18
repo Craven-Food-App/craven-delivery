@@ -6,6 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { NumberFormatter } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 
+const JASON_EMAIL = 'jparcell2022@gmail.com';
+
 interface Executive {
   user_id: string;
   name: string;
@@ -21,10 +23,19 @@ const TeamPage: React.FC = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedExecutive, setSelectedExecutive] = useState<Executive | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState(false);
 
   useEffect(() => {
     loadExecutives();
+    checkReadOnly();
   }, []);
+
+  const checkReadOnly = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email?.toLowerCase() === JASON_EMAIL) {
+      setIsReadOnly(true);
+    }
+  };
 
   const loadExecutives = async () => {
     try {
@@ -219,9 +230,11 @@ const TeamPage: React.FC = () => {
               Executive directory and contact information
             </Text>
           </div>
-          <Button leftSection={<IconPlus size={16} />}>
-            Add Executive
-          </Button>
+          {!isReadOnly && (
+            <Button leftSection={<IconPlus size={16} />}>
+              Add Executive
+            </Button>
+          )}
         </Group>
 
         <Grid>
@@ -286,18 +299,20 @@ const TeamPage: React.FC = () => {
                     >
                       View Details
                     </Button>
-                    <Button 
-                      variant="subtle" 
-                      size="xs" 
-                      style={{ flex: 1 }}
-                      leftSection={<IconEdit size={14} />}
-                      onClick={() => {
-                        setSelectedExecutive(exec);
-                        setEditModalOpen(true);
-                      }}
-                    >
-                      Edit
-                    </Button>
+                    {!isReadOnly && (
+                      <Button 
+                        variant="subtle" 
+                        size="xs" 
+                        style={{ flex: 1 }}
+                        leftSection={<IconEdit size={14} />}
+                        onClick={() => {
+                          setSelectedExecutive(exec);
+                          setEditModalOpen(true);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    )}
                   </Group>
                 </Stack>
               </Card>

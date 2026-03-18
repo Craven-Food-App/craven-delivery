@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Row, Col, Button, Tag, ConfigProvider } from 'antd';
+import { supabase } from '@/integrations/supabase/client';
 import { cravenDriverTheme } from '@/config/antd-theme';
 import {
   IconChartPie,
@@ -60,6 +61,21 @@ const companySections: PortalSection[] = [
 
 const CompanyPortalDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [redirecting, setRedirecting] = useState(false);
+
+  // Jason Parcell: redirect directly to Team page (read-only)
+  useEffect(() => {
+    const checkJason = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email?.toLowerCase() === 'jparcell2022@gmail.com') {
+        setRedirecting(true);
+        navigate('/company/team', { replace: true });
+      }
+    };
+    checkJason();
+  }, [navigate]);
+
+  if (redirecting) return null;
 
   const sectionsByCategory = companySections.reduce((acc, section) => {
     if (!acc[section.category]) {
