@@ -63,13 +63,44 @@ const MerchantMetrics: React.FC = () => {
 
   const fetchMerchants = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch seeded marketplace merchants
+      const { data: seeded, error: seededError } = await supabase
         .from('restaurants_master')
         .select('id, name, category, city, state, status, request_count, marketplace_type, last_requested_at')
         .order('name', { ascending: true });
 
-      if (error) throw error;
-      setMerchants(data || []);
+      if (seededError) throw seededError;
+
+      const seededRows: MerchantRow[] = (seeded || []).map(m => ({
+        ...m,
+        source: 'seeded' as const,
+      }));
+
+      // Fetch real signed-up merchants
+      const { data: realMerchants, error: realError } = await supabase
+        .from('restaurants')
+        .select('id, name, cuisine_type, city, state, is_active, onboarding_status, restaurant_type, created_at')
+        .order('name', { ascending: true });
+
+      if (realError) throw realError;
+
+      const realRows: MerchantRow[] = (realMerchants || []).map(m => ({
+        id: m.id,
+        name: m.name,
+        category: m.cuisine_type || m.restaurant_type || null,
+        city: m.city,
+        state: m.state,
+        status: m.is_active ? 'ACTIVE' : (m.onboarding_status || 'onboarding'),
+        request_count: 0,
+        marketplace_type: 'restaurant',
+        last_requested_at: null,
+        source: 'signed_up' as const,
+        onboarding_status: m.onboarding_status,
+        is_active: m.is_active,
+      }));
+
+      // Combine, with real merchants first
+      setMerchants([...realRows, ...seededRows]);
     } catch (err) {
       console.error('Error fetching merchants:', err);
     } finally {
