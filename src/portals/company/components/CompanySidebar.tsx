@@ -88,6 +88,12 @@ const CompanySidebar: React.FC = () => {
       roles: ['all'],
     },
     {
+      label: 'Executives',
+      icon: IconBuildingSkyscraper,
+      path: '/company/executives',
+      roles: ['CRAVEN_FOUNDER', 'CRAVEN_CORPORATE_SECRETARY', 'CRAVEN_EXECUTIVE'],
+    },
+    {
       label: 'Governance',
       icon: IconShield,
       path: '/company/governance',
@@ -112,7 +118,19 @@ const CompanySidebar: React.FC = () => {
       icon: IconUserCheck,
       path: '/company/team',
       roles: ['all'],
-      permission: 'company.executives.view',
+    },
+    {
+      label: 'Leadership',
+      icon: IconUsersGroup,
+      path: '/company/leadership',
+      roles: ['all'],
+    },
+    {
+      label: 'SOP Documents',
+      icon: IconBook,
+      path: '/company/sop',
+      roles: ['all'],
+      permission: 'company.sop.view',
     },
   ];
 
