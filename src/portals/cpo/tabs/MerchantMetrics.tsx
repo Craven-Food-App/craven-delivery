@@ -40,6 +40,9 @@ interface MerchantRow {
   request_count: number;
   marketplace_type: string | null;
   last_requested_at: string | null;
+  source: 'seeded' | 'signed_up';
+  onboarding_status?: string | null;
+  is_active?: boolean;
 }
 
 interface CategoryBreakdown {
