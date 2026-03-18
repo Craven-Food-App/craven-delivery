@@ -200,6 +200,7 @@ const CPOPortal: React.FC = () => {
           <Tabs.Panel value="calendar"><RenewalCalendar /></Tabs.Panel>
           <Tabs.Panel value="scorecards"><PartnerScorecards /></Tabs.Panel>
           <Tabs.Panel value="analytics"><PartnershipAnalytics /></Tabs.Panel>
+          <Tabs.Panel value="merchants"><MerchantMetrics /></Tabs.Panel>
           <Tabs.Panel value="directory"><PartnerDirectory /></Tabs.Panel>
         </Tabs>
       </AppShell.Main>
