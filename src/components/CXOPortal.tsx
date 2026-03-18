@@ -79,6 +79,7 @@ const CXOPortal: React.FC = () => {
     if (path.includes('/initiatives')) return 'initiatives';
     if (path.includes('/incidents')) return 'incidents';
     if (path.includes('/reports')) return 'reports';
+    if (path.includes('/c-comms')) return 'c-comms';
     return 'dashboard';
   }, [location.pathname]);
 
