@@ -16,6 +16,7 @@ import {
   FileText,
   GraduationCap,
   BookOpen,
+  MessageSquare,
 } from 'lucide-react';
 
 // Import page components
