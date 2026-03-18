@@ -64,11 +64,9 @@ export const AppDownloadStep: React.FC<AppDownloadStepProps> = ({ onNext, onBack
     fetchPhoneNumber();
   }, [applicationData]);
 
-  // Generate PWA download URL
+  // Generate Play Store download URL
   const getDownloadUrl = () => {
-    // Always use production domain for QR code (so it works when scanned on mobile devices)
-    const downloadUrl = 'https://cravenusa.com/mobile';
-    console.log('QR Code URL (production):', downloadUrl);
+    const downloadUrl = 'https://play.google.com/store/apps/details?id=com.craven.delivery.feeder&pcampaignid=web_share';
     return downloadUrl;
   };
 
