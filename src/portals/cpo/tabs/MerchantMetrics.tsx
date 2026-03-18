@@ -324,6 +324,11 @@ const MerchantMetrics: React.FC = () => {
                     </Group>
                   </Table.Td>
                   <Table.Td>
+                    <Badge size="xs" variant="light" color={m.source === 'signed_up' ? 'blue' : 'gray'}>
+                      {m.source === 'signed_up' ? 'Signed Up' : 'Seeded'}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
                     <Text size="sm" c="dimmed">{m.category || '—'}</Text>
                   </Table.Td>
                   <Table.Td>
@@ -334,10 +339,18 @@ const MerchantMetrics: React.FC = () => {
                   <Table.Td>
                     <Badge
                       size="sm"
-                      color={m.status === 'REQUESTABLE' ? 'green' : 'yellow'}
+                      color={
+                        m.status === 'ACTIVE' ? 'green' :
+                        m.status === 'REQUESTABLE' ? 'teal' :
+                        m.status === 'COMING_SOON' ? 'yellow' :
+                        'orange'
+                      }
                       variant="light"
                     >
-                      {m.status === 'REQUESTABLE' ? 'Active' : 'Coming Soon'}
+                      {m.status === 'ACTIVE' ? 'Active' :
+                       m.status === 'REQUESTABLE' ? 'Requestable' :
+                       m.status === 'COMING_SOON' ? 'Coming Soon' :
+                       m.onboarding_status || 'Onboarding'}
                     </Badge>
                   </Table.Td>
                   <Table.Td ta="right">
