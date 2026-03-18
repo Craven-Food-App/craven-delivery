@@ -181,8 +181,7 @@ const MerchantMetrics: React.FC = () => {
               <IconCheck size={18} />
             </ThemeIcon>
           </Group>
-          <Progress value={(activeMerchants / totalMerchants) * 100} color="green" size="sm" mt="sm" />
-          <Text size="xs" c="dimmed" mt={4}>{((activeMerchants / totalMerchants) * 100).toFixed(0)}% of total</Text>
+          <Text size="xs" c="dimmed" mt="sm">Verified & live on platform</Text>
         </Card>
 
         <Card padding="md" radius="md" withBorder>
@@ -195,7 +194,20 @@ const MerchantMetrics: React.FC = () => {
               <IconClock size={18} />
             </ThemeIcon>
           </Group>
-          <Text size="xs" c="dimmed" mt="sm">Pending activation</Text>
+          <Text size="xs" c="dimmed" mt="sm">Signed up, pending activation</Text>
+        </Card>
+
+        <Card padding="md" radius="md" withBorder>
+          <Group justify="space-between" align="flex-start">
+            <div>
+              <Text size="xs" c="dimmed" fw={500} tt="uppercase" mb={4}>Requestable</Text>
+              <Text size="xl" fw={700}>{requestable}</Text>
+            </div>
+            <ThemeIcon color="teal" variant="light" size="lg" radius="md">
+              <IconBuildingStore size={18} />
+            </ThemeIcon>
+          </Group>
+          <Text size="xs" c="dimmed" mt="sm">Seeded catalog merchants</Text>
         </Card>
 
         <Card padding="md" radius="md" withBorder>
@@ -209,19 +221,6 @@ const MerchantMetrics: React.FC = () => {
             </ThemeIcon>
           </Group>
           <Text size="xs" c="dimmed" mt="sm">Customer demand signals</Text>
-        </Card>
-
-        <Card padding="md" radius="md" withBorder>
-          <Group justify="space-between" align="flex-start">
-            <div>
-              <Text size="xs" c="dimmed" fw={500} tt="uppercase" mb={4}>Categories</Text>
-              <Text size="xl" fw={700}>{uniqueCategories.length}</Text>
-            </div>
-            <ThemeIcon color="blue" variant="light" size="lg" radius="md">
-              <IconCategory size={18} />
-            </ThemeIcon>
-          </Group>
-          <Text size="xs" c="dimmed" mt="sm">Unique merchant types</Text>
         </Card>
       </SimpleGrid>
 
