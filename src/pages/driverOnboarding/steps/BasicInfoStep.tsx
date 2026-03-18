@@ -168,6 +168,39 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
     detectLocation();
   }, []);
 
+  // Resolve city/state from zip code when zip changes (fallback for failed geolocation)
+  useEffect(() => {
+    const zip = form.values.zip;
+    if (!zip || !/^\d{5}$/.test(zip)) return;
+
+    // Skip if we already have a city from geolocation for this zip
+    if (detectedLocation?.city && detectedLocation?.zip === zip) return;
+
+    const lookupZip = async () => {
+      try {
+        const response = await fetch(`https://api.zippopotam.us/us/${zip}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.places && data.places.length > 0) {
+          const place = data.places[0];
+          const city = place['place name'] || '';
+          const state = place['state abbreviation'] || '';
+          if (city) {
+            setDetectedLocation(prev => ({
+              city: prev?.city || city,
+              state: prev?.state || state,
+              zip,
+            }));
+          }
+        }
+      } catch (err) {
+        console.warn('Zip lookup failed:', err);
+      }
+    };
+
+    lookupZip();
+  }, [form.values.zip]);
+
   // Helper function to convert state names to abbreviations
   const getStateAbbreviation = (stateName: string): string => {
     const stateMap: Record<string, string> = {
