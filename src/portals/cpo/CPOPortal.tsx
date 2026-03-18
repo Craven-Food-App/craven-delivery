@@ -24,6 +24,7 @@ import {
   IconChecklist,
   IconCalendar,
   IconTargetArrow,
+  IconBuildingStore,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
