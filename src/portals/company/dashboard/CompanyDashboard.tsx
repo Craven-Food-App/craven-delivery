@@ -34,11 +34,15 @@ const CompanyDashboard: React.FC = () => {
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
         // Run all queries in parallel for better performance
-        const [officersResult, resolutionsResult, appointmentsResult, logsResult] = await Promise.all([
+        const [officersResult, execUsersResult, resolutionsResult, appointmentsResult, logsResult] = await Promise.all([
           supabase
             .from('corporate_officers')
             .select('*', { count: 'exact', head: true })
-            .eq('status', 'ACTIVE'),
+            .in('status', ['ACTIVE', 'active', 'APPOINTED', 'appointed']),
+          supabase
+            .from('exec_users')
+            .select('*', { count: 'exact', head: true })
+            .in('officer_status', ['active', 'ACTIVE', 'appointed', 'APPOINTED']),
           supabase
             .from('governance_board_resolutions')
             .select('*', { count: 'exact', head: true })
@@ -54,7 +58,7 @@ const CompanyDashboard: React.FC = () => {
         ]);
 
         setStats({
-          activeOfficers: officersResult.count || 0,
+          activeOfficers: Math.max(officersResult.count || 0, execUsersResult.count || 0),
           pendingResolutions: resolutionsResult.count || 0,
           draftAppointments: appointmentsResult.count || 0,
           recentLogs: logsResult.count || 0,

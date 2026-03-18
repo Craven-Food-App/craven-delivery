@@ -244,25 +244,25 @@ const MyDocuments: React.FC = () => {
 
       console.log('Documents fetched by executive_id:', execDocs?.length || 0);
 
-      // FALLBACK 1: If no documents found by executive_id, try by officer_name matching appointments
-      if ((!execDocs || execDocs.length === 0) && user.email) {
+      // FALLBACK 1: If no documents found by executive_id, try by officer_name matching this executive's appointment
+      if (!execDocs || execDocs.length === 0) {
         console.log('No documents by executive_id, trying fallback queries...');
-        
-        // Try to find appointments for this user and get their officer_name
-        const { data: userAppointments } = await supabase
+
+        const { data: userAppointment } = await supabase
           .from('executive_appointments')
           .select('proposed_officer_name')
-          .ilike('proposed_officer_email', user.email)
+          .eq('executive_id', currentExec.id)
+          .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        if (userAppointments?.proposed_officer_name) {
+        if (userAppointment?.proposed_officer_name) {
           const { data: docsByName } = await supabase
             .from('executive_documents')
             .select('*')
-            .ilike('officer_name', userAppointments.proposed_officer_name)
+            .ilike('officer_name', userAppointment.proposed_officer_name)
             .order('created_at', { ascending: false });
-          
+
           if (docsByName && docsByName.length > 0) {
             console.log('Found documents by officer_name:', docsByName.length);
             execDocs = docsByName;
@@ -270,19 +270,18 @@ const MyDocuments: React.FC = () => {
         }
       }
 
-      // FALLBACK 2: If still no documents found, try by appointment linked to this user's email
-      if ((!execDocs || execDocs.length === 0) && user.email) {
+      // FALLBACK 2: If still no documents found, try by appointment linked to this executive_id
+      if (!execDocs || execDocs.length === 0) {
         console.log('Still no documents, trying appointment-based query...');
-        
-        // Find appointments for this user
+
         const { data: userAppointments } = await supabase
           .from('executive_appointments')
           .select('id')
-          .ilike('proposed_officer_email', user.email);
+          .eq('executive_id', currentExec.id);
 
         if (userAppointments && userAppointments.length > 0) {
-          const appointmentIds = userAppointments.map(a => a.id);
-          
+          const appointmentIds = userAppointments.map((a) => a.id);
+
           const { data: docsByAppointment } = await supabase
             .from('executive_documents')
             .select('*')
@@ -300,25 +299,23 @@ const MyDocuments: React.FC = () => {
       if ((!execDocs || execDocs.length === 0) && user.email) {
         console.log('No documents in executive_documents, attempting to sync from appointments...');
         try {
-          // Call sync function
           // @ts-ignore - RPC function type
           const { error: syncError } = await supabase.rpc('sync_executive_documents_from_appointments', {
-            p_user_email: user.email
+            p_user_email: user.email,
           });
+
           if (syncError) {
             console.warn('Sync function not available or failed:', syncError);
-            // Try calling the edge function instead
             const syncResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/governance-sync-appointment-documents`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
               },
               body: JSON.stringify({ user_email: user.email }),
             });
+
             if (syncResponse.ok) {
-              console.log('Documents synced via edge function');
-              // Re-fetch documents
               const { data: syncedDocs } = await supabase
                 .from('executive_documents')
                 .select('*')
@@ -327,7 +324,6 @@ const MyDocuments: React.FC = () => {
               execDocs = syncedDocs;
             }
           } else {
-            // Re-fetch documents after sync
             const { data: syncedDocs } = await supabase
               .from('executive_documents')
               .select('*')
@@ -340,48 +336,28 @@ const MyDocuments: React.FC = () => {
         }
       }
 
-      // Also try fetching ALL documents to see what's available
-      const { data: allDocsDebug, error: allDocsError } = await supabase
-        .from('executive_documents')
-        .select('id, type, executive_id, appointment_id, signature_status')
-        .order('created_at', { ascending: false })
-        .limit(20);
-      
-      console.log('All executive_documents (first 20):', allDocsDebug);
-      console.log('Looking for executive_id:', currentExec.id);
-
       if (execDocsError) {
         console.error('Error fetching executive documents:', execDocsError);
       }
-      
-      console.log('Fetched executive_documents:', execDocs?.length || 0, execDocs);
-      console.log('execDocs details:', execDocs?.map((d: any) => ({
-        id: d.id,
-        type: d.type,
-        executive_id: d.executive_id,
-        appointment_id: d.appointment_id,
-        signature_status: d.signature_status
-      })));
 
       // Fetch appointment documents for this executive
-      // Try exact email match first
       let { data: appointments, error: appointmentsError } = await supabase
         .from('executive_appointments')
-        .select('id, proposed_officer_email, proposed_officer_name, formation_mode, status')
-        .eq('proposed_officer_email', user.email)
-        .in('status', ['APPROVED', 'SENT_TO_BOARD', 'ACTIVE', 'DRAFT', 'AWAITING_SIGNATURES', 'READY_FOR_SECRETARY_REVIEW']);
+        .select('id, executive_id, proposed_officer_email, proposed_officer_name, formation_mode, status')
+        .eq('executive_id', currentExec.id)
+        .order('created_at', { ascending: false });
 
-      // If no exact match, try case-insensitive match
+      // Fallback for legacy records without executive_id
       if ((!appointments || appointments.length === 0) && user.email) {
-        const { data: appointmentsCaseInsensitive, error: errorCaseInsensitive } = await supabase
+        const { data: appointmentsByEmail, error: appointmentsByEmailError } = await supabase
           .from('executive_appointments')
-          .select('id, proposed_officer_email, proposed_officer_name, formation_mode, status')
+          .select('id, executive_id, proposed_officer_email, proposed_officer_name, formation_mode, status')
           .ilike('proposed_officer_email', user.email)
-          .in('status', ['APPROVED', 'SENT_TO_BOARD', 'ACTIVE', 'DRAFT', 'AWAITING_SIGNATURES', 'READY_FOR_SECRETARY_REVIEW']);
-        
-        if (appointmentsCaseInsensitive && appointmentsCaseInsensitive.length > 0) {
-          appointments = appointmentsCaseInsensitive;
-          appointmentsError = errorCaseInsensitive;
+          .order('created_at', { ascending: false });
+
+        if (appointmentsByEmail && appointmentsByEmail.length > 0) {
+          appointments = appointmentsByEmail;
+          appointmentsError = appointmentsByEmailError;
         }
       }
 

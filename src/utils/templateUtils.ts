@@ -131,6 +131,23 @@ export async function getDocumentTemplate(
   templateKey: string,
   usageContext?: string
 ): Promise<{ html_content: string; placeholders: string[] } | null> {
+  const templateKeyAliases: Record<string, string[]> = {
+    appointment_letter: ['offer_letter'],
+    certificate: ['stock_certificate'],
+    stock_subscription: ['stock_issuance'],
+    equity_plan: ['equity_incentive_plan'],
+    option_rsu_award: ['equity_award_agreement'],
+    fiduciary_ethics: ['fiduciary_ethics_ack'],
+    fiduciary_duty_ethics: ['fiduciary_ethics_ack'],
+    conflict_of_interest: ['conflict_disclosure'],
+    company_bylaws: ['craven_bylaws'],
+    bylaws: ['craven_bylaws'],
+    bylaws_officers_excerpt: ['craven_bylaws'],
+    pre_incorporation_consent: ['initial_director_consent'],
+  };
+
+  const candidateTemplateKeys = [templateKey, ...(templateKeyAliases[templateKey] || [])];
+
   try {
     // First, try to get from template_usage if usageContext is provided
     if (usageContext) {
@@ -153,20 +170,20 @@ export async function getDocumentTemplate(
         if (template) {
           return {
             html_content: template.html_content,
-            placeholders: Array.isArray(template.placeholders) ? template.placeholders.map(p => String(p)) : [],
+            placeholders: Array.isArray(template.placeholders) ? template.placeholders.map((p) => String(p)) : [],
           };
         }
       }
     }
 
-    // Fallback: try to get by template_key
-    // Don't filter by is_active here - we'll check it but still return inactive templates
-    // This allows us to see what's wrong
+    // Fallback: try the requested template key plus legacy aliases
     const { data: template, error: templateError } = await supabase
       .from('document_templates')
-      .select('html_content, placeholders, is_active')
-      .eq('template_key', templateKey)
-      .single();
+      .select('template_key, html_content, placeholders, is_active')
+      .in('template_key', candidateTemplateKeys)
+      .order('is_active', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (templateError) {
       console.error(`Error fetching template ${templateKey}:`, templateError);
@@ -175,27 +192,26 @@ export async function getDocumentTemplate(
 
     if (template) {
       if (!template.is_active) {
-        console.warn(`Template ${templateKey} exists but is not active - activating it`);
-        // Try to activate it
+        console.warn(`Template ${template.template_key} exists but is not active - activating it`);
         await supabase
           .from('document_templates')
           .update({ is_active: true })
-          .eq('template_key', templateKey);
+          .eq('template_key', template.template_key);
       }
+
       return {
         html_content: template.html_content,
-        placeholders: Array.isArray(template.placeholders) ? template.placeholders.map(p => String(p)) : [],
+        placeholders: Array.isArray(template.placeholders) ? template.placeholders.map((p) => String(p)) : [],
       };
     }
   } catch (error: any) {
     console.error(`Error fetching template ${templateKey}:`, error);
     if (error.message && error.message.includes('Failed to fetch')) {
-      throw error; // Re-throw if it's our error
+      throw error;
     }
-    console.warn(`Template not found in database for ${templateKey}`);
+    console.warn(`Template not found in database for ${templateKey} (aliases tried: ${candidateTemplateKeys.join(', ')})`);
   }
 
-  // Hardcoded fallback - return null to indicate fallback should be used
   return null;
 }
 
