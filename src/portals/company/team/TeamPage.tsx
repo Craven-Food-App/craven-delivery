@@ -299,20 +299,20 @@ const TeamPage: React.FC = () => {
                     >
                       View Details
                     </Button>
-                    <Button 
-                      variant="subtle" 
-                      size="xs" 
-                      style={{ flex: 1 }}
-                      leftSection={<IconEdit size={14} />}
-                      onClick={() => {
-                        setSelectedExecutive(exec);
-                        setEditModalOpen(true);
-                      }}
-                      disabled={isReadOnly}
-                      style={{ flex: 1, display: isReadOnly ? 'none' : undefined }}
-                    >
-                      Edit
-                    </Button>
+                    {!isReadOnly && (
+                      <Button 
+                        variant="subtle" 
+                        size="xs" 
+                        style={{ flex: 1 }}
+                        leftSection={<IconEdit size={14} />}
+                        onClick={() => {
+                          setSelectedExecutive(exec);
+                          setEditModalOpen(true);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    )}
                   </Group>
                 </Stack>
               </Card>
