@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import AdminAccessGuard from '@/components/AdminAccessGuard';
+import MerchantOpsAccessGuard from '@/components/MerchantOpsAccessGuard';
 import { EnhancedRestaurantOnboarding } from '@/components/admin/restaurant-onboarding/EnhancedRestaurantOnboarding';
 import { EnhancedRestaurantVerificationDashboard } from '@/components/admin/EnhancedRestaurantVerificationDashboard';
 import { TabletShippingManagement } from '@/components/admin/TabletShippingManagement';
@@ -44,7 +44,7 @@ const MerchantOperationsPortal: React.FC = () => {
   };
 
   return (
-    <AdminAccessGuard>
+    <MerchantOpsAccessGuard>
       <div className="flex h-screen w-full bg-background">
         {/* Sidebar */}
         <aside className="w-64 border-r bg-card flex flex-col">
@@ -94,7 +94,7 @@ const MerchantOperationsPortal: React.FC = () => {
           </div>
         </main>
       </div>
-    </AdminAccessGuard>
+    </MerchantOpsAccessGuard>
   );
 };
 

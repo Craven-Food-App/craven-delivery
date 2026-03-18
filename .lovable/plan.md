@@ -1,56 +1,101 @@
 
 
-# Grant Jason Parcell Access to Merchant Operations Portal
+# Feeder Tier System -- Full Integration Plan
 
 ## Problem
-The Merchant Operations Portal (`/merchant-operations`) is wrapped in `AdminAccessGuard`, which **only** allows users with `role = 'admin'` in the `user_roles` table. Jason Parcell (CPO) has no `admin` role, so he's blocked.
 
-## Solution
+The tier system spec is defined in `ratingHelpers.ts` but **none of the mobile/feeder UI components actually use it**. There are 4 separate ratings/score components, each with their own hardcoded or mock data, and none query the real rolling metrics from `driver_profiles`.
 
-### 1. Update `useMerchantStatus.ts`
-Remove the merchant portal logic change from the previous plan since it's not needed.
+### Current State (Broken)
 
-### 2. Update Merchant Operations Portal access guard
-Replace `AdminAccessGuard` with a new or modified guard that grants access to:
-- Users with `admin` role in `user_roles`
-- Executive users with `cpo` or `ceo` role in `exec_users`
+| Component | Data Source | Tier Logic |
+|---|---|---|
+| `FeederRatingsTab.tsx` (active in feeder app) | Mock data (all zeros) | None |
+| `DriverRatingsPage.tsx` | Hardcoded (score=95) | Wrong reward system |
+| `RatingsSection.tsx` | Real DB queries | Correct but unused |
+| `score.tsx` (feeder page) | `driver_scores` table | Wrong (0-100 scale) |
+| `ratingHelpers.ts` | N/A (utility) | Correct spec constants |
 
-Two options:
-- **Option A**: Create a dedicated `MerchantOpsAccessGuard` component that checks both `user_roles` (admin) and `exec_users` (cpo, ceo)
-- **Option B**: Modify `MerchantOperationsPortal.tsx` to use a more flexible guard pattern
+### Database (Already Exists)
 
-I'll go with **Option A** — a small wrapper component that checks:
+`driver_profiles` already has: `rolling_rating`, `rolling_completion_rate`, `rolling_on_time_rate`, `rolling_cancel_rate`, `rolling_deliveries`, `rating_tier`
+
+`tier_history` table already exists with `feeder_id`, `old_tier`, `new_tier`, `reason`, `created_at`
+
+---
+
+## Plan
+
+### 1. Rewrite `FeederRatingsTab.tsx` to Use Real Data + Tier Spec
+
+Replace the mock data hook with a real Supabase query that pulls from `driver_profiles`:
+- `rolling_rating`, `rolling_completion_rate`, `rolling_on_time_rate`, `rolling_cancel_rate`, `rolling_deliveries`, `rating_tier`
+
+Use `evaluateFeederTier()` and `getNextTier()` from `ratingHelpers.ts` to determine the current tier and next tier requirements.
+
+Display:
+- Tier badge (color-coded per spec: white/gold gradient/silver-white/deep blue/black+orange)
+- Current rating with stars
+- Performance Pulse metrics (On-Time, Completion, Cancellation rates from rolling data)
+- Rating breakdown (keep existing star breakdown UI)
+- Next tier progress section showing requirements vs current values
+- Tier benefits list matching the spec exactly
+
+### 2. Update `score.tsx` (Feeder Score Page)
+
+- Replace the `getTier` function (which uses a 0-100 score scale) with `evaluateFeederTier()` from `ratingHelpers.ts`
+- Query `driver_profiles` rolling metrics instead of `driver_scores`
+- Add cancellation rate display (missing from current UI)
+- Add next-tier progress section with deliveries remaining, rating required, etc.
+
+### 3. Consolidate: Remove `DriverRatingsPage.tsx` Usage
+
+- The feeder app already uses `FeederRatingsTab` -- confirm `DriverRatingsPage` is not referenced anywhere active and leave it as-is (no breakage risk)
+
+### 4. Add Tier Badge to Feeder Account Page and Dashboard
+
+- On the account page header, show the current tier badge (icon + name + color)
+- On the main dashboard (home tab), show a small tier indicator near the driver's name/status
+
+### 5. Ensure `RatingsSection.tsx` Stays in Sync
+
+- This component already has correct logic; add the missing `cancellation_rate` metric and ensure it imports thresholds from `ratingHelpers.ts` instead of duplicating them inline
+
+---
+
+## Technical Details
+
+### Shared Hook: `useFeederTier`
+
+Create a reusable hook that all components can share:
+
 ```typescript
-// Check admin role
-const { data: adminRole } = await supabase
-  .from('user_roles')
-  .select('role')
-  .eq('user_id', user.id)
-  .eq('role', 'admin')
-  .maybeSingle();
-
-// Check exec role (cpo, ceo)
-const { data: execUser } = await supabase
-  .from('exec_users')
-  .select('role')
-  .eq('user_id', user.id)
-  .maybeSingle();
-
-const isAdmin = adminRole?.role === 'admin';
-const isExecWithAccess = ['cpo', 'ceo'].includes(execUser?.role?.toLowerCase());
-setHasAccess(isAdmin || isExecWithAccess);
+// src/hooks/useFeederTier.ts
+function useFeederTier(userId: string) {
+  // Query driver_profiles for rolling metrics
+  // Call evaluateFeederTier() from ratingHelpers
+  // Return: { tier, metrics, nextTier, loading }
+}
 ```
 
-### 3. Database: Add `CRAVEN_EXECUTIVE` role for Jason Parcell
-Insert into `user_roles`:
-```sql
-INSERT INTO user_roles (user_id, role)
-VALUES ('06847119-d5e5-44dc-a5f4-6b3b677d9423', 'CRAVEN_EXECUTIVE')
-ON CONFLICT (user_id, role) DO NOTHING;
-```
+### Files to Modify
 
-### Files Changed
-- **New**: `src/components/MerchantOpsAccessGuard.tsx` — access guard allowing admin + CPO/CEO exec users
-- **Modified**: `src/pages/MerchantOperationsPortal.tsx` — swap `AdminAccessGuard` for `MerchantOpsAccessGuard`
-- **Migration**: Insert `CRAVEN_EXECUTIVE` role for Jason Parcell
+1. **`src/hooks/useFeederTier.ts`** -- New shared hook (or update existing `useDriverTier.ts`)
+2. **`src/components/mobile/FeederRatingsTab.tsx`** -- Replace mock data with real queries + full tier UI
+3. **`src/pages/feeder/score.tsx`** -- Fix tier evaluation to use spec thresholds
+4. **`src/components/mobile/FeederAccountPage.tsx`** -- Add tier badge display
+5. **`src/components/mobile/RatingsSection.tsx`** -- Add cancellation rate, import from ratingHelpers
+6. **`src/components/mobile/MobileDriverDashboard.tsx`** -- Add tier indicator to home tab header
+
+### Badge Colors (from spec)
+
+- Feeder: White background, gray text, gray border
+- Gold: Gold gradient, dark gold text
+- Platinum: Silver-white gradient, gray text
+- Diamond: Deep blue gradient, white text
+- Ultimate: Black background, orange (#E8622A) text/border
+
+### No Database Changes Needed
+
+All required columns and tables already exist in the schema.
 
