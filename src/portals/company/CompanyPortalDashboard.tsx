@@ -60,6 +60,7 @@ const companySections: PortalSection[] = [
 ];
 
 const CompanyPortalDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [redirecting, setRedirecting] = useState(false);
 
   // Jason Parcell: redirect directly to Team page (read-only)
