@@ -6,6 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { NumberFormatter } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 
+const JASON_EMAIL = 'jparcell2022@gmail.com';
+
 interface Executive {
   user_id: string;
   name: string;
@@ -21,10 +23,19 @@ const TeamPage: React.FC = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedExecutive, setSelectedExecutive] = useState<Executive | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState(false);
 
   useEffect(() => {
     loadExecutives();
+    checkReadOnly();
   }, []);
+
+  const checkReadOnly = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email?.toLowerCase() === JASON_EMAIL) {
+      setIsReadOnly(true);
+    }
+  };
 
   const loadExecutives = async () => {
     try {
