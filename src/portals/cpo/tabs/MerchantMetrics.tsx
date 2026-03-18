@@ -289,8 +289,10 @@ const MerchantMetrics: React.FC = () => {
           <Select
             placeholder="Status"
             data={[
-              { value: 'REQUESTABLE', label: 'Active' },
+              { value: 'ACTIVE', label: 'Active' },
+              { value: 'REQUESTABLE', label: 'Requestable' },
               { value: 'COMING_SOON', label: 'Coming Soon' },
+              { value: 'onboarding', label: 'Onboarding' },
             ]}
             value={statusFilter}
             onChange={setStatusFilter}
