@@ -534,6 +534,7 @@ function CFOPortalContent() {
     { id: 'close', label: 'Close Checklist' },
     // Communications (consolidated — email, docs, knowledge base)
     { id: 'comms', label: 'Communications' },
+    { id: 'c-comms', label: 'C Comms' },
   ], [transactions.length]);
 
   const openPortal = (path: string, subdomain?: string) => {
