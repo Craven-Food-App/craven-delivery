@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Row, Col, Button, Tag, ConfigProvider } from 'antd';
+import { supabase } from '@/integrations/supabase/client';
 import { cravenDriverTheme } from '@/config/antd-theme';
 import {
   IconChartPie,
