@@ -154,14 +154,19 @@ const MerchantMetrics: React.FC = () => {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="center">
+       <Group justify="space-between" align="center">
         <div>
           <Title order={3}>Merchant Metrics</Title>
-          <Text size="sm" c="dimmed">Read-only overview of all marketplace merchants</Text>
+          <Text size="sm" c="dimmed">Real sign-ups & marketplace merchants combined</Text>
         </div>
-        <Badge color="orange" variant="light" size="lg">
-          {totalMerchants} Total Merchants
-        </Badge>
+        <Group gap="xs">
+          <Badge color="blue" variant="light" size="lg">
+            {signedUpMerchants.length} Signed Up
+          </Badge>
+          <Badge color="orange" variant="light" size="lg">
+            {totalMerchants} Total
+          </Badge>
+        </Group>
       </Group>
 
       {/* KPI Cards */}
