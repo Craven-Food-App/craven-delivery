@@ -28661,6 +28661,7 @@ export type Database = {
       user_sessions: {
         Row: {
           created_at: string | null
+          current_location: string | null
           device_id: string | null
           device_name: string | null
           device_type: string | null
@@ -28680,6 +28681,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          current_location?: string | null
           device_id?: string | null
           device_name?: string | null
           device_type?: string | null
@@ -28699,6 +28701,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          current_location?: string | null
           device_id?: string | null
           device_name?: string | null
           device_type?: string | null
