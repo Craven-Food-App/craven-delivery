@@ -109,8 +109,10 @@ const MerchantMetrics: React.FC = () => {
   };
 
   const totalMerchants = merchants.length;
-  const activeMerchants = merchants.filter(m => m.status === 'REQUESTABLE').length;
+  const signedUpMerchants = merchants.filter(m => m.source === 'signed_up');
+  const activeMerchants = merchants.filter(m => m.status === 'REQUESTABLE' || m.status === 'ACTIVE').length;
   const comingSoon = merchants.filter(m => m.status === 'COMING_SOON').length;
+  const onboarding = signedUpMerchants.filter(m => !m.is_active).length;
   const totalRequests = merchants.reduce((sum, m) => sum + (m.request_count || 0), 0);
 
   const categories = merchants.reduce<Record<string, number>>((acc, m) => {
