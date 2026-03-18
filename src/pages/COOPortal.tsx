@@ -169,6 +169,9 @@ export default function COOPortal() {
           <TabPane tab={<><FileTextOutlined /> Word Processor</>} key="word">
             <ExecutiveWordProcessor storageKey="coo" />
           </TabPane>
+          <TabPane tab={<><img src={cravenCLogo} alt="C" style={{ height: 16, width: 'auto', marginRight: 4 }} />C Comms</>} key="c-comms">
+            <EmbeddedCComms />
+          </TabPane>
         </Tabs>
       </Content>
     </Layout>
