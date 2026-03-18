@@ -240,6 +240,7 @@ function CTOPortalContent() {
       children: [
         { id: 'communications', label: 'Communications', icon: Mail, path: '/cto/communications' },
         { id: 'word', label: 'Documents', icon: FileText, path: '/cto/documents' },
+        { id: 'c-comms', label: 'C Comms', icon: Mail, path: '/cto/c-comms' },
       ],
     },
     {
