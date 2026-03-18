@@ -90,7 +90,7 @@ const MerchantMetrics: React.FC = () => {
         category: m.cuisine_type || m.restaurant_type || null,
         city: m.city,
         state: m.state,
-        status: m.is_active ? 'ACTIVE' : (m.onboarding_status || 'onboarding'),
+        status: m.is_active ? 'ACTIVE' : 'COMING_SOON',
         request_count: 0,
         marketplace_type: 'restaurant',
         last_requested_at: null,
