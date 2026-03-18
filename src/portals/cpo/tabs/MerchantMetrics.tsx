@@ -40,6 +40,9 @@ interface MerchantRow {
   request_count: number;
   marketplace_type: string | null;
   last_requested_at: string | null;
+  source: 'seeded' | 'signed_up';
+  onboarding_status?: string | null;
+  is_active?: boolean;
 }
 
 interface CategoryBreakdown {
@@ -60,13 +63,44 @@ const MerchantMetrics: React.FC = () => {
 
   const fetchMerchants = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch seeded marketplace merchants
+      const { data: seeded, error: seededError } = await supabase
         .from('restaurants_master')
         .select('id, name, category, city, state, status, request_count, marketplace_type, last_requested_at')
         .order('name', { ascending: true });
 
-      if (error) throw error;
-      setMerchants(data || []);
+      if (seededError) throw seededError;
+
+      const seededRows: MerchantRow[] = (seeded || []).map(m => ({
+        ...m,
+        source: 'seeded' as const,
+      }));
+
+      // Fetch real signed-up merchants
+      const { data: realMerchants, error: realError } = await supabase
+        .from('restaurants')
+        .select('id, name, cuisine_type, city, state, is_active, onboarding_status, restaurant_type, created_at')
+        .order('name', { ascending: true });
+
+      if (realError) throw realError;
+
+      const realRows: MerchantRow[] = (realMerchants || []).map(m => ({
+        id: m.id,
+        name: m.name,
+        category: m.cuisine_type || m.restaurant_type || null,
+        city: m.city,
+        state: m.state,
+        status: m.is_active ? 'ACTIVE' : (m.onboarding_status || 'onboarding'),
+        request_count: 0,
+        marketplace_type: 'restaurant',
+        last_requested_at: null,
+        source: 'signed_up' as const,
+        onboarding_status: m.onboarding_status,
+        is_active: m.is_active,
+      }));
+
+      // Combine, with real merchants first
+      setMerchants([...realRows, ...seededRows]);
     } catch (err) {
       console.error('Error fetching merchants:', err);
     } finally {
@@ -75,8 +109,10 @@ const MerchantMetrics: React.FC = () => {
   };
 
   const totalMerchants = merchants.length;
-  const activeMerchants = merchants.filter(m => m.status === 'REQUESTABLE').length;
+  const signedUpMerchants = merchants.filter(m => m.source === 'signed_up');
+  const activeMerchants = merchants.filter(m => m.status === 'REQUESTABLE' || m.status === 'ACTIVE').length;
   const comingSoon = merchants.filter(m => m.status === 'COMING_SOON').length;
+  const onboarding = signedUpMerchants.filter(m => !m.is_active).length;
   const totalRequests = merchants.reduce((sum, m) => sum + (m.request_count || 0), 0);
 
   const categories = merchants.reduce<Record<string, number>>((acc, m) => {
@@ -118,14 +154,19 @@ const MerchantMetrics: React.FC = () => {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="center">
+       <Group justify="space-between" align="center">
         <div>
           <Title order={3}>Merchant Metrics</Title>
-          <Text size="sm" c="dimmed">Read-only overview of all marketplace merchants</Text>
+          <Text size="sm" c="dimmed">Real sign-ups & marketplace merchants combined</Text>
         </div>
-        <Badge color="orange" variant="light" size="lg">
-          {totalMerchants} Total Merchants
-        </Badge>
+        <Group gap="xs">
+          <Badge color="blue" variant="light" size="lg">
+            {signedUpMerchants.length} Signed Up
+          </Badge>
+          <Badge color="orange" variant="light" size="lg">
+            {totalMerchants} Total
+          </Badge>
+        </Group>
       </Group>
 
       {/* KPI Cards */}
@@ -253,8 +294,10 @@ const MerchantMetrics: React.FC = () => {
           <Select
             placeholder="Status"
             data={[
-              { value: 'REQUESTABLE', label: 'Active' },
+              { value: 'ACTIVE', label: 'Active' },
+              { value: 'REQUESTABLE', label: 'Requestable' },
               { value: 'COMING_SOON', label: 'Coming Soon' },
+              { value: 'onboarding', label: 'Onboarding' },
             ]}
             value={statusFilter}
             onChange={setStatusFilter}
@@ -269,6 +312,7 @@ const MerchantMetrics: React.FC = () => {
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Name</Table.Th>
+                <Table.Th>Source</Table.Th>
                 <Table.Th>Category</Table.Th>
                 <Table.Th>City</Table.Th>
                 <Table.Th>Status</Table.Th>
@@ -285,6 +329,11 @@ const MerchantMetrics: React.FC = () => {
                     </Group>
                   </Table.Td>
                   <Table.Td>
+                    <Badge size="xs" variant="light" color={m.source === 'signed_up' ? 'blue' : 'gray'}>
+                      {m.source === 'signed_up' ? 'Signed Up' : 'Seeded'}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
                     <Text size="sm" c="dimmed">{m.category || '—'}</Text>
                   </Table.Td>
                   <Table.Td>
@@ -295,10 +344,18 @@ const MerchantMetrics: React.FC = () => {
                   <Table.Td>
                     <Badge
                       size="sm"
-                      color={m.status === 'REQUESTABLE' ? 'green' : 'yellow'}
+                      color={
+                        m.status === 'ACTIVE' ? 'green' :
+                        m.status === 'REQUESTABLE' ? 'teal' :
+                        m.status === 'COMING_SOON' ? 'yellow' :
+                        'orange'
+                      }
                       variant="light"
                     >
-                      {m.status === 'REQUESTABLE' ? 'Active' : 'Coming Soon'}
+                      {m.status === 'ACTIVE' ? 'Active' :
+                       m.status === 'REQUESTABLE' ? 'Requestable' :
+                       m.status === 'COMING_SOON' ? 'Coming Soon' :
+                       m.onboarding_status || 'Onboarding'}
                     </Badge>
                   </Table.Td>
                   <Table.Td ta="right">
