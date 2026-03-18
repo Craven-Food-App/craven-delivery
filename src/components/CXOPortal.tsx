@@ -129,6 +129,7 @@ const CXOPortal: React.FC = () => {
           <Route path="initiatives" element={<CxoInitiatives />} />
           <Route path="incidents" element={<CxoIncidents />} />
           <Route path="reports" element={<CxoReports />} />
+          <Route path="c-comms" element={<Suspense fallback={<div>Loading...</div>}><EmbeddedCComms /></Suspense>} />
           <Route path="onboarding" element={<CXOOnboardingGovernance />} />
           <Route path="training" element={<CxoTrainingHome />} />
           <Route path="training/progress" element={<CxoTrainingProgress />} />
