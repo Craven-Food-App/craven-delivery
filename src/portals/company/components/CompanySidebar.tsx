@@ -167,9 +167,9 @@ const CompanySidebar: React.FC = () => {
         </Box>
 
         {navItems.map((item) => {
-          // JASON PARCELL: Only show Team tab (read-only)
+          // JASON PARCELL: Show Team (read-only) and Executives (for onboarding)
           const isJason = userEmail === JASON_EMAIL;
-          if (isJason && item.label !== 'Team') {
+          if (isJason && item.label !== 'Team' && item.label !== 'Executives') {
             return null;
           }
 
