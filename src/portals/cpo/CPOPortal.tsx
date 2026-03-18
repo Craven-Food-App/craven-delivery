@@ -24,6 +24,7 @@ import {
   IconChecklist,
   IconCalendar,
   IconTargetArrow,
+  IconBuildingStore,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +39,7 @@ import ActivityLog from './tabs/ActivityLog';
 import PartnerOnboarding from './tabs/PartnerOnboarding';
 import RenewalCalendar from './tabs/RenewalCalendar';
 import PartnerScorecards from './tabs/PartnerScorecards';
+import MerchantMetrics from './tabs/MerchantMetrics';
 
 const CPOPortal: React.FC = () => {
   const navigate = useNavigate();
@@ -183,6 +185,9 @@ const CPOPortal: React.FC = () => {
             <Tabs.Tab value="analytics" leftSection={<IconChartBar size={16} />}>
               Analytics
             </Tabs.Tab>
+            <Tabs.Tab value="merchants" leftSection={<IconBuildingStore size={16} />}>
+              Merchants
+            </Tabs.Tab>
             <Tabs.Tab value="directory" leftSection={<IconUsers size={16} />}>
               Directory
             </Tabs.Tab>
@@ -196,6 +201,7 @@ const CPOPortal: React.FC = () => {
           <Tabs.Panel value="calendar"><RenewalCalendar /></Tabs.Panel>
           <Tabs.Panel value="scorecards"><PartnerScorecards /></Tabs.Panel>
           <Tabs.Panel value="analytics"><PartnershipAnalytics /></Tabs.Panel>
+          <Tabs.Panel value="merchants"><MerchantMetrics /></Tabs.Panel>
           <Tabs.Panel value="directory"><PartnerDirectory /></Tabs.Panel>
         </Tabs>
       </AppShell.Main>
