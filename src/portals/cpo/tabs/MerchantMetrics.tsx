@@ -307,6 +307,7 @@ const MerchantMetrics: React.FC = () => {
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Name</Table.Th>
+                <Table.Th>Source</Table.Th>
                 <Table.Th>Category</Table.Th>
                 <Table.Th>City</Table.Th>
                 <Table.Th>Status</Table.Th>
