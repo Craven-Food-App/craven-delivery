@@ -163,6 +163,8 @@ const MyAppointment: React.FC = () => {
     switch (status) {
       case 'ACTIVE':
         return 'green';
+      case 'DOCUMENTS SENT':
+        return 'blue';
       case 'RESIGNED':
         return 'orange';
       case 'REMOVED':

@@ -70,14 +70,29 @@ const OnboardingPacket: React.FC = () => {
         deadline.setDate(deadline.getDate() + 30);
         setSigningDeadline(deadline.toISOString());
 
-        // Load executive documents for signing
-        const { data: docs, error: docsError } = await supabase
+        // Load executive documents for signing - try appointment_id first, fallback to executive_id
+        let { data: docs, error: docsError } = await supabase
           .from('executive_documents')
           .select('*')
           .eq('appointment_id', myAppointment.id)
           .neq('status', 'generated_for_board_only')
           .order('signing_stage', { ascending: true })
           .order('signing_order', { ascending: true });
+
+        // Fallback: query by executive_id if no docs found by appointment_id
+        if ((!docs || docs.length === 0) && execUser?.id) {
+          const { data: docsByExec, error: docsByExecError } = await supabase
+            .from('executive_documents')
+            .select('*')
+            .eq('executive_id', execUser.id)
+            .neq('status', 'generated_for_board_only')
+            .order('signing_stage', { ascending: true })
+            .order('signing_order', { ascending: true });
+          if (!docsByExecError && docsByExec && docsByExec.length > 0) {
+            docs = docsByExec;
+            docsError = null;
+          }
+        }
 
         if (docsError) throw docsError;
         setDocuments(docs || []);

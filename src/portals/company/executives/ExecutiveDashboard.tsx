@@ -35,7 +35,8 @@ const ExecutiveDashboard: React.FC = () => {
           .in('officer_status', ['active', 'ACTIVE', 'appointed', 'APPOINTED']),
       ]);
 
-      setActiveOfficers(Math.max(officersResult.count || 0, execUsersResult.count || 0));
+      // exec_users is the authoritative source for active officers
+      setActiveOfficers(execUsersResult.count || 0);
     } catch (error: any) {
       if (error.code !== '42P01') {
         console.error('Error fetching stats:', error);
