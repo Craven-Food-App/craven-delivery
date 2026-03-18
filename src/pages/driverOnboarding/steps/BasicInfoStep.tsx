@@ -168,13 +168,10 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
     detectLocation();
   }, []);
 
-  // Resolve city/state from zip code when zip changes (fallback for failed geolocation)
+  // Always resolve city/state from the user-entered zip code
   useEffect(() => {
     const zip = form.values.zip;
     if (!zip || !/^\d{5}$/.test(zip)) return;
-
-    // Skip if we already have a city from geolocation for this zip
-    if (detectedLocation?.city && detectedLocation?.zip === zip) return;
 
     const lookupZip = async () => {
       try {
@@ -186,11 +183,7 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
           const city = place['place name'] || '';
           const state = place['state abbreviation'] || '';
           if (city) {
-            setDetectedLocation(prev => ({
-              city: prev?.city || city,
-              state: prev?.state || state,
-              zip,
-            }));
+            setDetectedLocation({ city, state, zip });
           }
         }
       } catch (err) {
