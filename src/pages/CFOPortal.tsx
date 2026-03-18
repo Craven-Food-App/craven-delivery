@@ -70,6 +70,7 @@ const DriverCompensationDashboard = React.lazy(() => import('@/components/financ
 // Invoices & Expenses Modules
 const CFOInvoices = React.lazy(() => import('@/components/cfo/Invoices').then(m => ({ default: m.Invoices })));
 const CFOExpenses = React.lazy(() => import('@/components/cfo/Expenses').then(m => ({ default: m.Expenses })));
+const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
 // Loading fallback component
 const ModuleLoader = () => (

@@ -13,6 +13,7 @@ import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMe
 const BusinessEmailSystem = lazy(() => import('@/components/executive/BusinessEmailSystem'));
 const ExecutiveWordProcessor = lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
 const PurchaseOrderManagement = lazy(() => import('@/components/coo/PurchaseOrderManagement').then(m => ({ default: m.PurchaseOrderManagement })));
+const EmbeddedCComms = lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
 const { Header, Content } = Layout;
 const { TabPane } = Tabs;
