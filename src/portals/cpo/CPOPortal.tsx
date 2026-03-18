@@ -42,6 +42,7 @@ import RenewalCalendar from './tabs/RenewalCalendar';
 import PartnerScorecards from './tabs/PartnerScorecards';
 import MerchantMetrics from './tabs/MerchantMetrics';
 
+const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 const CPOPortal: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
