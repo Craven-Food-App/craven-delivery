@@ -8,6 +8,7 @@ import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
+import cravenCLogo from '@/assets/craven-c-new.png';
 
 // Lazy load heavy components
 const BusinessEmailSystem = lazy(() => import('@/components/executive/BusinessEmailSystem'));

@@ -55,6 +55,7 @@ import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMe
 // Lazy load heavy components for performance
 const BusinessEmailSystem = React.lazy(() => import('@/components/executive/BusinessEmailSystem'));
 const ExecutiveWordProcessor = React.lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
+const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 const MorningTechnicalReview = React.lazy(() => import('@/components/cto/MorningTechnicalReview'));
 const SprintManagement = React.lazy(() => import('@/components/cto/SprintManagement'));
 const CodeReviewQueue = React.lazy(() => import('@/components/cto/CodeReviewQueue'));
