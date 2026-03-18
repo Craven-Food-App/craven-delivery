@@ -184,6 +184,9 @@ const CPOPortal: React.FC = () => {
             <Tabs.Tab value="analytics" leftSection={<IconChartBar size={16} />}>
               Analytics
             </Tabs.Tab>
+            <Tabs.Tab value="merchants" leftSection={<IconBuildingStore size={16} />}>
+              Merchants
+            </Tabs.Tab>
             <Tabs.Tab value="directory" leftSection={<IconUsers size={16} />}>
               Directory
             </Tabs.Tab>
