@@ -1,53 +1,101 @@
 
 
-# Fix Executive Onboarding Flow
+# Feeder Tier System -- Full Integration Plan
 
-## Problem Summary
+## Problem
 
-The executive onboarding flow is broken for multiple reasons:
+The tier system spec is defined in `ratingHelpers.ts` but **none of the mobile/feeder UI components actually use it**. There are 4 separate ratings/score components, each with their own hardcoded or mock data, and none query the real rolling metrics from `driver_profiles`.
 
-1. **No appointment record exists for Jason Parcell** in `executive_appointments`
-2. **The `executive_documents` table is completely empty** — documents exist as URLs on `executive_appointments` columns but were never synced to `executive_documents`
-3. **The OnboardingPacket component filters by statuses** (`authorized_to_offer`, `offer_accepted`, etc.) that no appointment currently has — they're all `pending`
-4. **Appointment-to-user matching is fragile** — it compares `proposed_title` to `exec_users.role` which doesn't work for all roles (e.g., "Chief Financial Officer" vs "cfo")
+### Current State (Broken)
 
-## Implementation Plan
+| Component | Data Source | Tier Logic |
+|---|---|---|
+| `FeederRatingsTab.tsx` (active in feeder app) | Mock data (all zeros) | None |
+| `DriverRatingsPage.tsx` | Hardcoded (score=95) | Wrong reward system |
+| `RatingsSection.tsx` | Real DB queries | Correct but unused |
+| `score.tsx` (feeder page) | `driver_scores` table | Wrong (0-100 scale) |
+| `ratingHelpers.ts` | N/A (utility) | Correct spec constants |
 
-### Step 1: Create Jason Parcell's appointment record
+### Database (Already Exists)
 
-Insert an `executive_appointments` row for Jason Parcell with his CPO title, email (`jparcell2022@gmail.com`), and set status to `documents_sent` so the onboarding flow picks it up.
+`driver_profiles` already has: `rolling_rating`, `rolling_completion_rate`, `rolling_on_time_rate`, `rolling_cancel_rate`, `rolling_deliveries`, `rating_tier`
 
-### Step 2: Generate documents for Jason Parcell
+`tier_history` table already exists with `feeder_id`, `old_tier`, `new_tier`, `reason`, `created_at`
 
-Invoke the `governance-generate-appointment-document` edge function for each required document type (appointment_letter, employment_agreement, confidentiality_ip, board_resolution, etc.) using his new appointment ID.
+---
 
-### Step 3: Backfill `executive_documents` from appointment URLs
+## Plan
 
-For both Jason Parcell and Justin Sweet (and Torrance Stroman), create rows in `executive_documents` by reading the URL columns from their `executive_appointments` records. Each row needs:
-- `type`, `officer_name`, `role`, `status`, `file_url`
-- `appointment_id`, `executive_id` (from `exec_users`)
-- `signature_status = 'pending'`
-- `signing_stage`, `signing_order`, `packet_id` (from `DOCUMENT_FLOW` mapping)
-- `signature_token` + `signature_token_expires_at` for signing access
+### 1. Rewrite `FeederRatingsTab.tsx` to Use Real Data + Tier Spec
 
-### Step 4: Update appointment statuses
+Replace the mock data hook with a real Supabase query that pulls from `driver_profiles`:
+- `rolling_rating`, `rolling_completion_rate`, `rolling_on_time_rate`, `rolling_cancel_rate`, `rolling_deliveries`, `rating_tier`
 
-Change Justin Sweet's and Jason Parcell's appointments from `pending` to `documents_sent` so the OnboardingPacket component can find them.
+Use `evaluateFeederTier()` and `getNextTier()` from `ratingHelpers.ts` to determine the current tier and next tier requirements.
 
-### Step 5: Fix OnboardingPacket matching logic
+Display:
+- Tier badge (color-coded per spec: white/gold gradient/silver-white/deep blue/black+orange)
+- Current rating with stars
+- Performance Pulse metrics (On-Time, Completion, Cancellation rates from rolling data)
+- Rating breakdown (keep existing star breakdown UI)
+- Next tier progress section showing requirements vs current values
+- Tier benefits list matching the spec exactly
 
-Update `src/portals/company/executives/OnboardingPacket.tsx`:
-- Add `pending` and `documents_sent` to the status filter (or broaden to include all non-rejected statuses)
-- Match appointments by **email** (comparing `proposed_officer_email` against the user's email or the `exec_users.metadata.proposed_officer_email`) instead of fragile role/title matching
-- This ensures executives reliably see their own onboarding packets
+### 2. Update `score.tsx` (Feeder Score Page)
 
-### Step 6: Ensure Jason has access to the Executive Dashboard
+- Replace the `getTier` function (which uses a 0-100 score scale) with `evaluateFeederTier()` from `ratingHelpers.ts`
+- Query `driver_profiles` rolling metrics instead of `driver_scores`
+- Add cancellation rate display (missing from current UI)
+- Add next-tier progress section with deliveries remaining, rating required, etc.
 
-Update Jason's allowed portals in `MainHub.tsx` to include the executive dashboard route, and ensure the Executive Dashboard tab (with Onboarding Packet) is accessible from his Company Portal or directly.
+### 3. Consolidate: Remove `DriverRatingsPage.tsx` Usage
+
+- The feeder app already uses `FeederRatingsTab` -- confirm `DriverRatingsPage` is not referenced anywhere active and leave it as-is (no breakage risk)
+
+### 4. Add Tier Badge to Feeder Account Page and Dashboard
+
+- On the account page header, show the current tier badge (icon + name + color)
+- On the main dashboard (home tab), show a small tier indicator near the driver's name/status
+
+### 5. Ensure `RatingsSection.tsx` Stays in Sync
+
+- This component already has correct logic; add the missing `cancellation_rate` metric and ensure it imports thresholds from `ratingHelpers.ts` instead of duplicating them inline
+
+---
 
 ## Technical Details
 
-- **Edge function**: Will create a one-time `seed-executive-onboarding` edge function that handles steps 1-4 (creating appointment, generating docs, backfilling `executive_documents`, updating statuses)
-- **Frontend fix**: Modify `OnboardingPacket.tsx` to use email-based matching and broader status filtering
-- **Data**: Justin Sweet already has 5+ documents generated (appointment_letter, employment_agreement, confidentiality_ip, board_resolution, deferred_compensation, stock_subscription). Jason needs documents generated first.
+### Shared Hook: `useFeederTier`
+
+Create a reusable hook that all components can share:
+
+```typescript
+// src/hooks/useFeederTier.ts
+function useFeederTier(userId: string) {
+  // Query driver_profiles for rolling metrics
+  // Call evaluateFeederTier() from ratingHelpers
+  // Return: { tier, metrics, nextTier, loading }
+}
+```
+
+### Files to Modify
+
+1. **`src/hooks/useFeederTier.ts`** -- New shared hook (or update existing `useDriverTier.ts`)
+2. **`src/components/mobile/FeederRatingsTab.tsx`** -- Replace mock data with real queries + full tier UI
+3. **`src/pages/feeder/score.tsx`** -- Fix tier evaluation to use spec thresholds
+4. **`src/components/mobile/FeederAccountPage.tsx`** -- Add tier badge display
+5. **`src/components/mobile/RatingsSection.tsx`** -- Add cancellation rate, import from ratingHelpers
+6. **`src/components/mobile/MobileDriverDashboard.tsx`** -- Add tier indicator to home tab header
+
+### Badge Colors (from spec)
+
+- Feeder: White background, gray text, gray border
+- Gold: Gold gradient, dark gold text
+- Platinum: Silver-white gradient, gray text
+- Diamond: Deep blue gradient, white text
+- Ultimate: Black background, orange (#E8622A) text/border
+
+### No Database Changes Needed
+
+All required columns and tables already exist in the schema.
 
