@@ -127,6 +127,7 @@ function CTOPortalContent() {
     if (path.includes('/incidents')) return 'incidents';
     if (path.includes('/assets')) return 'assets';
     if (path.includes('/communications')) return 'communications';
+    if (path.includes('/c-comms')) return 'c-comms';
     if (path.includes('/documents')) return 'word';
     if (path.includes('/manual')) return 'manual';
     return 'overview';

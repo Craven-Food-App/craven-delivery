@@ -40,6 +40,9 @@ import CxoTrainingModuleDetail from '@/components/cxo/training/CxoTrainingModule
 import CxoTrainingLesson from '@/components/cxo/training/CxoTrainingLesson';
 import CxoTrainingProgress from '@/components/cxo/training/CxoTrainingProgress';
 
+import React from 'react';
+const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
+
 const CXOPortal: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
