@@ -129,6 +129,7 @@ const CEOPortal: React.FC = () => {
       { id: 'audit', label: 'Audit Activity', icon: IconFileText as any },
       { id: 'signature', label: 'Sign Documents', icon: IconPencil as any },
       { id: 'communications', label: 'Direct Communications', icon: IconMail as any },
+      { id: 'c-comms', label: 'C Comms', icon: IconMail as any },
       { id: 'word', label: 'Draft Briefings', icon: IconFileText as any },
       { id: 'active-users', label: 'Active Users', icon: IconUsers as any },
       { id: 'accountability', label: 'Executive Accountability', icon: IconShield as any },
