@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import ExecutivePortalLayout, { ExecutiveNavItem } from '@/components/executive/ExecutivePortalLayout';
@@ -16,6 +16,7 @@ import {
   FileText,
   GraduationCap,
   BookOpen,
+  MessageSquare,
 } from 'lucide-react';
 
 // Import page components
@@ -39,6 +40,8 @@ import CxoTrainingModuleDetail from '@/components/cxo/training/CxoTrainingModule
 import CxoTrainingLesson from '@/components/cxo/training/CxoTrainingLesson';
 import CxoTrainingProgress from '@/components/cxo/training/CxoTrainingProgress';
 
+const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
+
 const CXOPortal: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -57,6 +60,7 @@ const CXOPortal: React.FC = () => {
       { id: 'initiatives', label: 'Initiatives', icon: Target },
       { id: 'incidents', label: 'Incidents', icon: AlertTriangle },
       { id: 'reports', label: 'Reports', icon: FileText },
+      { id: 'c-comms', label: 'C Comms', icon: MessageSquare },
     ],
     []
   );
@@ -75,6 +79,7 @@ const CXOPortal: React.FC = () => {
     if (path.includes('/initiatives')) return 'initiatives';
     if (path.includes('/incidents')) return 'incidents';
     if (path.includes('/reports')) return 'reports';
+    if (path.includes('/c-comms')) return 'c-comms';
     return 'dashboard';
   }, [location.pathname]);
 
@@ -124,6 +129,7 @@ const CXOPortal: React.FC = () => {
           <Route path="initiatives" element={<CxoInitiatives />} />
           <Route path="incidents" element={<CxoIncidents />} />
           <Route path="reports" element={<CxoReports />} />
+          <Route path="c-comms" element={<Suspense fallback={<div>Loading...</div>}><EmbeddedCComms /></Suspense>} />
           <Route path="onboarding" element={<CXOOnboardingGovernance />} />
           <Route path="training" element={<CxoTrainingHome />} />
           <Route path="training/progress" element={<CxoTrainingProgress />} />

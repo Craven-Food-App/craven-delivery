@@ -25,6 +25,7 @@ import {
   IconCalendar,
   IconTargetArrow,
   IconBuildingStore,
+  IconMessage,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +42,7 @@ import RenewalCalendar from './tabs/RenewalCalendar';
 import PartnerScorecards from './tabs/PartnerScorecards';
 import MerchantMetrics from './tabs/MerchantMetrics';
 
+const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 const CPOPortal: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -191,6 +193,9 @@ const CPOPortal: React.FC = () => {
             <Tabs.Tab value="directory" leftSection={<IconUsers size={16} />}>
               Directory
             </Tabs.Tab>
+            <Tabs.Tab value="c-comms" leftSection={<IconMessage size={16} />}>
+              C Comms
+            </Tabs.Tab>
           </Tabs.List>
 
           <Tabs.Panel value="dashboard"><CPODashboard /></Tabs.Panel>
@@ -203,6 +208,11 @@ const CPOPortal: React.FC = () => {
           <Tabs.Panel value="analytics"><PartnershipAnalytics /></Tabs.Panel>
           <Tabs.Panel value="merchants"><MerchantMetrics /></Tabs.Panel>
           <Tabs.Panel value="directory"><PartnerDirectory /></Tabs.Panel>
+          <Tabs.Panel value="c-comms">
+            <React.Suspense fallback={<div style={{ textAlign: 'center', padding: 40 }}>Loading C Comms...</div>}>
+              <EmbeddedCComms />
+            </React.Suspense>
+          </Tabs.Panel>
         </Tabs>
       </AppShell.Main>
     </AppShell>

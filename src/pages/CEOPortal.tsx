@@ -53,6 +53,7 @@ const ActiveUsersMonitor = lazy(() => import('@/components/ceo/ActiveUsersMonito
 const InternsManagement = lazy(() => import('@/components/ceo/InternsManagement').then(m => ({ default: m.InternsManagement })));
 const CfoEvaluationGatePanel = lazy(() => import('@/components/cfo/CfoEvaluationGatePanel'));
 const CtoEvaluationGatePanel = lazy(() => import('@/components/cto/CtoEvaluationGatePanel'));
+const EmbeddedCComms = lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
 // Loading fallback
 const ModuleLoader = () => (
@@ -129,6 +130,7 @@ const CEOPortal: React.FC = () => {
       { id: 'audit', label: 'Audit Activity', icon: IconFileText as any },
       { id: 'signature', label: 'Sign Documents', icon: IconPencil as any },
       { id: 'communications', label: 'Direct Communications', icon: IconMail as any },
+      { id: 'c-comms', label: 'C Comms', icon: IconMail as any },
       { id: 'word', label: 'Draft Briefings', icon: IconFileText as any },
       { id: 'active-users', label: 'Active Users', icon: IconUsers as any },
       { id: 'accountability', label: 'Executive Accountability', icon: IconShield as any },
@@ -202,6 +204,8 @@ const CEOPortal: React.FC = () => {
         return <CEOSignatureManager />;
       case 'communications':
         return <ExecutiveCommunicationsCenter defaultTab="messages" />;
+      case 'c-comms':
+        return <EmbeddedCComms />;
       case 'word':
         return <ExecutiveWordProcessor storageKey="ceo" />;
       case 'active-users':

@@ -8,11 +8,13 @@ import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
+import cravenCLogo from '@/assets/craven-c-new.png';
 
 // Lazy load heavy components
 const BusinessEmailSystem = lazy(() => import('@/components/executive/BusinessEmailSystem'));
 const ExecutiveWordProcessor = lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
 const PurchaseOrderManagement = lazy(() => import('@/components/coo/PurchaseOrderManagement').then(m => ({ default: m.PurchaseOrderManagement })));
+const EmbeddedCComms = lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
 const { Header, Content } = Layout;
 const { TabPane } = Tabs;
@@ -168,6 +170,9 @@ export default function COOPortal() {
           </TabPane>
           <TabPane tab={<><FileTextOutlined /> Word Processor</>} key="word">
             <ExecutiveWordProcessor storageKey="coo" />
+          </TabPane>
+          <TabPane tab={<><img src={cravenCLogo} alt="C" style={{ height: 16, width: 'auto', marginRight: 4 }} />C Comms</>} key="c-comms">
+            <EmbeddedCComms />
           </TabPane>
         </Tabs>
       </Content>

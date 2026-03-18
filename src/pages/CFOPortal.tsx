@@ -70,6 +70,7 @@ const DriverCompensationDashboard = React.lazy(() => import('@/components/financ
 // Invoices & Expenses Modules
 const CFOInvoices = React.lazy(() => import('@/components/cfo/Invoices').then(m => ({ default: m.Invoices })));
 const CFOExpenses = React.lazy(() => import('@/components/cfo/Expenses').then(m => ({ default: m.Expenses })));
+const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
 // Loading fallback component
 const ModuleLoader = () => (
@@ -534,6 +535,7 @@ function CFOPortalContent() {
     { id: 'close', label: 'Close Checklist' },
     // Communications (consolidated — email, docs, knowledge base)
     { id: 'comms', label: 'Communications' },
+    { id: 'c-comms', label: 'C Comms' },
   ], [transactions.length]);
 
   const openPortal = (path: string, subdomain?: string) => {
@@ -741,6 +743,10 @@ function CFOPortalContent() {
             <Tabs.Panel value="knowledge"><Suspense fallback={<ModuleLoader />}><CFOKnowledgeBase onNavigateToTab={setActiveSection} /></Suspense></Tabs.Panel>
           </Tabs>
         );
+
+      // ── C Comms ──
+      case 'c-comms':
+        return <Suspense fallback={<ModuleLoader />}><EmbeddedCComms /></Suspense>;
 
       default:
         return <EnhancedCFODashboard />;
