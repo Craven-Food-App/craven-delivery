@@ -11,11 +11,15 @@ import OnboardingPacket from './OnboardingPacket';
 import DocumentVault from './DocumentVault';
 import EquityDashboard from './EquityDashboard';
 import VestingProgress from './VestingProgress';
+import ExecutiveGuidedTour from './ExecutiveGuidedTour';
 import { Tabs } from '@mantine/core';
 
 const ExecutiveDashboard: React.FC = () => {
   const [activeOfficers, setActiveOfficers] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showTour, setShowTour] = useState(false);
+  const [execUserId, setExecUserId] = useState<string | null>(null);
+  const [execMetadata, setExecMetadata] = useState<Record<string, any> | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,6 +28,8 @@ const ExecutiveDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+
       const [officersResult, execUsersResult] = await Promise.all([
         supabase
           .from('corporate_officers')
@@ -37,6 +43,24 @@ const ExecutiveDashboard: React.FC = () => {
 
       // exec_users is the authoritative source for active officers
       setActiveOfficers(execUsersResult.count || 0);
+
+      // Check guided tour status for current user
+      if (user) {
+        const { data: execUser } = await supabase
+          .from('exec_users')
+          .select('id, metadata')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (execUser) {
+          setExecUserId(execUser.id);
+          const meta = (execUser.metadata as Record<string, any>) || {};
+          setExecMetadata(meta);
+          if (!meta.guided_tour_completed) {
+            setShowTour(true);
+          }
+        }
+      }
     } catch (error: any) {
       if (error.code !== '42P01') {
         console.error('Error fetching stats:', error);
@@ -58,6 +82,12 @@ const ExecutiveDashboard: React.FC = () => {
 
   return (
     <Container size="xl" py="xl">
+      <ExecutiveGuidedTour
+        opened={showTour}
+        onClose={() => setShowTour(false)}
+        execUserId={execUserId}
+        existingMetadata={execMetadata}
+      />
       <Stack gap="xl">
         <div>
           <Title order={1} c="dark" mb="xs">
