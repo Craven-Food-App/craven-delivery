@@ -287,6 +287,8 @@ function CTOPortalContent() {
         return <AssetManagement />;
       case 'communications':
         return <BusinessEmailSystem />;
+      case 'c-comms':
+        return <EmbeddedCComms />;
       case 'word':
         return <ExecutiveWordProcessor storageKey="cto" supabaseTable="cto_documents" />;
       case 'manual':
