@@ -50,15 +50,27 @@ const hasFundingTrigger = (exec: FlowExecutive): boolean => {
 };
 
 export const DOCUMENT_FLOW: DocumentFlowNode[] = [
+  // ── Stage 1: Pre-Incorporation ──
   {
     type: 'pre_incorporation_consent',
     title: 'Pre-Incorporation Consent (Conditional Appointments)',
     packetId: 'P1_PREINC',
     signingStage: 1,
     signingOrder: 1,
-    requiredSigners: ['incorporator', 'officer'], // Include 'officer' so executive signature is required
+    requiredSigners: ['incorporator', 'officer'],
     appliesTo: (exec) => exec.role === 'ceo' && exec.incorporation_status !== 'incorporated',
   },
+  {
+    type: 'certificate',
+    title: 'Certificate of Appointment',
+    packetId: 'P1_PREINC',
+    signingStage: 1,
+    signingOrder: 2,
+    requiredSigners: ['board'],
+    appliesTo: () => true,
+  },
+
+  // ── Stage 2: Appointment & Authority ──
   {
     type: 'board_resolution',
     title: 'Board Resolution – Appointment of Officers',
@@ -76,9 +88,31 @@ export const DOCUMENT_FLOW: DocumentFlowNode[] = [
     signingStage: 2,
     signingOrder: 2,
     dependsOn: 'board_resolution',
-    requiredSigners: ['board', 'officer'], // Include 'officer' so executive signature is required
+    requiredSigners: ['board', 'officer'],
     appliesTo: () => true,
   },
+  {
+    type: 'bylaws',
+    title: 'Company Bylaws',
+    packetId: 'P2_BOARD',
+    signingStage: 2,
+    signingOrder: 3,
+    dependsOn: 'board_resolution',
+    requiredSigners: ['board', 'officer'],
+    appliesTo: () => true,
+  },
+  {
+    type: 'bylaws_acknowledgment',
+    title: 'Bylaws Acknowledgment & Consent',
+    packetId: 'P2_BOARD',
+    signingStage: 2,
+    signingOrder: 4,
+    dependsOn: 'bylaws',
+    requiredSigners: ['officer'],
+    appliesTo: () => true,
+  },
+
+  // ── Stage 3: Employment & Core Agreements ──
   {
     type: 'offer_letter',
     title: 'Executive Offer Letter',
@@ -109,6 +143,38 @@ export const DOCUMENT_FLOW: DocumentFlowNode[] = [
     requiredSigners: ['officer', 'board'],
     appliesTo: () => true,
   },
+  {
+    type: 'fiduciary_ethics',
+    title: 'Fiduciary Duty & Ethics Acknowledgment',
+    packetId: 'P3_OFFICER_CORE',
+    signingStage: 3,
+    signingOrder: 4,
+    dependsOn: 'employment_agreement',
+    requiredSigners: ['officer'],
+    appliesTo: () => true,
+  },
+  {
+    type: 'conflict_disclosure',
+    title: 'Conflict of Interest Disclosure',
+    packetId: 'P3_OFFICER_CORE',
+    signingStage: 3,
+    signingOrder: 5,
+    dependsOn: 'employment_agreement',
+    requiredSigners: ['officer'],
+    appliesTo: () => true,
+  },
+  {
+    type: 'officer_indemnification',
+    title: 'Officer Indemnification Agreement',
+    packetId: 'P3_OFFICER_CORE',
+    signingStage: 3,
+    signingOrder: 6,
+    dependsOn: 'employment_agreement',
+    requiredSigners: ['officer', 'board'],
+    appliesTo: () => true,
+  },
+
+  // ── Stage 4: Equity & Compensation ──
   {
     type: 'deferred_comp_addendum',
     title: 'Deferred Compensation Addendum',
@@ -148,6 +214,26 @@ export const DOCUMENT_FLOW: DocumentFlowNode[] = [
     dependsOn: 'stock_issuance',
     requiredSigners: ['shareholder', 'officer'],
     appliesTo: (exec) => hasEquity(exec) && exec.role !== 'ceo' && !exec.full_name?.toLowerCase().includes('torrance'),
+  },
+  {
+    type: 'equity_plan',
+    title: 'Equity Incentive Plan',
+    packetId: 'P4_EQUITY',
+    signingStage: 4,
+    signingOrder: 5,
+    dependsOn: 'stock_issuance',
+    requiredSigners: ['officer', 'board'],
+    appliesTo: () => true,
+  },
+  {
+    type: 'option_rsu_award',
+    title: 'Option/RSU Award Agreement',
+    packetId: 'P4_EQUITY',
+    signingStage: 4,
+    signingOrder: 6,
+    dependsOn: 'equity_plan',
+    requiredSigners: ['officer', 'board'],
+    appliesTo: (exec) => hasEquity(exec),
   },
 ];
 
