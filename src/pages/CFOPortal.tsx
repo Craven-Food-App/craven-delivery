@@ -743,6 +743,10 @@ function CFOPortalContent() {
           </Tabs>
         );
 
+      // ── C Comms ──
+      case 'c-comms':
+        return <Suspense fallback={<ModuleLoader />}><EmbeddedCComms /></Suspense>;
+
       default:
         return <EnhancedCFODashboard />;
     }
