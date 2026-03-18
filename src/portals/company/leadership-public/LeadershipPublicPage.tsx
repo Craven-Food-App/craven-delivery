@@ -40,11 +40,21 @@ const LeadershipPublicPage: React.FC = () => {
   const fetchOfficers = async () => {
     setLoading(true);
     try {
-      // Fetch all officers (active and former)
       const { data, error } = await supabase
         .from('corporate_officers')
-        .select('id, full_name, title, effective_date, status, metadata')
-        .in('status', ['ACTIVE', 'REMOVED', 'RESIGNED', 'TERMINATED']);
+        .select(`
+          id,
+          position,
+          status,
+          term_start,
+          appointed_date,
+          exec_users:executive_id (
+            user_id,
+            title,
+            metadata
+          )
+        `)
+        .in('status', ['ACTIVE', 'active', 'APPOINTED', 'appointed', 'REMOVED', 'removed', 'RESIGNED', 'resigned', 'TERMINATED', 'terminated']);
 
       if (error) {
         if (error.code !== '42P01') {
@@ -55,18 +65,35 @@ const LeadershipPublicPage: React.FC = () => {
         return;
       }
 
-      const processedOfficers = (data || []).map((officer: any) => ({
-        ...officer,
-        metadata: typeof officer.metadata === 'string' ? {} : (officer.metadata || {})
-      }));
+      const userIds = (data || [])
+        .map((officer: any) => officer.exec_users?.user_id)
+        .filter(Boolean);
 
-      // Separate active and former officers
-      const active = processedOfficers.filter((o: any) => o.status === 'ACTIVE');
-      const former = processedOfficers.filter((o: any) => 
-        ['REMOVED', 'RESIGNED', 'TERMINATED'].includes(o.status)
-      );
+      const { data: profiles } = userIds.length
+        ? await supabase.from('user_profiles').select('user_id, full_name, email').in('user_id', userIds)
+        : { data: [] as any[] };
 
-      // Sort by hierarchy level, then by title
+      const profileMap = new Map((profiles || []).map((profile: any) => [profile.user_id, profile]));
+
+      const processedOfficers = (data || []).map((officer: any) => {
+        const exec = officer.exec_users || {};
+        const metadata = typeof exec.metadata === 'object' ? exec.metadata : {};
+        const profile = exec.user_id ? profileMap.get(exec.user_id) : null;
+
+        return {
+          id: officer.id,
+          full_name:
+            profile?.full_name || metadata?.proposed_officer_name || exec.title || officer.position || 'Unknown',
+          title: exec.title || officer.position || 'Officer',
+          effective_date: officer.term_start || officer.appointed_date,
+          status: String(officer.status || '').toUpperCase(),
+          metadata,
+        } as CorporateOfficer;
+      });
+
+      const active = processedOfficers.filter((o: any) => ['ACTIVE', 'APPOINTED'].includes(o.status));
+      const former = processedOfficers.filter((o: any) => ['REMOVED', 'RESIGNED', 'TERMINATED'].includes(o.status));
+
       const sortOfficers = (officers: any[]) => {
         return officers.sort((a, b) => {
           const levelDiff = getHierarchyLevel(a.title) - getHierarchyLevel(b.title);

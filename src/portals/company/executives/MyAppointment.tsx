@@ -13,7 +13,7 @@ import {
 } from '@mantine/core';
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
-import { IconFileText, IconDownload } from '@tabler/icons-react';
+import { IconDownload } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import ActivationTimeline from './ActivationTimeline';
 
@@ -26,17 +26,27 @@ interface CorporateOfficer {
   term_end?: string;
   status: string;
   certificate_url?: string;
-  appointed_by?: string;
 }
 
 interface Appointment {
   id: string;
-  proposed_officer_name: string;
-  proposed_title: string;
-  proposed_officer_email: string;
-  effective_date: string;
-  status: string;
+  position?: string;
+  proposed_title?: string;
+  proposed_officer_name?: string;
+  proposed_officer_email?: string;
+  effective_date?: string;
+  status?: string;
+  certificate_url?: string;
 }
+
+const normalizeDisplayStatus = (status?: string) => {
+  const value = (status || '').toLowerCase();
+  if (['active', 'approved', 'appointed', 'fully_appointed_active'].includes(value)) return 'ACTIVE';
+  if (value.includes('resign')) return 'RESIGNED';
+  if (value.includes('remove') || value.includes('terminate')) return 'REMOVED';
+  if (value.includes('expire')) return 'EXPIRED';
+  return 'PENDING';
+};
 
 const MyAppointment: React.FC = () => {
   const [officer, setOfficer] = useState<CorporateOfficer | null>(null);
@@ -50,127 +60,90 @@ const MyAppointment: React.FC = () => {
   const fetchMyAppointment = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
-        console.log('MyAppointment: No authenticated user found');
-        setLoading(false);
+        setOfficer(null);
         return;
       }
 
-      console.log('MyAppointment: Fetching appointment for user email:', user.email);
-
-      // First, try exact email match in corporate_officers table
-      let { data: corporateOfficer, error: corporateError } = await supabase
-        .from('corporate_officers')
-        .select('*')
-        .eq('email', user.email)
+      const { data: execUser } = await supabase
+        .from('exec_users')
+        .select('id, title, role, metadata')
+        .eq('user_id', user.id)
         .maybeSingle();
 
-      console.log('MyAppointment: Exact email match result:', corporateOfficer ? 'Found' : 'Not found', corporateError);
-
-      // If not found, try case-insensitive match
-      if (!corporateOfficer && user.email) {
-        const { data: corporateOfficerCaseInsensitive, error: errorCaseInsensitive } = await supabase
-          .from('corporate_officers')
-          .select('*')
-          .ilike('email', user.email)
-          .maybeSingle();
-        
-        if (corporateOfficerCaseInsensitive) {
-          corporateOfficer = corporateOfficerCaseInsensitive;
-          corporateError = errorCaseInsensitive;
-          console.log('MyAppointment: Case-insensitive match found:', corporateOfficer);
-        }
-      }
-
-      if (corporateOfficer) {
-        console.log('MyAppointment: Setting officer from corporate_officers:', corporateOfficer);
-        setOfficer(corporateOfficer);
-        setLoading(false);
-        return;
-      }
-
-      // If not found in corporate_officers, check executive_appointments
-      console.log('MyAppointment: Checking executive_appointments for email:', user.email);
-      let { data: appointment, error: appointmentError } = await supabase
+      let appointmentQuery = supabase
         .from('executive_appointments')
-        .select('id, proposed_officer_name, proposed_title, proposed_officer_email, effective_date, status')
-        .eq('proposed_officer_email', user.email)
-        .in('status', ['APPROVED', 'SENT_TO_BOARD', 'ACTIVE'])
+        .select(
+          'id, position, proposed_title, proposed_officer_name, proposed_officer_email, effective_date, status, certificate_url'
+        )
         .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
 
-      // Try case-insensitive match if exact match failed
-      if (!appointment && user.email) {
-        const { data: appointmentCaseInsensitive, error: errorCaseInsensitive } = await supabase
-          .from('executive_appointments')
-          .select('id, proposed_officer_name, proposed_title, proposed_officer_email, effective_date, status')
-          .ilike('proposed_officer_email', user.email)
-          .in('status', ['APPROVED', 'SENT_TO_BOARD', 'ACTIVE'])
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        if (appointmentCaseInsensitive) {
-          appointment = appointmentCaseInsensitive;
-          appointmentError = errorCaseInsensitive;
-          console.log('MyAppointment: Case-insensitive appointment match found:', appointment);
-        }
+      if (execUser?.id) {
+        appointmentQuery = appointmentQuery.eq('executive_id', execUser.id);
+      } else if (user.email) {
+        appointmentQuery = appointmentQuery.ilike('proposed_officer_email', user.email);
       }
 
-      if (appointment && !appointmentError) {
-        // Store appointment ID for timeline
-        setAppointmentId(appointment.id);
-        
-        // Convert appointment to officer format
-        const appointmentOfficer: CorporateOfficer = {
-          id: appointment.id,
-          full_name: appointment.proposed_officer_name || user.email?.split('@')[0] || 'Unknown',
-          email: appointment.proposed_officer_email || user.email || undefined,
-          title: appointment.proposed_title || 'Officer',
-          effective_date: appointment.effective_date || new Date().toISOString(),
-          status: appointment.status === 'APPROVED' || appointment.status === 'ACTIVE' ? 'ACTIVE' : 'PENDING',
-        };
-        console.log('MyAppointment: Setting officer from executive_appointments:', appointmentOfficer);
-        setOfficer(appointmentOfficer);
-        setLoading(false);
+      const { data: appointment } = await appointmentQuery.maybeSingle<Appointment>();
+
+      const { data: corporateOfficer } = execUser?.id
+        ? await supabase
+            .from('corporate_officers')
+            .select('id, position, status, term_start, term_end, appointed_date')
+            .eq('executive_id', execUser.id)
+            .order('appointed_date', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : { data: null as any };
+
+      if (!appointment && !corporateOfficer) {
+        setOfficer(null);
         return;
       }
-      
-      // If we have a corporate officer, try to find the appointment_id from officer_ledger
-      if (corporateOfficer) {
-        const { data: ledgerEntry } = await supabase
-          .from('officer_ledger')
-          .select('appointment_id')
-          .eq('name', corporateOfficer.full_name)
-          .eq('title', corporateOfficer.title)
-          .maybeSingle();
-        
-        if (ledgerEntry?.appointment_id) {
-          setAppointmentId(ledgerEntry.appointment_id);
-        }
+
+      if (appointment?.id) {
+        setAppointmentId(appointment.id);
       }
 
-      // If neither found, set to null
-      console.log('MyAppointment: No appointment found. User email:', user.email);
-      console.log('MyAppointment: Corporate officer error:', corporateError);
-      console.log('MyAppointment: Appointment error:', appointmentError);
-      
-      // Debug: Let's also check what emails exist in corporate_officers
-      const { data: allOfficers } = await supabase
-        .from('corporate_officers')
-        .select('email, full_name')
-        .limit(10);
-      console.log('MyAppointment: Available emails in corporate_officers:', allOfficers);
-      
-      if (corporateError && corporateError.code !== '42P01') {
-        console.error('Error fetching corporate officer:', corporateError);
-      }
-      if (appointmentError) {
-        console.error('Error fetching appointment:', appointmentError);
-      }
-      setOfficer(null);
+      const metadata = execUser?.metadata || {};
+      const fullName =
+        appointment?.proposed_officer_name ||
+        metadata?.proposed_officer_name ||
+        user.user_metadata?.full_name ||
+        user.email?.split('@')[0] ||
+        'Unknown';
+
+      const email = appointment?.proposed_officer_email || metadata?.proposed_officer_email || user.email || undefined;
+      const title =
+        appointment?.proposed_title ||
+        appointment?.position ||
+        execUser?.title ||
+        corporateOfficer?.position ||
+        'Officer';
+
+      const effectiveDate =
+        appointment?.effective_date ||
+        corporateOfficer?.term_start ||
+        corporateOfficer?.appointed_date ||
+        new Date().toISOString();
+
+      const status = normalizeDisplayStatus(corporateOfficer?.status || appointment?.status);
+
+      setOfficer({
+        id: corporateOfficer?.id || appointment?.id || user.id,
+        full_name: fullName,
+        email,
+        title,
+        effective_date: effectiveDate,
+        term_end: corporateOfficer?.term_end || undefined,
+        status,
+        certificate_url: appointment?.certificate_url,
+      });
     } catch (error: any) {
       console.error('Error fetching appointment:', error);
       notifications.show({
@@ -178,6 +151,7 @@ const MyAppointment: React.FC = () => {
         message: error.message || 'Failed to load appointment',
         color: 'red',
       });
+      setOfficer(null);
     } finally {
       setLoading(false);
     }
@@ -283,10 +257,7 @@ const MyAppointment: React.FC = () => {
         </Stack>
       </Card>
 
-      {/* Activation Timeline */}
-      {appointmentId && (
-        <ActivationTimeline appointmentId={appointmentId} />
-      )}
+      {appointmentId && <ActivationTimeline appointmentId={appointmentId} />}
     </Stack>
   );
 };

@@ -97,13 +97,21 @@ const AppointmentsTab: React.FC = () => {
     }
   };
 
-  const pendingAppointments = appointments.filter(a => 
-    a.status === 'DRAFT' || 
-    a.status === 'SENT_TO_BOARD' || 
-    a.status === 'AWAITING_SIGNATURES' || 
-    a.status === 'READY_FOR_SECRETARY_REVIEW'
-  );
-  const activeAppointments = appointments.filter(a => a.status === 'ACTIVE');
+  const pendingStatuses = new Set([
+    'draft',
+    'sent_to_board',
+    'awaiting_signatures',
+    'ready_for_secretary_review',
+    'documents_generated',
+    'documents_sent',
+    'signing_in_progress',
+    'partially_signed',
+    'authorized_to_offer',
+    'offer_accepted',
+  ]);
+
+  const pendingAppointments = appointments.filter((a) => pendingStatuses.has((a.status || '').toLowerCase()));
+  const activeAppointments = appointments.filter((a) => ['active', 'fully_appointed_active'].includes((a.status || '').toLowerCase()));
 
   return (
     <Stack gap="xl">

@@ -24,12 +24,18 @@ const ExecutiveDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const { count } = await supabase
-        .from('corporate_officers')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'ACTIVE');
+      const [officersResult, execUsersResult] = await Promise.all([
+        supabase
+          .from('corporate_officers')
+          .select('*', { count: 'exact', head: true })
+          .in('status', ['ACTIVE', 'active', 'APPOINTED', 'appointed']),
+        supabase
+          .from('exec_users')
+          .select('*', { count: 'exact', head: true })
+          .in('officer_status', ['active', 'ACTIVE', 'appointed', 'APPOINTED']),
+      ]);
 
-      setActiveOfficers(count || 0);
+      setActiveOfficers(Math.max(officersResult.count || 0, execUsersResult.count || 0));
     } catch (error: any) {
       if (error.code !== '42P01') {
         console.error('Error fetching stats:', error);

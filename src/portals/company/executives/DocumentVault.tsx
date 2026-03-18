@@ -81,9 +81,9 @@ const DocumentVault: React.FC = () => {
       // Also fetch from executive_appointments URLs
       const { data: appointments } = await supabase
         .from('executive_appointments')
-        .select('id, proposed_officer_email, proposed_officer_name, appointment_letter_url, board_resolution_url, certificate_url, employment_agreement_url, confidentiality_ip_url, stock_subscription_url, deferred_compensation_url, pre_incorporation_consent_url, created_at')
-        .eq('proposed_officer_email', user.email)
-        .in('status', ['APPROVED', 'SENT_TO_BOARD', 'ACTIVE', 'DRAFT', 'AWAITING_SIGNATURES', 'READY_FOR_SECRETARY_REVIEW', 'BOARD_ADOPTED']);
+        .select('id, executive_id, proposed_officer_name, appointment_letter_url, board_resolution_url, certificate_url, employment_agreement_url, confidentiality_ip_url, stock_subscription_url, deferred_compensation_url, pre_incorporation_consent_url, created_at, status')
+        .eq('executive_id', currentExec.id)
+        .not('status', 'in', '("terminated","rejected")');
 
       // Build document list from appointments
       const appointmentDocs: Document[] = [];

@@ -167,9 +167,9 @@ const CompanySidebar: React.FC = () => {
         </Box>
 
         {navItems.map((item) => {
-          // JASON PARCELL: Show Team (read-only) and Executives (for onboarding)
+          // JASON PARCELL: keep focused executive access while allowing onboarding docs/navigation
           const isJason = userEmail === JASON_EMAIL;
-          if (isJason && item.label !== 'Team' && item.label !== 'Executives') {
+          if (isJason && !['Team', 'Executives', 'Leadership'].includes(item.label)) {
             return null;
           }
 

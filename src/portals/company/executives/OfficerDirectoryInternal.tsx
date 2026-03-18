@@ -28,7 +28,7 @@ interface CorporateOfficer {
 const OfficerDirectoryInternal: React.FC = () => {
   const [officers, setOfficers] = useState<CorporateOfficer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>('ACTIVE');
+  const [statusFilter, setStatusFilter] = useState<string>('active');
 
   useEffect(() => {
     fetchOfficers();
@@ -39,11 +39,23 @@ const OfficerDirectoryInternal: React.FC = () => {
     try {
       let query = supabase
         .from('corporate_officers')
-        .select('*')
-        .order('title', { ascending: true });
+        .select(`
+          id,
+          position,
+          status,
+          term_start,
+          term_end,
+          appointed_date,
+          exec_users:executive_id (
+            user_id,
+            title,
+            metadata
+          )
+        `)
+        .order('term_start', { ascending: false });
 
       if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+        query = query.ilike('status', statusFilter);
       }
 
       const { data, error } = await query;
@@ -56,7 +68,38 @@ const OfficerDirectoryInternal: React.FC = () => {
         throw error;
       }
 
-      setOfficers(data || []);
+      const userIds = (data || [])
+        .map((officer: any) => officer.exec_users?.user_id)
+        .filter(Boolean);
+
+      const { data: profiles } = userIds.length
+        ? await supabase.from('user_profiles').select('user_id, full_name, email').in('user_id', userIds)
+        : { data: [] as any[] };
+
+      const profileMap = new Map((profiles || []).map((profile: any) => [profile.user_id, profile]));
+
+      const transformed = (data || []).map((officer: any) => {
+        const exec = officer.exec_users;
+        const profile = exec?.user_id ? profileMap.get(exec.user_id) : null;
+        const metadata = exec?.metadata || {};
+
+        return {
+          id: officer.id,
+          full_name:
+            profile?.full_name ||
+            metadata?.proposed_officer_name ||
+            exec?.title ||
+            officer.position ||
+            'Unknown',
+          email: profile?.email || metadata?.proposed_officer_email || undefined,
+          title: exec?.title || officer.position || 'Officer',
+          effective_date: officer.term_start || officer.appointed_date,
+          term_end: officer.term_end || undefined,
+          status: String(officer.status || '').toUpperCase(),
+        } as CorporateOfficer;
+      });
+
+      setOfficers(transformed);
     } catch (error: any) {
       console.error('Error fetching officers:', error);
       notifications.show({
@@ -72,10 +115,12 @@ const OfficerDirectoryInternal: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ACTIVE':
+      case 'APPOINTED':
         return 'green';
       case 'RESIGNED':
         return 'orange';
       case 'REMOVED':
+      case 'TERMINATED':
         return 'red';
       case 'EXPIRED':
         return 'gray';
@@ -101,15 +146,17 @@ const OfficerDirectoryInternal: React.FC = () => {
         <Select
           placeholder="Filter by status"
           value={statusFilter}
-          onChange={(value) => setStatusFilter(value || 'ACTIVE')}
+          onChange={(value) => setStatusFilter(value || 'active')}
           data={[
             { value: 'all', label: 'All Statuses' },
-            { value: 'ACTIVE', label: 'Active' },
-            { value: 'RESIGNED', label: 'Resigned' },
-            { value: 'REMOVED', label: 'Removed' },
-            { value: 'EXPIRED', label: 'Expired' },
+            { value: 'active', label: 'Active' },
+            { value: 'appointed', label: 'Appointed' },
+            { value: 'resigned', label: 'Resigned' },
+            { value: 'removed', label: 'Removed' },
+            { value: 'terminated', label: 'Terminated' },
+            { value: 'expired', label: 'Expired' },
           ]}
-          style={{ width: 200 }}
+          style={{ width: 220 }}
         />
       </Group>
 
