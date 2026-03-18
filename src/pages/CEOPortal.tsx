@@ -204,6 +204,8 @@ const CEOPortal: React.FC = () => {
         return <CEOSignatureManager />;
       case 'communications':
         return <ExecutiveCommunicationsCenter defaultTab="messages" />;
+      case 'c-comms':
+        return <EmbeddedCComms />;
       case 'word':
         return <ExecutiveWordProcessor storageKey="ceo" />;
       case 'active-users':
