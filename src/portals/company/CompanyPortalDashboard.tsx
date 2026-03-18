@@ -8,6 +8,9 @@ import {
   IconShield,
   IconUsers,
   IconUserCheck,
+  IconBuildingSkyscraper,
+  IconUsersGroup,
+  IconBook,
 } from '@tabler/icons-react';
 
 interface PortalSection {
@@ -29,6 +32,15 @@ const companySections: PortalSection[] = [
     path: '/company/cap-table',
     color: '#13c2c2',
     category: 'Equity',
+  },
+  {
+    id: 'executives',
+    name: 'Executive Dashboard',
+    description: 'Appointments, onboarding, documents, equity & vesting',
+    icon: IconBuildingSkyscraper,
+    path: '/company/executives',
+    color: '#fa8c16',
+    category: 'People',
   },
   {
     id: 'governance',
@@ -56,6 +68,24 @@ const companySections: PortalSection[] = [
     path: '/company/team',
     color: '#52c41a',
     category: 'People',
+  },
+  {
+    id: 'leadership',
+    name: 'Leadership Directory',
+    description: 'Public-facing leadership and officer directory',
+    icon: IconUsersGroup,
+    path: '/company/leadership',
+    color: '#eb2f96',
+    category: 'People',
+  },
+  {
+    id: 'sop',
+    name: 'SOP Documents',
+    description: 'Standard operating procedures and company policies',
+    icon: IconBook,
+    path: '/company/sop',
+    color: '#2f54eb',
+    category: 'Operations',
   },
 ];
 

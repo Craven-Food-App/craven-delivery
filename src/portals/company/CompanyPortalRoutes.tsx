@@ -7,6 +7,9 @@ import GovernancePage from './governance/GovernancePage';
 import BoardPortalPage from './board/BoardPortalPage';
 import TeamPage from './team/TeamPage';
 import NewAppointmentForm from './governance-admin/NewAppointmentForm';
+import ExecutiveDashboard from './executives/ExecutiveDashboard';
+import LeadershipPublicPage from './leadership-public/LeadershipPublicPage';
+import SOPWrapper from './sop/SOPWrapper';
 
 /**
  * Company Portal Routes
@@ -18,6 +21,9 @@ import NewAppointmentForm from './governance-admin/NewAppointmentForm';
  * - /company/governance-admin/appointments - Redirect to governance appointments tab
  * - /company/board - Board portal
  * - /company/team - Team management
+ * - /company/executives - Executive Dashboard (My Appointment, Onboarding, Documents, Equity, etc.)
+ * - /company/leadership - Public leadership directory
+ * - /company/sop - SOP documents
  */
 const CompanyPortalRoutes: React.FC = () => {
   console.log('🚀 [CompanyPortalRoutes] Component rendering');
@@ -33,6 +39,9 @@ const CompanyPortalRoutes: React.FC = () => {
         <Route path="governance-admin/appointments" element={<Navigate to="/company/governance?tab=appointments" replace />} />
         <Route path="board" element={<BoardPortalPage />} />
         <Route path="team" element={<TeamPage />} />
+        <Route path="executives" element={<ExecutiveDashboard />} />
+        <Route path="leadership" element={<LeadershipPublicPage />} />
+        <Route path="sop" element={<SOPWrapper />} />
       </Route>
     </Routes>
   );
