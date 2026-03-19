@@ -163,28 +163,47 @@ const CEOPortal: React.FC = () => {
       const [employeesRes, approvalsRes, ordersThisRes, ordersPrevRes, codeRes, feedersRes, merchantsRes] = await Promise.all([
         supabase.from('employees').select('id, employment_status, salary'),
         supabase.from('ceo_financial_approvals').select('id, status').eq('status', 'pending'),
-        supabase.from('orders').select('id, total_amount').gte('created_at', thisMonthStart),
-        supabase.from('orders').select('id, total_amount').gte('created_at', prevMonthStart).lte('created_at', prevMonthEnd),
+        supabase.from('orders').select('id, total_amount, total_cents, amount_total_cents').gte('created_at', thisMonthStart),
+        supabase.from('orders').select('id, total_amount, total_cents, amount_total_cents').gte('created_at', prevMonthStart).lte('created_at', prevMonthEnd),
         supabase.from('code_change_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('craver_applications').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
-        supabase.from('merchants').select('id', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('merchants').select('id', { count: 'exact', head: true }).eq('status', 'active'),
       ]);
+
+      if (employeesRes.error) throw employeesRes.error;
+      if (approvalsRes.error) throw approvalsRes.error;
+      if (ordersThisRes.error) throw ordersThisRes.error;
+      if (ordersPrevRes.error) throw ordersPrevRes.error;
+      if (codeRes.error) throw codeRes.error;
+      if (feedersRes.error) throw feedersRes.error;
+      if (merchantsRes.error) throw merchantsRes.error;
+
+      const getOrderAmountCents = (order: any) => {
+        if (typeof order.total_cents === 'number') return order.total_cents;
+        if (typeof order.amount_total_cents === 'number') return order.amount_total_cents;
+        if (typeof order.total_amount === 'number') return order.total_amount;
+        return 0;
+      };
 
       const employees = employeesRes.data || [];
       const activeEmps = employees.filter(e => e.employment_status === 'active');
-      const totalPayroll = employees.reduce((s, e) => s + (e.salary || 0), 0);
+      const totalPayroll = employees.reduce((sum, employee) => sum + (employee.salary || 0), 0);
       const thisMonthOrders = ordersThisRes.data || [];
       const prevMonthOrders = ordersPrevRes.data || [];
-      const rev = thisMonthOrders.reduce((s, o) => s + (o.total_amount || 0), 0);
-      const prevRev = prevMonthOrders.reduce((s, o) => s + (o.total_amount || 0), 0);
-      const burn = totalPayroll / 12;
+
+      const thisMonthRevenueCents = thisMonthOrders.reduce((sum, order) => sum + getOrderAmountCents(order), 0);
+      const prevMonthRevenueCents = prevMonthOrders.reduce((sum, order) => sum + getOrderAmountCents(order), 0);
+
+      const totalRevenue = thisMonthRevenueCents / 100;
+      const prevMonthRevenue = prevMonthRevenueCents / 100;
+      const burnRate = totalPayroll / 12;
 
       setMetrics({
-        totalRevenue: rev,
-        prevMonthRevenue: prevRev,
-        revenueGrowth: prevRev > 0 ? ((rev - prevRev) / prevRev) * 100 : 0,
-        cashFlow: rev - burn,
-        burnRate: burn,
+        totalRevenue,
+        prevMonthRevenue,
+        revenueGrowth: prevMonthRevenue > 0 ? ((totalRevenue - prevMonthRevenue) / prevMonthRevenue) * 100 : 0,
+        cashFlow: totalRevenue - burnRate,
+        burnRate,
         totalEmployees: employees.length,
         activeEmployees: activeEmps.length,
         feeders: feedersRes.count || 0,

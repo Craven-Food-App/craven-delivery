@@ -64,12 +64,31 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onNavigate }) => {
       const [settingRes, approvalsRes, ordersRes] = await Promise.all([
         supabase.from('ceo_system_settings').select('*').eq('setting_key', 'orders_paused').order('created_at', { ascending: false }).limit(1),
         supabase.from('ceo_financial_approvals').select('id, request_type, requester_name, amount, priority, status, requested_date').order('requested_date', { ascending: false }).limit(5),
-        supabase.from('orders').select('id, total_amount, status, created_at').order('created_at', { ascending: false }).limit(5),
+        supabase.from('orders').select('id, total_amount, total_cents, amount_total_cents, order_status, created_at').order('created_at', { ascending: false }).limit(5),
       ]);
+
+      const normalizedOrders = (ordersRes.data || []).map((order: any) => {
+        const totalCents =
+          typeof order.total_cents === 'number'
+            ? order.total_cents
+            : typeof order.amount_total_cents === 'number'
+              ? order.amount_total_cents
+              : typeof order.total_amount === 'number'
+                ? order.total_amount
+                : 0;
+
+        return {
+          ...order,
+          total_amount: totalCents / 100,
+          status: order.order_status || order.status || 'unknown',
+        };
+      });
+
       if (settingRes.data?.[0]) setOrdersSetting(settingRes.data[0]);
       setRecentApprovals(approvalsRes.data || []);
-      setRecentOrders(ordersRes.data || []);
+      setRecentOrders(normalizedOrders);
     };
+
     fetchData();
   }, []);
 

@@ -13,7 +13,7 @@ import {
   EditOutlined,
 } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
-import { POSITIONS, buildEmails } from '@/config/positions';
+import { buildEmails } from '@/config/positions';
 import { DEFAULT_EMPLOYEE_PACKET } from '@/config/hiringPacket';
 import { isCLevelPosition, getExecRoleFromPosition, isCFOPosition, getPortalsForPosition } from '@/utils/roleUtils';
 import { logPersonnelAction } from '@/utils/auditLogger';
@@ -86,8 +86,9 @@ export const PersonnelManager: React.FC = () => {
   useEffect(() => {
     fetchEmployees();
     fetchDepartments();
+    fetchPositions();
     fetchAppointments();
-    
+
     // Check screen size
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 640);
@@ -139,6 +140,23 @@ export const PersonnelManager: React.FC = () => {
     } catch (error) {
       console.error('Error fetching departments:', error);
       message.error('Failed to load departments');
+    }
+  };
+
+  const fetchPositions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('positions')
+        .select('id, title, code, is_executive, is_active')
+        .eq('is_active', true)
+        .order('is_executive', { ascending: false })
+        .order('title', { ascending: true });
+
+      if (error) throw error;
+      setPositions(data || []);
+    } catch (error) {
+      console.error('Error fetching positions:', error);
+      message.error('Failed to load positions');
     }
   };
 
@@ -300,32 +318,40 @@ export const PersonnelManager: React.FC = () => {
 
   const onPositionChange = (positionCode: string) => {
     const v = form.getFieldsValue();
-    // Try to find in database positions first
-    const dbPos = positions.find(p => p.code === positionCode || p.id === positionCode);
-    // Fallback to hardcoded positions
-    const hardcodedPos = POSITIONS.find(p => p.code === positionCode || p.label === positionCode);
-    const pos = dbPos || hardcodedPos;
-    
-    if (pos) {
-      const code = dbPos?.code || hardcodedPos?.code || positionCode;
-      const { named, roleAlias } = buildEmails(v.first_name || '', v.last_name || '', code, 'cravenusa.com');
-      setSuggestedEmails({ 
-        named, 
-        roleAlias: (dbPos?.is_executive || hardcodedPos?.isExecutive) ? roleAlias : undefined 
-      });
-    } else {
+    const pos = positions.find(
+      (position) =>
+        position.code === positionCode ||
+        position.id === positionCode ||
+        position.title === positionCode
+    );
+
+    if (!pos?.code) {
       setSuggestedEmails({});
+      return;
     }
+
+    const { named, roleAlias } = buildEmails(v.first_name || '', v.last_name || '', pos.code, 'cravenusa.com');
+    setSuggestedEmails({
+      named,
+      roleAlias: pos.is_executive ? roleAlias : undefined,
+    });
   };
 
   const issueEmails = async () => {
     try {
       const v = await form.validateFields();
-      const pos = POSITIONS.find(p => p.label === v.position || p.code === v.position);
-      if (!pos) {
-        message.error('Select a position');
+      const pos = positions.find(
+        (position) =>
+          position.code === v.position ||
+          position.id === v.position ||
+          position.title === v.position
+      );
+
+      if (!pos?.code) {
+        message.error('Selected position is not configured in the positions table.');
         return;
       }
+
       const res = await supabase.functions.invoke('msgraph-provision', {
         body: { firstName: v.first_name, lastName: v.last_name, positionCode: pos.code, domain: 'cravenusa.com' }
       });
@@ -694,16 +720,22 @@ export const PersonnelManager: React.FC = () => {
 
         // Pre-acceptance notification: provisional emails
         try {
-          const posDef = POSITIONS.find(p => p.code === (values.position || ''));
-          if (posDef) {
+          const posDef = positions.find(
+            (position) =>
+              position.code === values.position ||
+              position.title === values.position ||
+              position.id === values.position
+          );
+
+          if (posDef?.code) {
             const emails = buildEmails(values.first_name, values.last_name, posDef.code, 'cravenusa.com');
             await supabase.functions.invoke('send-preaccept-email', {
               body: {
                 candidateEmail: values.email,
                 candidateName: `${values.first_name} ${values.last_name}`,
                 namedEmail: emails.named,
-                roleAlias: posDef.isExecutive ? emails.roleAlias : null,
-                position: posDef.label
+                roleAlias: posDef.is_executive ? emails.roleAlias : null,
+                position: posDef.title || values.position,
               }
             });
           }
@@ -844,14 +876,20 @@ export const PersonnelManager: React.FC = () => {
 
       // POST-HIRE: Provision M365 email accounts (REQUIRED)
       try {
-        const posDef = POSITIONS.find(p => p.code === (values.position || ''));
+        const posDef = positions.find(
+          (position) =>
+            position.code === values.position ||
+            position.title === values.position ||
+            position.id === values.position
+        );
+
         const provResult = await supabase.functions.invoke('msgraph-provision', {
           body: {
             firstName: values.first_name,
             lastName: values.last_name,
             positionCode: posDef?.code || values.position,
             domain: 'cravenusa.com',
-            executive: !!posDef?.isExecutive,
+            executive: !!posDef?.is_executive,
             personalEmail: values.email,
             employeeId: data[0].id // Track in database
           }
