@@ -514,7 +514,7 @@ const ApplicationReview: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-xs font-bold text-muted-foreground">
+                          <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold", app.is_seeded ? "bg-orange-100 text-orange-600" : "bg-muted text-muted-foreground")}>
                             {app.first_name?.[0]}{app.last_name?.[0]}
                           </div>
                           <div className="min-w-0">
