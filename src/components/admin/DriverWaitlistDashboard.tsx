@@ -46,6 +46,7 @@ interface Driver {
   waitlist_position: number | null;
   created_at: string;
   region_id?: number;
+  is_seeded?: boolean;
   regions: {
     name: string;
     status: string;
