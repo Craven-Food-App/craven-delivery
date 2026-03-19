@@ -49,7 +49,7 @@ import {
 } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { isInvoiceOverdue, daysUntilDue } from '@/utils/finance';
-import { parseInvoicePdf, type ParsedInvoice } from '@/utils/invoicePdfParser';
+// AI-powered scanning via edge function replaces client-side pdfjs parsing
 
 // ── Types ───────────────────────────────────────────────────────────
 
