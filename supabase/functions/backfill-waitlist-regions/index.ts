@@ -75,18 +75,34 @@ Deno.serve(async (req) => {
         const regionNameFallback = `${city}${city && state ? ', ' : ''}${state}`.trim();
         const regionName = regionNameFallback || `Region ${zipPrefix}`;
 
-        const { data: existingRegions, error: lookupError } = await supabaseClient
+        const { data: prefixRegion, error: prefixLookupError } = await supabaseClient
           .from('regions')
-          .select('id, name, zip_prefix')
-          .in('zip_prefix', [zipPrefix, normalizedZip])
-          .order('created_at', { ascending: true })
-          .limit(1);
+          .select('id, status')
+          .eq('zip_prefix', zipPrefix)
+          .maybeSingle();
 
-        if (lookupError) {
-          throw lookupError;
+        if (prefixLookupError) {
+          throw prefixLookupError;
         }
 
-        let regionId = existingRegions?.[0]?.id ?? null;
+        const { data: legacyRegion, error: legacyLookupError } = await supabaseClient
+          .from('regions')
+          .select('id, status')
+          .eq('zip_prefix', normalizedZip)
+          .maybeSingle();
+
+        if (legacyLookupError) {
+          throw legacyLookupError;
+        }
+
+        if (legacyRegion && legacyRegion.status !== 'active') {
+          await supabaseClient
+            .from('regions')
+            .update({ status: 'active' })
+            .eq('id', legacyRegion.id);
+        }
+
+        let regionId = prefixRegion?.id ?? legacyRegion?.id ?? null;
 
         if (!regionId) {
           const { data: insertedRegion, error: insertError } = await supabaseClient

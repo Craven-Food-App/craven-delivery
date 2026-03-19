@@ -52,24 +52,52 @@ Deno.serve(async (req) => {
     const activeQuota = body.active_quota ?? 50;
     const displayQuota = body.display_quota ?? activeQuota;
 
-    // Check if a region already exists for this ZIP (supports legacy 5-digit rows + new 3-digit prefix rows)
-    const { data: existingRegions, error: existingError } = await supabaseClient
+    // Prefer canonical 3-digit ZIP prefix regions first
+    const { data: prefixRegion, error: prefixError } = await supabaseClient
       .from('regions')
-      .select('id, name, zip_prefix')
-      .in('zip_prefix', [zipPrefix, normalizedZip])
-      .order('created_at', { ascending: true })
-      .limit(1);
+      .select('id, name, status')
+      .eq('zip_prefix', zipPrefix)
+      .maybeSingle();
 
-    if (existingError) {
-      throw existingError;
+    if (prefixError) {
+      throw prefixError;
     }
 
-    const existingRegion = existingRegions?.[0] ?? null;
-
-    if (existingRegion) {
+    if (prefixRegion) {
       const payload: EnsureRegionResponse = {
-        region_id: existingRegion.id,
-        region_name: existingRegion.name,
+        region_id: prefixRegion.id,
+        region_name: prefixRegion.name,
+        created: false,
+      };
+
+      return new Response(
+        JSON.stringify(payload),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // Support legacy 5-digit rows and auto-open them if still limited
+    const { data: legacyRegion, error: legacyError } = await supabaseClient
+      .from('regions')
+      .select('id, name, status')
+      .eq('zip_prefix', normalizedZip)
+      .maybeSingle();
+
+    if (legacyError) {
+      throw legacyError;
+    }
+
+    if (legacyRegion) {
+      if (legacyRegion.status !== 'active') {
+        await supabaseClient
+          .from('regions')
+          .update({ status: 'active' })
+          .eq('id', legacyRegion.id);
+      }
+
+      const payload: EnsureRegionResponse = {
+        region_id: legacyRegion.id,
+        region_name: legacyRegion.name,
         created: false,
       };
 
