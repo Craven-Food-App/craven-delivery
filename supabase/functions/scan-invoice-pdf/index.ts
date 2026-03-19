@@ -461,7 +461,6 @@ If not present, return empty string for text and 0 for numbers.`,
       const invoiceNumber = `INV-${year}-${String((count || 0) + 1).padStart(6, "0")}`;
       const amt = extracted.subtotal || extracted.total_amount || 0;
       const tax = extracted.tax_amount || 0;
-      const total = extracted.total_amount || amt + tax;
 
       const dueDate =
         extracted.due_date ||
