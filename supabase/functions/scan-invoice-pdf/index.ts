@@ -134,7 +134,7 @@ If not present, return empty string for text and 0 for numbers.`,
       ? "https://ai.gateway.lovable.dev/v1/chat/completions"
       : "https://api.openai.com/v1/chat/completions";
 
-    const aiModel = useGateway ? "google/gemini-2.5-pro" : "gpt-4o";
+    const aiModel = useGateway ? "google/gemini-2.5-flash" : "gpt-4o";
 
     const invoiceSchema = {
       name: "extract_invoice_data",
@@ -186,73 +186,72 @@ If not present, return empty string for text and 0 for numbers.`,
       },
     };
 
-    const basePayload = {
-      model: aiModel,
+    const buildBasePayload = (model: string) => ({
+      model,
       messages: [
         {
           role: "system",
           content:
-            "You are an expert invoice data extractor. Return accurate structured data. Use YYYY-MM-DD for dates.",
+            "You are an expert invoice data extractor. Return only structured invoice fields. Never include reasoning or commentary.",
         },
         {
           role: "user",
           content: userContent,
         },
       ],
-      max_tokens: 2000,
+      max_tokens: 1500,
       temperature: 0,
-    };
-
-    let aiResponse = await fetch(aiEndpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        ...basePayload,
-        tools: [{ type: "function", function: invoiceSchema }],
-        tool_choice: { type: "function", function: { name: "extract_invoice_data" } },
-      }),
     });
 
-    if (!aiResponse.ok && aiResponse.status === 400) {
-      const firstErrorText = await aiResponse.text();
-      console.warn("Tool-call payload rejected; retrying without tools:", firstErrorText);
-
-      aiResponse = await fetch(aiEndpoint, {
+    const callAi = async (payload: Record<string, unknown>) => {
+      const response = await fetch(aiEndpoint, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(basePayload),
+        body: JSON.stringify(payload),
       });
-    }
 
-    if (!aiResponse.ok) {
-      const errText = await aiResponse.text();
-      console.error("AI API error:", aiResponse.status, errText);
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      if (!response.ok) {
+        const errText = await response.text();
+        if (response.status === 429) {
+          throw new Error("AI_RATE_LIMIT_429");
+        }
+        if (response.status === 402) {
+          throw new Error("AI_CREDITS_402");
+        }
+        throw new Error(`AI API error: ${response.status} :: ${errText}`);
       }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add funds in Settings > Workspace > Usage." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      throw new Error(`AI API error: ${aiResponse.status}`);
-    }
 
-    const aiData = await aiResponse.json();
+      return response.json();
+    };
 
     const parseJsonCandidate = (candidate: unknown): Record<string, any> | null => {
+      if (!candidate) return null;
+
+      if (typeof candidate === "object" && !Array.isArray(candidate)) {
+        return candidate as Record<string, any>;
+      }
+
+      if (Array.isArray(candidate)) {
+        for (const item of candidate) {
+          const parsed = parseJsonCandidate(item);
+          if (parsed) return parsed;
+
+          if (item && typeof item === "object" && "text" in (item as Record<string, unknown>)) {
+            const parsedFromText = parseJsonCandidate((item as Record<string, unknown>).text);
+            if (parsedFromText) return parsedFromText;
+          }
+        }
+        return null;
+      }
+
       if (typeof candidate !== "string") return null;
+
       const direct = candidate.trim();
+      if (!direct) return null;
+
       const normalized = direct.startsWith("```")
         ? direct.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "")
         : direct;
@@ -267,7 +266,9 @@ If not present, return empty string for text and 0 for numbers.`,
       for (const text of attempts) {
         try {
           const parsed = JSON.parse(text);
-          if (parsed && typeof parsed === "object") return parsed as Record<string, any>;
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+            return parsed as Record<string, any>;
+          }
         } catch {
           // Continue trying best-effort parse candidates
         }
@@ -304,15 +305,49 @@ If not present, return empty string for text and 0 for numbers.`,
       notes: "AI extraction failed — manual entry required",
     };
 
-    const toolArguments = aiData?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-    const messageContent = aiData?.choices?.[0]?.message?.content;
+    let aiData: any;
+    try {
+      aiData = await callAi({
+        ...buildBasePayload(aiModel),
+        tools: [{ type: "function", function: invoiceSchema }],
+        tool_choice: { type: "function", function: { name: "extract_invoice_data" } },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes("AI API error: 400")) throw error;
 
-    const parsedFromTools = parseJsonCandidate(toolArguments);
-    const parsedFromContent = parseJsonCandidate(
-      typeof messageContent === "string" ? messageContent : JSON.stringify(messageContent ?? "")
-    );
+      console.warn("Tool-call payload rejected; retrying without tools");
+      aiData = await callAi({
+        ...buildBasePayload(aiModel),
+        response_format: { type: "json_object" },
+      });
+    }
 
-    const raw = parsedFromTools || parsedFromContent;
+    let raw =
+      parseJsonCandidate(aiData?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments) ||
+      parseJsonCandidate(aiData?.choices?.[0]?.message?.content);
+
+    const finishReason = aiData?.choices?.[0]?.finish_reason;
+    const hasReasoning = Boolean(aiData?.choices?.[0]?.message?.reasoning);
+
+    if (!raw || finishReason === "length" || hasReasoning) {
+      console.warn("Retrying invoice extraction with strict JSON mode due to incomplete or non-JSON response");
+
+      try {
+        const strictRetry = await callAi({
+          ...buildBasePayload("google/gemini-2.5-flash-lite"),
+          response_format: { type: "json_object" },
+          max_tokens: 800,
+        });
+
+        raw =
+          parseJsonCandidate(strictRetry?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments) ||
+          parseJsonCandidate(strictRetry?.choices?.[0]?.message?.content) ||
+          raw;
+      } catch (retryError) {
+        console.error("Strict JSON retry failed:", retryError);
+      }
+    }
 
     let extracted: ExtractedInvoice;
     if (!raw) {
@@ -424,8 +459,31 @@ If not present, return empty string for text and 0 for numbers.`,
     );
   } catch (error: any) {
     console.error("Error scanning invoice:", error);
+
+    const message = error?.message || "Internal server error";
+
+    if (message === "AI_RATE_LIMIT_429") {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (message === "AI_CREDITS_402") {
+      return new Response(
+        JSON.stringify({ error: "AI credits exhausted. Please add funds in Settings > Workspace > Usage." }),
+        {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
+      JSON.stringify({ error: message }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
