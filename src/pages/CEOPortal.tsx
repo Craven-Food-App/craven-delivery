@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo, Suspense, lazy } from 'react';
 import {
-  Grid,
   Badge,
   Button,
   Group,
@@ -9,10 +8,11 @@ import {
   Title,
   Text,
   Divider,
-  Card,
   Paper,
   Loader,
   Box,
+  SimpleGrid,
+  Tooltip,
 } from '@mantine/core';
 import {
   IconAlertTriangle,
@@ -28,6 +28,13 @@ import {
   IconPencil,
   IconCode,
   IconSchool,
+  IconTrendingUp,
+  IconTrendingDown,
+  IconBuildingStore,
+  IconCar,
+  IconClock,
+  IconArrowUp,
+  IconArrowDown,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -55,30 +62,31 @@ const CfoEvaluationGatePanel = lazy(() => import('@/components/cfo/CfoEvaluation
 const CtoEvaluationGatePanel = lazy(() => import('@/components/cto/CtoEvaluationGatePanel'));
 const EmbeddedCComms = lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
-// Loading fallback
 const ModuleLoader = () => (
-  <Box style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
-    <Stack align="center" gap="md">
-      <Loader size="lg" />
-      <Text c="dimmed">Loading module...</Text>
+  <Box style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+    <Stack align="center" gap="xs">
+      <Loader size="md" />
+      <Text c="dimmed" size="sm">Loading module...</Text>
     </Stack>
   </Box>
 );
-// No Card components: full-page Ant layout
 
 interface CEOMetrics {
   totalRevenue: number;
+  prevMonthRevenue: number;
   revenueGrowth: number;
   cashFlow: number;
   burnRate: number;
   runway: number;
   totalEmployees: number;
-  admins: number;
+  activeEmployees: number;
   feeders: number;
   merchants: number;
   pendingApprovals: number;
   pendingCodeChanges: number;
   criticalAlerts: number;
+  totalOrders: number;
+  prevMonthOrders: number;
 }
 
 const CEOPortal: React.FC = () => {
@@ -88,45 +96,31 @@ const CEOPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   
-  // Track user activity
   useActivityTracking('ceo');
-  
-  // Auto-logout after 30 minutes of inactivity
   useAutoLogout('ceo');
 
   const navItems = useMemo<ExecutiveNavItem[]>(() => {
-    const totalEmployees = metrics?.totalEmployees ?? 0;
     const pendingApprovals = metrics?.pendingApprovals ?? 0;
     const pendingCodeChanges = metrics?.pendingCodeChanges ?? 0;
 
     return [
       { id: 'overview', label: 'Command Center', icon: IconChartBar as any },
       { id: 'executive-evaluations', label: 'Executive Evaluations', icon: IconShield as any },
-      {
-        id: 'personnel',
-        label: `Manage People (${totalEmployees})`,
-        icon: IconUsers as any,
-      },
+      { id: 'personnel', label: 'Manage People', icon: IconUsers as any },
       {
         id: 'financial',
-        label:
-          pendingApprovals > 0
-            ? `Approve Spend (${pendingApprovals})`
-            : 'Approve Spend',
+        label: pendingApprovals > 0 ? `Approve Spend (${pendingApprovals})` : 'Approve Spend',
         icon: IconCurrencyDollar as any,
       },
       {
         id: 'code-changes',
-        label:
-          pendingCodeChanges > 0
-            ? `Code Changes (${pendingCodeChanges})`
-            : 'Code Changes',
+        label: pendingCodeChanges > 0 ? `Code Changes (${pendingCodeChanges})` : 'Code Changes',
         icon: IconCode as any,
       },
       { id: 'equity', label: 'Review Equity', icon: IconTrophy as any },
       { id: 'strategic', label: 'Drive Strategy', icon: IconRocket as any },
       { id: 'mindmap', label: 'Map Decisions', icon: IconBulb as any },
-      { id: 'emergency', label: 'Run Emergency Playbooks', icon: IconShield as any },
+      { id: 'emergency', label: 'Emergency Playbooks', icon: IconShield as any },
       { id: 'audit', label: 'Audit Activity', icon: IconFileText as any },
       { id: 'signature', label: 'Sign Documents', icon: IconPencil as any },
       { id: 'communications', label: 'Direct Communications', icon: IconMail as any },
@@ -136,7 +130,7 @@ const CEOPortal: React.FC = () => {
       { id: 'accountability', label: 'Executive Accountability', icon: IconShield as any },
       { id: 'interns', label: 'Interns & Pathway', icon: IconSchool as any },
     ];
-  }, [metrics?.totalEmployees, metrics?.pendingApprovals, metrics?.pendingCodeChanges]);
+  }, [metrics?.pendingApprovals, metrics?.pendingCodeChanges]);
 
   const handleNavigateToCFO = () => {
     const host = window.location.hostname;
@@ -149,74 +143,50 @@ const CEOPortal: React.FC = () => {
   };
 
   const actionButtons = (
-    <Group wrap="wrap">
-      <Button
-        color="red"
-        leftSection={<IconAlertTriangle size={16} />}
-        onClick={() => setActiveTab('emergency')}
-      >
+    <Group gap="xs" wrap="wrap">
+      <Button size="xs" color="red" variant="filled" leftSection={<IconAlertTriangle size={14} />} onClick={() => setActiveTab('emergency')}>
         Emergency
       </Button>
-      <Button variant="default" onClick={handleNavigateToCFO}>CFO Portal</Button>
-      <Button onClick={() => navigate('/admin')}>
-        Admin Portal
-      </Button>
-      <Button variant="default" onClick={() => navigate('/board')}>Board Portal</Button>
+      <Button size="xs" variant="default" onClick={handleNavigateToCFO}>CFO</Button>
+      <Button size="xs" variant="default" onClick={() => navigate('/admin')}>Admin</Button>
+      <Button size="xs" variant="default" onClick={() => navigate('/board')}>Board</Button>
     </Group>
   );
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'overview':
-        return <QuickActions onNavigate={setActiveTab} />;
+      case 'overview': return <QuickActions onNavigate={setActiveTab} />;
       case 'executive-evaluations':
         return (
           <Stack gap="md">
-            <Title order={2}>Executive Evaluation Gates</Title>
-            <Text size="sm" c="dimmed">
-              Initiate and review time-boxed, board-defensible evaluations for C-suite officers.
-            </Text>
-            <Divider my="md" />
-            <Title order={3}>CFO Evaluation Gate</Title>
+            <Title order={3}>Executive Evaluation Gates</Title>
+            <Text size="sm" c="dimmed">Initiate and review time-boxed, board-defensible evaluations for C-suite officers.</Text>
+            <Divider />
+            <Title order={4}>CFO Evaluation Gate</Title>
             <CfoEvaluationGatePanel mode="ceo" />
-            <Divider my="md" />
-            <Title order={3}>CTO Evaluation Gate</Title>
+            <Divider />
+            <Title order={4}>CTO Evaluation Gate</Title>
             <CtoEvaluationGatePanel mode="ceo" />
           </Stack>
         );
-      case 'personnel':
-        return <PersonnelManager />;
-      case 'financial':
-        return <FinancialApprovals />;
-      case 'code-changes':
-        return <CodeChangeQueue />;
-      case 'equity':
-        return <EquityDashboard />;
-      case 'strategic':
-        return <StrategicPlanning />;
-      case 'mindmap':
-        return <StrategicMindMap />;
-      case 'emergency':
-        return <EmergencyControls />;
-      case 'audit':
-        return <AuditTrail />;
-      case 'signature':
-        return <CEOSignatureManager />;
-      case 'communications':
-        return <ExecutiveCommunicationsCenter defaultTab="messages" />;
-      case 'c-comms':
-        return <EmbeddedCComms />;
-      case 'word':
-        return <ExecutiveWordProcessor storageKey="ceo" />;
-      case 'active-users':
-        return <ActiveUsersMonitor />;
+      case 'personnel': return <PersonnelManager />;
+      case 'financial': return <FinancialApprovals />;
+      case 'code-changes': return <CodeChangeQueue />;
+      case 'equity': return <EquityDashboard />;
+      case 'strategic': return <StrategicPlanning />;
+      case 'mindmap': return <StrategicMindMap />;
+      case 'emergency': return <EmergencyControls />;
+      case 'audit': return <AuditTrail />;
+      case 'signature': return <CEOSignatureManager />;
+      case 'communications': return <ExecutiveCommunicationsCenter defaultTab="messages" />;
+      case 'c-comms': return <EmbeddedCComms />;
+      case 'word': return <ExecutiveWordProcessor storageKey="ceo" />;
+      case 'active-users': return <ActiveUsersMonitor />;
       case 'accountability':
         navigate('/executive/discipline');
         return <QuickActions onNavigate={setActiveTab} />;
-      case 'interns':
-        return <InternsManagement />;
-      default:
-        return <QuickActions onNavigate={setActiveTab} />;
+      case 'interns': return <InternsManagement />;
+      default: return <QuickActions onNavigate={setActiveTab} />;
     }
   };
 
@@ -240,70 +210,21 @@ const CEOPortal: React.FC = () => {
   useEffect(() => {
     if (isAuthorized) {
       fetchCEOMetrics();
-      
-      // Set up auto-refresh every 60 seconds - COMPONENT-LEVEL DATA REFRESH ONLY
-      // This only updates component state, NEVER causes page reloads
       const interval = setInterval(() => {
-        // Wrap in try-catch to prevent any errors from causing issues
-        try {
-          fetchCEOMetrics();
-        } catch (error) {
-          console.error('Error in auto-refresh interval:', error);
-          // Silently handle - don't cause page reload or navigation
-        }
+        try { fetchCEOMetrics(); } catch (e) { console.error('Auto-refresh error:', e); }
       }, 60000);
-      
-      // Set up real-time subscription for orders - COMPONENT-LEVEL DATA REFRESH ONLY
+
       const ordersChannel = supabase
         .channel('ceo_orders_updates')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'orders',
-          },
-          () => {
-            // Only update state, never navigate or reload
-            try {
-              fetchCEOMetrics();
-            } catch (error) {
-              console.error('Error in real-time subscription callback:', error);
-            }
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'ceo_financial_approvals',
-          },
-          () => {
-            // Only update state, never navigate or reload
-            try {
-              fetchCEOMetrics();
-            } catch (error) {
-              console.error('Error in real-time subscription callback:', error);
-            }
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'code_change_requests',
-          },
-          () => {
-            // Only update state, never navigate or reload
-            try {
-              fetchCEOMetrics();
-            } catch (error) {
-              console.error('Error in real-time subscription callback:', error);
-            }
-          }
-        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+          try { fetchCEOMetrics(); } catch (e) { console.error(e); }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'ceo_financial_approvals' }, () => {
+          try { fetchCEOMetrics(); } catch (e) { console.error(e); }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'code_change_requests' }, () => {
+          try { fetchCEOMetrics(); } catch (e) { console.error(e); }
+        })
         .subscribe();
 
       return () => {
@@ -315,12 +236,19 @@ const CEOPortal: React.FC = () => {
 
   const fetchCEOMetrics = async () => {
     try {
-      // Fetch real metrics from database
-      const [employeesRes, approvalsRes, ordersRes, codeChangesRes] = await Promise.all([
+      const now = new Date();
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+      const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59).toISOString();
+
+      const [employeesRes, approvalsRes, ordersThisMonthRes, ordersPrevMonthRes, codeChangesRes, feedersRes, merchantsRes] = await Promise.all([
         supabase.from('employees').select('id, employment_status, salary'),
         supabase.from('ceo_financial_approvals').select('id, status, amount'),
-        supabase.from('orders').select('id, total_amount, created_at').gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
-        supabase.from('code_change_requests').select('id, status', { count: 'exact', head: true }).eq('status', 'pending')
+        supabase.from('orders').select('id, total_amount').gte('created_at', thisMonthStart),
+        supabase.from('orders').select('id, total_amount').gte('created_at', prevMonthStart).lte('created_at', prevMonthEnd),
+        supabase.from('code_change_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('craver_applications').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+        supabase.from('merchants').select('id', { count: 'exact', head: true }).eq('is_active', true),
       ]);
 
       const employees = employeesRes.data || [];
@@ -330,60 +258,55 @@ const CEOPortal: React.FC = () => {
       const approvals = approvalsRes.data || [];
       const pendingApprovals = approvals.filter(a => a.status === 'pending');
       
-      const orders = ordersRes.data || [];
-      const monthlyRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+      const thisMonthOrders = ordersThisMonthRes.data || [];
+      const prevMonthOrders = ordersPrevMonthRes.data || [];
+      const monthlyRevenue = thisMonthOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+      const prevMonthRevenue = prevMonthOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+      
+      const revenueGrowth = prevMonthRevenue > 0
+        ? ((monthlyRevenue - prevMonthRevenue) / prevMonthRevenue) * 100
+        : 0;
 
+      const feedersCount = feedersRes.count || 0;
+      const merchantsCount = merchantsRes.count || 0;
       const pendingCodeChanges = codeChangesRes.count || 0;
+      const monthlyBurn = totalPayroll / 12;
+      const netCashFlow = monthlyRevenue - monthlyBurn;
 
       setMetrics({
         totalRevenue: monthlyRevenue,
-        revenueGrowth: 15.2, // Calculate from historical data
-        cashFlow: monthlyRevenue * 0.35, // Estimated
-        burnRate: totalPayroll / 12,
-        runway: monthlyRevenue > 0 ? Math.floor((monthlyRevenue * 0.35) / (totalPayroll / 12)) : 0,
+        prevMonthRevenue,
+        revenueGrowth,
+        cashFlow: netCashFlow,
+        burnRate: monthlyBurn,
+        runway: monthlyBurn > 0 ? Math.floor(netCashFlow > 0 ? (netCashFlow * 6) / monthlyBurn : 0) : 0,
         totalEmployees: employees.length,
-        admins: activeEmployees.length,
-        feeders: 0, // From feeders table when available
-        merchants: 0, // From merchants table when available
+        activeEmployees: activeEmployees.length,
+        feeders: feedersCount,
+        merchants: merchantsCount,
         pendingApprovals: pendingApprovals.length,
-        pendingCodeChanges: pendingCodeChanges,
+        pendingCodeChanges,
         criticalAlerts: 0,
+        totalOrders: thisMonthOrders.length,
+        prevMonthOrders: prevMonthOrders.length,
       });
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Error fetching CEO metrics:', error);
-      // Fallback to defaults if error
       setMetrics({
-        totalRevenue: 0,
-        revenueGrowth: 0,
-        cashFlow: 0,
-        burnRate: 0,
-        runway: 0,
-        totalEmployees: 0,
-        admins: 0,
-        feeders: 0,
-        merchants: 0,
-        pendingApprovals: 0,
-        pendingCodeChanges: 0,
-        criticalAlerts: 0,
+        totalRevenue: 0, prevMonthRevenue: 0, revenueGrowth: 0, cashFlow: 0, burnRate: 0,
+        runway: 0, totalEmployees: 0, activeEmployees: 0, feeders: 0, merchants: 0,
+        pendingApprovals: 0, pendingCodeChanges: 0, criticalAlerts: 0, totalOrders: 0, prevMonthOrders: 0,
       });
     }
   };
 
   if (loading) {
     return (
-      <Box
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          background: 'linear-gradient(to bottom right, #0f172a, #1e293b)',
-        }}
-      >
-        <Stack align="center" gap="md">
-          <Loader size="xl" color="blue" />
-          <Text c="white" size="lg">Verifying access...</Text>
+      <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0f172a' }}>
+        <Stack align="center" gap="sm">
+          <Loader size="lg" color="orange" />
+          <Text c="white" size="sm">Verifying access...</Text>
         </Stack>
       </Box>
     );
@@ -391,46 +314,99 @@ const CEOPortal: React.FC = () => {
 
   if (!isAuthorized) {
     return (
-      <Box
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          background: 'linear-gradient(to bottom right, #0f172a, #1e293b)',
-          padding: '1rem',
-        }}
-      >
-        <Card w="100%" maw={500} p="xl">
+      <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0f172a', padding: '1rem' }}>
+        <Paper p="xl" radius="md" w="100%" maw={420} shadow="xl">
           <Stack gap="md" align="center">
-            <Title order={2} c="red" ta="center" fw={700}>
-              Access Denied
-            </Title>
-            <Text size="lg" ta="center">You don't have CEO access to this portal.</Text>
-            <Text size="sm" c="dimmed" ta="center">
-              This portal is restricted to the Chief Executive Officer only.
-            </Text>
-            <Text size="xs" c="dimmed" ta="center">
-              Logged in as: <Text component="span" fw={600}>{user?.email}</Text>
-            </Text>
-            <Group gap="md" mt="md" w="100%">
-              <Button variant="default" onClick={() => navigate('/')} style={{ flex: 1 }}>
-                Go Home
-              </Button>
-              <Button color="red" onClick={signOut} style={{ flex: 1 }}>
-                Sign Out
-              </Button>
+            <IconShield size={40} color="#dc2626" />
+            <Title order={3} ta="center">Access Denied</Title>
+            <Text size="sm" ta="center" c="dimmed">This portal is restricted to the Chief Executive Officer.</Text>
+            <Text size="xs" c="dimmed">Logged in as: <Text component="span" fw={600}>{user?.email}</Text></Text>
+            <Group gap="sm" w="100%">
+              <Button variant="default" onClick={() => navigate('/')} style={{ flex: 1 }} size="sm">Home</Button>
+              <Button color="red" onClick={signOut} style={{ flex: 1 }} size="sm">Sign Out</Button>
             </Group>
           </Stack>
-        </Card>
+        </Paper>
       </Box>
     );
   }
 
+  const growthDirection = (metrics?.revenueGrowth ?? 0) >= 0;
+  const orderGrowth = (metrics?.prevMonthOrders ?? 0) > 0
+    ? (((metrics?.totalOrders ?? 0) - (metrics?.prevMonthOrders ?? 0)) / (metrics?.prevMonthOrders ?? 1)) * 100
+    : 0;
+
+  const metricCards = [
+    {
+      label: 'Revenue (MTD)',
+      value: formatCurrency(metrics?.totalRevenue ?? 0),
+      sub: `${growthDirection ? '+' : ''}${(metrics?.revenueGrowth ?? 0).toFixed(1)}% vs last month`,
+      icon: IconCurrencyDollar,
+      color: '#ff6e00',
+      trend: growthDirection,
+    },
+    {
+      label: 'Net Cash Flow',
+      value: formatCurrency(metrics?.cashFlow ?? 0),
+      sub: `Burn: ${formatCurrency(metrics?.burnRate ?? 0)}/mo`,
+      icon: IconTrendingUp,
+      color: (metrics?.cashFlow ?? 0) >= 0 ? '#059669' : '#dc2626',
+      trend: (metrics?.cashFlow ?? 0) >= 0,
+    },
+    {
+      label: 'Orders (MTD)',
+      value: (metrics?.totalOrders ?? 0).toLocaleString(),
+      sub: `${orderGrowth >= 0 ? '+' : ''}${orderGrowth.toFixed(1)}% vs last month`,
+      icon: IconChartBar,
+      color: '#3b82f6',
+      trend: orderGrowth >= 0,
+    },
+    {
+      label: 'Headcount',
+      value: (metrics?.totalEmployees ?? 0).toString(),
+      sub: `${metrics?.activeEmployees ?? 0} active`,
+      icon: IconUsers,
+      color: '#8b5cf6',
+      trend: true,
+    },
+    {
+      label: 'Active Feeders',
+      value: (metrics?.feeders ?? 0).toLocaleString(),
+      sub: 'Approved drivers',
+      icon: IconCar,
+      color: '#f59e0b',
+      trend: true,
+    },
+    {
+      label: 'Merchants',
+      value: (metrics?.merchants ?? 0).toLocaleString(),
+      sub: 'Active partners',
+      icon: IconBuildingStore,
+      color: '#06b6d4',
+      trend: true,
+    },
+    {
+      label: 'Pending Approvals',
+      value: (metrics?.pendingApprovals ?? 0).toString(),
+      sub: 'Awaiting CEO action',
+      icon: IconClock,
+      color: (metrics?.pendingApprovals ?? 0) > 0 ? '#dc2626' : '#059669',
+      trend: (metrics?.pendingApprovals ?? 0) === 0,
+    },
+    {
+      label: 'Code Changes',
+      value: (metrics?.pendingCodeChanges ?? 0).toString(),
+      sub: 'Pending review',
+      icon: IconCode,
+      color: (metrics?.pendingCodeChanges ?? 0) > 0 ? '#f59e0b' : '#059669',
+      trend: (metrics?.pendingCodeChanges ?? 0) === 0,
+    },
+  ];
+
   return (
     <ExecutivePortalLayout
       title="CEO Portal"
-      subtitle="Executive leadership command center"
+      subtitle="Executive Command Center"
       navItems={navItems}
       activeItemId={activeTab}
       onSelect={setActiveTab}
@@ -444,125 +420,87 @@ const CEOPortal: React.FC = () => {
       }}
     >
       <Stack gap="md">
+        {/* Critical Alerts Banner */}
         {metrics?.criticalAlerts && metrics.criticalAlerts > 0 && (
-          <Alert
-            title={`${metrics.criticalAlerts} Critical Alert${metrics.criticalAlerts > 1 ? 's' : ''}`}
-            color="red"
-            icon={<IconAlertTriangle size={16} />}
-            styles={{
-              root: {
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              },
-            }}
-          >
+          <Alert title={`${metrics.criticalAlerts} Critical Alert${metrics.criticalAlerts > 1 ? 's' : ''}`} color="red" icon={<IconAlertTriangle size={16} />}>
             <Group justify="space-between" align="center" w="100%">
-              <Text>Immediate action required. Click to view details.</Text>
-              <Button size="sm" color="red" onClick={() => setActiveTab('emergency')}>
-                View Now
-              </Button>
+              <Text size="sm">Immediate action required.</Text>
+              <Button size="xs" color="red" onClick={() => setActiveTab('emergency')}>View Now</Button>
             </Group>
           </Alert>
         )}
 
-        <Stack gap="md">
-          <Group justify="space-between" wrap="wrap" gap="md">
-            <Title order={3}>Company Health</Title>
-            <Badge color="blue" variant="light">
-              Last updated: {lastUpdated.toLocaleTimeString()}
-            </Badge>
+        {/* Compact Metrics Grid */}
+        <Box>
+          <Group justify="space-between" mb="xs">
+            <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: '0.05em' }}>
+              Company Health
+            </Text>
+            <Tooltip label={`Last updated: ${lastUpdated.toLocaleTimeString()}`}>
+              <Badge size="xs" variant="light" color="gray" style={{ cursor: 'default' }}>
+                <Group gap={4}>
+                  <IconClock size={10} />
+                  {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Group>
+              </Badge>
+            </Tooltip>
           </Group>
-          <Grid gutter="md">
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <Paper bg="#ff6e00" p="md" h="100%" style={{ borderRadius: '8px' }}>
-                <Stack gap="xs">
-                  <Text c="white" fw={600} size="sm">Monthly Revenue</Text>
-                  <Text c="white" size="xl" fw={700} style={{ fontSize: '24px' }}>
-                    {formatCurrency(metrics?.totalRevenue ?? 0)}
-                  </Text>
-                  <Text c="rgba(255, 255, 255, 0.9)" size="xs" mt="xs">
-                    Revenue Growth: {metrics?.revenueGrowth ?? 0}%
-                  </Text>
-                </Stack>
-              </Paper>
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <Paper bg="#ff6e00" p="md" h="100%" style={{ borderRadius: '8px' }}>
-                <Stack gap="xs">
-                  <Text c="white" fw={600} size="sm">Cash Flow</Text>
-                  <Text c="white" size="xl" fw={700} style={{ fontSize: '24px' }}>
-                    {formatCurrency(metrics?.cashFlow ?? 0)}
-                  </Text>
-                  <Text c="rgba(255, 255, 255, 0.9)" size="xs" mt="xs">
-                    Burn Rate {(metrics?.burnRate ?? 0).toLocaleString()}
-                  </Text>
-                </Stack>
-              </Paper>
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <Paper bg="#ff6e00" p="md" h="100%" style={{ borderRadius: '8px' }}>
-                <Stack gap="xs">
-                  <Text c="white" fw={600} size="sm">Runway</Text>
-                  <Text c="white" size="xl" fw={700} style={{ fontSize: '24px' }}>
-                    {metrics?.runway ?? 0} mo
-                  </Text>
-                  <Text c="rgba(255, 255, 255, 0.9)" size="xs" mt="xs">
-                    Admin Staff: {metrics?.admins ?? 0}
-                  </Text>
-                </Stack>
-              </Paper>
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <Paper bg="#ff6e00" p="md" h="100%" style={{ borderRadius: '8px' }}>
-                <Stack gap="xs">
-                  <Text c="white" fw={600} size="sm">Headcount</Text>
-                  <Text c="white" size="xl" fw={700} style={{ fontSize: '24px' }}>
-                    {metrics?.totalEmployees ?? 0}
-                  </Text>
-                  <Text c="rgba(255, 255, 255, 0.9)" size="xs" mt="xs">
-                    Admins: {metrics?.admins ?? 0} • Feeders: {metrics?.feeders ?? 0}
-                  </Text>
-                </Stack>
-              </Paper>
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <Paper bg="#ff6e00" p="md" h="100%" style={{ borderRadius: '8px' }}>
-                <Stack gap="xs">
-                  <Text c="white" fw={600} size="sm">Pending Approvals</Text>
-                  <Text c="white" size="xl" fw={700} style={{ fontSize: '24px' }}>
-                    {metrics?.pendingApprovals ?? 0}
-                  </Text>
-                  <Text c="rgba(255, 255, 255, 0.9)" size="xs" mt="xs">
-                    Requires your attention
-                  </Text>
-                </Stack>
-              </Paper>
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <Paper bg="#ff6e00" p="md" h="100%" style={{ borderRadius: '8px' }}>
-                <Stack gap="xs">
-                  <Text c="white" fw={600} size="sm">Merchants</Text>
-                  <Text c="white" size="xl" fw={700} style={{ fontSize: '24px' }}>
-                    {metrics?.merchants ?? 0}
-                  </Text>
-                  <Text c="rgba(255, 255, 255, 0.9)" size="xs" mt="xs">Active partners</Text>
-                </Stack>
-              </Paper>
-            </Grid.Col>
-          </Grid>
-        </Stack>
 
+          <SimpleGrid cols={{ base: 2, sm: 4, lg: 8 }} spacing="xs">
+            {metricCards.map((card, i) => {
+              const Icon = card.icon;
+              return (
+                <Paper
+                  key={i}
+                  p="xs"
+                  radius="md"
+                  style={{
+                    border: '1px solid #e5e7eb',
+                    background: 'white',
+                    cursor: 'default',
+                    transition: 'box-shadow 150ms',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <Group gap={6} mb={4}>
+                    <Box
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 6,
+                        backgroundColor: `${card.color}15`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Icon size={14} color={card.color} />
+                    </Box>
+                    {card.trend ? (
+                      <IconArrowUp size={12} color="#059669" />
+                    ) : (
+                      <IconArrowDown size={12} color="#dc2626" />
+                    )}
+                  </Group>
+                  <Text fw={700} size="lg" lh={1} mb={2} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    {card.value}
+                  </Text>
+                  <Text size="xs" c="dimmed" lh={1.2} fw={500}>{card.label}</Text>
+                  <Text size="xs" c="dimmed" lh={1.2} mt={2} style={{ opacity: 0.7 }}>{card.sub}</Text>
+                </Paper>
+              );
+            })}
+          </SimpleGrid>
+        </Box>
+
+        {/* Module Content */}
         <Suspense fallback={<ModuleLoader />}>
-          <Stack gap="xl">{renderContent()}</Stack>
+          {renderContent()}
         </Suspense>
-
-        <Divider />
-
       </Stack>
     </ExecutivePortalLayout>
   );
 };
  
 export default CEOPortal;
-
