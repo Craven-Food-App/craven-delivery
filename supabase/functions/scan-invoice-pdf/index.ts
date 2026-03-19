@@ -216,16 +216,10 @@ If not present, return empty string for text and 0 for numbers.`,
       if (!response.ok) {
         const errText = await response.text();
         if (response.status === 429) {
-          return new Response(
-            JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }),
-            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          throw new Error("AI_RATE_LIMIT_429");
         }
         if (response.status === 402) {
-          return new Response(
-            JSON.stringify({ error: "AI credits exhausted. Please add funds in Settings > Workspace > Usage." }),
-            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          throw new Error("AI_CREDITS_402");
         }
         throw new Error(`AI API error: ${response.status} :: ${errText}`);
       }
