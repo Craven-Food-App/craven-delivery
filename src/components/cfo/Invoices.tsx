@@ -92,6 +92,12 @@ export const Invoices: React.FC = () => {
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [parsingPdf, setParsingPdf] = useState(false);
 
+  // Bulk upload
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkFiles, setBulkFiles] = useState<File[]>([]);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number; results: Array<{ file: string; status: 'success' | 'error'; message: string; invoice_id?: string }> }>({ current: 0, total: 0, results: [] });
+
   // Record Payment
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
