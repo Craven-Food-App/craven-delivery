@@ -483,7 +483,6 @@ If not present, return empty string for text and 0 for numbers.`,
           due_date: dueDate,
           amount: amt,
           tax_amount: tax,
-          total_amount: total,
           currency: extracted.currency || "USD",
           line_items:
             extracted.line_items.length > 0
@@ -492,8 +491,8 @@ If not present, return empty string for text and 0 for numbers.`,
                   {
                     description: "Invoice total",
                     quantity: 1,
-                    unit_price: total,
-                    amount: total,
+                    unit_price: amt + tax,
+                    amount: amt + tax,
                   },
                 ],
           invoice_file_url: publicUrl,
