@@ -424,7 +424,7 @@ export const Invoices: React.FC = () => {
         expense_category_id: formData.expense_category_id || null,
         line_items: formData.line_items.length > 0 ? formData.line_items : [{ description: 'Line item', quantity: 1, unit_price: amt, amount: amt }],
         notes: formData.notes || null,
-        status: formData.status || 'draft',
+        status: formData.status || 'pending',
       };
       if (fileUrl) payload.invoice_file_url = fileUrl;
 
