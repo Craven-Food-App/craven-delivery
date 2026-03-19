@@ -289,6 +289,84 @@ export const Invoices: React.FC = () => {
     }
   };
 
+  // ── AI Scan & Bulk Upload ──────────────────────────────────────
+
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result.split(',')[1]); // strip data:...;base64, prefix
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleBulkUpload = async () => {
+    if (bulkFiles.length === 0) return;
+    setBulkProcessing(true);
+    setBulkProgress({ current: 0, total: bulkFiles.length, results: [] });
+
+    const results: typeof bulkProgress.results = [];
+
+    for (let i = 0; i < bulkFiles.length; i++) {
+      const file = bulkFiles[i];
+      setBulkProgress(prev => ({ ...prev, current: i + 1 }));
+
+      try {
+        const base64 = await fileToBase64(file);
+        const { data, error } = await supabase.functions.invoke('scan-invoice-pdf', {
+          body: {
+            file_base64: base64,
+            file_name: file.name,
+            content_type: file.type,
+            auto_create: true,
+          },
+        });
+
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        const vendorName = data?.extracted?.vendor_name || 'Unknown';
+        const totalAmt = data?.extracted?.total_amount || 0;
+        results.push({
+          file: file.name,
+          status: 'success',
+          message: `${vendorName} — $${Number(totalAmt).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+          invoice_id: data?.invoice_id,
+        });
+      } catch (err: any) {
+        console.error(`Error processing ${file.name}:`, err);
+        results.push({
+          file: file.name,
+          status: 'error',
+          message: err.message || 'Scan failed',
+        });
+      }
+
+      setBulkProgress(prev => ({ ...prev, results: [...results] }));
+    }
+
+    setBulkProcessing(false);
+    const successCount = results.filter(r => r.status === 'success').length;
+    notifications.show({
+      title: 'Bulk Upload Complete',
+      message: `${successCount} of ${bulkFiles.length} invoices scanned and created successfully.`,
+      color: successCount === bulkFiles.length ? 'green' : 'orange',
+      autoClose: 5000,
+    });
+    fetchInvoices();
+  };
+
+  const handleBulkFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setBulkFiles(prev => [...prev, ...files]);
+  };
+
+  const removeBulkFile = (index: number) => {
+    setBulkFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   // ── Upload File to Storage ─────────────────────────────────────
 
   const uploadInvoiceFile = async (): Promise<string | null> => {
