@@ -41,6 +41,7 @@ interface Application {
   created_at: string;
   reviewer_notes: string | null;
   ssn_last_four: string | null;
+  is_seeded?: boolean;
 }
 
 type FilterTab = 'needs_review' | 'approved' | 'rejected' | 'all';
