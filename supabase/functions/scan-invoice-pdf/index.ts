@@ -108,37 +108,21 @@ serve(async (req) => {
       data: { publicUrl },
     } = supabase.storage.from("documents").getPublicUrl(storagePath);
 
-    // Call OpenAI Vision to extract invoice data
+    // Call AI Vision to extract invoice data
     console.log(`Scanning invoice: ${file_name}`);
 
     const isPdf = (content_type || "").includes("pdf");
-    
-    // For PDFs, we use the file URL approach; for images, we use base64
+
     const userContent: any[] = [
       {
         type: "text",
-        text: `Extract all invoice data from this document. Return a JSON object with these exact fields:
-{
-  "vendor_name": "Company name of the vendor/supplier",
-  "vendor_email": "Vendor email if visible",
-  "vendor_address": "Full vendor address if visible",
-  "invoice_number": "The invoice number/ID",
-  "invoice_date": "YYYY-MM-DD format",
-  "due_date": "YYYY-MM-DD format, or estimate Net 30 from invoice date",
-  "subtotal": numeric subtotal before tax,
-  "tax_amount": numeric tax amount,
-  "total_amount": numeric total amount due,
-  "currency": "USD" or detected currency code,
-  "line_items": [{"description": "item desc", "quantity": 1, "unit_price": 100.00, "amount": 100.00}],
-  "notes": "Any additional notes, PO numbers, or payment instructions"
-}
-Return ONLY the JSON object, no markdown or extra text.`,
+        text: `Extract invoice fields from this document.
+Return: vendor_name, vendor_email, vendor_address, invoice_number, invoice_date (YYYY-MM-DD), due_date (YYYY-MM-DD), subtotal, tax_amount, total_amount, currency, line_items (description, quantity, unit_price, amount), notes.
+If not present, return empty string for text and 0 for numbers.`,
       },
     ];
 
-    // Use image_url format with data URI for both PDFs and images
-    // This is compatible with both OpenAI and the Lovable AI Gateway (Gemini)
-    const mimeType = isPdf ? "application/pdf" : (content_type || "image/png");
+    const mimeType = isPdf ? "application/pdf" : content_type || "image/png";
     userContent.push({
       type: "image_url",
       image_url: {
@@ -152,29 +136,99 @@ Return ONLY the JSON object, no markdown or extra text.`,
 
     const aiModel = useGateway ? "google/gemini-2.5-pro" : "gpt-4o";
 
-    const aiResponse = await fetch(aiEndpoint, {
+    const invoiceSchema = {
+      name: "extract_invoice_data",
+      description: "Extract structured invoice data from a PDF or image",
+      parameters: {
+        type: "object",
+        properties: {
+          vendor_name: { type: "string" },
+          vendor_email: { type: "string" },
+          vendor_address: { type: "string" },
+          invoice_number: { type: "string" },
+          invoice_date: { type: "string" },
+          due_date: { type: "string" },
+          subtotal: { type: "number" },
+          tax_amount: { type: "number" },
+          total_amount: { type: "number" },
+          currency: { type: "string" },
+          line_items: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                description: { type: "string" },
+                quantity: { type: "number" },
+                unit_price: { type: "number" },
+                amount: { type: "number" },
+              },
+              required: ["description", "quantity", "unit_price", "amount"],
+              additionalProperties: false,
+            },
+          },
+          notes: { type: "string" },
+        },
+        required: [
+          "vendor_name",
+          "vendor_email",
+          "vendor_address",
+          "invoice_number",
+          "invoice_date",
+          "due_date",
+          "subtotal",
+          "tax_amount",
+          "total_amount",
+          "currency",
+          "line_items",
+          "notes",
+        ],
+        additionalProperties: false,
+      },
+    };
+
+    const basePayload = {
+      model: aiModel,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert invoice data extractor. Return accurate structured data. Use YYYY-MM-DD for dates.",
+        },
+        {
+          role: "user",
+          content: userContent,
+        },
+      ],
+      max_tokens: 2000,
+      temperature: 0,
+    };
+
+    let aiResponse = await fetch(aiEndpoint, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: aiModel,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an expert invoice data extractor. Extract all structured data from invoice documents. Always return valid JSON. Use YYYY-MM-DD for dates. Use numbers (not strings) for amounts. If a field is not found, use empty string for text fields and 0 for numeric fields.",
-          },
-          {
-            role: "user",
-            content: userContent,
-          },
-        ],
-        max_tokens: 4000,
-        temperature: 0,
+        ...basePayload,
+        tools: [{ type: "function", function: invoiceSchema }],
+        tool_choice: { type: "function", function: { name: "extract_invoice_data" } },
       }),
     });
+
+    if (!aiResponse.ok && aiResponse.status === 400) {
+      const firstErrorText = await aiResponse.text();
+      console.warn("Tool-call payload rejected; retrying without tools:", firstErrorText);
+
+      aiResponse = await fetch(aiEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(basePayload),
+      });
+    }
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
@@ -195,32 +249,96 @@ Return ONLY the JSON object, no markdown or extra text.`,
     }
 
     const aiData = await aiResponse.json();
-    const rawContent = aiData.choices?.[0]?.message?.content || "{}";
 
-    // Parse the JSON response (strip markdown code blocks if present)
-    let cleaned = rawContent.trim();
-    if (cleaned.startsWith("```")) {
-      cleaned = cleaned.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
-    }
+    const parseJsonCandidate = (candidate: unknown): Record<string, any> | null => {
+      if (typeof candidate !== "string") return null;
+      const direct = candidate.trim();
+      const normalized = direct.startsWith("```")
+        ? direct.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "")
+        : direct;
+
+      const attempts = [normalized];
+      const firstBrace = normalized.indexOf("{");
+      const lastBrace = normalized.lastIndexOf("}");
+      if (firstBrace >= 0 && lastBrace > firstBrace) {
+        attempts.push(normalized.slice(firstBrace, lastBrace + 1));
+      }
+
+      for (const text of attempts) {
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed && typeof parsed === "object") return parsed as Record<string, any>;
+        } catch {
+          // Continue trying best-effort parse candidates
+        }
+      }
+
+      return null;
+    };
+
+    const toNumber = (value: unknown): number => {
+      const num = typeof value === "number" ? value : Number(value);
+      return Number.isFinite(num) ? num : 0;
+    };
+
+    const normalizeDate = (value: unknown, fallback: string): string => {
+      if (typeof value !== "string") return fallback;
+      const trimmed = value.trim();
+      return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed : fallback;
+    };
+
+    const today = new Date().toISOString().split("T")[0];
+
+    const defaultExtracted: ExtractedInvoice = {
+      vendor_name: "",
+      vendor_email: "",
+      vendor_address: "",
+      invoice_number: "",
+      invoice_date: today,
+      due_date: "",
+      subtotal: 0,
+      tax_amount: 0,
+      total_amount: 0,
+      currency: "USD",
+      line_items: [],
+      notes: "AI extraction failed — manual entry required",
+    };
+
+    const toolArguments = aiData?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+    const messageContent = aiData?.choices?.[0]?.message?.content;
+
+    const parsedFromTools = parseJsonCandidate(toolArguments);
+    const parsedFromContent = parseJsonCandidate(
+      typeof messageContent === "string" ? messageContent : JSON.stringify(messageContent ?? "")
+    );
+
+    const raw = parsedFromTools || parsedFromContent;
 
     let extracted: ExtractedInvoice;
-    try {
-      extracted = JSON.parse(cleaned);
-    } catch {
-      console.error("Failed to parse OpenAI response:", cleaned);
+    if (!raw) {
+      console.error("Failed to parse AI response:", JSON.stringify(aiData));
+      extracted = defaultExtracted;
+    } else {
       extracted = {
-        vendor_name: "",
-        vendor_email: "",
-        vendor_address: "",
-        invoice_number: "",
-        invoice_date: new Date().toISOString().split("T")[0],
-        due_date: "",
-        subtotal: 0,
-        tax_amount: 0,
-        total_amount: 0,
-        currency: "USD",
-        line_items: [],
-        notes: "AI extraction failed — manual entry required",
+        vendor_name: typeof raw.vendor_name === "string" ? raw.vendor_name.trim() : "",
+        vendor_email: typeof raw.vendor_email === "string" ? raw.vendor_email.trim() : "",
+        vendor_address: typeof raw.vendor_address === "string" ? raw.vendor_address.trim() : "",
+        invoice_number: typeof raw.invoice_number === "string" ? raw.invoice_number.trim() : "",
+        invoice_date: normalizeDate(raw.invoice_date, today),
+        due_date: normalizeDate(raw.due_date, ""),
+        subtotal: toNumber(raw.subtotal),
+        tax_amount: toNumber(raw.tax_amount),
+        total_amount: toNumber(raw.total_amount),
+        currency: typeof raw.currency === "string" && raw.currency.trim() ? raw.currency.trim() : "USD",
+        line_items: Array.isArray(raw.line_items)
+          ? raw.line_items.map((item: any) => ({
+              description: typeof item?.description === "string" ? item.description : "",
+              quantity: toNumber(item?.quantity),
+              unit_price: toNumber(item?.unit_price),
+              amount: toNumber(item?.amount),
+            }))
+          : [],
+        notes: typeof raw.notes === "string" ? raw.notes.trim() : "",
       };
     }
 
