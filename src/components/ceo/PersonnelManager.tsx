@@ -86,8 +86,9 @@ export const PersonnelManager: React.FC = () => {
   useEffect(() => {
     fetchEmployees();
     fetchDepartments();
+    fetchPositions();
     fetchAppointments();
-    
+
     // Check screen size
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 640);
@@ -139,6 +140,23 @@ export const PersonnelManager: React.FC = () => {
     } catch (error) {
       console.error('Error fetching departments:', error);
       message.error('Failed to load departments');
+    }
+  };
+
+  const fetchPositions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('positions')
+        .select('id, title, code, is_executive, is_active')
+        .eq('is_active', true)
+        .order('is_executive', { ascending: false })
+        .order('title', { ascending: true });
+
+      if (error) throw error;
+      setPositions(data || []);
+    } catch (error) {
+      console.error('Error fetching positions:', error);
+      message.error('Failed to load positions');
     }
   };
 
