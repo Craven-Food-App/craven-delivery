@@ -103,9 +103,10 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
           )}
         </Group>
       }
-      size="xl"
+      size={1200}
       styles={{
         body: { padding: 0 },
+        content: { maxWidth: '1200px' },
       }}
     >
       <Stack gap="md" p="md">
