@@ -34,9 +34,9 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as EnsureRegionRequest;
 
     const normalizedZip = (body.zip_code || '').replace(/[^0-9]/g, '').slice(0, 5);
-    if (!normalizedZip) {
+    if (normalizedZip.length !== 5) {
       return new Response(
-        JSON.stringify({ error: 'A valid zip_code is required' }),
+        JSON.stringify({ error: 'A valid 5-digit zip_code is required' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -44,28 +44,29 @@ Deno.serve(async (req) => {
       );
     }
 
+    const zipPrefix = normalizedZip.slice(0, 3);
     const city = (body.city || '').trim();
     const state = (body.state || '').trim();
     const regionNameFallback = `${city}${city && state ? ', ' : ''}${state}`.trim();
-    const regionName = regionNameFallback || `Region ${normalizedZip}`;
+    const regionName = regionNameFallback || `Region ${zipPrefix}`;
     const activeQuota = body.active_quota ?? 50;
     const displayQuota = body.display_quota ?? activeQuota;
 
-    // Check if a region already exists for this zip prefix
-    const { data: existingRegion, error: existingError } = await supabaseClient
+    // Prefer canonical 3-digit ZIP prefix regions first
+    const { data: prefixRegion, error: prefixError } = await supabaseClient
       .from('regions')
-      .select('id, name')
-      .eq('zip_prefix', normalizedZip)
+      .select('id, name, status')
+      .eq('zip_prefix', zipPrefix)
       .maybeSingle();
 
-    if (existingError) {
-      throw existingError;
+    if (prefixError) {
+      throw prefixError;
     }
 
-    if (existingRegion) {
+    if (prefixRegion) {
       const payload: EnsureRegionResponse = {
-        region_id: existingRegion.id,
-        region_name: existingRegion.name,
+        region_id: prefixRegion.id,
+        region_name: prefixRegion.name,
         created: false,
       };
 
@@ -75,13 +76,44 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create the region
+    // Support legacy 5-digit rows and auto-open them if still limited
+    const { data: legacyRegion, error: legacyError } = await supabaseClient
+      .from('regions')
+      .select('id, name, status')
+      .eq('zip_prefix', normalizedZip)
+      .maybeSingle();
+
+    if (legacyError) {
+      throw legacyError;
+    }
+
+    if (legacyRegion) {
+      if (legacyRegion.status !== 'active') {
+        await supabaseClient
+          .from('regions')
+          .update({ status: 'active' })
+          .eq('id', legacyRegion.id);
+      }
+
+      const payload: EnsureRegionResponse = {
+        region_id: legacyRegion.id,
+        region_name: legacyRegion.name,
+        created: false,
+      };
+
+      return new Response(
+        JSON.stringify(payload),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // Create and immediately open the region for this ZIP prefix
     const { data: insertedRegion, error: insertError } = await supabaseClient
       .from('regions')
       .insert({
         name: regionName,
-        zip_prefix: normalizedZip,
-        status: 'limited',
+        zip_prefix: zipPrefix,
+        status: 'active',
         active_quota: activeQuota,
         display_quota: displayQuota,
       })
