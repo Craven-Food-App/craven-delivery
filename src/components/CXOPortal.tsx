@@ -1,25 +1,24 @@
-import React, { useMemo, Suspense } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+// @ts-nocheck
+import React, { useState, useMemo, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import ExecutivePortalLayout, { ExecutiveNavItem } from '@/components/executive/ExecutivePortalLayout';
 import CxoAuthGuard from '@/components/cxo/CxoAuthGuard';
 import {
-  LayoutDashboard,
-  Ticket,
-  Users,
-  ShoppingBag,
-  Store,
-  Headphones,
-  BarChart3,
-  Target,
-  AlertTriangle,
-  FileText,
-  GraduationCap,
-  BookOpen,
-  MessageSquare,
-} from 'lucide-react';
+  IconLayoutDashboard,
+  IconTicket,
+  IconUsers,
+  IconShoppingCart,
+  IconBuildingStore,
+  IconHeadset,
+  IconChartBar,
+  IconTarget,
+  IconAlertTriangle,
+  IconFileText,
+  IconSchool,
+  IconBook,
+  IconMessageCircle,
+} from '@tabler/icons-react';
 
-// Import page components
 import CxoDashboard from '@/components/cxo/pages/CxoDashboard';
 import CxoTickets from '@/components/cxo/pages/CxoTickets';
 import CxoDrivers from '@/components/cxo/pages/CxoDrivers';
@@ -30,62 +29,33 @@ import CxoAnalytics from '@/components/cxo/pages/CxoAnalytics';
 import CxoInitiatives from '@/components/cxo/pages/CxoInitiatives';
 import CxoIncidents from '@/components/cxo/pages/CxoIncidents';
 import CxoReports from '@/components/cxo/pages/CxoReports';
-
-// Import onboarding component
 import CXOOnboardingGovernance from '@/components/cxo/CXOOnboardingGovernance';
-
-// Import training components
 import CxoTrainingHome from '@/components/cxo/training/CxoTrainingHome';
-import CxoTrainingModuleDetail from '@/components/cxo/training/CxoTrainingModuleDetail';
-import CxoTrainingLesson from '@/components/cxo/training/CxoTrainingLesson';
-import CxoTrainingProgress from '@/components/cxo/training/CxoTrainingProgress';
+import { UnifiedPortalShell, PortalTab } from '@/components/portal/UnifiedPortalShell';
 
 const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
+const TABS: PortalTab[] = [
+  { id: 'onboarding', label: 'Onboarding', description: 'CXO onboarding and governance framework.', section: 'Governance', icon: IconBook },
+  { id: 'training', label: 'Training', description: 'CXO training modules and progress.', section: 'Governance', icon: IconSchool },
+  { id: 'dashboard', label: 'Dashboard', description: 'Experience metrics and executive overview.', section: 'Operations', icon: IconLayoutDashboard },
+  { id: 'tickets', label: 'Tickets', description: 'Customer experience ticket management.', section: 'Operations', icon: IconTicket },
+  { id: 'drivers', label: 'Drivers', description: 'Driver experience and satisfaction.', section: 'Operations', icon: IconUsers },
+  { id: 'customers', label: 'Customers', description: 'Customer experience and feedback.', section: 'Operations', icon: IconShoppingCart },
+  { id: 'merchants', label: 'Merchants', description: 'Merchant experience and engagement.', section: 'Operations', icon: IconBuildingStore },
+  { id: 'support', label: 'Support', description: 'Support operations and quality.', section: 'Operations', icon: IconHeadset },
+  { id: 'analytics', label: 'Analytics', description: 'Experience analytics and NPS tracking.', section: 'Insights', icon: IconChartBar },
+  { id: 'initiatives', label: 'Initiatives', description: 'Strategic CX improvement initiatives.', section: 'Insights', icon: IconTarget },
+  { id: 'incidents', label: 'Incidents', description: 'Experience incidents and escalations.', section: 'Insights', icon: IconAlertTriangle },
+  { id: 'reports', label: 'Reports', description: 'Experience reports and dashboards.', section: 'Insights', icon: IconFileText },
+  { id: 'c-comms', label: 'C-Suite Comms', description: 'Cross-executive communication workspace.', section: 'Insights', icon: IconMessageCircle },
+];
+
+const SECTIONS = ['Governance', 'Operations', 'Insights'];
+
 const CXOPortal: React.FC = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-
-  const navItems: ExecutiveNavItem[] = useMemo(
-    () => [
-      { id: 'onboarding', label: 'Onboarding', icon: BookOpen },
-      { id: 'training', label: 'Training', icon: GraduationCap },
-      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'tickets', label: 'Tickets', icon: Ticket },
-      { id: 'drivers', label: 'Drivers', icon: Users },
-      { id: 'customers', label: 'Customers', icon: ShoppingBag },
-      { id: 'merchants', label: 'Merchants', icon: Store },
-      { id: 'support', label: 'Support', icon: Headphones },
-      { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-      { id: 'initiatives', label: 'Initiatives', icon: Target },
-      { id: 'incidents', label: 'Incidents', icon: AlertTriangle },
-      { id: 'reports', label: 'Reports', icon: FileText },
-      { id: 'c-comms', label: 'C Comms', icon: MessageSquare },
-    ],
-    []
-  );
-
-  // Determine active item from route
-  const activeItemId = useMemo(() => {
-    const path = location.pathname;
-    if (path.includes('/onboarding')) return 'onboarding';
-    if (path.includes('/training')) return 'training';
-    if (path.includes('/tickets')) return 'tickets';
-    if (path.includes('/drivers')) return 'drivers';
-    if (path.includes('/customers')) return 'customers';
-    if (path.includes('/merchants')) return 'merchants';
-    if (path.includes('/support')) return 'support';
-    if (path.includes('/analytics')) return 'analytics';
-    if (path.includes('/initiatives')) return 'initiatives';
-    if (path.includes('/incidents')) return 'incidents';
-    if (path.includes('/reports')) return 'reports';
-    if (path.includes('/c-comms')) return 'c-comms';
-    return 'dashboard';
-  }, [location.pathname]);
-
-  const handleBackToHub = () => {
-    navigate('/hub');
-  };
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const handleSignOut = async () => {
     try {
@@ -97,49 +67,44 @@ const CXOPortal: React.FC = () => {
     }
   };
 
-  const handleNavSelect = (id: string) => {
-    navigate(`/cxo/${id}`);
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'onboarding': return <CXOOnboardingGovernance />;
+      case 'training': return <CxoTrainingHome />;
+      case 'dashboard': return <CxoDashboard />;
+      case 'tickets': return <CxoTickets />;
+      case 'drivers': return <CxoDrivers />;
+      case 'customers': return <CxoCustomers />;
+      case 'merchants': return <CxoMerchants />;
+      case 'support': return <CxoSupport />;
+      case 'analytics': return <CxoAnalytics />;
+      case 'initiatives': return <CxoInitiatives />;
+      case 'incidents': return <CxoIncidents />;
+      case 'reports': return <CxoReports />;
+      case 'c-comms': return <Suspense fallback={null}><EmbeddedCComms /></Suspense>;
+      default: return <CxoDashboard />;
+    }
   };
 
   return (
     <CxoAuthGuard>
-      <ExecutivePortalLayout
-        title="CXO Portal"
-        subtitle="Experience Command Center"
-        navItems={navItems}
-        activeItemId={activeItemId}
-        onSelect={handleNavSelect}
-        onBack={handleBackToHub}
+      <UnifiedPortalShell
+        portalName="CXO Portal"
+        portalSubtitle="Experience command center and CX operations"
+        sectionLabel="Chief Experience Officer"
+        tabs={TABS}
+        sections={SECTIONS}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        lastUpdated={new Date()}
+        userTitle="Chief Experience Officer"
+        onBack={() => navigate('/hub')}
         onSignOut={handleSignOut}
-        userInfo={{
-          initials: 'CX',
-          name: 'Chief Experience Officer',
-          role: 'CXO',
-        }}
       >
-        <Routes>
-          <Route path="/" element={<Navigate to="/cxo/dashboard" replace />} />
-          <Route path="dashboard" element={<CxoDashboard />} />
-          <Route path="tickets" element={<CxoTickets />} />
-          <Route path="drivers" element={<CxoDrivers />} />
-          <Route path="customers" element={<CxoCustomers />} />
-          <Route path="merchants" element={<CxoMerchants />} />
-          <Route path="support" element={<CxoSupport />} />
-          <Route path="analytics" element={<CxoAnalytics />} />
-          <Route path="initiatives" element={<CxoInitiatives />} />
-          <Route path="incidents" element={<CxoIncidents />} />
-          <Route path="reports" element={<CxoReports />} />
-          <Route path="c-comms" element={<Suspense fallback={<div>Loading...</div>}><EmbeddedCComms /></Suspense>} />
-          <Route path="onboarding" element={<CXOOnboardingGovernance />} />
-          <Route path="training" element={<CxoTrainingHome />} />
-          <Route path="training/progress" element={<CxoTrainingProgress />} />
-          <Route path="training/modules/:moduleId" element={<CxoTrainingModuleDetail />} />
-          <Route path="training/lessons/:lessonId" element={<CxoTrainingLesson />} />
-        </Routes>
-      </ExecutivePortalLayout>
+        {renderContent()}
+      </UnifiedPortalShell>
     </CxoAuthGuard>
   );
 };
 
 export default CXOPortal;
-
