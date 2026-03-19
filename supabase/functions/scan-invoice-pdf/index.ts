@@ -30,25 +30,43 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    // Verify JWT
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error("Supabase environment not configured");
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // Read authenticated user from JWT (verify_jwt=true enforced in config)
+    const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
+    const accessToken = authHeader?.replace(/^Bearer\s+/i, "").trim();
+
+    if (!accessToken) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authError || !user) {
+    let userId = "";
+    try {
+      const payloadPart = accessToken.split(".")[1];
+      if (!payloadPart) throw new Error("Invalid JWT payload");
+
+      const normalizedPayload = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+      const paddedPayload = normalizedPayload + "=".repeat((4 - (normalizedPayload.length % 4)) % 4);
+      const payload = JSON.parse(atob(paddedPayload));
+
+      if (payload && typeof payload.sub === "string") {
+        userId = payload.sub;
+      }
+    } catch (jwtError) {
+      console.error("Failed to decode JWT:", jwtError);
+    }
+
+    if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -90,7 +108,7 @@ serve(async (req) => {
     );
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 8);
-    const storagePath = `invoices/${user.id}/${timestamp}_${randomId}_${file_name || "invoice.pdf"}`;
+    const storagePath = `invoices/${userId}/${timestamp}_${randomId}_${file_name || "invoice.pdf"}`;
 
     const { error: uploadError } = await supabase.storage
       .from("documents")
@@ -111,7 +129,23 @@ serve(async (req) => {
     // Call AI Vision to extract invoice data
     console.log(`Scanning invoice: ${file_name}`);
 
-    const isPdf = (content_type || "").includes("pdf");
+    const normalizedContentType = (content_type || "").toLowerCase().trim();
+    const lowerFileName = (file_name || "").toLowerCase();
+    const looksLikePdf = cleanBase64.startsWith("JVBERi0");
+    const isPdf =
+      normalizedContentType.includes("pdf") ||
+      lowerFileName.endsWith(".pdf") ||
+      looksLikePdf;
+
+    const inferredImageType =
+      normalizedContentType ||
+      (lowerFileName.endsWith(".jpg") || lowerFileName.endsWith(".jpeg")
+        ? "image/jpeg"
+        : lowerFileName.endsWith(".webp")
+          ? "image/webp"
+          : lowerFileName.endsWith(".gif")
+            ? "image/gif"
+            : "image/png");
 
     const userContent: any[] = [
       {
@@ -122,7 +156,7 @@ If not present, return empty string for text and 0 for numbers.`,
       },
     ];
 
-    const mimeType = isPdf ? "application/pdf" : content_type || "image/png";
+    const mimeType = isPdf ? "application/pdf" : inferredImageType;
     userContent.push({
       type: "image_url",
       image_url: {
@@ -134,7 +168,7 @@ If not present, return empty string for text and 0 for numbers.`,
       ? "https://ai.gateway.lovable.dev/v1/chat/completions"
       : "https://api.openai.com/v1/chat/completions";
 
-    const aiModel = useGateway ? "google/gemini-2.5-flash" : "gpt-4o";
+    const aiModel = useGateway ? "google/gemini-2.5-pro" : "gpt-4o";
 
     const invoiceSchema = {
       name: "extract_invoice_data",
@@ -231,7 +265,43 @@ If not present, return empty string for text and 0 for numbers.`,
       if (!candidate) return null;
 
       if (typeof candidate === "object" && !Array.isArray(candidate)) {
-        return candidate as Record<string, any>;
+        const record = candidate as Record<string, unknown>;
+
+        if (typeof record.text === "string") {
+          const parsedFromText = parseJsonCandidate(record.text);
+          if (parsedFromText) return parsedFromText;
+        }
+
+        if (typeof record.content === "string") {
+          const parsedFromContent = parseJsonCandidate(record.content);
+          if (parsedFromContent) return parsedFromContent;
+        }
+
+        if (typeof record.arguments === "string") {
+          const parsedFromArguments = parseJsonCandidate(record.arguments);
+          if (parsedFromArguments) return parsedFromArguments;
+        }
+
+        const invoiceKeys = [
+          "vendor_name",
+          "vendor_email",
+          "vendor_address",
+          "invoice_number",
+          "invoice_date",
+          "due_date",
+          "subtotal",
+          "tax_amount",
+          "total_amount",
+          "currency",
+          "line_items",
+          "notes",
+        ];
+
+        if (invoiceKeys.some((key) => key in record)) {
+          return record as Record<string, any>;
+        }
+
+        return null;
       }
 
       if (Array.isArray(candidate)) {

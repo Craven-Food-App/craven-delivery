@@ -218,4 +218,4 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.scan-invoice-pdf]
-verify_jwt = false
+verify_jwt = true
