@@ -34,9 +34,9 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as EnsureRegionRequest;
 
     const normalizedZip = (body.zip_code || '').replace(/[^0-9]/g, '').slice(0, 5);
-    if (!normalizedZip) {
+    if (normalizedZip.length !== 5) {
       return new Response(
-        JSON.stringify({ error: 'A valid zip_code is required' }),
+        JSON.stringify({ error: 'A valid 5-digit zip_code is required' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -44,23 +44,27 @@ Deno.serve(async (req) => {
       );
     }
 
+    const zipPrefix = normalizedZip.slice(0, 3);
     const city = (body.city || '').trim();
     const state = (body.state || '').trim();
     const regionNameFallback = `${city}${city && state ? ', ' : ''}${state}`.trim();
-    const regionName = regionNameFallback || `Region ${normalizedZip}`;
+    const regionName = regionNameFallback || `Region ${zipPrefix}`;
     const activeQuota = body.active_quota ?? 50;
     const displayQuota = body.display_quota ?? activeQuota;
 
-    // Check if a region already exists for this zip prefix
-    const { data: existingRegion, error: existingError } = await supabaseClient
+    // Check if a region already exists for this ZIP (supports legacy 5-digit rows + new 3-digit prefix rows)
+    const { data: existingRegions, error: existingError } = await supabaseClient
       .from('regions')
-      .select('id, name')
-      .eq('zip_prefix', normalizedZip)
-      .maybeSingle();
+      .select('id, name, zip_prefix')
+      .in('zip_prefix', [zipPrefix, normalizedZip])
+      .order('created_at', { ascending: true })
+      .limit(1);
 
     if (existingError) {
       throw existingError;
     }
+
+    const existingRegion = existingRegions?.[0] ?? null;
 
     if (existingRegion) {
       const payload: EnsureRegionResponse = {
@@ -75,13 +79,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create the region
+    // Create and immediately open the region for this ZIP prefix
     const { data: insertedRegion, error: insertError } = await supabaseClient
       .from('regions')
       .insert({
         name: regionName,
-        zip_prefix: normalizedZip,
-        status: 'limited',
+        zip_prefix: zipPrefix,
+        status: 'active',
         active_quota: activeQuota,
         display_quota: displayQuota,
       })

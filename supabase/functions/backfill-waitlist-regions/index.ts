@@ -60,8 +60,9 @@ Deno.serve(async (req) => {
 
     for (const app of applications) {
       const normalizedZip = (app.zip_code || '').replace(/[^0-9]/g, '').slice(0, 5);
+      const zipPrefix = normalizedZip.slice(0, 3);
 
-      if (!normalizedZip) {
+      if (normalizedZip.length !== 5 || !zipPrefix) {
         summary.skipped += 1;
         continue;
       }
@@ -72,27 +73,28 @@ Deno.serve(async (req) => {
         const city = (app.city || '').trim();
         const state = (app.state || '').trim();
         const regionNameFallback = `${city}${city && state ? ', ' : ''}${state}`.trim();
-        const regionName = regionNameFallback || `Region ${normalizedZip}`;
+        const regionName = regionNameFallback || `Region ${zipPrefix}`;
 
-        const { data: existingRegion, error: lookupError } = await supabaseClient
+        const { data: existingRegions, error: lookupError } = await supabaseClient
           .from('regions')
-          .select('id, name')
-          .eq('zip_prefix', normalizedZip)
-          .maybeSingle();
+          .select('id, name, zip_prefix')
+          .in('zip_prefix', [zipPrefix, normalizedZip])
+          .order('created_at', { ascending: true })
+          .limit(1);
 
         if (lookupError) {
           throw lookupError;
         }
 
-        let regionId = existingRegion?.id ?? null;
+        let regionId = existingRegions?.[0]?.id ?? null;
 
         if (!regionId) {
           const { data: insertedRegion, error: insertError } = await supabaseClient
             .from('regions')
             .insert({
               name: regionName,
-              zip_prefix: normalizedZip,
-              status: 'limited',
+              zip_prefix: zipPrefix,
+              status: 'active',
               active_quota: 50,
               display_quota: 50,
             })
@@ -102,17 +104,18 @@ Deno.serve(async (req) => {
           if (insertError) {
             // Handle race condition where region was created concurrently
             if (insertError.code === '23505') {
-              const { data: retryRegion, error: retryError } = await supabaseClient
+              const { data: retryRegions, error: retryError } = await supabaseClient
                 .from('regions')
                 .select('id')
-                .eq('zip_prefix', normalizedZip)
-                .maybeSingle();
+                .in('zip_prefix', [zipPrefix, normalizedZip])
+                .order('created_at', { ascending: true })
+                .limit(1);
 
               if (retryError) {
                 throw retryError;
               }
 
-              regionId = retryRegion?.id ?? null;
+              regionId = retryRegions?.[0]?.id ?? null;
             } else {
               throw insertError;
             }

@@ -276,62 +276,57 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
         userId = authData.user.id;
       }
 
-      // 2. Determine region based on ZIP
-      let regionId = null;
-      let regionName = '';
-      const { data: regionsData } = await supabase
-        .from('regions')
-        .select('id, zip_prefix, name')
-        .order('created_at');
-
-      // Find matching region by zip_prefix
-      if (regionsData && regionsData.length > 0) {
-        const matchingRegion = regionsData.find(r => 
-          r.zip_prefix && values.zip.startsWith(r.zip_prefix)
-        );
-        if (matchingRegion) {
-          regionId = matchingRegion.id;
-          regionName = matchingRegion.name || '';
-        }
+      // 2. Resolve city/state from the user-entered ZIP (authoritative source)
+      const normalizedZip = values.zip.replace(/[^0-9]/g, '').slice(0, 5);
+      if (normalizedZip.length !== 5) {
+        throw new Error('Please enter a valid 5-digit ZIP code');
       }
 
-      // Auto-create region if no match found
-      if (!regionId) {
-        const zipPrefix = values.zip.substring(0, 3);
-        const city = detectedLocation?.city || '';
-        const state = detectedLocation?.state || '';
-        const newRegionName = city && state ? `${city}, ${state}` : `Region ${zipPrefix}`;
-        
-        const { data: newRegion, error: regionError } = await supabase
-          .from('regions')
-          .insert({ 
-            name: newRegionName, 
-            zip_prefix: zipPrefix,
-            status: 'active'
-          })
-          .select('id, name')
-          .single();
-        
-        if (newRegion && !regionError) {
-          regionId = newRegion.id;
-          regionName = newRegion.name || '';
-          console.log(`Auto-created new region: ${newRegionName} (prefix: ${zipPrefix})`);
-        } else {
-          console.error('Failed to auto-create region:', regionError);
-          // Fall back to first region if creation fails
-          if (regionsData && regionsData.length > 0) {
-            regionId = regionsData[0].id;
-            regionName = regionsData[0].name || '';
+      let resolvedCity = (detectedLocation?.city || '').trim();
+      let resolvedState = (detectedLocation?.state || '').trim();
+
+      try {
+        const zipLookupResponse = await fetch(`https://api.zippopotam.us/us/${normalizedZip}`);
+        if (zipLookupResponse.ok) {
+          const zipLookupData = await zipLookupResponse.json();
+          const place = zipLookupData?.places?.[0];
+          if (place) {
+            resolvedCity = (place['place name'] || resolvedCity || '').trim();
+            resolvedState = (place['state abbreviation'] || resolvedState || '').trim();
+            setDetectedLocation({ city: resolvedCity, state: resolvedState, zip: normalizedZip });
           }
         }
+      } catch (zipLookupError) {
+        console.warn('ZIP lookup failed during submission, using detected location fallback:', zipLookupError);
       }
 
-      // 3. Use separate name fields
+      // 3. Ensure a matching region exists (server-side to respect RLS)
+      const { data: ensuredRegion, error: ensureRegionError } = await supabase.functions.invoke('ensure-region', {
+        body: {
+          city: resolvedCity,
+          state: resolvedState,
+          zip_code: normalizedZip,
+        },
+      });
+
+      if (ensureRegionError) {
+        console.error('ensure-region invocation failed:', ensureRegionError);
+        throw new Error('Could not assign a region for this ZIP code. Please try again.');
+      }
+
+      const regionId = ensuredRegion?.region_id ?? null;
+      const regionName = ensuredRegion?.region_name || (resolvedCity && resolvedState ? `${resolvedCity}, ${resolvedState}` : '');
+
+      if (!regionId) {
+        throw new Error('Could not assign a region for this ZIP code. Please try again.');
+      }
+
+      // 4. Use separate name fields
       const firstName = values.legalFirstName || '';
       const middleName = noMiddleName ? '' : (values.legalMiddleName || '');
       const lastName = values.legalLastName || '';
 
-      // 4. Check if application already exists
+      // 5. Check if application already exists
       const { data: existingApp } = await supabase
         .from('craver_applications')
         .select('id, waitlist_position')
@@ -348,18 +343,18 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
           .from('craver_applications')
           .insert({
             user_id: userId,
-          first_name: firstName,
-          last_name: lastName,
-          email: values.email,
-          phone: values.phone,
-          city: detectedLocation?.city || '',
-          state: detectedLocation?.state || '',
-          zip_code: values.zip,
-          status: 'waitlist',
-          region_id: regionId,
-          points: 0,
-          priority_score: 0,
-          waitlist_joined_at: new Date().toISOString(),
+            first_name: firstName,
+            last_name: lastName,
+            email: values.email,
+            phone: values.phone,
+            city: resolvedCity,
+            state: resolvedState,
+            zip_code: normalizedZip,
+            status: 'waitlist',
+            region_id: regionId,
+            points: 0,
+            priority_score: 0,
+            waitlist_joined_at: new Date().toISOString(),
             tos_accepted: applicationData?.termsAccepted || false,
             privacy_accepted: applicationData?.privacyAccepted || false
           })
@@ -374,7 +369,7 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
         appData = newAppData;
       }
 
-      // 5. Update or create user profile
+      // 6. Update or create user profile
       const { data: existingProfile } = await supabase
         .from('user_profiles')
         .select('user_id')
@@ -404,7 +399,7 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
         });
       }
 
-      // 6. Get waitlist position (might be calculated by trigger)
+      // 7. Get waitlist position (might be calculated by trigger)
       let waitlistPosition = appData.waitlist_position;
       if (!waitlistPosition && appData.id) {
         try {
@@ -419,13 +414,13 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
         }
       }
 
-      // 7. Send waitlist email
+      // 8. Send waitlist email
       try {
         const emailPayload = {
           driverName: `${firstName}${middleName ? ' ' + middleName : ''} ${lastName}`.trim(),
           driverEmail: values.email,
-          city: detectedLocation?.city || '',
-          state: detectedLocation?.state || '',
+          city: resolvedCity,
+          state: resolvedState,
           waitlistPosition: waitlistPosition || 0,
           location: regionName,
           emailType: 'waitlist' as const
@@ -492,7 +487,7 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
         });
       }
 
-      // 8. Notify CEO of new driver signup
+      // 9. Notify CEO of new driver signup
       try {
         const driverFullName = `${firstName}${middleName ? ' ' + middleName : ''} ${lastName}`.trim();
         const ceoEmails = ['tstroman.ceo@cravenusa.com', 'craven@usa.com'];
@@ -505,7 +500,7 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
               <tr><td style="padding: 8px; font-weight: bold; color: #555;">Name</td><td style="padding: 8px;">${driverFullName}</td></tr>
               <tr style="background:#f9f9f9;"><td style="padding: 8px; font-weight: bold; color: #555;">Email</td><td style="padding: 8px;">${values.email}</td></tr>
               <tr><td style="padding: 8px; font-weight: bold; color: #555;">Phone</td><td style="padding: 8px;">${values.phone || 'Not provided'}</td></tr>
-              <tr style="background:#f9f9f9;"><td style="padding: 8px; font-weight: bold; color: #555;">Location</td><td style="padding: 8px;">${detectedLocation?.city || ''}, ${detectedLocation?.state || ''} ${values.zip}</td></tr>
+              <tr style="background:#f9f9f9;"><td style="padding: 8px; font-weight: bold; color: #555;">Location</td><td style="padding: 8px;">${resolvedCity}, ${resolvedState} ${normalizedZip}</td></tr>
               <tr><td style="padding: 8px; font-weight: bold; color: #555;">Region</td><td style="padding: 8px;">${regionName || 'Unknown'}</td></tr>
               <tr style="background:#f9f9f9;"><td style="padding: 8px; font-weight: bold; color: #555;">Applied At</td><td style="padding: 8px;">${new Date().toLocaleString()}</td></tr>
             </table>
@@ -555,8 +550,8 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
         applicationId: appData.id,
         driverId: appData.id,
         email: values.email,
-        city: detectedLocation?.city || '',
-        state: detectedLocation?.state || '',
+        city: resolvedCity,
+        state: resolvedState,
         regionId,
         ...values
       });
