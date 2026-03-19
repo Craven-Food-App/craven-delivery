@@ -46,6 +46,7 @@ interface Driver {
   waitlist_position: number | null;
   created_at: string;
   region_id?: number;
+  is_seeded?: boolean;
   regions: {
     name: string;
     status: string;
@@ -593,8 +594,15 @@ export const DriverWaitlistDashboard: React.FC = () => {
                         />
                       </td>
                       <td className="p-3">
-                        <div className="font-medium text-foreground">{driver.first_name} {driver.last_name}</div>
-                        <div className="text-xs text-muted-foreground">{driver.email}</div>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${driver.is_seeded ? 'bg-orange-100 text-orange-600' : 'bg-muted text-muted-foreground'}`}>
+                            {driver.first_name?.[0]}{driver.last_name?.[0]}
+                          </div>
+                          <div>
+                            <div className="font-medium text-foreground">{driver.first_name} {driver.last_name}</div>
+                            <div className="text-xs text-muted-foreground">{driver.email}</div>
+                          </div>
+                        </div>
                       </td>
                       <td className="p-3">
                         <div className="font-medium">{driver.city}, {driver.state}</div>

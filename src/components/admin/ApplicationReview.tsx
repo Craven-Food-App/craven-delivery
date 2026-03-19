@@ -114,6 +114,7 @@ interface Application {
   w9_document?: string | null;
   signature_image_url?: string | null;
   regions?: { name: string } | null;
+  is_seeded?: boolean;
   [key: string]: any;
 }
 
@@ -513,7 +514,7 @@ const ApplicationReview: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-xs font-bold text-muted-foreground">
+                          <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold", app.is_seeded ? "bg-orange-100 text-orange-600" : "bg-muted text-muted-foreground")}>
                             {app.first_name?.[0]}{app.last_name?.[0]}
                           </div>
                           <div className="min-w-0">
@@ -602,7 +603,7 @@ const ApplicationReview: React.FC = () => {
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
+                  <div className={cn("h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold", detailApp.is_seeded ? "bg-orange-100 text-orange-600" : "bg-muted text-muted-foreground")}>
                     {detailApp.first_name?.[0]}{detailApp.last_name?.[0]}
                   </div>
                   <div>

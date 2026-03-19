@@ -4676,6 +4676,7 @@ export type Database = {
           insurance_document: string | null
           insurance_policy: string | null
           insurance_provider: string | null
+          is_seeded: boolean | null
           last_name: string
           license_expiry: string | null
           license_number: string | null
@@ -4759,6 +4760,7 @@ export type Database = {
           insurance_document?: string | null
           insurance_policy?: string | null
           insurance_provider?: string | null
+          is_seeded?: boolean | null
           last_name: string
           license_expiry?: string | null
           license_number?: string | null
@@ -4842,6 +4844,7 @@ export type Database = {
           insurance_document?: string | null
           insurance_policy?: string | null
           insurance_provider?: string | null
+          is_seeded?: boolean | null
           last_name?: string
           license_expiry?: string | null
           license_number?: string | null

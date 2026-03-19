@@ -41,6 +41,7 @@ interface Application {
   created_at: string;
   reviewer_notes: string | null;
   ssn_last_four: string | null;
+  is_seeded?: boolean;
 }
 
 type FilterTab = 'needs_review' | 'approved' | 'rejected' | 'all';
@@ -361,7 +362,7 @@ export default function BackgroundCheckDashboard() {
                     <TableRow key={app.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${app.is_seeded ? 'bg-orange-100 text-orange-600' : 'bg-primary/10 text-primary'}`}>
                             {app.first_name?.[0]}{app.last_name?.[0]}
                           </div>
                           <div>
@@ -456,7 +457,7 @@ export default function BackgroundCheckDashboard() {
                 <div className="space-y-5 mt-2">
                   {/* Applicant Info */}
                   <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${selectedApp.is_seeded ? 'bg-orange-100 text-orange-600' : 'bg-primary/10 text-primary'}`}>
                       {selectedApp.first_name?.[0]}{selectedApp.last_name?.[0]}
                     </div>
                     <div className="flex-1">
