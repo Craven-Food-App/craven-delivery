@@ -17,6 +17,7 @@ export const AppDownloadStep: React.FC<AppDownloadStepProps> = ({ onNext, onBack
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [resendLoading, setResendLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState<string>('');
+  const [confirmedDownload, setConfirmedDownload] = useState(false);
   const { toast } = useToast();
 
   // Fetch phone number from database if not in applicationData
