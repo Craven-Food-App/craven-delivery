@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect, useState, useRef, useCallback, useMemo, Suspense } from "react";
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from "react";
 import {
   Grid,
   Group,
@@ -10,7 +10,6 @@ import {
   Card,
   Paper,
   Badge,
-  Alert,
   Divider,
   Modal,
   TextInput,
@@ -21,7 +20,6 @@ import {
   Popover,
   Loader,
   Box,
-  Table,
   ActionIcon,
   Tabs,
 } from '@mantine/core';
@@ -35,13 +33,31 @@ import { useNavigate } from "react-router-dom";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Bar, Pie } from "recharts";
 import { Scale } from 'lucide-react';
 import { FuturisticChart } from '@/components/cfo/FuturisticChart';
-import { CFOPortalLayout, CFONavItem } from '@/components/cfo/CFOPortalLayout';
 import { MantineTable } from '@/components/cfo/MantineTable';
 import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 import { useToast } from '@/hooks/useEmbeddedToast';
 import { hasFullAccess } from '@/utils/torranceAccess';
+import {
+  IconCurrencyDollar,
+  IconFileText,
+  IconBuildingBank,
+  IconUsers,
+  IconChartBar,
+  IconShield,
+  IconChecklist,
+  IconReport,
+  IconWallet,
+  IconTrendingUp,
+  IconMail,
+  IconMessageCircle,
+  IconSettings,
+} from '@tabler/icons-react';
+import { UnifiedPortalShell, PortalTab, PortalKPI, PortalLoadingState, PortalAccessDenied } from '@/components/portal/UnifiedPortalShell';
+import { useExecAuth } from '@/hooks/useExecAuth';
+import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
-// LAZY LOAD all heavy modules for performance - only load when tab is selected
+// LAZY LOAD all heavy modules
 const BusinessEmailSystem = React.lazy(() => import('@/components/executive/BusinessEmailSystem'));
 const ExecutiveWordProcessor = React.lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
 const EnhancedCFODashboard = React.lazy(() => import('@/components/cfo/EnhancedCFODashboard').then(m => ({ default: m.EnhancedCFODashboard })));
@@ -58,7 +74,6 @@ const EnhancedCapitalStructure = React.lazy(() => import('@/components/cfo/Enhan
 const EnhancedScenarioPlanning = React.lazy(() => import('@/components/cfo/EnhancedScenarioPlanning').then(m => ({ default: m.EnhancedScenarioPlanning })));
 const CFOOnboardingGovernance = React.lazy(() => import('@/components/cfo/CFOOnboardingGovernance').then(m => ({ default: m.CFOOnboardingGovernance })));
 const CfoEvaluationGatePanel = React.lazy(() => import('@/components/cfo/CfoEvaluationGatePanel'));
-// Enterprise Finance Modules - Lazy loaded
 const CorporateGeneralLedger = React.lazy(() => import('@/components/finance/CorporateGeneralLedger').then(m => ({ default: m.CorporateGeneralLedger })));
 const CorporateAccountsPayable = React.lazy(() => import('@/components/finance/CorporateAccountsPayable').then(m => ({ default: m.CorporateAccountsPayable })));
 const CorporateAccountsReceivable = React.lazy(() => import('@/components/finance/CorporateAccountsReceivable').then(m => ({ default: m.CorporateAccountsReceivable })));
@@ -67,374 +82,67 @@ const FinancialReportsDashboard = React.lazy(() => import('@/components/finance/
 const BudgetManagement = React.lazy(() => import('@/components/finance/BudgetManagement').then(m => ({ default: m.BudgetManagement })));
 const FinanceAuditComponent = React.lazy(() => import('@/components/finance/audit/FinanceAuditComponent').then(m => ({ default: m.FinanceAuditComponent })));
 const DriverCompensationDashboard = React.lazy(() => import('@/components/finance/driver-compensation/DriverCompensationDashboard').then(m => ({ default: m.DriverCompensationDashboard })));
-// Invoices & Expenses Modules
 const CFOInvoices = React.lazy(() => import('@/components/cfo/Invoices').then(m => ({ default: m.Invoices })));
 const CFOExpenses = React.lazy(() => import('@/components/cfo/Expenses').then(m => ({ default: m.Expenses })));
 const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
-// Loading fallback component
 const ModuleLoader = () => (
-  <Box style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
-    <Stack align="center" gap="md">
-      <Loader size="lg" />
-      <Text c="dimmed">Loading module...</Text>
-    </Stack>
-  </Box>
+  <div className="flex min-h-[220px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20">
+    <div className="text-center">
+      <div className="mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-primary" />
+      <p className="text-xs text-muted-foreground">Loading module...</p>
+    </div>
+  </div>
 );
 
-// Reusable InfoIcon component with Popover
-function InfoIcon({ content, title }: { content: string; title?: string }) {
-  return (
-    <Popover width={300} withArrow>
-      <Popover.Target>
-        <ActionIcon
-          variant="subtle"
-          color="blue"
-          style={{
-            position: 'absolute',
-            top: '8px',
-            right: '8px',
-            zIndex: 10,
-          }}
-        >
-          <IconInfoCircle size={16} />
-        </ActionIcon>
-      </Popover.Target>
-      <Popover.Dropdown>
-        <Stack gap="xs">
-          {title && <Text fw={600}>{title}</Text>}
-          <Text size="sm">{content}</Text>
-        </Stack>
-      </Popover.Dropdown>
-    </Popover>
-  );
-}
+const TABS: PortalTab[] = [
+  // Core Executive
+  { id: 'evaluation', label: 'CFO Evaluation Gate', description: 'Board-defensible CFO evaluation workflow.', section: 'Executive', icon: IconShield },
+  { id: 'onboarding', label: 'Onboarding & Governance', description: 'CFO onboarding and governance framework.', section: 'Executive', icon: IconChecklist },
+  { id: 'overview', label: 'CFO Command Center', description: 'Executive financial dashboard and KPIs.', section: 'Executive', icon: IconChartBar },
+  // Core Accounting
+  { id: 'general-ledger', label: 'General Ledger', description: 'Chart of accounts and journal entries.', section: 'Accounting', icon: IconBuildingBank },
+  { id: 'ap', label: 'Accounts Payable', description: 'Vendor invoices and payment processing.', section: 'Accounting', icon: IconCurrencyDollar },
+  { id: 'ar', label: 'Accounts Receivable', description: 'Customer invoices and collections.', section: 'Accounting', icon: IconWallet },
+  { id: 'invoices-expenses', label: 'Invoices & Expenses', description: 'Invoice management and expense tracking.', section: 'Accounting', icon: IconFileText },
+  { id: 'vendors', label: 'Vendor Management', description: 'Vendor onboarding and performance.', section: 'Accounting', icon: IconUsers },
+  // Banking & Treasury
+  { id: 'treasury', label: 'Treasury & Banking', description: 'Cash management and banking operations.', section: 'Treasury', icon: IconBuildingBank },
+  // Team & Payroll
+  { id: 'team', label: 'Team & Payroll', description: 'Team management, payroll, and driver comp.', section: 'Operations', icon: IconUsers },
+  // Planning & Analysis
+  { id: 'fpa', label: 'FP&A & Planning', description: 'Financial planning, analysis, and forecasting.', section: 'Planning', icon: IconTrendingUp },
+  // Tax & Compliance
+  { id: 'tax-compliance', label: 'Tax & Compliance', description: 'Tax planning and financial controls.', section: 'Planning', icon: IconShield },
+  // Audit & Risk
+  { id: 'audit-risk', label: 'Audit & Risk', description: 'Audit management and risk assessment.', section: 'Planning', icon: IconReport },
+  // Reporting
+  { id: 'reporting', label: 'Stakeholder Reporting', description: 'Board, investor, and financial reports.', section: 'Reporting', icon: IconReport },
+  // Period Close
+  { id: 'close', label: 'Close Checklist', description: 'Period close tasks and reconciliations.', section: 'Reporting', icon: IconChecklist },
+  // Communications
+  { id: 'comms', label: 'Communications', description: 'Email, documents, and knowledge base.', section: 'Communications', icon: IconMail },
+  { id: 'c-comms', label: 'C-Suite Comms', description: 'Cross-executive communication workspace.', section: 'Communications', icon: IconMessageCircle },
+];
 
-function BigNavButton({ color, hover, title, subtitle, onClick, infoContent }: { color: string; hover: string; title: string; subtitle: string; onClick: () => void; infoContent?: string }) {
-  const [isMobile, setIsMobile] = useState(false);
-  
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  return (
-    <div style={{ position: 'relative' }}>
-      {infoContent && <InfoIcon content={infoContent} title={title} />}
-      <button
-        onClick={onClick}
-        style={{
-          background: `linear-gradient(135deg, ${color} 0%, ${hover} 100%)`,
-          color: '#fff',
-          borderRadius: 16,
-          padding: isMobile ? '10px 12px' : '12px 16px',
-          textAlign: 'left',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          cursor: 'pointer',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-          width: '100%',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          transition: 'all 0.3s ease',
-          position: 'relative',
-          overflow: 'hidden',
-          minHeight: isMobile ? 80 : 90,
-        }}
-      >
-        <div style={{
-          position: 'absolute',
-          top: '-40px',
-          right: '-40px',
-          width: '120px',
-          height: '120px',
-          background: 'rgba(255, 255, 255, 0.15)',
-          borderRadius: '50%',
-          filter: 'blur(0px)',
-        }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h3 style={{ margin: 0, fontSize: isMobile ? 16 : 18, fontWeight: 700 }}>{title}</h3>
-          <p style={{ margin: '6px 0 0 0', fontSize: isMobile ? 12 : 13, color: 'rgba(255, 255, 255, 0.85)' }}>{subtitle}</p>
-        </div>
-      </button>
-    </div>
-  );
-}
-
-// KPI Metric Card Component
-interface KpiData {
-  title: string;
-  value: string;
-  change: number;
-  changeUnit: string;
-  icon: React.ElementType;
-  color: string;
-}
-
-const SectionCard: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({ children, style }) => (
-  <Card
-    shadow="sm"
-    padding="lg"
-    radius="md"
-    withBorder
-    style={style}
-  >
-    {children}
-  </Card>
-);
-
-const MetricCard: React.FC<KpiData> = ({ title, value, change, changeUnit, icon: Icon, color }) => {
-  const isPositiveMetric = title !== 'Operating Expenses' && title !== 'COGS';
-  const isPositive = isPositiveMetric ? change >= 0 : change <= 0;
-  
-  const getGradient = () => {
-    if (title === 'Monthly Revenue') return 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%)';
-    if (title === 'Gross Margin %') return 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.1) 100%)';
-    if (title === 'Net Cash Flow (Burn $)') return 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%)';
-    if (title === 'COGS') return 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%)';
-    if (title === 'Operating Expenses') return 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%)';
-    return 'rgba(255, 255, 255, 0.1)';
-  };
-
-  const getIconColor = () => {
-    if (title === 'Monthly Revenue') return '#3b82f6';
-    if (title === 'Gross Margin %') return '#8b5cf6';
-    if (title === 'Net Cash Flow (Burn $)') return '#10b981';
-    if (title === 'COGS') return '#f59e0b';
-    if (title === 'Operating Expenses') return '#ef4444';
-    return '#64748b';
-  };
-
-  return (
-    <SectionCard style={{ padding: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <p style={{ margin: 0, fontSize: 14, color: '#64748b', fontWeight: 600 }}>{title}</p>
-          <p style={{ margin: '8px 0 0 0', fontSize: 28, fontWeight: 700, color: '#0f172a' }}>{value}</p>
-          <span
-            style={{
-              marginTop: 8,
-              display: 'inline-flex',
-              alignItems: 'center',
-              background: isPositive ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-              color: isPositive ? '#16a34a' : '#dc2626',
-              borderRadius: 9999,
-              padding: '4px 10px',
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
-            {isPositive ? '+' : '-'}
-            {Math.abs(change)}{changeUnit} vs last period
-          </span>
-        </div>
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 12,
-            background: getGradient(),
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: getIconColor(),
-            boxShadow: '0 4px 12px rgba(15, 23, 42, 0.12)',
-          }}
-        >
-          <Icon size={28} />
-        </div>
-      </div>
-    </SectionCard>
-  );
-};
-
-// Revenue & Profit Trend Chart with Glassmorphism
-const RevenueProfitChart: React.FC<{ data: any[] }> = ({ data }) => {
-  return (
-    <div style={{ position: 'relative' }}>
-      <InfoIcon content="This chart shows the monthly revenue and net cash flow trends over the last 6 months. Revenue represents total order value, while Net Cash Flow shows the profit or burn rate after all expenses." title="Financial Trend Chart" />
-      <FuturisticChart
-        data={data}
-        type="area"
-        title="Financial Performance Trend"
-        height={400}
-        colors={['#3b82f6', '#10b981', '#f59e0b']}
-        dataKeys={{ revenue: 'Revenue', profit: 'Profit' }}
-      />
-    </div>
-  );
-};
-
-// Expense Breakdown Pie Chart with Glassmorphism
-const ExpensesPieChart: React.FC<{ data: any[] }> = ({ data }) => {
-  return (
-    <div style={{ position: 'relative' }}>
-      <InfoIcon content="This pie chart displays how operating expenses are distributed across different categories. Use this to identify where the majority of your operational costs are allocated." title="Expense Breakdown" />
-      <FuturisticChart
-        data={data}
-        type="pie"
-        title="Expense Distribution"
-        height={400}
-        colors={data.map(d => d.color)}
-      />
-    </div>
-  );
-};
-
-// Key Financial Ratios Table with Glassmorphism
-interface RatioData {
-  ratio: string;
-  value: string;
-  interpretation: 'Strong' | 'Average' | 'Needs Attention';
-}
-
-const KeyRatiosTable: React.FC<{ data: RatioData[] }> = ({ data }) => {
-  const getInterpretationStyles = (interpretation: RatioData['interpretation']) => {
-    switch (interpretation) {
-      case 'Strong':
-        return { background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.4)' };
-      case 'Average':
-        return { background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.4)' };
-      case 'Needs Attention':
-        return { background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' };
-      default:
-        return { background: 'rgba(148, 163, 184, 0.2)', color: '#94a3b8', border: '1px solid rgba(148, 163, 184, 0.4)' };
-    }
-  };
-
-  return (
-    <SectionCard style={{ position: 'relative' }}>
-      <InfoIcon content="Key financial ratios help assess the company's financial health. Current Ratio measures liquidity, Debt-to-Equity shows leverage, Gross Margin indicates profitability, Quick Ratio tests short-term solvency, and Inventory Turnover measures efficiency." title="Key Financial Ratios" />
-      <h2 style={{
-        fontSize: '24px',
-        fontWeight: 700,
-        color: '#0f172a',
-        marginBottom: '20px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-      }}>
-        <Scale style={{ width: '24px', height: '24px', color: '#3b82f6' }} />
-        Key Financial Ratios
-      </h2>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-              <th style={{
-                padding: '12px 16px',
-                textAlign: 'left',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: '#475569',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}>
-                Ratio
-              </th>
-              <th style={{
-                padding: '12px 16px',
-                textAlign: 'left',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: '#475569',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}>
-                Value
-              </th>
-              <th style={{
-                padding: '12px 16px',
-                textAlign: 'left',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: '#475569',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}>
-                Health
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((item, index) => {
-              const styles = getInterpretationStyles(item.interpretation);
-              return (
-                <tr 
-                  key={item.ratio} 
-                  style={{ 
-                    borderBottom: index < data.length - 1 ? '1px solid #e2e8f0' : 'none',
-                    transition: 'background 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#f1f5f9';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'transparent';
-                  }}
-                >
-                  <td style={{ 
-                    padding: '16px', 
-                    fontSize: '14px', 
-                    fontWeight: 600, 
-                    color: '#0f172a',
-                  }}>
-                    {item.ratio}
-                  </td>
-                  <td style={{ 
-                    padding: '16px', 
-                    fontSize: '14px', 
-                    color: '#475569',
-                  }}>
-                    {item.value}
-                  </td>
-                  <td style={{ padding: '16px' }}>
-                    <span
-                      style={{
-                        padding: '6px 12px',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        borderRadius: '12px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        ...styles,
-                      }}
-                    >
-                      {item.interpretation}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </SectionCard>
-  );
-};
-
+const SECTIONS = ['Executive', 'Accounting', 'Treasury', 'Operations', 'Planning', 'Reporting', 'Communications'];
 
 function CFOPortalContent() {
   const [loading, setLoading] = useState(false);
-  const [range, setRange] = useState<[Date | null, Date | null]>([null, null]);
   const [payouts, setPayouts] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<string>('evaluation');
   const [isMobile, setIsMobile] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [isChatCollapsed, setIsChatCollapsed] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [kpis, setKpis] = useState<PortalKPI[]>([]);
   const toast = useToast();
-  
-  // Track user activity
+  const { loading: authLoading, user: authUser, execUser, isAuthorized, signOut } = useExecAuth('cfo');
+
   useActivityTracking('cfo');
-  
-  // Auto-logout after 30 minutes of inactivity
   useAutoLogout('cfo');
 
-  // Get current user
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -448,140 +156,66 @@ function CFOPortalContent() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch orders for transactions tab
       const { data: orders } = await supabase.from("orders").select("total_amount, created_at").limit(200);
       setPayouts([]);
       setTransactions(orders || []);
       setLastUpdated(new Date());
+
+      // Calculate KPIs
+      const totalRevenue = (orders || []).reduce((sum, o) => sum + (o.total_amount || 0), 0);
+      const [apRes, arRes, approvalsRes] = await Promise.all([
+        supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('accounts_receivable').select('id', { count: 'exact', head: true }).neq('status', 'paid'),
+        supabase.from('ceo_financial_approvals').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      ]);
+
+      setKpis([
+        { id: 'revenue', label: 'Revenue MTD', value: `$${totalRevenue.toLocaleString()}`, delta: 'From orders', up: totalRevenue > 0 },
+        { id: 'transactions', label: 'Transactions', value: String((orders || []).length), delta: 'This period', up: true },
+        { id: 'ap-pending', label: 'AP Pending', value: String(apRes.count || 0), delta: 'Invoices', up: (apRes.count || 0) === 0 },
+        { id: 'ar-open', label: 'AR Open', value: String(arRes.count || 0), delta: 'Outstanding', up: (arRes.count || 0) === 0 },
+        { id: 'approvals', label: 'Approvals', value: String(approvalsRes.count || 0), delta: 'Pending', up: (approvalsRes.count || 0) === 0, onClick: () => setActiveSection('tax-compliance') },
+      ]);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    if (!isAuthorized && !isTorrance) return;
     fetchData();
-    
-    // Set up auto-refresh every 60 seconds - COMPONENT-LEVEL DATA REFRESH ONLY
-    // This only updates component state, NEVER causes page reloads
-    const interval = setInterval(() => {
-      // Wrap in try-catch to prevent any errors from causing issues
-      try {
-        fetchData();
-      } catch (error) {
-        console.error('Error in auto-refresh interval:', error);
-        // Silently handle - don't cause page reload or navigation
-      }
-    }, 60000);
-    
-    // Set up real-time subscription for orders - COMPONENT-LEVEL DATA REFRESH ONLY
+    const interval = setInterval(fetchData, 60000);
     const ordersChannel = supabase
       .channel('cfo_orders_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
-        },
-        () => {
-          // Only update state, never navigate or reload
-          try {
-            fetchData();
-          } catch (error) {
-            console.error('Error in real-time subscription callback:', error);
-          }
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchData())
       .subscribe();
-    
-    // Check screen size
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
     return () => {
       clearInterval(interval);
       ordersChannel.unsubscribe();
       window.removeEventListener('resize', checkMobile);
     };
-  }, [fetchData]);
+  }, [fetchData, isAuthorized, isTorrance]);
 
-  const navItems = useMemo<CFONavItem[]>(() => [
-    // Core Executive
-    { id: 'evaluation', label: 'CFO Evaluation Gate' },
-    { id: 'onboarding', label: 'CFO Onboarding & Governance' },
-    { id: 'overview', label: 'CFO Command Center' },
-    // Core Accounting
-    { id: 'general-ledger', label: 'General Ledger' },
-    { id: 'ap', label: 'Accounts Payable' },
-    { id: 'ar', label: 'Accounts Receivable' },
-    { id: 'invoices-expenses', label: 'Invoices & Expenses' },
-    { id: 'vendors', label: 'Vendor Management' },
-    // Banking & Treasury (consolidated — includes transactions & payouts)
-    { id: 'treasury', label: 'Treasury & Banking', badge: transactions.length > 0 ? transactions.length : undefined },
-    // Team & Operations (consolidated — manager, payroll, driver comp)
-    { id: 'team', label: 'Team & Payroll' },
-    // Planning & Analysis (consolidated — FP&A, budget, forecast, scenario)
-    { id: 'fpa', label: 'FP&A & Planning' },
-    // Compliance & Controls (consolidated — tax, controls, approvals)
-    { id: 'tax-compliance', label: 'Tax & Compliance' },
-    // Audit & Risk (consolidated)
-    { id: 'audit-risk', label: 'Audit & Risk' },
-    // Reporting (consolidated — reports, board, investor, capital)
-    { id: 'reporting', label: 'Stakeholder Reporting' },
-    // Period Close
-    { id: 'close', label: 'Close Checklist' },
-    // Communications (consolidated — email, docs, knowledge base)
-    { id: 'comms', label: 'Communications' },
-    { id: 'c-comms', label: 'C Comms' },
-  ], [transactions.length]);
-
-  const openPortal = (path: string, subdomain?: string) => {
-    const host = window.location.hostname;
-    if (subdomain && /^cfo\./i.test(host)) {
-      const target = host.replace(/^cfo\./i, `${subdomain}.`);
-      window.location.href = `${window.location.protocol}//${target}`;
-      return;
-    }
-    navigate(path);
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    } finally {
-      navigate('/auth?hq=true');
-    }
-  };
-
+  if (authLoading) return <PortalLoadingState />;
+  if (!isAuthorized && !isTorrance) return <PortalAccessDenied portalName="CFO Portal" email={authUser?.email} onSignOut={signOut} />;
 
   const renderContent = () => {
     switch (activeSection) {
-      // ── Core Executive ──
       case 'evaluation':
-        return (
-          <Stack gap="md">
-            <CfoEvaluationGatePanel mode={isTorrance ? 'ceo' : 'cfo'} />
-          </Stack>
-        );
+        return <Suspense fallback={<ModuleLoader />}><CfoEvaluationGatePanel mode={isTorrance ? 'ceo' : 'cfo'} /></Suspense>;
       case 'onboarding':
-        return <CFOOnboardingGovernance />;
+        return <Suspense fallback={<ModuleLoader />}><CFOOnboardingGovernance /></Suspense>;
       case 'overview':
-        return <EnhancedCFODashboard />;
-
-      // ── Core Accounting ──
+        return <Suspense fallback={<ModuleLoader />}><EnhancedCFODashboard /></Suspense>;
       case 'general-ledger':
-        return <CorporateGeneralLedger />;
+        return <Suspense fallback={<ModuleLoader />}><CorporateGeneralLedger /></Suspense>;
       case 'ap':
-        return <CorporateAccountsPayable />;
+        return <Suspense fallback={<ModuleLoader />}><CorporateAccountsPayable /></Suspense>;
       case 'ar':
-        return <CorporateAccountsReceivable />;
-
-      // ── Invoices & Expenses (consolidated: invoices + expenses + PDF import) ──
+        return <Suspense fallback={<ModuleLoader />}><CorporateAccountsReceivable /></Suspense>;
       case 'invoices-expenses':
         return (
           <Tabs defaultValue="invoices" keepMounted={false}>
@@ -593,62 +227,33 @@ function CFOPortalContent() {
             <Tabs.Panel value="expenses"><Suspense fallback={<ModuleLoader />}><CFOExpenses /></Suspense></Tabs.Panel>
           </Tabs>
         );
-
       case 'vendors':
-        return <VendorManagement />;
-
-      // ── Treasury & Banking (consolidated: treasury + transactions + payouts) ──
+        return <Suspense fallback={<ModuleLoader />}><VendorManagement /></Suspense>;
       case 'treasury':
         return (
           <Tabs defaultValue="treasury" keepMounted={false}>
             <Tabs.List mb="md">
               <Tabs.Tab value="treasury">Treasury & Banking</Tabs.Tab>
-              <Tabs.Tab value="transactions">
-                Transactions {transactions.length > 0 && <Badge size="xs" ml={4}>{transactions.length}</Badge>}
-              </Tabs.Tab>
+              <Tabs.Tab value="transactions">Transactions {transactions.length > 0 && <Badge size="xs" ml={4}>{transactions.length}</Badge>}</Tabs.Tab>
               <Tabs.Tab value="payouts">Payouts</Tabs.Tab>
             </Tabs.List>
-            <Tabs.Panel value="treasury">
-              <Suspense fallback={<ModuleLoader />}><AdvancedTreasuryManagement /></Suspense>
-            </Tabs.Panel>
+            <Tabs.Panel value="treasury"><Suspense fallback={<ModuleLoader />}><AdvancedTreasuryManagement /></Suspense></Tabs.Panel>
             <Tabs.Panel value="transactions">
-              <Box style={{ overflow: 'hidden' }}>
-                <MantineTable
-                  data={transactions}
-                  loading={loading}
-                  rowKey={(r: any) => r.id || r.created_at}
-                  size={isMobile ? 'small' : 'default'}
-                  scroll={{ x: isMobile ? 600 : 'auto' }}
-                  pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }}
-                  columns={[
-                    { title: 'Date', dataIndex: 'created_at', render: (v: string) => new Date(v).toLocaleString(), width: 200 },
-                    { title: 'Amount', dataIndex: 'total_amount', render: (v: number) => `$${(v || 0).toLocaleString()}` },
-                  ]}
-                />
-              </Box>
+              <MantineTable data={transactions} loading={loading} rowKey={(r: any) => r.id || r.created_at} size={isMobile ? 'small' : 'default'} scroll={{ x: isMobile ? 600 : 'auto' }} pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }} columns={[
+                { title: 'Date', dataIndex: 'created_at', render: (v: string) => new Date(v).toLocaleString(), width: 200 },
+                { title: 'Amount', dataIndex: 'total_amount', render: (v: number) => `$${(v || 0).toLocaleString()}` },
+              ]} />
             </Tabs.Panel>
             <Tabs.Panel value="payouts">
-              <Box style={{ overflow: 'hidden' }}>
-                <MantineTable
-                  data={payouts}
-                  loading={loading}
-                  rowKey={(r: any) => r.id}
-                  size={isMobile ? 'small' : 'default'}
-                  scroll={{ x: isMobile ? 600 : 'auto' }}
-                  pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }}
-                  columns={[
-                    { title: 'Payout ID', dataIndex: 'id' },
-                    { title: 'Amount', dataIndex: 'amount', render: (v: number) => `$${(v || 0).toLocaleString()}` },
-                    { title: 'Status', dataIndex: 'status' },
-                    { title: 'Created', dataIndex: 'created_at', render: (v: string) => new Date(v).toLocaleString() },
-                  ]}
-                />
-              </Box>
+              <MantineTable data={payouts} loading={loading} rowKey={(r: any) => r.id} size={isMobile ? 'small' : 'default'} scroll={{ x: isMobile ? 600 : 'auto' }} pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }} columns={[
+                { title: 'Payout ID', dataIndex: 'id' },
+                { title: 'Amount', dataIndex: 'amount', render: (v: number) => `$${(v || 0).toLocaleString()}` },
+                { title: 'Status', dataIndex: 'status' },
+                { title: 'Created', dataIndex: 'created_at', render: (v: string) => new Date(v).toLocaleString() },
+              ]} />
             </Tabs.Panel>
           </Tabs>
         );
-
-      // ── Team & Payroll (consolidated: manager + payroll + driver comp) ──
       case 'team':
         return (
           <Tabs defaultValue="manager" keepMounted={false}>
@@ -662,8 +267,6 @@ function CFOPortalContent() {
             <Tabs.Panel value="driver-comp"><Suspense fallback={<ModuleLoader />}><DriverCompensationDashboard /></Suspense></Tabs.Panel>
           </Tabs>
         );
-
-      // ── FP&A & Planning (consolidated: FP&A + budget + forecast + scenario) ──
       case 'fpa':
         return (
           <Tabs defaultValue="fpa" keepMounted={false}>
@@ -679,8 +282,6 @@ function CFOPortalContent() {
             <Tabs.Panel value="scenario"><Suspense fallback={<ModuleLoader />}><EnhancedScenarioPlanning /></Suspense></Tabs.Panel>
           </Tabs>
         );
-
-      // ── Tax & Compliance (consolidated: tax + controls + approvals) ──
       case 'tax-compliance':
         return (
           <Tabs defaultValue="tax" keepMounted={false}>
@@ -694,8 +295,6 @@ function CFOPortalContent() {
             <Tabs.Panel value="approvals"><ApprovalsPanel /></Tabs.Panel>
           </Tabs>
         );
-
-      // ── Audit & Risk (consolidated) ──
       case 'audit-risk':
         return (
           <Tabs defaultValue="audit" keepMounted={false}>
@@ -707,8 +306,6 @@ function CFOPortalContent() {
             <Tabs.Panel value="risk"><Suspense fallback={<ModuleLoader />}><EnhancedRiskManagement /></Suspense></Tabs.Panel>
           </Tabs>
         );
-
-      // ── Stakeholder Reporting (consolidated: reports + board + investor + capital) ──
       case 'reporting':
         return (
           <Tabs defaultValue="reports" keepMounted={false}>
@@ -724,12 +321,8 @@ function CFOPortalContent() {
             <Tabs.Panel value="capital"><Suspense fallback={<ModuleLoader />}><EnhancedCapitalStructure /></Suspense></Tabs.Panel>
           </Tabs>
         );
-
-      // ── Period Close ──
       case 'close':
         return <CloseManagement />;
-
-      // ── Communications (consolidated: email + documents + knowledge base) ──
       case 'comms':
         return (
           <Tabs defaultValue="email" keepMounted={false}>
@@ -743,83 +336,50 @@ function CFOPortalContent() {
             <Tabs.Panel value="knowledge"><Suspense fallback={<ModuleLoader />}><CFOKnowledgeBase onNavigateToTab={setActiveSection} /></Suspense></Tabs.Panel>
           </Tabs>
         );
-
-      // ── C Comms ──
       case 'c-comms':
         return <Suspense fallback={<ModuleLoader />}><EmbeddedCComms /></Suspense>;
-
       default:
-        return <EnhancedCFODashboard />;
+        return <Suspense fallback={<ModuleLoader />}><EnhancedCFODashboard /></Suspense>;
     }
   };
 
-  const content = renderContent();
-  const shouldWrapContent = activeSection !== 'overview';
-
   return (
-    <CFOPortalLayout
-      activeSection={activeSection}
-      onNavigate={setActiveSection}
-      navItems={navItems}
+    <UnifiedPortalShell
+      portalName="CFO Portal"
+      portalSubtitle="Financial command center and treasury management"
+      sectionLabel="Executive Finance"
+      tabs={TABS}
+      sections={SECTIONS}
+      activeTab={activeSection}
+      onTabChange={setActiveSection}
+      kpis={kpis}
+      kpiLabel="Financial Health — Live"
+      lastUpdated={lastUpdated}
+      userTitle={execUser?.title || 'Chief Financial Officer'}
+      onBack={() => navigate('/hub')}
+      onSignOut={async () => { await signOut(); navigate('/auth?hq=true'); }}
+      headerActions={
+        <>
+          <button onClick={() => navigate('/ceo')} className="inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted">CEO</button>
+          <button onClick={() => navigate('/finance')} className="inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted">Finance</button>
+        </>
+      }
     >
-      <div className="space-y-6">
-        <Alert color="green" style={{ padding: 16 }}>
-          <Group justify="space-between" wrap="wrap" gap={12}>
-            <Group gap={8}>
-              <IconCircleCheck size={16} color="#059669" />
-              <Text size="sm" fw={600} c="green.7">Finance systems operational</Text>
-            </Group>
-            <Text size="xs" c="green.6">
-              Last updated: {lastUpdated.toLocaleTimeString()}
-            </Text>
-          </Group>
-        </Alert>
-
-        <SectionCard style={{ padding: 20 }}>
-          <Group justify="space-between" mb={isChatCollapsed ? 0 : 16}>
-            <Title order={4} style={{ margin: 0 }}>Executive Chat</Title>
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => setIsChatCollapsed((prev) => !prev)}
-            >
-              {isChatCollapsed ? 'Expand' : 'Collapse'}
-            </Button>
-          </Group>
-          {!isChatCollapsed && (
-            <ExecutiveInboxIMessage role="cfo" deviceId={`cfo-portal-${window.location.hostname}`} />
-          )}
-        </SectionCard>
-
-        <Suspense fallback={<ModuleLoader />}>
-          {shouldWrapContent ? (
-            <SectionCard style={{ padding: isMobile ? 16 : 24, overflow: 'hidden' }}>
-              {content}
-            </SectionCard>
-          ) : (
-            content
-          )}
-        </Suspense>
-      </div>
-    </CFOPortalLayout>
+      {renderContent()}
+    </UnifiedPortalShell>
   );
 }
+
+// ── Sub-components preserved from original ──
 
 function ManagerConsole() {
   const [metrics, setMetrics] = useState<any>({ apPending:0, apOverdue:0, arPastDue:0, closeOpen:0, recsOpen:0 });
   const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [roleModal, setRoleModal] = useState(false);
-  const form = useForm({
-    initialValues: {
-      user_id: '',
-      role: '',
-    },
-    validate: {
-      role: (value) => (!value ? 'Role is required' : null),
-    },
-  });
+  const form = useForm({ initialValues: { user_id: '', role: '' }, validate: { role: (value) => (!value ? 'Role is required' : null) } });
   const [isMobile, setIsMobile] = useState(false);
+  const toast = useToast();
   const refreshRoles = useCallback(async () => {
     const { data } = await supabase.from('finance_roles').select('user_id, role');
     setRoles((data || []).map((r:any, idx:number)=> ({ key: `${r.user_id}-${r.role}-${idx}`, ...r })));
@@ -841,14 +401,11 @@ function ManagerConsole() {
           toast.success('Role removed', 'Success');
           await refreshRoles();
         } catch (err) {
-          console.error('Error removing role', err);
           toast.error('Failed to remove role', 'Error');
-        } finally {
-          setLoading(false);
-        }
+        } finally { setLoading(false); }
       },
     });
-  }, [refreshRoles]);
+  }, [refreshRoles, toast]);
 
   useEffect(() => {
     (async () => {
@@ -858,15 +415,11 @@ function ManagerConsole() {
           supabase.from('invoices').select('id, amount, due_date, status'),
           supabase.from('receivables').select('id, amount, due_date, status'),
           supabase.from('close_tasks').select('id, status').then(result => {
-            if (result.error && (result.error.code === 'PGRST205' || result.error.message?.includes('Could not find'))) {
-              return { data: [], error: null };
-            }
+            if (result.error && (result.error.code === 'PGRST205' || result.error.message?.includes('Could not find'))) return { data: [], error: null };
             return result;
           }),
           supabase.from('reconciliations').select('id, status').then(result => {
-            if (result.error && (result.error.code === 'PGRST205' || result.error.message?.includes('Could not find'))) {
-              return { data: [], error: null };
-            }
+            if (result.error && (result.error.code === 'PGRST205' || result.error.message?.includes('Could not find'))) return { data: [], error: null };
             return result;
           }),
           supabase.from('finance_roles').select('user_id, role')
@@ -874,120 +427,55 @@ function ManagerConsole() {
         const now = Date.now();
         const apPending = (inv.data || []).filter(i=> i.status==='pending' || i.status==='approved').length;
         const apOverdue = (inv.data || []).filter(i=> new Date(i.due_date).getTime() < now && i.status!=='paid').length;
-        const arPastDueAmt = (rec.data || [])
-          .filter(r=> new Date(r.due_date).getTime() < now && r.status!=='paid')
-          .reduce((s,r)=> s + (r.amount || 0), 0);
+        const arPastDueAmt = (rec.data || []).filter(r=> new Date(r.due_date).getTime() < now && r.status!=='paid').reduce((s,r)=> s + (r.amount || 0), 0);
         const closeOpen = (tasks.data || []).filter(t=> t.status!=='done').length;
         const recsOpen = (recon.data || []).filter(r=> r.status!=='tied').length;
         setMetrics({ apPending, apOverdue, arPastDue: arPastDueAmt, closeOpen, recsOpen });
         setRoles((fr.data || []).map((r:any, idx:number)=> ({ key: `${r.user_id}-${r.role}-${idx}`, ...r })));
       } finally { setLoading(false); }
     })();
-    
-    // Check screen size
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
   return (
-    <div style={{ position: 'relative' }}>
-      <InfoIcon content="The Manager Console provides an overview of team KPIs, workload distribution, and financial metrics. Use this to monitor AP/AR status, assign team roles, and track team performance." title="Manager Console" />
+    <div>
       {(metrics.apOverdue > 0 || metrics.arPastDue > 0 || metrics.closeOpen > 5) && (
-        <Alert color="yellow" mb={12}>
-          <Stack gap={4}>
-            {metrics.apOverdue > 0 && <Text size="sm">AP overdue invoices: <strong>{metrics.apOverdue}</strong></Text>}
-            {metrics.arPastDue > 0 && <Text size="sm">AR past due: <strong>$ {metrics.arPastDue.toLocaleString()}</strong></Text>}
-            {metrics.closeOpen > 5 && <Text size="sm">Close tasks open: <strong>{metrics.closeOpen}</strong></Text>}
-          </Stack>
-        </Alert>
+        <div className="mb-3 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-3">
+          {metrics.apOverdue > 0 && <p className="text-xs text-foreground">AP overdue invoices: <strong>{metrics.apOverdue}</strong></p>}
+          {metrics.arPastDue > 0 && <p className="text-xs text-foreground">AR past due: <strong>${metrics.arPastDue.toLocaleString()}</strong></p>}
+          {metrics.closeOpen > 5 && <p className="text-xs text-foreground">Close tasks open: <strong>{metrics.closeOpen}</strong></p>}
+        </div>
       )}
-      <Grid gutter="md" mb={12}>
-        <Grid.Col span={{ base: 12, sm: 12, lg: 6 }}>
-          <Paper p={isMobile ? 12 : 16} radius="md" bg="gray.0">
-            <Text size={isMobile ? 'xs' : 'sm'} c="gray.6">AP Queue (pending/approved)</Text>
-            <Text fw={700} size={isMobile ? 'lg' : 'xl'}>{metrics.apPending}</Text>
-          </Paper>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, sm: 12, lg: 6 }}>
-          <Paper p={isMobile ? 12 : 16} radius="md" bg="orange.0">
-            <Text size={isMobile ? 'xs' : 'sm'} c="orange.9">AP Overdue</Text>
-            <Text fw={700} size={isMobile ? 'lg' : 'xl'}>{metrics.apOverdue}</Text>
-          </Paper>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, sm: 12, lg: 6 }}>
-          <Paper p={isMobile ? 12 : 16} radius="md" bg="red.0">
-            <Text size={isMobile ? 'xs' : 'sm'} c="red.9">AR Past Due $</Text>
-            <Text fw={700} size={isMobile ? 'lg' : 'xl'}>$ {metrics.arPastDue.toLocaleString()}</Text>
-          </Paper>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, sm: 12, lg: 6 }}>
-          <Paper p={isMobile ? 12 : 16} radius="md" bg="blue.0">
-            <Text size={isMobile ? 'xs' : 'sm'} c="blue.9">Close Tasks Open</Text>
-            <Text fw={700} size={isMobile ? 'lg' : 'xl'}>{metrics.closeOpen}</Text>
-          </Paper>
-        </Grid.Col>
-      </Grid>
-      <Title order={5}>Team Workload</Title>
-      <Grid gutter="md" mb={12}>
+      <div className="mb-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="rounded-md border border-border bg-background p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">AP Queue</p><p className="text-lg font-bold text-foreground">{metrics.apPending}</p></div>
+        <div className="rounded-md border border-border bg-background p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">AP Overdue</p><p className="text-lg font-bold text-foreground">{metrics.apOverdue}</p></div>
+        <div className="rounded-md border border-border bg-background p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">AR Past Due</p><p className="text-lg font-bold text-foreground">${metrics.arPastDue.toLocaleString()}</p></div>
+        <div className="rounded-md border border-border bg-background p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">Close Tasks</p><p className="text-lg font-bold text-foreground">{metrics.closeOpen}</p></div>
+      </div>
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Team Workload</h4>
+      <div className="mb-3 grid grid-cols-3 gap-2 md:grid-cols-6">
         {['CFO','Controller','AP','AR','Treasury','Auditor'].map((r) => {
           const count = roles.filter(x => x.role === r).length;
-          return (
-            <Grid.Col key={r} span={{ base: 12, md: 8, lg: 4 }}>
-              <Paper p={isMobile ? 10 : 12} radius="md" bg="gray.0">
-                <Text size={isMobile ? 'xs' : 'sm'} c="gray.7">{r}</Text>
-                <Text fw={700} size={isMobile ? 'sm' : 'md'}>{count} member(s)</Text>
-              </Paper>
-            </Grid.Col>
-          );
+          return <div key={r} className="rounded-md border border-border bg-background p-2"><p className="text-[10px] text-muted-foreground">{r}</p><p className="text-sm font-bold text-foreground">{count}</p></div>;
         })}
-      </Grid>
-      <Divider label="Team Roles" />
-      <Group mb={8}>
-        <Button onClick={() => setRoleModal(true)} size={isMobile ? 'sm' : 'md'}>Assign Role</Button>
-      </Group>
-      <Box style={{ overflow: 'hidden' }}>
-        <MantineTable
-          data={roles}
-          loading={loading}
-          size={isMobile ? 'small' : 'default'}
-          scroll={{ x: isMobile ? 600 : 'auto' }}
-          columns={[
-            { title: 'User ID', dataIndex: 'user_id' },
-            { title: 'Role', dataIndex: 'role' },
-            {
-              title: 'Actions',
-              key: 'actions',
-              width: 160,
-              render: (_: any, record: any) => (
-                <Group gap="xs">
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      form.setValues({
-                        user_id: record.user_id,
-                        role: record.role,
-                      });
-                      setRoleModal(true);
-                    }}
-                  >
-                    Reassign
-                  </Button>
-                  <Button size="sm" color="red" onClick={() => handleRemoveRole(record)}>
-                    Remove
-                  </Button>
-                </Group>
-              ),
-            },
-          ]}
-        />
-      </Box>
-      <Modal
-        title="Assign Finance Role"
-        opened={roleModal}
-        onClose={() => setRoleModal(false)}
-        size={isMobile ? '90%' : 600}
-      >
+      </div>
+      <div className="mb-2 flex items-center gap-2">
+        <button onClick={() => setRoleModal(true)} className="rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15">Assign Role</button>
+      </div>
+      <MantineTable data={roles} loading={loading} size={isMobile ? 'small' : 'default'} scroll={{ x: isMobile ? 600 : 'auto' }} columns={[
+        { title: 'User ID', dataIndex: 'user_id' },
+        { title: 'Role', dataIndex: 'role' },
+        { title: 'Actions', key: 'actions', width: 160, render: (_: any, record: any) => (
+          <Group gap="xs">
+            <Button size="sm" onClick={() => { form.setValues({ user_id: record.user_id, role: record.role }); setRoleModal(true); }}>Reassign</Button>
+            <Button size="sm" color="red" onClick={() => handleRemoveRole(record)}>Remove</Button>
+          </Group>
+        )},
+      ]} />
+      <Modal title="Assign Finance Role" opened={roleModal} onClose={() => setRoleModal(false)} size={isMobile ? '90%' : 600}>
         <form onSubmit={form.onSubmit(async (vals) => {
           setLoading(true);
           try {
@@ -1000,24 +488,8 @@ function ManagerConsole() {
           } finally { setLoading(false); }
         })}>
           <Stack>
-            <TextInput
-              label="User ID"
-              {...form.getInputProps('user_id')}
-              description="Enter user UUID or leave blank to generate one"
-            />
-            <Select
-              label="Role"
-              {...form.getInputProps('role')}
-              required
-              data={[
-                {value:'CFO',label:'CFO'},
-                {value:'Controller',label:'Controller'},
-                {value:'AP',label:'AP'},
-                {value:'AR',label:'AR'},
-                {value:'Treasury',label:'Treasury'},
-                {value:'Auditor',label:'Auditor'}
-              ]}
-            />
+            <TextInput label="User ID" {...form.getInputProps('user_id')} description="Enter user UUID or leave blank to generate one" />
+            <Select label="Role" {...form.getInputProps('role')} required data={[{value:'CFO',label:'CFO'},{value:'Controller',label:'Controller'},{value:'AP',label:'AP'},{value:'AR',label:'AR'},{value:'Treasury',label:'Treasury'},{value:'Auditor',label:'Auditor'}]} />
             <Group justify="flex-end" mt="md">
               <Button variant="subtle" onClick={() => setRoleModal(false)}>Cancel</Button>
               <Button type="submit" loading={loading}>Assign</Button>
@@ -1041,24 +513,16 @@ function CashFlowForecast() {
     const months = 6;
     const now = new Date();
     const sortedPeriods = Object.keys(revenueByMonth).sort();
-    let lastActualRevenue = sortedPeriods.length
-      ? revenueByMonth[sortedPeriods[sortedPeriods.length - 1]]
-      : 0;
+    let lastActualRevenue = sortedPeriods.length ? revenueByMonth[sortedPeriods[sortedPeriods.length - 1]] : 0;
     const forecast: Array<{ period: string; cash: number; revenue: number; expenses: number }> = [];
     let cash = 0;
-
     for (let i = -3; i < months; i++) {
       const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + i, 1));
       const period = d.toISOString().slice(0, 7);
       let revenue = revenueByMonth[period];
-      if (typeof revenue === 'number') {
-        lastActualRevenue = revenue;
-      } else if (i >= 0) {
-        revenue = Math.max(0, lastActualRevenue * (1 + growthRate));
-        lastActualRevenue = revenue;
-      } else {
-        revenue = 0;
-      }
+      if (typeof revenue === 'number') { lastActualRevenue = revenue; }
+      else if (i >= 0) { revenue = Math.max(0, lastActualRevenue * (1 + growthRate)); lastActualRevenue = revenue; }
+      else { revenue = 0; }
       const expenses = Math.round(revenue * expenseRatio);
       cash += revenue - expenses;
       forecast.push({ period, cash, revenue, expenses });
@@ -1070,86 +534,44 @@ function CashFlowForecast() {
     (async () => {
       setLoading(true);
       try {
-        const { data: orders } = await supabase
-          .from('orders')
-          .select('total_amount, created_at')
-          .gte('created_at', new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString());
-        const revenueMap: Record<string, number> = (orders || []).reduce(
-          (m: Record<string, number>, o: any) => {
-            const key = new Date(o.created_at).toISOString().slice(0, 7);
-            m[key] = (m[key] || 0) + (o.total_amount || 0);
-            return m;
-          },
-          {}
-        );
+        const { data: orders } = await supabase.from('orders').select('total_amount, created_at').gte('created_at', new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString());
+        const revenueMap: Record<string, number> = (orders || []).reduce((m: Record<string, number>, o: any) => { const key = new Date(o.created_at).toISOString().slice(0, 7); m[key] = (m[key] || 0) + (o.total_amount || 0); return m; }, {});
         setRevenueByMonth(revenueMap);
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     })();
-
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  useEffect(() => {
-    setSeries(buildForecast());
-  }, [buildForecast]);
+  useEffect(() => { setSeries(buildForecast()); }, [buildForecast]);
 
-  const scenarioCash = useMemo(
-    () => (series.length ? series[series.length - 1].cash : 0),
-    [series]
-  );
+  const scenarioCash = useMemo(() => (series.length ? series[series.length - 1].cash : 0), [series]);
 
   return (
     <div>
-      <Text c="gray.7" mb="md">
-        Adjust expense ratio and forward revenue growth to model cash runway in real time.
-      </Text>
-      <Stack
-        gap={isMobile ? 12 : 20}
-        mb={16}
-      >
-        <Box style={{ minWidth: isMobile ? '100%' : 240 }}>
+      <p className="mb-3 text-xs text-muted-foreground">Adjust expense ratio and forward revenue growth to model cash runway in real time.</p>
+      <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4">
+        <div>
           <Text fw={600} mb={4}>Expense Ratio</Text>
-          <Slider
-            min={30}
-            max={90}
-            step={1}
-            value={Math.round(expenseRatio * 100)}
-            onChange={(val) => setExpenseRatio((Array.isArray(val) ? val[0] : val) / 100)}
-            mb={4}
-          />
+          <Slider min={30} max={90} step={1} value={Math.round(expenseRatio * 100)} onChange={(val) => setExpenseRatio((Array.isArray(val) ? val[0] : val) / 100)} mb={4} />
           <Text size="sm" c="dimmed">{Math.round(expenseRatio * 100)}%</Text>
-        </Box>
-        <Box style={{ minWidth: isMobile ? '100%' : 240 }}>
+        </div>
+        <div>
           <Text fw={600} mb={4}>Forward Growth Rate</Text>
-          <Slider
-            min={-20}
-            max={40}
-            step={1}
-            value={Math.round(growthRate * 100)}
-            onChange={(val) => setGrowthRate((Array.isArray(val) ? val[0] : val) / 100)}
-            mb={4}
-          />
+          <Slider min={-20} max={40} step={1} value={Math.round(growthRate * 100)} onChange={(val) => setGrowthRate((Array.isArray(val) ? val[0] : val) / 100)} mb={4} />
           <Text size="sm" c="dimmed">{Math.round(growthRate * 100)}%</Text>
-        </Box>
-        <Box style={{ minWidth: isMobile ? '100%' : 220 }}>
+        </div>
+        <div>
           <Text fw={600} mb={4}>Cash After Scenario</Text>
-          <Text size={isMobile ? 'lg' : 'xl'} fw={700} c="green.7">
-            ${Math.round(scenarioCash).toLocaleString()}
-          </Text>
-          <Text size="sm" c="dimmed">6-month cumulative outlook</Text>
-        </Box>
-        <Button 
-          onClick={() => { setExpenseRatio(0.65); setGrowthRate(0.05); }} 
-          disabled={expenseRatio === 0.65 && growthRate === 0.05}
-        >
-          Reset Scenario
-        </Button>
-      </Stack>
+          <p className="text-lg font-bold text-foreground">${Math.round(scenarioCash).toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">6-month cumulative outlook</p>
+        </div>
+        <div className="flex items-end">
+          <button onClick={() => { setExpenseRatio(0.65); setGrowthRate(0.05); }} disabled={expenseRatio === 0.65 && growthRate === 0.05} className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-50">Reset Scenario</button>
+        </div>
+      </div>
       <div style={{ height: 320, marginBottom: 16 }}>
         <ChartContainer config={{ cash: { label: 'Cash', color: '#16a34a' } }}>
           <LineChart data={series} margin={{ left: 12, right: 12, top: 8, bottom: 8 }}>
@@ -1161,20 +583,12 @@ function CashFlowForecast() {
           </LineChart>
         </ChartContainer>
       </div>
-      <Box style={{ overflow: 'hidden' }}>
-        <MantineTable
-          data={series.map((s) => ({ key: s.period, ...s }))}
-          loading={loading}
-          pagination={false}
-          size={isMobile ? 'small' : 'default'}
-          columns={[
-            { title: 'Period', dataIndex: 'period' },
-            { title: 'Revenue', dataIndex: 'revenue', render: (v: number) => `$${(v || 0).toLocaleString()}` },
-            { title: 'Expenses', dataIndex: 'expenses', render: (v: number) => `$${(v || 0).toLocaleString()}` },
-            { title: 'Projected Cash', dataIndex: 'cash', render: (v: number) => `$${(v || 0).toLocaleString()}` },
-          ]}
-        />
-      </Box>
+      <MantineTable data={series.map((s) => ({ key: s.period, ...s }))} loading={loading} pagination={false} size={isMobile ? 'small' : 'default'} columns={[
+        { title: 'Period', dataIndex: 'period' },
+        { title: 'Revenue', dataIndex: 'revenue', render: (v: number) => `$${(v || 0).toLocaleString()}` },
+        { title: 'Expenses', dataIndex: 'expenses', render: (v: number) => `$${(v || 0).toLocaleString()}` },
+        { title: 'Projected Cash', dataIndex: 'cash', render: (v: number) => `$${(v || 0).toLocaleString()}` },
+      ]} />
     </div>
   );
 }
@@ -1184,136 +598,57 @@ function ApprovalsPanel() {
   const [status, setStatus] = useState<string>('pending');
   const [loading, setLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const statusColors = useMemo(() => ({
-    pending: 'gold',
-    approved: 'green',
-    rejected: 'red',
-  }), []);
+  const toast = useToast();
 
   const loadApprovals = useCallback(async (statusFilter: string) => {
-    const { data } = await supabase
-      .from('ceo_financial_approvals')
-      .select('id, requester, description, amount, status, created_at')
-      .eq('status', statusFilter)
-      .order('created_at', { ascending: false });
+    const { data } = await supabase.from('ceo_financial_approvals').select('id, requester, description, amount, status, created_at').eq('status', statusFilter).order('created_at', { ascending: false });
     setRows((data || []).map((d: any) => ({ key: d.id, ...d })));
   }, []);
 
   const handleApprovalAction = useCallback(async (record: any, nextStatus: 'approved' | 'rejected') => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('ceo_financial_approvals')
-        .update({ status: nextStatus })
-        .eq('id', record.id);
+      const { error } = await supabase.from('ceo_financial_approvals').update({ status: nextStatus }).eq('id', record.id);
       if (error) throw error;
       toast.success(`Request ${nextStatus}`, 'Success');
       await loadApprovals(status);
     } catch (err) {
-      console.error('Failed to update approval', err);
       toast.error('Unable to update approval', 'Error');
-    } finally {
-      setLoading(false);
-    }
-  }, [loadApprovals, status]);
+    } finally { setLoading(false); }
+  }, [loadApprovals, status, toast]);
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        await loadApprovals(status);
-      } finally {
-        setLoading(false);
-      }
-    })();
-    
+    (async () => { setLoading(true); try { await loadApprovals(status); } finally { setLoading(false); } })();
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, [status, loadApprovals]);
+
   return (
-    <div style={{ position: 'relative' }}>
-      <InfoIcon content="Review and approve pending financial transactions, expense requests, and spending authorizations. Filter by status to view pending, approved, or rejected items." title="Financial Approvals" />
-      <Stack gap="xs" mb={12}>
-        <Text>Filter:</Text>
-        <Group>
-          <Button 
-            variant={status==='pending'? 'filled':'default'} 
-            onClick={() => setStatus('pending')} 
-            fullWidth={isMobile}
-          >
-            Pending
-          </Button>
-          <Button 
-            variant={status==='approved'? 'filled':'default'} 
-            onClick={() => setStatus('approved')} 
-            fullWidth={isMobile}
-          >
-            Approved
-          </Button>
-          <Button 
-            variant={status==='rejected'? 'filled':'default'} 
-            onClick={() => setStatus('rejected')} 
-            fullWidth={isMobile}
-          >
-            Rejected
-          </Button>
-        </Group>
-      </Stack>
-      <Box style={{ overflow: 'hidden' }}>
-        <MantineTable
-          data={rows}
-          loading={loading}
-          size={isMobile ? 'small' : 'default'}
-          scroll={{ x: isMobile ? 800 : 'auto' }}
-          pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }}
-          columns={[
-            { title: 'ID', dataIndex: 'id', width: 90 },
-            { title: 'Requester', dataIndex: 'requester' },
-            { title: 'Description', dataIndex: 'description' },
-            { title: 'Amount', dataIndex: 'amount', render: (v: number) => `$${(v||0).toLocaleString()}` },
-            { title: 'Status', dataIndex: 'status', render: (value: string) => (
-              <Badge color={statusColors[value] || 'gray'} style={{ textTransform: 'capitalize' }}>
-                {value}
-              </Badge>
-            ) },
-            { title: 'Created', dataIndex: 'created_at', render: (v: string) => new Date(v).toLocaleString(), width: 180 },
-            {
-              title: 'Actions',
-              key: 'actions',
-              width: 220,
-              render: (_: any, record: any) => (
-                <Group gap="xs" wrap>
-                  <Button size="sm" variant="filled" onClick={() => handleApprovalAction(record, 'approved')}>
-                    Approve
-                  </Button>
-                  <Button
-                    size="sm"
-                    color="red"
-                    onClick={() =>
-                      modals.openConfirmModal({
-                        title: 'Reject request?',
-                        children: <Text>This will mark the request as rejected.</Text>,
-                        labels: { confirm: 'Reject', cancel: 'Cancel' },
-                        confirmProps: { color: 'red' },
-                        onConfirm: () => handleApprovalAction(record, 'rejected'),
-                      })
-                    }
-                  >
-                    Reject
-                  </Button>
-                </Group>
-              ),
-            },
-          ]}
-        />
-      </Box>
+    <div>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {['pending', 'approved', 'rejected'].map(s => (
+          <button key={s} onClick={() => setStatus(s)} className={`rounded-md border px-3 py-1.5 text-xs font-semibold capitalize ${status === s ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground'}`}>{s}</button>
+        ))}
+      </div>
+      <MantineTable data={rows} loading={loading} size={isMobile ? 'small' : 'default'} scroll={{ x: isMobile ? 800 : 'auto' }} pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }} columns={[
+        { title: 'ID', dataIndex: 'id', width: 90 },
+        { title: 'Requester', dataIndex: 'requester' },
+        { title: 'Description', dataIndex: 'description' },
+        { title: 'Amount', dataIndex: 'amount', render: (v: number) => `$${(v||0).toLocaleString()}` },
+        { title: 'Status', dataIndex: 'status', render: (value: string) => <Badge color={value === 'approved' ? 'green' : value === 'rejected' ? 'red' : 'yellow'} style={{ textTransform: 'capitalize' }}>{value}</Badge> },
+        { title: 'Created', dataIndex: 'created_at', render: (v: string) => new Date(v).toLocaleString(), width: 180 },
+        { title: 'Actions', key: 'actions', width: 220, render: (_: any, record: any) => (
+          <Group gap="xs">
+            <Button size="sm" variant="filled" onClick={() => handleApprovalAction(record, 'approved')}>Approve</Button>
+            <Button size="sm" color="red" onClick={() => modals.openConfirmModal({ title: 'Reject request?', children: <Text>This will mark the request as rejected.</Text>, labels: { confirm: 'Reject', cancel: 'Cancel' }, confirmProps: { color: 'red' }, onConfirm: () => handleApprovalAction(record, 'rejected') })}>Reject</Button>
+          </Group>
+        )},
+      ]} />
     </div>
   );
 }
-
-
 
 function CloseManagement() {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -1321,6 +656,8 @@ function CloseManagement() {
   const [loading, setLoading] = useState(false);
   const [rolling, setRolling] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const toast = useToast();
+
   const loadCloseData = useCallback(async () => {
     const [t, r] = await Promise.all([
       supabase.from('close_tasks').select('id, period, name, owner, status, due_day').order('due_day', { ascending: true }),
@@ -1334,175 +671,80 @@ function CloseManagement() {
     setLoading(true);
     try {
       const statusToSet = nextStatus || (record.status === 'done' ? 'todo' : 'done');
-      const { error } = await supabase
-        .from('close_tasks')
-        .update({ status: statusToSet })
-        .eq('id', record.id);
+      const { error } = await supabase.from('close_tasks').update({ status: statusToSet }).eq('id', record.id);
       if (error) throw error;
       toast.success(`Task marked ${statusToSet}`, 'Success');
       await loadCloseData();
-    } catch (err) {
-      console.error('Failed to update close task', err);
-      toast.error('Unable to update task', 'Error');
-    } finally {
-      setLoading(false);
-    }
-  }, [loadCloseData]);
+    } catch (err) { toast.error('Unable to update task', 'Error'); } finally { setLoading(false); }
+  }, [loadCloseData, toast]);
 
   const handleReconStatusChange = useCallback(async (record: any, nextStatus?: string) => {
     setLoading(true);
     try {
       const statusToSet = nextStatus || (record.status === 'tied' ? 'open' : 'tied');
-      const { error } = await supabase
-        .from('reconciliations')
-        .update({ status: statusToSet })
-        .eq('id', record.id);
+      const { error } = await supabase.from('reconciliations').update({ status: statusToSet }).eq('id', record.id);
       if (error) throw error;
       toast.success(`Reconciliation ${statusToSet}`, 'Success');
       await loadCloseData();
-    } catch (err) {
-      console.error('Failed to update reconciliation', err);
-      toast.error('Unable to update reconciliation', 'Error');
-    } finally {
-      setLoading(false);
-    }
-  }, [loadCloseData]);
+    } catch (err) { toast.error('Unable to update reconciliation', 'Error'); } finally { setLoading(false); }
+  }, [loadCloseData, toast]);
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        await loadCloseData();
-      } finally {
-        setLoading(false);
-      }
-    })();
-    
+    (async () => { setLoading(true); try { await loadCloseData(); } finally { setLoading(false); } })();
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
   return (
-    <Grid gutter="md">
-      <Grid.Col span={{ base: 24, lg: 14 }}>
-        <Title order={5}>Close Checklist</Title>
-        <Group mb={8}>
-          <Button 
-            onClick={async () => {
-              setRolling(true);
-              try {
-                const now = new Date();
-                const currentPeriod = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().slice(0,7);
-                const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth()-1, 1)).toISOString().slice(0,7);
-                // Pull previous tasks and clone to current
-                const { data: prevTasks } = await supabase.from('close_tasks').select('*').eq('period', prev);
-                if (prevTasks && prevTasks.length) {
-                  const inserts = prevTasks.map((t: any) => ({ period: currentPeriod, name: t.name, owner: t.owner, status: 'todo', due_day: t.due_day }));
-                  await supabase.from('close_tasks').insert(inserts);
-                  toast.success('Rolled close tasks forward', 'Success');
-                  await loadCloseData();
-                } else {
-                  toast.info('No previous tasks to roll', 'Info');
-                }
-              } finally {
-                setRolling(false);
-              }
-            }}
-            loading={rolling}
-          >
-            Roll Previous Month
-          </Button>
-        </Group>
-        <Box style={{ overflow: 'hidden' }}>
-          <MantineTable
-            data={tasks}
-            loading={loading}
-            pagination={false}
-            size={isMobile ? 'small' : 'default'}
-            scroll={{ x: isMobile ? 600 : 'auto' }}
-            columns={[
-              { title: 'Period', dataIndex: 'period', width: 110 },
-              { title: 'Task', dataIndex: 'name' },
-              { title: 'Owner', dataIndex: 'owner', width: 140 },
-              { title: 'Due (Day)', dataIndex: 'due_day', width: 100 },
-              {
-                title: 'Done',
-                dataIndex: 'status',
-                width: 80,
-                render: (_: any, record: any) => (
-                  <Checkbox
-                    checked={record.status === 'done'}
-                    onChange={() => handleTaskStatusChange(record)}
-                  />
-                ),
-              },
-              { title: 'Status', dataIndex: 'status', width: 120 },
-              {
-                title: 'Actions',
-                key: 'actions',
-                width: 160,
-                render: (_: any, record: any) => (
-                  <Group gap="xs">
-                    <Button size="sm" onClick={() => handleTaskStatusChange(record, 'in_progress')}>
-                      Start
-                    </Button>
-                    <Button size="sm" variant="filled" onClick={() => handleTaskStatusChange(record, 'done')}>
-                      Complete
-                    </Button>
-                  </Group>
-                ),
-              },
-            ]}
-          />
-        </Box>
-      </Grid.Col>
-      <Grid.Col span={{ base: 24, lg: 10 }}>
-        <Title order={5}>Reconciliations</Title>
-        <Box style={{ overflow: 'hidden' }}>
-          <MantineTable
-            data={recs}
-            loading={loading}
-            pagination={false}
-            size={isMobile ? 'small' : 'default'}
-            scroll={{ x: isMobile ? 600 : 'auto' }}
-            columns={[
-              { title: 'Period', dataIndex: 'period', width: 110 },
-              { title: 'Type', dataIndex: 'type', width: 140 },
-              { title: 'Status', dataIndex: 'status', width: 120 },
-              {
-                title: 'Actions',
-                key: 'actions',
-                width: 160,
-                render: (_: any, record: any) => (
-                  <Group gap="xs">
-                    <Button size="sm" onClick={() => handleReconStatusChange(record, 'in_progress')}>
-                      Work
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="filled"
-                      onClick={() => handleReconStatusChange(record, 'tied')}
-                    >
-                      Tie Out
-                    </Button>
-                  </Group>
-                ),
-              },
-              { title: 'Notes', dataIndex: 'notes' },
-            ]}
-          />
-        </Box>
-      </Grid.Col>
-    </Grid>
+    <div className="grid gap-3 lg:grid-cols-2">
+      <div>
+        <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Close Checklist</h4>
+        <div className="mb-2">
+          <Button onClick={async () => {
+            setRolling(true);
+            try {
+              const now = new Date();
+              const currentPeriod = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().slice(0,7);
+              const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth()-1, 1)).toISOString().slice(0,7);
+              const { data: prevTasks } = await supabase.from('close_tasks').select('*').eq('period', prev);
+              if (prevTasks && prevTasks.length) {
+                const inserts = prevTasks.map((t: any) => ({ period: currentPeriod, name: t.name, owner: t.owner, status: 'todo', due_day: t.due_day }));
+                await supabase.from('close_tasks').insert(inserts);
+                toast.success('Rolled close tasks forward', 'Success');
+                await loadCloseData();
+              } else { toast.info('No previous tasks to roll', 'Info'); }
+            } finally { setRolling(false); }
+          }} loading={rolling} size="sm">Roll Previous Month</Button>
+        </div>
+        <MantineTable data={tasks} loading={loading} pagination={false} size={isMobile ? 'small' : 'default'} scroll={{ x: isMobile ? 600 : 'auto' }} columns={[
+          { title: 'Period', dataIndex: 'period', width: 110 },
+          { title: 'Task', dataIndex: 'name' },
+          { title: 'Owner', dataIndex: 'owner', width: 140 },
+          { title: 'Due', dataIndex: 'due_day', width: 80 },
+          { title: 'Done', dataIndex: 'status', width: 60, render: (_: any, record: any) => <Checkbox checked={record.status === 'done'} onChange={() => handleTaskStatusChange(record)} /> },
+          { title: 'Actions', key: 'actions', width: 160, render: (_: any, record: any) => (
+            <Group gap="xs"><Button size="sm" onClick={() => handleTaskStatusChange(record, 'in_progress')}>Start</Button><Button size="sm" variant="filled" onClick={() => handleTaskStatusChange(record, 'done')}>Done</Button></Group>
+          )},
+        ]} />
+      </div>
+      <div>
+        <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reconciliations</h4>
+        <MantineTable data={recs} loading={loading} pagination={false} size={isMobile ? 'small' : 'default'} scroll={{ x: isMobile ? 600 : 'auto' }} columns={[
+          { title: 'Period', dataIndex: 'period', width: 110 },
+          { title: 'Type', dataIndex: 'type', width: 140 },
+          { title: 'Status', dataIndex: 'status', width: 100 },
+          { title: 'Actions', key: 'actions', width: 160, render: (_: any, record: any) => (
+            <Group gap="xs"><Button size="sm" onClick={() => handleReconStatusChange(record, 'in_progress')}>Work</Button><Button size="sm" variant="filled" onClick={() => handleReconStatusChange(record, 'tied')}>Tie Out</Button></Group>
+          )},
+          { title: 'Notes', dataIndex: 'notes' },
+        ]} />
+      </div>
+    </div>
   );
 }
 
-
 export default function CFOPortal() {
-  return (
-    <EmbeddedToastProvider>
-      <CFOPortalContent />
-    </EmbeddedToastProvider>
-  );
+  return <EmbeddedToastProvider><CFOPortalContent /></EmbeddedToastProvider>;
 }
