@@ -136,24 +136,15 @@ Return ONLY the JSON object, no markdown or extra text.`,
       },
     ];
 
-    if (isPdf) {
-      // For PDFs, pass as a file URL to GPT-4o
-      userContent.push({
-        type: "file",
-        file: {
-          url: `data:application/pdf;base64,${cleanBase64}`,
-        },
-      });
-    } else {
-      // For images
-      userContent.push({
-        type: "image_url",
-        image_url: {
-          url: `data:${content_type || "image/png"};base64,${cleanBase64}`,
-          detail: "high",
-        },
-      });
-    }
+    // Use image_url format with data URI for both PDFs and images
+    // This is compatible with both OpenAI and the Lovable AI Gateway (Gemini)
+    const mimeType = isPdf ? "application/pdf" : (content_type || "image/png");
+    userContent.push({
+      type: "image_url",
+      image_url: {
+        url: `data:${mimeType};base64,${cleanBase64}`,
+      },
+    });
 
     const aiEndpoint = useGateway
       ? "https://ai.gateway.lovable.dev/v1/chat/completions"
