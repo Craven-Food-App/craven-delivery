@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Text, Stack, Box, Group } from '@mantine/core';
+import { Button, Text, Stack, Box, Group, Checkbox } from '@mantine/core';
 import { Smartphone, QrCode } from 'lucide-react';
 import QRCode from 'qrcode';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +17,7 @@ export const AppDownloadStep: React.FC<AppDownloadStepProps> = ({ onNext, onBack
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [resendLoading, setResendLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState<string>('');
+  const [confirmedDownload, setConfirmedDownload] = useState(false);
   const { toast } = useToast();
 
   // Fetch phone number from database if not in applicationData
@@ -253,6 +254,7 @@ export const AppDownloadStep: React.FC<AppDownloadStepProps> = ({ onNext, onBack
   };
 
   const handleContinue = () => {
+    if (!confirmedDownload) return;
     onNext({
       ...applicationData
     });
@@ -388,17 +390,39 @@ export const AppDownloadStep: React.FC<AppDownloadStepProps> = ({ onNext, onBack
           </Button>
         </Box>
 
+        {/* Download Confirmation */}
+        <Box
+          p="md"
+          style={{
+            backgroundColor: '#F9F9F9',
+            borderRadius: '8px',
+            border: '1px solid #E5E5E5',
+            marginTop: '16px'
+          }}
+        >
+          <Checkbox
+            checked={confirmedDownload}
+            onChange={(e) => setConfirmedDownload(e.currentTarget.checked)}
+            label={
+              <Text size="sm" fw={500}>
+                I have downloaded the Crave'n Feeder app on my phone
+              </Text>
+            }
+          />
+        </Box>
+
         {/* Continue Button */}
         <Button
           size="lg"
           fullWidth
+          disabled={!confirmedDownload}
           onClick={handleContinue}
           style={{
             height: '48px',
-            backgroundColor: '#DC2626',
+            backgroundColor: confirmedDownload ? '#DC2626' : undefined,
             borderRadius: '8px',
             fontWeight: 600,
-            marginTop: '24px'
+            marginTop: '8px'
           }}
         >
           Continue
