@@ -402,28 +402,45 @@ export const EnhancedOnboardingDashboard: React.FC = () => {
           </Button>
         );
       case 'download_mobile_app':
+        return (
+          <Button
+            size="sm"
+            onClick={() => {
+              window.open('https://play.google.com/store/apps/details?id=com.craven.delivery.feeder&pcampaignid=web_share', '_blank');
+            }}
+            color="#ff7a00"
+          >
+            Download App
+          </Button>
+        );
       case 'join_facebook_group':
+        return (
+          <Button
+            size="sm"
+            onClick={() => {
+              // Open Facebook group link - task will be verified by admin
+              window.open('https://www.facebook.com/groups/cravendelivery', '_blank');
+            }}
+            color="#ff7a00"
+          >
+            Join Group
+          </Button>
+        );
       case 'complete_service_training':
         return (
           <Button
             size="sm"
-            onClick={() => completeTask(task.id, task.task_key)}
-            disabled={isLoading}
-            color="green"
+            onClick={() => navigate('/enhanced-onboarding/training')}
+            color="#ff7a00"
           >
-            {isLoading ? 'Processing...' : "I've Done This"}
+            Start Training
           </Button>
         );
       default:
         return (
-          <Button
-            size="sm"
-            onClick={() => completeTask(task.id, task.task_key)}
-            disabled={isLoading}
-            variant="outline"
-          >
-            {isLoading ? 'Processing...' : 'Start Task'}
-          </Button>
+          <Badge variant="outline" color="orange">
+            Pending Admin Verification
+          </Badge>
         );
     }
   };

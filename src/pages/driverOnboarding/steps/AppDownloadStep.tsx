@@ -390,17 +390,39 @@ export const AppDownloadStep: React.FC<AppDownloadStepProps> = ({ onNext, onBack
           </Button>
         </Box>
 
+        {/* Download Confirmation */}
+        <Box
+          p="md"
+          style={{
+            backgroundColor: '#F9F9F9',
+            borderRadius: '8px',
+            border: '1px solid #E5E5E5',
+            marginTop: '16px'
+          }}
+        >
+          <Checkbox
+            checked={confirmedDownload}
+            onChange={(e) => setConfirmedDownload(e.currentTarget.checked)}
+            label={
+              <Text size="sm" fw={500}>
+                I have downloaded the Crave'n Feeder app on my phone
+              </Text>
+            }
+          />
+        </Box>
+
         {/* Continue Button */}
         <Button
           size="lg"
           fullWidth
+          disabled={!confirmedDownload}
           onClick={handleContinue}
           style={{
             height: '48px',
-            backgroundColor: '#DC2626',
+            backgroundColor: confirmedDownload ? '#DC2626' : undefined,
             borderRadius: '8px',
             fontWeight: 600,
-            marginTop: '24px'
+            marginTop: '8px'
           }}
         >
           Continue

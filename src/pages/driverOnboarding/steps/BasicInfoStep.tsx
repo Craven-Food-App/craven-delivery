@@ -595,6 +595,46 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
         {/* Form */}
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Stack gap="md">
+            {/* Email */}
+            <div>
+              <Text size="sm" fw={500} mb="xs" style={{ color: '#191919' }}>
+                Email address
+              </Text>
+              <TextInput
+                placeholder="you@email.com"
+                size="md"
+                type="email"
+                styles={{
+                  input: {
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    color: '#191919'
+                  }
+                }}
+                {...form.getInputProps('email')}
+              />
+            </div>
+
+            {/* Phone */}
+            <div>
+              <Text size="sm" fw={500} mb="xs" style={{ color: '#191919' }}>
+                Phone number
+              </Text>
+              <TextInput
+                placeholder="(555) 555-5555"
+                size="md"
+                type="tel"
+                styles={{
+                  input: {
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    color: '#191919'
+                  }
+                }}
+                {...form.getInputProps('phone')}
+              />
+            </div>
+
             {/* Legal First Name */}
             <div>
               <Text size="sm" fw={500} mb="xs" style={{ color: '#191919' }}>
