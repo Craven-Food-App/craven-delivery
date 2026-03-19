@@ -603,7 +603,7 @@ const ApplicationReview: React.FC = () => {
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
+                  <div className={cn("h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold", detailApp.is_seeded ? "bg-orange-100 text-orange-600" : "bg-muted text-muted-foreground")}>
                     {detailApp.first_name?.[0]}{detailApp.last_name?.[0]}
                   </div>
                   <div>

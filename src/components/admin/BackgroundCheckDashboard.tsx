@@ -457,7 +457,7 @@ export default function BackgroundCheckDashboard() {
                 <div className="space-y-5 mt-2">
                   {/* Applicant Info */}
                   <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${selectedApp.is_seeded ? 'bg-orange-100 text-orange-600' : 'bg-primary/10 text-primary'}`}>
                       {selectedApp.first_name?.[0]}{selectedApp.last_name?.[0]}
                     </div>
                     <div className="flex-1">
