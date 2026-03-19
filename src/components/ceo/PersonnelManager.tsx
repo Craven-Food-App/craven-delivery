@@ -318,32 +318,40 @@ export const PersonnelManager: React.FC = () => {
 
   const onPositionChange = (positionCode: string) => {
     const v = form.getFieldsValue();
-    // Try to find in database positions first
-    const dbPos = positions.find(p => p.code === positionCode || p.id === positionCode);
-    // Fallback to hardcoded positions
-    const hardcodedPos = POSITIONS.find(p => p.code === positionCode || p.label === positionCode);
-    const pos = dbPos || hardcodedPos;
-    
-    if (pos) {
-      const code = dbPos?.code || hardcodedPos?.code || positionCode;
-      const { named, roleAlias } = buildEmails(v.first_name || '', v.last_name || '', code, 'cravenusa.com');
-      setSuggestedEmails({ 
-        named, 
-        roleAlias: (dbPos?.is_executive || hardcodedPos?.isExecutive) ? roleAlias : undefined 
-      });
-    } else {
+    const pos = positions.find(
+      (position) =>
+        position.code === positionCode ||
+        position.id === positionCode ||
+        position.title === positionCode
+    );
+
+    if (!pos?.code) {
       setSuggestedEmails({});
+      return;
     }
+
+    const { named, roleAlias } = buildEmails(v.first_name || '', v.last_name || '', pos.code, 'cravenusa.com');
+    setSuggestedEmails({
+      named,
+      roleAlias: pos.is_executive ? roleAlias : undefined,
+    });
   };
 
   const issueEmails = async () => {
     try {
       const v = await form.validateFields();
-      const pos = POSITIONS.find(p => p.label === v.position || p.code === v.position);
-      if (!pos) {
-        message.error('Select a position');
+      const pos = positions.find(
+        (position) =>
+          position.code === v.position ||
+          position.id === v.position ||
+          position.title === v.position
+      );
+
+      if (!pos?.code) {
+        message.error('Selected position is not configured in the positions table.');
         return;
       }
+
       const res = await supabase.functions.invoke('msgraph-provision', {
         body: { firstName: v.first_name, lastName: v.last_name, positionCode: pos.code, domain: 'cravenusa.com' }
       });
