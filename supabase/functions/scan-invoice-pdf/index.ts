@@ -68,10 +68,14 @@ serve(async (req) => {
       );
     }
 
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiKey) {
+    const apiKey = lovableKey || openaiKey;
+    const useGateway = !!lovableKey;
+
+    if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: "OpenAI API key not configured" }),
+        JSON.stringify({ error: "No AI API key configured (LOVABLE_API_KEY or OPENAI_API_KEY)" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
