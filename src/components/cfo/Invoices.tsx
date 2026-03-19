@@ -612,6 +612,14 @@ export const Invoices: React.FC = () => {
             <Text c="dimmed" size="sm">Manage vendor invoices, record payments, and track statuses</Text>
           </div>
           <Group>
+            <Button
+              leftSection={<IconUpload size={16} />}
+              variant="light"
+              color="orange"
+              onClick={() => { setBulkFiles([]); setBulkProgress({ current: 0, total: 0, results: [] }); setBulkModalOpen(true); }}
+            >
+              Bulk Upload & Scan
+            </Button>
             <FileButton onChange={handlePdfImport} accept="application/pdf,image/*">
               {(props) => (
                 <Button {...props} leftSection={<IconFileTypePdf size={16} />} variant="light" color="teal" loading={parsingPdf}>
