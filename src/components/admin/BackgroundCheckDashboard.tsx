@@ -362,7 +362,7 @@ export default function BackgroundCheckDashboard() {
                     <TableRow key={app.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${app.is_seeded ? 'bg-orange-100 text-orange-600' : 'bg-primary/10 text-primary'}`}>
                             {app.first_name?.[0]}{app.last_name?.[0]}
                           </div>
                           <div>
