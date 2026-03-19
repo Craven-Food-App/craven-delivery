@@ -276,10 +276,43 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
       // Find matching region by zip_prefix
       if (regionsData && regionsData.length > 0) {
         const matchingRegion = regionsData.find(r => 
-          values.zip.startsWith(r.zip_prefix)
+          r.zip_prefix && values.zip.startsWith(r.zip_prefix)
         );
-        regionId = matchingRegion?.id || regionsData[0].id; // Default to first region if no match
-        regionName = matchingRegion?.name || regionsData[0].name || '';
+        if (matchingRegion) {
+          regionId = matchingRegion.id;
+          regionName = matchingRegion.name || '';
+        }
+      }
+
+      // Auto-create region if no match found
+      if (!regionId) {
+        const zipPrefix = values.zip.substring(0, 3);
+        const city = detectedLocation?.city || '';
+        const state = detectedLocation?.state || '';
+        const newRegionName = city && state ? `${city}, ${state}` : `Region ${zipPrefix}`;
+        
+        const { data: newRegion, error: regionError } = await supabase
+          .from('regions')
+          .insert({ 
+            name: newRegionName, 
+            zip_prefix: zipPrefix,
+            status: 'active'
+          })
+          .select('id, name')
+          .single();
+        
+        if (newRegion && !regionError) {
+          regionId = newRegion.id;
+          regionName = newRegion.name || '';
+          console.log(`Auto-created new region: ${newRegionName} (prefix: ${zipPrefix})`);
+        } else {
+          console.error('Failed to auto-create region:', regionError);
+          // Fall back to first region if creation fails
+          if (regionsData && regionsData.length > 0) {
+            regionId = regionsData[0].id;
+            regionName = regionsData[0].name || '';
+          }
+        }
       }
 
       // 3. Use separate name fields
