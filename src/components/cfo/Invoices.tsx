@@ -420,7 +420,6 @@ export const Invoices: React.FC = () => {
         due_date: formData.due_date,
         amount: amt,
         tax_amount: tax,
-        total_amount: amt + tax,
         department_id: formData.department_id || null,
         expense_category_id: formData.expense_category_id || null,
         line_items: formData.line_items.length > 0 ? formData.line_items : [{ description: 'Line item', quantity: 1, unit_price: amt, amount: amt }],
