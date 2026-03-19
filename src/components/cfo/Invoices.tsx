@@ -252,40 +252,54 @@ export const Invoices: React.FC = () => {
     setEditingInvoice(null);
   };
 
-  // ── PDF Import ─────────────────────────────────────────────────
+  // ── PDF Import (AI-powered) ─────────────────────────────────────
 
   const handlePdfImport = async (file: File | null) => {
     if (!file) return;
     setInvoiceFile(file);
+    setParsingPdf(true);
 
-    if (file.type === 'application/pdf') {
-      setParsingPdf(true);
-      try {
-        const parsed: ParsedInvoice = await parseInvoicePdf(file);
-        setFormData(prev => ({
-          ...prev,
-          vendor_name: parsed.vendor_name || prev.vendor_name,
-          vendor_email: parsed.vendor_email || prev.vendor_email,
-          vendor_address: parsed.vendor_address || prev.vendor_address,
-          invoice_number: parsed.invoice_number || prev.invoice_number,
-          invoice_date: parsed.invoice_date || prev.invoice_date,
-          due_date: parsed.due_date || prev.due_date,
-          amount: parsed.subtotal || parsed.total_amount || prev.amount,
-          tax_amount: parsed.tax_amount || prev.tax_amount,
-          line_items: parsed.line_items.length > 0 ? parsed.line_items : prev.line_items,
-          notes: parsed.notes || prev.notes,
-        }));
-        notifications.show({ title: 'PDF Parsed', message: `Extracted data from "${file.name}". Please verify and edit as needed.`, color: 'teal' });
-      } catch (err: any) {
-        console.error('PDF parse error:', err);
-        notifications.show({ title: 'Could not parse PDF', message: 'Auto-fill skipped. You can still enter data manually.', color: 'orange' });
-      } finally {
-        setParsingPdf(false);
-      }
-    }
-    // Open the create modal if not already open
+    // Open the create modal immediately
     if (!modalOpen) {
       setModalOpen(true);
+    }
+
+    try {
+      const base64 = await fileToBase64(file);
+      const { data, error } = await supabase.functions.invoke('scan-invoice-pdf', {
+        body: {
+          file_base64: base64,
+          file_name: file.name,
+          content_type: file.type,
+          auto_create: false, // Don't auto-create, just extract data for the form
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const extracted = data?.extracted;
+      if (extracted) {
+        setFormData(prev => ({
+          ...prev,
+          vendor_name: extracted.vendor_name || prev.vendor_name,
+          vendor_email: extracted.vendor_email || prev.vendor_email,
+          vendor_address: extracted.vendor_address || prev.vendor_address,
+          invoice_number: extracted.invoice_number || prev.invoice_number,
+          invoice_date: extracted.invoice_date || prev.invoice_date,
+          due_date: extracted.due_date || prev.due_date,
+          amount: extracted.subtotal || extracted.total_amount || prev.amount,
+          tax_amount: extracted.tax_amount || prev.tax_amount,
+          line_items: extracted.line_items?.length > 0 ? extracted.line_items : prev.line_items,
+          notes: extracted.notes || prev.notes,
+        }));
+        notifications.show({ title: 'AI Scan Complete', message: `Extracted data from "${file.name}". Please verify and edit as needed.`, color: 'teal' });
+      }
+    } catch (err: any) {
+      console.error('AI PDF scan error:', err);
+      notifications.show({ title: 'Could not scan PDF', message: err.message || 'AI extraction failed. You can still enter data manually.', color: 'orange' });
+    } finally {
+      setParsingPdf(false);
     }
   };
 
