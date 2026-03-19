@@ -216,3 +216,6 @@ verify_jwt = true
 
 [functions.twilio-voice-webhook]
 verify_jwt = false
+
+[functions.scan-invoice-pdf]
+verify_jwt = false
