@@ -720,16 +720,22 @@ export const PersonnelManager: React.FC = () => {
 
         // Pre-acceptance notification: provisional emails
         try {
-          const posDef = POSITIONS.find(p => p.code === (values.position || ''));
-          if (posDef) {
+          const posDef = positions.find(
+            (position) =>
+              position.code === values.position ||
+              position.title === values.position ||
+              position.id === values.position
+          );
+
+          if (posDef?.code) {
             const emails = buildEmails(values.first_name, values.last_name, posDef.code, 'cravenusa.com');
             await supabase.functions.invoke('send-preaccept-email', {
               body: {
                 candidateEmail: values.email,
                 candidateName: `${values.first_name} ${values.last_name}`,
                 namedEmail: emails.named,
-                roleAlias: posDef.isExecutive ? emails.roleAlias : null,
-                position: posDef.label
+                roleAlias: posDef.is_executive ? emails.roleAlias : null,
+                position: posDef.title || values.position,
               }
             });
           }
