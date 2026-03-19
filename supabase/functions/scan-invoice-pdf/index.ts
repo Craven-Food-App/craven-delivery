@@ -68,10 +68,14 @@ serve(async (req) => {
       );
     }
 
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiKey) {
+    const apiKey = lovableKey || openaiKey;
+    const useGateway = !!lovableKey;
+
+    if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: "OpenAI API key not configured" }),
+        JSON.stringify({ error: "No AI API key configured (LOVABLE_API_KEY or OPENAI_API_KEY)" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -151,41 +155,56 @@ Return ONLY the JSON object, no markdown or extra text.`,
       });
     }
 
-    const openaiResponse = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${openaiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are an expert invoice data extractor. Extract all structured data from invoice documents. Always return valid JSON. Use YYYY-MM-DD for dates. Use numbers (not strings) for amounts. If a field is not found, use empty string for text fields and 0 for numeric fields.",
-            },
-            {
-              role: "user",
-              content: userContent,
-            },
-          ],
-          max_tokens: 4000,
-          temperature: 0,
-        }),
-      }
-    );
+    const aiEndpoint = useGateway
+      ? "https://ai.gateway.lovable.dev/v1/chat/completions"
+      : "https://api.openai.com/v1/chat/completions";
 
-    if (!openaiResponse.ok) {
-      const errText = await openaiResponse.text();
-      console.error("OpenAI error:", errText);
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    const aiModel = useGateway ? "google/gemini-2.5-pro" : "gpt-4o";
+
+    const aiResponse = await fetch(aiEndpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: aiModel,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an expert invoice data extractor. Extract all structured data from invoice documents. Always return valid JSON. Use YYYY-MM-DD for dates. Use numbers (not strings) for amounts. If a field is not found, use empty string for text fields and 0 for numeric fields.",
+          },
+          {
+            role: "user",
+            content: userContent,
+          },
+        ],
+        max_tokens: 4000,
+        temperature: 0,
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text();
+      console.error("AI API error:", aiResponse.status, errText);
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI credits exhausted. Please add funds in Settings > Workspace > Usage." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw new Error(`AI API error: ${aiResponse.status}`);
     }
 
-    const openaiData = await openaiResponse.json();
-    const rawContent = openaiData.choices?.[0]?.message?.content || "{}";
+    const aiData = await aiResponse.json();
+    const rawContent = aiData.choices?.[0]?.message?.content || "{}";
 
     // Parse the JSON response (strip markdown code blocks if present)
     let cleaned = rawContent.trim();
