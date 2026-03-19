@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Text, Stack, Box, Group } from '@mantine/core';
+import { Button, Text, Stack, Box, Group, Checkbox } from '@mantine/core';
 import { Smartphone, QrCode } from 'lucide-react';
 import QRCode from 'qrcode';
 import { supabase } from '@/integrations/supabase/client';
