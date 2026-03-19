@@ -13,7 +13,7 @@ import {
   EditOutlined,
 } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
-import { POSITIONS, buildEmails } from '@/config/positions';
+import { buildEmails } from '@/config/positions';
 import { DEFAULT_EMPLOYEE_PACKET } from '@/config/hiringPacket';
 import { isCLevelPosition, getExecRoleFromPosition, isCFOPosition, getPortalsForPosition } from '@/utils/roleUtils';
 import { logPersonnelAction } from '@/utils/auditLogger';
