@@ -459,8 +459,31 @@ If not present, return empty string for text and 0 for numbers.`,
     );
   } catch (error: any) {
     console.error("Error scanning invoice:", error);
+
+    const message = error?.message || "Internal server error";
+
+    if (message === "AI_RATE_LIMIT_429") {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (message === "AI_CREDITS_402") {
+      return new Response(
+        JSON.stringify({ error: "AI credits exhausted. Please add funds in Settings > Workspace > Usage." }),
+        {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
+      JSON.stringify({ error: message }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
