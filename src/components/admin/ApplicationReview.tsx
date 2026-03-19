@@ -114,6 +114,7 @@ interface Application {
   w9_document?: string | null;
   signature_image_url?: string | null;
   regions?: { name: string } | null;
+  is_seeded?: boolean;
   [key: string]: any;
 }
 
