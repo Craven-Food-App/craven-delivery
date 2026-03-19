@@ -946,6 +946,127 @@ export const Invoices: React.FC = () => {
       >
         {previewInvoice && <InvoicePreviewInline invoice={previewInvoice} onClose={() => setPreviewModalOpen(false)} />}
       </Modal>
+
+      {/* ── Bulk Upload & AI Scan Modal ────────────────────────── */}
+      <Modal
+        opened={bulkModalOpen}
+        onClose={() => { if (!bulkProcessing) setBulkModalOpen(false); }}
+        title="Bulk Upload & AI Scan Invoices"
+        size="lg"
+        closeOnClickOutside={!bulkProcessing}
+        closeOnEscape={!bulkProcessing}
+      >
+        <Stack gap="md">
+          <Alert color="blue" icon={<IconFileInvoice size={16} />}>
+            Upload one or more invoice PDFs. Each will be scanned by AI to extract vendor, amounts, dates, and line items — then automatically added to the system.
+          </Alert>
+
+          {!bulkProcessing && (
+            <>
+              <div>
+                <input
+                  type="file"
+                  accept="application/pdf,image/*"
+                  multiple
+                  onChange={handleBulkFileSelect}
+                  style={{ display: 'none' }}
+                  id="bulk-invoice-upload"
+                />
+                <label htmlFor="bulk-invoice-upload">
+                  <Button
+                    component="span"
+                    leftSection={<IconUpload size={16} />}
+                    variant="outline"
+                    color="orange"
+                    size="md"
+                    fullWidth
+                    styles={{ root: { cursor: 'pointer' } }}
+                  >
+                    Select Invoice Files (PDF, Images)
+                  </Button>
+                </label>
+              </div>
+
+              {bulkFiles.length > 0 && (
+                <Paper withBorder p="sm" radius="md">
+                  <Text size="sm" fw={600} mb="xs">{bulkFiles.length} file(s) selected</Text>
+                  {bulkFiles.map((f, i) => (
+                    <Group key={i} justify="space-between" py={4}>
+                      <Group gap="xs">
+                        <IconFileTypePdf size={16} style={{ color: 'var(--mantine-color-red-6)' }} />
+                        <Text size="sm">{f.name}</Text>
+                        <Text size="xs" c="dimmed">({(f.size / 1024).toFixed(0)} KB)</Text>
+                      </Group>
+                      <ActionIcon size="xs" color="red" variant="subtle" onClick={() => removeBulkFile(i)}>
+                        <IconX size={12} />
+                      </ActionIcon>
+                    </Group>
+                  ))}
+                </Paper>
+              )}
+
+              <Group justify="flex-end">
+                <Button variant="subtle" onClick={() => setBulkModalOpen(false)}>Cancel</Button>
+                <Button
+                  color="orange"
+                  leftSection={<IconUpload size={16} />}
+                  disabled={bulkFiles.length === 0}
+                  onClick={handleBulkUpload}
+                >
+                  Scan & Upload {bulkFiles.length > 0 ? `(${bulkFiles.length})` : ''}
+                </Button>
+              </Group>
+            </>
+          )}
+
+          {bulkProcessing && (
+            <Stack gap="sm">
+              <Group gap="xs">
+                <Loader size="sm" />
+                <Text size="sm" fw={500}>
+                  Scanning {bulkProgress.current} of {bulkProgress.total}...
+                </Text>
+              </Group>
+              <Progress
+                value={(bulkProgress.current / bulkProgress.total) * 100}
+                color="orange"
+                size="lg"
+                radius="md"
+                animated
+              />
+            </Stack>
+          )}
+
+          {bulkProgress.results.length > 0 && (
+            <Paper withBorder p="sm" radius="md">
+              <Text size="sm" fw={600} mb="xs">Results</Text>
+              {bulkProgress.results.map((r, i) => (
+                <Group key={i} justify="space-between" py={4} style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}>
+                  <Group gap="xs">
+                    {r.status === 'success' ? (
+                      <ThemeIcon size={20} radius="xl" color="green" variant="light"><IconCheck size={12} /></ThemeIcon>
+                    ) : (
+                      <ThemeIcon size={20} radius="xl" color="red" variant="light"><IconX size={12} /></ThemeIcon>
+                    )}
+                    <div>
+                      <Text size="sm" fw={500}>{r.file}</Text>
+                      <Text size="xs" c={r.status === 'success' ? 'green' : 'red'}>{r.message}</Text>
+                    </div>
+                  </Group>
+                </Group>
+              ))}
+            </Paper>
+          )}
+
+          {!bulkProcessing && bulkProgress.results.length > 0 && (
+            <Group justify="flex-end">
+              <Button onClick={() => { setBulkModalOpen(false); setBulkFiles([]); setBulkProgress({ current: 0, total: 0, results: [] }); }}>
+                Done
+              </Button>
+            </Group>
+          )}
+        </Stack>
+      </Modal>
     </Stack>
   );
 };
