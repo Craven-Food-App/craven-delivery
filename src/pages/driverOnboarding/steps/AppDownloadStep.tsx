@@ -254,6 +254,7 @@ export const AppDownloadStep: React.FC<AppDownloadStepProps> = ({ onNext, onBack
   };
 
   const handleContinue = () => {
+    if (!confirmedDownload) return;
     onNext({
       ...applicationData
     });
