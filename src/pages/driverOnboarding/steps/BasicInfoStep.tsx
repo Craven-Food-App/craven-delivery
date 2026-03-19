@@ -42,14 +42,25 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
       phone: applicationData?.phone || '',
     },
     validate: {
-      legalFirstName: (value) => (!value ? 'Please enter your legal first name' : null),
-      legalMiddleName: (value, values) => {
+      legalFirstName: (value) => (!value?.trim() ? 'Please enter your legal first name' : null),
+      legalMiddleName: () => {
         if (noMiddleName) return null;
         return null; // Middle name is optional
       },
-      legalLastName: (value) => (!value ? 'Please enter your legal last name' : null),
+      legalLastName: (value) => (!value?.trim() ? 'Please enter your legal last name' : null),
       country: (value) => (!value ? 'Please select a country' : null),
       zip: (value) => (!value ? 'Please enter your ZIP code' : !/^\d{5}(-\d{4})?$/.test(value) ? 'Invalid ZIP format' : null),
+      email: (value) => {
+        if (!value?.trim()) return 'Please enter your email address';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Please enter a valid email address';
+        return null;
+      },
+      phone: (value) => {
+        if (!value?.trim()) return 'Please enter your phone number';
+        const digits = value.replace(/\D/g, '');
+        if (digits.length < 10) return 'Please enter a valid phone number (at least 10 digits)';
+        return null;
+      },
       password: (value) => {
         if (isLoggedIn) return null; // Password optional if already logged in
         if (!value) return 'Please enter a password';
