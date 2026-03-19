@@ -876,14 +876,20 @@ export const PersonnelManager: React.FC = () => {
 
       // POST-HIRE: Provision M365 email accounts (REQUIRED)
       try {
-        const posDef = POSITIONS.find(p => p.code === (values.position || ''));
+        const posDef = positions.find(
+          (position) =>
+            position.code === values.position ||
+            position.title === values.position ||
+            position.id === values.position
+        );
+
         const provResult = await supabase.functions.invoke('msgraph-provision', {
           body: {
             firstName: values.first_name,
             lastName: values.last_name,
             positionCode: posDef?.code || values.position,
             domain: 'cravenusa.com',
-            executive: !!posDef?.isExecutive,
+            executive: !!posDef?.is_executive,
             personalEmail: values.email,
             employeeId: data[0].id // Track in database
           }
