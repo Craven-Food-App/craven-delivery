@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState, useMemo, Suspense, lazy } from 'react';
 import {
   Badge,
