@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   IconArrowDown,
@@ -7,6 +7,9 @@ import {
   IconArrowUp,
   IconClock,
   IconLogout,
+  IconMenu2,
+  IconX,
+  IconChevronDown,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 
@@ -66,12 +69,38 @@ export function UnifiedPortalShell({
 }: UnifiedPortalShellProps) {
   const navigate = useNavigate();
   const activeTabMeta = tabs.find(t => t.id === activeTab) || tabs[0];
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<string | null>(activeTabMeta?.section || null);
+
+  // Close mobile nav on tab change
+  const handleTabChange = (tabId: string) => {
+    onTabChange(tabId);
+    setMobileNavOpen(false);
+  };
+
+  // Close mobile nav on outside click / escape
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileNavOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [mobileNavOpen]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto w-full max-w-[1800px] p-3 md:p-4">
-        <div className="grid gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
-          {/* Sidebar */}
+      {/* Mobile overlay */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+
+      <div className="mx-auto w-full max-w-[1800px] p-2 sm:p-3 md:p-4">
+        <div className="grid gap-2 sm:gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
+          {/* Desktop Sidebar — unchanged */}
           <aside className="hidden rounded-lg border border-border bg-card shadow-card lg:flex lg:h-[calc(100vh-2rem)] lg:flex-col lg:overflow-hidden">
             <div className="border-b border-border p-4">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{sectionLabel}</p>
@@ -128,42 +157,140 @@ export function UnifiedPortalShell({
             </div>
           </aside>
 
+          {/* Mobile Sidebar Drawer */}
+          <aside className={cn(
+            'fixed inset-y-0 left-0 z-50 w-[280px] max-w-[85vw] transform bg-card shadow-xl transition-transform duration-200 ease-out lg:hidden',
+            mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
+          )}>
+            <div className="flex items-center justify-between border-b border-border p-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{sectionLabel}</p>
+                <h1 className="text-sm font-semibold text-foreground">{portalName}</h1>
+              </div>
+              <button
+                onClick={() => setMobileNavOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted"
+              >
+                <IconX size={16} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2" style={{ maxHeight: 'calc(100vh - 60px)' }}>
+              {sections.map(section => {
+                const sectionTabs = tabs.filter(tab => tab.section === section);
+                if (sectionTabs.length === 0) return null;
+                const isExpanded = expandedSection === section;
+                const hasActiveTab = sectionTabs.some(t => t.id === activeTab);
+
+                return (
+                  <div key={section} className="mb-1">
+                    <button
+                      onClick={() => setExpandedSection(isExpanded ? null : section)}
+                      className={cn(
+                        'flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors',
+                        hasActiveTab ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      <span>{section}</span>
+                      <IconChevronDown size={14} className={cn('transition-transform', isExpanded && 'rotate-180')} />
+                    </button>
+                    {isExpanded && (
+                      <div className="space-y-0.5 pb-1">
+                        {sectionTabs.map(tab => {
+                          const Icon = tab.icon;
+                          const isActive = activeTab === tab.id;
+                          const badgeValue = getBadgeValue?.(tab.id) ?? 0;
+
+                          return (
+                            <button
+                              key={tab.id}
+                              onClick={() => handleTabChange(tab.id)}
+                              className={cn(
+                                'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left transition-colors',
+                                isActive
+                                  ? 'bg-primary/10 text-primary'
+                                  : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+                              )}
+                            >
+                              <Icon size={15} className="flex-shrink-0" />
+                              <span className="truncate text-xs font-medium">{tab.label}</span>
+                              {badgeValue > 0 && (
+                                <span className="ml-auto rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">{badgeValue}</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Mobile nav actions */}
+              <div className="mt-3 space-y-1 border-t border-border pt-3">
+                <button
+                  onClick={() => { setMobileNavOpen(false); (onBack || (() => navigate('/hub')))(); }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                >
+                  <IconArrowLeft size={15} />
+                  Back to Hub
+                </button>
+                {onSignOut && (
+                  <button
+                    onClick={() => { setMobileNavOpen(false); onSignOut(); }}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-destructive hover:bg-destructive/10"
+                  >
+                    <IconLogout size={15} />
+                    Sign Out
+                  </button>
+                )}
+              </div>
+            </div>
+          </aside>
+
           {/* Main content */}
-          <main className="min-w-0 space-y-3">
+          <main className="min-w-0 space-y-2 sm:space-y-3">
             {/* Header */}
-            <header className="rounded-lg border border-border bg-card p-3 shadow-card">
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{portalName}</p>
-                    <h2 className="text-lg font-semibold text-foreground">{activeTabMeta?.label}</h2>
-                    <p className="text-xs text-muted-foreground">{activeTabMeta?.description}</p>
+            <header className="rounded-lg border border-border bg-card p-2 shadow-card sm:p-3">
+              <div className="flex flex-col gap-2 sm:gap-3">
+                <div className="flex items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  {/* Mobile menu button */}
+                  <button
+                    onClick={() => setMobileNavOpen(true)}
+                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted lg:hidden"
+                  >
+                    <IconMenu2 size={16} />
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <p className="hidden text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground sm:block">{portalName}</p>
+                    <h2 className="truncate text-sm font-semibold text-foreground sm:text-lg">{activeTabMeta?.label}</h2>
+                    <p className="hidden text-xs text-muted-foreground sm:block">{activeTabMeta?.description}</p>
                   </div>
                   {headerActions && (
-                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+                    <div className="hidden grid-cols-2 gap-2 sm:grid sm:flex sm:flex-wrap sm:justify-end">
                       {headerActions}
                     </div>
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2">
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center justify-between gap-1.5 border-t border-border pt-2 sm:gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground sm:text-xs">
                     {lastUpdated && (
-                      <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">
-                        <IconClock size={13} />
-                        Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-1.5 py-0.5 sm:px-2 sm:py-1">
+                        <IconClock size={12} />
+                        <span className="hidden sm:inline">Updated </span>{lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     )}
                     {userTitle && (
-                      <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">
+                      <span className="hidden items-center gap-1 rounded-md border border-border bg-background px-2 py-1 sm:inline-flex">
                         {userTitle}
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     <button
                       onClick={onBack || (() => navigate('/hub'))}
-                      className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+                      className="hidden items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted lg:inline-flex"
                     >
                       <IconArrowLeft size={14} />
                       Hub
@@ -171,7 +298,7 @@ export function UnifiedPortalShell({
                     {onSignOut && (
                       <button
                         onClick={onSignOut}
-                        className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+                        className="hidden items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted lg:inline-flex"
                       >
                         <IconLogout size={14} />
                         Sign out
@@ -182,9 +309,9 @@ export function UnifiedPortalShell({
               </div>
             </header>
 
-            {/* Mobile tabs */}
-            <div className="rounded-lg border border-border bg-card p-2 shadow-card lg:hidden">
-              <div className="flex gap-2 overflow-x-auto pb-1">
+            {/* Mobile quick-tab scroller — compact pill style */}
+            <div className="rounded-lg border border-border bg-card p-1.5 shadow-card lg:hidden">
+              <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {tabs.map(tab => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
@@ -195,16 +322,16 @@ export function UnifiedPortalShell({
                       key={tab.id}
                       onClick={() => onTabChange(tab.id)}
                       className={cn(
-                        'inline-flex flex-shrink-0 items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-semibold',
+                        'inline-flex flex-shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium whitespace-nowrap transition-colors',
                         isActive
-                          ? 'border-primary/40 bg-primary/10 text-primary'
-                          : 'border-border bg-background text-muted-foreground'
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-muted-foreground hover:bg-muted/40'
                       )}
                     >
-                      <Icon size={13} />
+                      <Icon size={12} />
                       {tab.label}
                       {badgeValue > 0 && (
-                        <span className="rounded-full border border-primary/40 bg-primary/10 px-1 py-0.5 text-[10px] leading-none text-primary">{badgeValue}</span>
+                        <span className="rounded-full bg-primary/10 px-1 text-[9px] font-semibold leading-none text-primary">{badgeValue}</span>
                       )}
                     </button>
                   );
@@ -214,13 +341,13 @@ export function UnifiedPortalShell({
 
             {/* KPI Strip */}
             {kpis && kpis.length > 0 && (
-              <section className="rounded-lg border border-border bg-card p-2 shadow-card md:p-3">
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
+              <section className="rounded-lg border border-border bg-card p-1.5 shadow-card sm:p-2 md:p-3">
+                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 px-1 sm:mb-2">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{kpiLabel}</p>
-                  <p className="text-[11px] tabular-nums text-muted-foreground">{new Date().toLocaleDateString()}</p>
+                  <p className="text-[10px] tabular-nums text-muted-foreground sm:text-[11px]">{new Date().toLocaleDateString()}</p>
                 </div>
                 <div className={cn(
-                  'grid grid-cols-2 gap-2',
+                  'grid grid-cols-2 gap-1.5 sm:gap-2',
                   kpis.length <= 4 ? 'md:grid-cols-4' : 'md:grid-cols-4 xl:grid-cols-8'
                 )}>
                   {kpis.map(kpi => (
@@ -228,16 +355,16 @@ export function UnifiedPortalShell({
                       key={kpi.id}
                       onClick={kpi.onClick}
                       className={cn(
-                        'rounded-md border border-border bg-background p-2 text-left transition-colors',
+                        'rounded-md border border-border bg-background p-1.5 text-left transition-colors sm:p-2',
                         kpi.onClick ? 'hover:border-primary/40 hover:bg-primary/5' : 'cursor-default'
                       )}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{kpi.label}</span>
-                        {kpi.up ? <IconArrowUp size={12} className="text-status-online" /> : <IconArrowDown size={12} className="text-destructive" />}
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="truncate text-[9px] font-semibold uppercase tracking-[0.06em] text-muted-foreground sm:text-[10px] sm:tracking-[0.08em]">{kpi.label}</span>
+                        {kpi.up ? <IconArrowUp size={11} className="flex-shrink-0 text-status-online" /> : <IconArrowDown size={11} className="flex-shrink-0 text-destructive" />}
                       </div>
-                      <p className="mt-1 text-sm font-semibold tabular-nums text-foreground">{kpi.value}</p>
-                      <p className={cn('mt-0.5 text-[11px]', kpi.up ? 'text-status-online' : 'text-destructive')}>
+                      <p className="mt-0.5 text-xs font-semibold tabular-nums text-foreground sm:mt-1 sm:text-sm">{kpi.value}</p>
+                      <p className={cn('mt-0.5 text-[10px] sm:text-[11px]', kpi.up ? 'text-status-online' : 'text-destructive')}>
                         {kpi.delta}
                       </p>
                     </button>
@@ -248,17 +375,17 @@ export function UnifiedPortalShell({
 
             {/* Module Workspace */}
             <section className="rounded-lg border border-border bg-card shadow-card">
-              <div className="border-b border-border px-3 py-2 md:px-4 md:py-3">
+              <div className="border-b border-border px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-3">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Module Workspace</p>
-                <h3 className="text-sm font-semibold text-foreground">{activeTabMeta?.label}</h3>
+                <h3 className="text-xs font-semibold text-foreground sm:text-sm">{activeTabMeta?.label}</h3>
               </div>
-              <div className="p-2 md:p-3">
+              <div className="overflow-x-auto p-1.5 sm:p-2 md:p-3">
                 <Suspense
                   fallback={
-                    <div className="flex min-h-[220px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20">
+                    <div className="flex min-h-[160px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20 sm:min-h-[220px]">
                       <div className="text-center">
-                        <div className="mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-primary" />
-                        <p className="text-xs text-muted-foreground">Loading module...</p>
+                        <div className="mx-auto mb-2 h-5 w-5 animate-spin rounded-full border-2 border-muted border-t-primary sm:h-6 sm:w-6" />
+                        <p className="text-[11px] text-muted-foreground sm:text-xs">Loading module...</p>
                       </div>
                     </div>
                   }
@@ -273,7 +400,6 @@ export function UnifiedPortalShell({
     </div>
   );
 }
-
 // Reusable loading state
 export function PortalLoadingState({ message = 'Verifying access...' }: { message?: string }) {
   return (
