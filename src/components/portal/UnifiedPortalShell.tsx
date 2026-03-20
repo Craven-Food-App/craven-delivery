@@ -311,7 +311,7 @@ export function UnifiedPortalShell({
 
             {/* Mobile quick-tab scroller — compact pill style */}
             <div className="rounded-lg border border-border bg-card p-1.5 shadow-card lg:hidden">
-              <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {tabs.map(tab => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
