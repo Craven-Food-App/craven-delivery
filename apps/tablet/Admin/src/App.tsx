@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import BusinessAuth from "@/pages/BusinessAuth";
+import AdminAuth from "./pages/AdminAuth";
 import BusinessAuthGuard from "@/components/BusinessAuthGuard";
 import AdminHub from "./AdminHub";
 
@@ -48,7 +48,7 @@ const App: React.FC = () => {
   return (
     <HashRouter>
       <Routes>
-        <Route path="/auth" element={<BusinessAuth />} />
+        <Route path="/auth" element={<AdminAuth />} />
         <Route
           path="/"
           element={
