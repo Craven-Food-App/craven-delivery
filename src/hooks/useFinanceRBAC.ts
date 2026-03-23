@@ -174,7 +174,7 @@ export const useFinanceRBAC = () => {
   // Get user's primary role (highest access level)
   const getPrimaryRole = (): FinanceRole | null => {
     // TORRANCE STROMAN: UNIVERSAL ACCESS - RETURN CFO ROLE
-    if (user?.email && hasFullAccess(user.email)) {
+    if (user?.email && hasCFOPortalAccess(user.email)) {
       return {
         id: 'torrance-universal',
         role_code: 'CFO',
