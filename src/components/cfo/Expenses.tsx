@@ -178,7 +178,7 @@ export const Expenses: React.FC = () => {
         throw error;
       }
 
-      setUseExpenseRequests(true);
+      // Using expense_requests table
 
       // Map expense_requests fields to our Expense interface
       const mapped: Expense[] = (data || []).map((r: any) => ({
