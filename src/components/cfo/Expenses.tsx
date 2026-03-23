@@ -420,7 +420,7 @@ export const Expenses: React.FC = () => {
           <Grid.Col span={{ base: 12, sm: 3 }}>
             <Select
               placeholder="All Categories"
-              data={EXPENSE_CATEGORIES.map(c => ({ value: c, label: c }))}
+              data={categories.map(c => ({ value: c.name, label: c.name }))}
               value={categoryFilter}
               onChange={setCategoryFilter}
               clearable
