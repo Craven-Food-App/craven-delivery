@@ -258,16 +258,22 @@ export const Expenses: React.FC = () => {
         return;
       }
 
+      const requestNumber = `EXP-${Date.now().toString(36).toUpperCase()}`;
+
       const payload: any = {
+        request_number: requestNumber,
         amount: amt,
         description: formData.description,
         business_purpose: formData.category,
         expense_category_id: matchedCategory.id,
         expense_date: formData.expense_date,
-        status: 'approved',
+        requested_date: dayjs().format('YYYY-MM-DD'),
+        status: 'submitted',
         priority: 'normal',
+        currency: 'USD',
         requester_id: user.id,
         vendor_name: formData.vendor_name || null,
+        payment_method: 'reimbursement',
       };
 
       if (editingExpense) {

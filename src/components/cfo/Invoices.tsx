@@ -509,14 +509,27 @@ export const Invoices: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Fetch a valid expense category for fees
+      const { data: feeCats } = await supabase.from('expense_categories').select('id').limit(1);
+      const feeCategoryId = feeCats?.[0]?.id;
+      if (!feeCategoryId) {
+        notifications.show({ title: 'Error', message: 'No expense categories found. Please create one first.', color: 'red' });
+        return;
+      }
+
       await supabase.from('expense_requests').insert({
+        request_number: `EXP-${Date.now().toString(36).toUpperCase()}`,
         amount: invoice.total_amount || invoice.amount,
         description: `Stripe processing fee – ${invoice.invoice_number}`,
         business_purpose: 'Payment processing fee',
+        expense_category_id: feeCategoryId,
         expense_date: dayjs().format('YYYY-MM-DD'),
+        requested_date: dayjs().format('YYYY-MM-DD'),
         status: 'approved',
         priority: 'low',
+        currency: 'USD',
         requester_id: user.id,
+        payment_method: 'direct_pay',
       });
 
       await handleStatusChange(invoice, 'paid');
