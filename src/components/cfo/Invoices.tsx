@@ -76,6 +76,28 @@ interface Invoice {
   created_at: string | null;
 }
 
+const INVOICE_DB_STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'disputed', label: 'Disputed' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
+const INVOICE_TABLE_STATUS_OPTIONS = [
+  ...INVOICE_DB_STATUS_OPTIONS,
+  { value: 'overdue', label: 'Overdue (Auto)', disabled: true },
+];
+
+const INVOICE_DB_STATUS_SET = new Set(INVOICE_DB_STATUS_OPTIONS.map((item) => item.value));
+const LEGACY_INVOICE_STATUS_MAP: Record<string, string> = { draft: 'pending', sent: 'pending' };
+
+const normalizeInvoiceStatus = (status?: string | null): string => {
+  const raw = (status || '').toLowerCase();
+  const mapped = LEGACY_INVOICE_STATUS_MAP[raw] || raw;
+  return INVOICE_DB_STATUS_SET.has(mapped) ? mapped : 'pending';
+};
+
 // ── Component ───────────────────────────────────────────────────────
 
 export const Invoices: React.FC = () => {
@@ -120,7 +142,7 @@ export const Invoices: React.FC = () => {
     expense_category_id: '',
     line_items: [] as any[],
     notes: '',
-    status: 'draft',
+    status: 'pending',
   });
 
   // Payment form
@@ -163,9 +185,10 @@ export const Invoices: React.FC = () => {
       // Auto-flag overdue
       const now = dayjs();
       const processed = (data || []).map((inv: any) => {
-        const effectiveStatus = inv.status !== 'paid' && dayjs(inv.due_date).isBefore(now, 'day')
+        const normalizedStatus = normalizeInvoiceStatus(inv.status);
+        const effectiveStatus = normalizedStatus !== 'paid' && normalizedStatus !== 'cancelled' && dayjs(inv.due_date).isBefore(now, 'day')
           ? 'overdue'
-          : inv.status || 'draft';
+          : normalizedStatus;
         return {
           ...inv,
           status: effectiveStatus,
@@ -224,14 +247,14 @@ export const Invoices: React.FC = () => {
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    invoices.forEach(i => { counts[i.status || 'draft'] = (counts[i.status || 'draft'] || 0) + 1; });
+    invoices.forEach(i => { counts[i.status || 'pending'] = (counts[i.status || 'pending'] || 0) + 1; });
     return counts;
   }, [invoices]);
 
   // ── Helpers ────────────────────────────────────────────────────
 
   const getStatusColor = (s: string) => {
-    const map: Record<string, string> = { draft: 'gray', sent: 'blue', pending: 'orange', approved: 'cyan', paid: 'green', overdue: 'red', disputed: 'yellow', cancelled: 'dark' };
+    const map: Record<string, string> = { pending: 'orange', approved: 'cyan', paid: 'green', overdue: 'red', disputed: 'yellow', cancelled: 'gray' };
     return map[s] || 'gray';
   };
 
@@ -246,7 +269,7 @@ export const Invoices: React.FC = () => {
       vendor_name: '', vendor_email: '', vendor_address: '', invoice_number: '',
       invoice_date: dayjs().format('YYYY-MM-DD'), due_date: dayjs().add(30, 'day').format('YYYY-MM-DD'),
       amount: '', tax_amount: '', department_id: '', expense_category_id: '',
-      line_items: [], notes: '', status: 'draft',
+      line_items: [], notes: '', status: 'pending',
     });
     setInvoiceFile(null);
     setEditingInvoice(null);
@@ -424,7 +447,7 @@ export const Invoices: React.FC = () => {
         expense_category_id: formData.expense_category_id || null,
         line_items: formData.line_items.length > 0 ? formData.line_items : [{ description: 'Line item', quantity: 1, unit_price: amt, amount: amt }],
         notes: formData.notes || null,
-        status: formData.status || 'pending',
+        status: normalizeInvoiceStatus(formData.status),
       };
       if (fileUrl) payload.invoice_file_url = fileUrl;
 
@@ -448,6 +471,10 @@ export const Invoices: React.FC = () => {
 
   const handleStatusChange = async (invoice: Invoice, newStatus: string) => {
     try {
+      if (!INVOICE_DB_STATUS_SET.has(newStatus)) {
+        notifications.show({ title: 'Invalid Status', message: `"${newStatus}" is not an allowed invoice status.`, color: 'red' });
+        return;
+      }
       const update: any = { status: newStatus };
       if (newStatus === 'paid') {
         const { data: { user } } = await supabase.auth.getUser();
@@ -469,7 +496,7 @@ export const Invoices: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       const payAmt = typeof paymentData.amount === 'string' ? parseFloat(paymentData.amount) : paymentData.amount;
       const total = paymentInvoice.total_amount || paymentInvoice.amount || 0;
-      const newStatus = payAmt >= total ? 'paid' : paymentInvoice.status;
+      const newStatus = payAmt >= total ? 'paid' : normalizeInvoiceStatus(paymentInvoice.status);
 
       const { error } = await supabase.from('invoices').update({
         status: newStatus,
@@ -554,7 +581,7 @@ export const Invoices: React.FC = () => {
       expense_category_id: '',
       line_items: inv.line_items || [],
       notes: inv.notes || '',
-      status: inv.status || 'draft',
+      status: normalizeInvoiceStatus(inv.status),
     });
     setModalOpen(true);
   };
@@ -672,11 +699,12 @@ export const Invoices: React.FC = () => {
         <Tabs value={activeTab} onChange={(v) => setActiveTab(v || 'all')}>
           <Tabs.List>
             <Tabs.Tab value="all">All ({invoices.length})</Tabs.Tab>
-            <Tabs.Tab value="draft">Draft ({statusCounts.draft || 0})</Tabs.Tab>
-            <Tabs.Tab value="sent">Sent ({statusCounts.sent || 0})</Tabs.Tab>
             <Tabs.Tab value="pending">Pending ({statusCounts.pending || 0})</Tabs.Tab>
+            <Tabs.Tab value="approved">Approved ({statusCounts.approved || 0})</Tabs.Tab>
+            <Tabs.Tab value="disputed">Disputed ({statusCounts.disputed || 0})</Tabs.Tab>
             <Tabs.Tab value="overdue" c="red">Overdue ({statusCounts.overdue || 0})</Tabs.Tab>
             <Tabs.Tab value="paid">Paid ({statusCounts.paid || 0})</Tabs.Tab>
+            <Tabs.Tab value="cancelled">Cancelled ({statusCounts.cancelled || 0})</Tabs.Tab>
           </Tabs.List>
 
           <Tabs.Panel value={activeTab} pt="md">
@@ -717,18 +745,11 @@ export const Invoices: React.FC = () => {
                           <Table.Td>
                             <Select
                               size="xs"
-                              value={inv.status}
-                              data={[
-                                { value: 'draft', label: 'Draft' },
-                                { value: 'sent', label: 'Sent' },
-                                { value: 'pending', label: 'Pending' },
-                                { value: 'approved', label: 'Approved' },
-                                { value: 'paid', label: 'Paid' },
-                                { value: 'overdue', label: 'Overdue' },
-                              ]}
+                              value={inv.status === 'overdue' ? 'overdue' : normalizeInvoiceStatus(inv.status)}
+                              data={INVOICE_TABLE_STATUS_OPTIONS}
                               onChange={(v) => v && handleStatusChange(inv, v)}
-                              styles={{ input: { border: 'none', background: 'transparent', fontWeight: 600, color: `var(--mantine-color-${getStatusColor(inv.status || 'draft')}-6)` } }}
-                              w={110}
+                              styles={{ input: { border: 'none', background: 'transparent', fontWeight: 600, color: `var(--mantine-color-${getStatusColor(inv.status || 'pending')}-6)` } }}
+                              w={140}
                             />
                           </Table.Td>
                           <Table.Td>
@@ -838,11 +859,7 @@ export const Invoices: React.FC = () => {
               <TextInput label="Due Date" type="date" required value={formData.due_date} onChange={(e) => setFormData({ ...formData, due_date: e.target.value })} />
             </Grid.Col>
             <Grid.Col span={4}>
-              <Select label="Status" data={[
-                { value: 'draft', label: 'Draft' },
-                { value: 'sent', label: 'Sent' },
-                { value: 'pending', label: 'Pending' },
-              ]} value={formData.status} onChange={(v) => setFormData({ ...formData, status: v || 'draft' })} />
+              <Select label="Status" data={INVOICE_DB_STATUS_OPTIONS} value={formData.status} onChange={(v) => setFormData({ ...formData, status: v || 'pending' })} />
             </Grid.Col>
             <Grid.Col span={4}>
               <Select label="Department" data={departments.map(d => ({ value: d.id, label: d.name }))} value={formData.department_id} onChange={(v) => setFormData({ ...formData, department_id: v || '' })} clearable />
@@ -1115,9 +1132,10 @@ const InvoicePreviewInline: React.FC<{ invoice: Invoice; onClose: () => void }> 
         .badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
         .badge-paid { background: #d3f9d8; color: #2b8a3e; }
         .badge-overdue { background: #ffe3e3; color: #c92a2a; }
-        .badge-draft { background: #e9ecef; color: #495057; }
-        .badge-sent { background: #d0ebff; color: #1864ab; }
         .badge-pending { background: #fff3bf; color: #e67700; }
+        .badge-approved { background: #e3fafc; color: #0c8599; }
+        .badge-disputed { background: #fff3bf; color: #f08c00; }
+        .badge-cancelled { background: #f1f3f5; color: #495057; }
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th { background: #f8f9fa; text-align: left; padding: 10px; border-bottom: 2px solid #dee2e6; font-size: 13px; }
         td { padding: 10px; border-bottom: 1px solid #f1f3f5; font-size: 14px; }
@@ -1135,7 +1153,7 @@ const InvoicePreviewInline: React.FC<{ invoice: Invoice; onClose: () => void }> 
           </div>
           <div style="text-align:right">
             <div style="font-size:28px;font-weight:bold;color:#1a1a2e">INVOICE</div>
-            <span class="badge badge-${invoice.status}">${(invoice.status || 'draft').toUpperCase()}</span>
+            <span class="badge badge-${invoice.status}">${(invoice.status || 'pending').toUpperCase()}</span>
           </div>
         </div>
         <div class="section">
@@ -1180,7 +1198,7 @@ const InvoicePreviewInline: React.FC<{ invoice: Invoice; onClose: () => void }> 
         <div style={{ textAlign: 'right' }}>
           <Text fw={700} size="xl" c="dark">INVOICE</Text>
           <Badge color={invoice.status === 'paid' ? 'green' : invoice.status === 'overdue' ? 'red' : 'blue'} size="lg">
-            {(invoice.status || 'draft').toUpperCase()}
+            {(invoice.status || 'pending').toUpperCase()}
           </Badge>
         </div>
       </Group>
