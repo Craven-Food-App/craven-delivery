@@ -542,7 +542,7 @@ export const Expenses: React.FC = () => {
               <Select
                 label="Category"
                 required
-                data={EXPENSE_CATEGORIES.map(c => ({ value: c, label: c }))}
+                data={categories.map(c => ({ value: c.name, label: c.name }))}
                 value={formData.category}
                 onChange={(v) => setFormData({ ...formData, category: v || '' })}
                 searchable
