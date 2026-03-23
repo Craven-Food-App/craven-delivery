@@ -279,12 +279,6 @@ export const Expenses: React.FC = () => {
         if (error) throw error;
         notifications.show({ title: 'Created', message: 'Expense recorded', color: 'green' });
       }
-        } else {
-          const { error } = await supabase.from('expense_requests').insert(payload);
-          if (error) throw error;
-          notifications.show({ title: 'Created', message: 'Expense recorded', color: 'green' });
-        }
-      }
 
       setModalOpen(false);
       resetForm();
