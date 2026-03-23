@@ -332,12 +332,23 @@ const MessagesTab: React.FC = () => {
   const sendReply = async () => {
     if (!currentUser || !selectedMessage || (!replyBody.trim() && replyFiles.length === 0)) return;
     try {
+      const participantIds = Array.from(new Set([
+        selectedMessage.sender_id,
+        ...(selectedMessage.recipient_ids || []),
+      ]));
+      const replyRecipientIds = participantIds.filter((id) => id !== currentUser.id);
+
+      if (replyRecipientIds.length === 0) {
+        message.error('No recipients found for this conversation');
+        return;
+      }
+
       const { data: msgData, error } = await supabase.from('internal_messages').insert([{
         sender_id: currentUser.id,
         body: replyBody || '📎 Attachment',
-        channel: selectedMessage.channel as 'direct' | 'group',
+        channel: (replyRecipientIds.length > 1 ? 'group' : 'direct') as 'direct' | 'group',
         parent_id: selectedMessage.id,
-        recipient_ids: selectedMessage.recipient_ids,
+        recipient_ids: replyRecipientIds,
         read_by: [currentUser.id],
       }]).select('id').single();
       if (error) throw error;
