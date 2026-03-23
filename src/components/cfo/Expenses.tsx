@@ -265,7 +265,7 @@ export const Expenses: React.FC = () => {
         expense_category_id: matchedCategory.id,
         expense_date: formData.expense_date,
         status: 'approved',
-        priority: 'medium',
+        priority: 'normal',
         requester_id: user.id,
         vendor_name: formData.vendor_name || null,
       };
