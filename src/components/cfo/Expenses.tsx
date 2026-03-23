@@ -48,21 +48,24 @@ import dayjs from 'dayjs';
 
 // ── Types ───────────────────────────────────────────────────────────
 
-const EXPENSE_CATEGORIES = [
-  'Stripe Fees',
-  'Materials',
-  'Labor',
-  'Equipment',
-  'Marketing',
-  'Software & SaaS',
-  'Insurance',
-  'Rent & Utilities',
+interface ExpenseCategory {
+  id: string;
+  name: string;
+}
+
+const FALLBACK_CATEGORIES = [
   'Travel',
+  'Meals & Entertainment',
   'Office Supplies',
+  'Software & Subscriptions',
+  'Marketing & Advertising',
   'Professional Services',
-  'Food & Delivery Costs',
-  'Vehicle Maintenance',
-  'Miscellaneous',
+  'Utilities',
+  'Rent & Facilities',
+  'Equipment',
+  'Training & Development',
+  'Insurance',
+  'Other',
 ] as const;
 
 interface Expense {
@@ -108,12 +111,12 @@ const getCategoryColor = (cat: string) => {
 
 export const Expenses: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
   const [dateTo, setDateTo] = useState(dayjs().format('YYYY-MM-DD'));
-  const [useExpenseRequests, setUseExpenseRequests] = useState(false);
 
   // Create/Edit
   const [modalOpen, setModalOpen] = useState(false);
@@ -136,8 +139,24 @@ export const Expenses: React.FC = () => {
   // ── Fetch ──────────────────────────────────────────────────────
 
   useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
     fetchExpenses();
   }, [dateFrom, dateTo]);
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('expense_categories')
+        .select('id, name')
+        .order('name');
+      if (!error && data) setCategories(data);
+    } catch (e) {
+      console.error('Failed to load expense categories:', e);
+    }
+  };
 
   const fetchExpenses = async () => {
     setLoading(true);
@@ -159,7 +178,7 @@ export const Expenses: React.FC = () => {
         throw error;
       }
 
-      setUseExpenseRequests(true);
+      // Using expense_requests table
 
       // Map expense_requests fields to our Expense interface
       const mapped: Expense[] = (data || []).map((r: any) => ({
@@ -232,28 +251,33 @@ export const Expenses: React.FC = () => {
 
       const amt = typeof formData.amount === 'string' ? parseFloat(formData.amount) : formData.amount;
 
-      if (useExpenseRequests) {
-        // Use existing expense_requests table
-        const payload: any = {
-          amount: amt,
-          description: formData.description,
-          business_purpose: formData.category,
-          expense_date: formData.expense_date,
-          status: 'approved', // Auto-approve CFO entries
-          priority: 'medium',
-          requester_id: user.id,
-          vendor_name: formData.vendor_name || null,
-        };
+      // Resolve category name to ID
+      const matchedCategory = categories.find(c => c.name === formData.category);
+      if (!matchedCategory) {
+        notifications.show({ title: 'Error', message: 'Please select a valid expense category', color: 'red' });
+        return;
+      }
 
-        if (editingExpense) {
-          const { error } = await supabase.from('expense_requests').update(payload).eq('id', editingExpense.id);
-          if (error) throw error;
-          notifications.show({ title: 'Updated', message: 'Expense updated', color: 'green' });
-        } else {
-          const { error } = await supabase.from('expense_requests').insert(payload);
-          if (error) throw error;
-          notifications.show({ title: 'Created', message: 'Expense recorded', color: 'green' });
-        }
+      const payload: any = {
+        amount: amt,
+        description: formData.description,
+        business_purpose: formData.category,
+        expense_category_id: matchedCategory.id,
+        expense_date: formData.expense_date,
+        status: 'approved',
+        priority: 'medium',
+        requester_id: user.id,
+        vendor_name: formData.vendor_name || null,
+      };
+
+      if (editingExpense) {
+        const { error } = await supabase.from('expense_requests').update(payload).eq('id', editingExpense.id);
+        if (error) throw error;
+        notifications.show({ title: 'Updated', message: 'Expense updated', color: 'green' });
+      } else {
+        const { error } = await supabase.from('expense_requests').insert(payload);
+        if (error) throw error;
+        notifications.show({ title: 'Created', message: 'Expense recorded', color: 'green' });
       }
 
       setModalOpen(false);
@@ -267,8 +291,8 @@ export const Expenses: React.FC = () => {
   const handleDelete = async (expense: Expense) => {
     if (!window.confirm(`Delete this expense?`)) return;
     try {
-      const table = useExpenseRequests ? 'expense_requests' : 'expense_requests';
-      const { error } = await supabase.from(table).delete().eq('id', expense.id);
+      const { error } = await supabase.from('expense_requests').delete().eq('id', expense.id);
+      // removed duplicate line
       if (error) throw error;
       notifications.show({ title: 'Deleted', message: 'Expense removed', color: 'orange' });
       fetchExpenses();
@@ -396,7 +420,7 @@ export const Expenses: React.FC = () => {
           <Grid.Col span={{ base: 12, sm: 3 }}>
             <Select
               placeholder="All Categories"
-              data={EXPENSE_CATEGORIES.map(c => ({ value: c, label: c }))}
+              data={categories.map(c => ({ value: c.name, label: c.name }))}
               value={categoryFilter}
               onChange={setCategoryFilter}
               clearable
@@ -518,7 +542,7 @@ export const Expenses: React.FC = () => {
               <Select
                 label="Category"
                 required
-                data={EXPENSE_CATEGORIES.map(c => ({ value: c, label: c }))}
+                data={categories.map(c => ({ value: c.name, label: c.name }))}
                 value={formData.category}
                 onChange={(v) => setFormData({ ...formData, category: v || '' })}
                 searchable
