@@ -251,23 +251,34 @@ export const Expenses: React.FC = () => {
 
       const amt = typeof formData.amount === 'string' ? parseFloat(formData.amount) : formData.amount;
 
-      if (useExpenseRequests) {
-        // Use existing expense_requests table
-        const payload: any = {
-          amount: amt,
-          description: formData.description,
-          business_purpose: formData.category,
-          expense_date: formData.expense_date,
-          status: 'approved', // Auto-approve CFO entries
-          priority: 'medium',
-          requester_id: user.id,
-          vendor_name: formData.vendor_name || null,
-        };
+      // Resolve category name to ID
+      const matchedCategory = categories.find(c => c.name === formData.category);
+      if (!matchedCategory) {
+        notifications.show({ title: 'Error', message: 'Please select a valid expense category', color: 'red' });
+        return;
+      }
 
-        if (editingExpense) {
-          const { error } = await supabase.from('expense_requests').update(payload).eq('id', editingExpense.id);
-          if (error) throw error;
-          notifications.show({ title: 'Updated', message: 'Expense updated', color: 'green' });
+      const payload: any = {
+        amount: amt,
+        description: formData.description,
+        business_purpose: formData.category,
+        expense_category_id: matchedCategory.id,
+        expense_date: formData.expense_date,
+        status: 'approved',
+        priority: 'medium',
+        requester_id: user.id,
+        vendor_name: formData.vendor_name || null,
+      };
+
+      if (editingExpense) {
+        const { error } = await supabase.from('expense_requests').update(payload).eq('id', editingExpense.id);
+        if (error) throw error;
+        notifications.show({ title: 'Updated', message: 'Expense updated', color: 'green' });
+      } else {
+        const { error } = await supabase.from('expense_requests').insert(payload);
+        if (error) throw error;
+        notifications.show({ title: 'Created', message: 'Expense recorded', color: 'green' });
+      }
         } else {
           const { error } = await supabase.from('expense_requests').insert(payload);
           if (error) throw error;
