@@ -114,7 +114,7 @@ export const useFinanceRBAC = () => {
   // Check if user has specific permission
   const hasPermission = (permissionCode: string, entityId?: string): boolean => {
     // TORRANCE STROMAN: UNIVERSAL ACCESS
-    if (user?.email && hasFullAccess(user.email)) return true;
+    if (user?.email && hasCFOPortalAccess(user.email)) return true;
     if (hasFullAdmin) return true; // CFO and full admins bypass permission checks
     
     return permissions.some(perm => {
