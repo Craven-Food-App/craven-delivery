@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, Input, List, Avatar, Tag, Modal, Form, Select, Empty, Spin, message, Typography, Badge, Upload, Tooltip } from 'antd';
 import { SendOutlined, UserOutlined, PlusOutlined, PaperClipOutlined, FileOutlined, FilePdfOutlined, FileImageOutlined, DownloadOutlined, DeleteOutlined } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,6 +6,31 @@ import type { UploadFile } from 'antd/es/upload/interface';
 
 const { TextArea } = Input;
 const { Text } = Typography;
+
+// --- Notification sound utility ---
+const playNotificationSound = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // Two-tone chime
+    const playTone = (freq: number, startTime: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.3, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+    const now = ctx.currentTime;
+    playTone(880, now, 0.15);
+    playTone(1320, now + 0.12, 0.2);
+  } catch {
+    // Audio not available
+  }
+};
 
 interface Attachment {
   id: string;
@@ -91,6 +116,13 @@ const MessagesTab: React.FC = () => {
   const [replyFiles, setReplyFiles] = useState<UploadFile[]>([]);
   const [form] = Form.useForm();
 
+  // Refs to access latest state inside realtime callback
+  const selectedMessageRef = useRef<Message | null>(null);
+  const currentUserRef = useRef<any>(null);
+
+  useEffect(() => { selectedMessageRef.current = selectedMessage; }, [selectedMessage]);
+  useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
+
   const getNameMap = useCallback(async (userIds: string[]): Promise<Map<string, string>> => {
     if (userIds.length === 0) return new Map();
     const { data: profiles } = await supabase
@@ -150,6 +182,28 @@ const MessagesTab: React.FC = () => {
     }
   }, [getNameMap, fetchAttachments]);
 
+  // Refresh thread replies (called when realtime fires while a thread is open)
+  const refreshThread = useCallback(async (parentId: string) => {
+    const { data } = await supabase
+      .from('internal_messages')
+      .select('*')
+      .eq('parent_id', parentId)
+      .order('created_at', { ascending: true });
+
+    if (data && data.length > 0) {
+      const senderIds = [...new Set(data.map((m: any) => m.sender_id))];
+      const msgIds = data.map((m: any) => m.id);
+      const [nameMap, attachMap] = await Promise.all([getNameMap(senderIds), fetchAttachments(msgIds)]);
+      setThreadMessages(data.map((m: any) => ({
+        ...m,
+        sender_name: nameMap.get(m.sender_id) || 'Unknown',
+        attachments: attachMap.get(m.id) || [],
+      })));
+    } else {
+      setThreadMessages([]);
+    }
+  }, [getNameMap, fetchAttachments]);
+
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -173,14 +227,41 @@ const MessagesTab: React.FC = () => {
     init();
 
     const channel = supabase
-      .channel('internal-messages-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'internal_messages' }, () => {
+      .channel('internal-messages-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'internal_messages' }, (payload) => {
+        const newMsg = payload.new as any;
+        const me = currentUserRef.current;
+
+        // Play sound if this message is from someone else
+        if (me && newMsg.sender_id !== me.id) {
+          playNotificationSound();
+        }
+
+        // Refresh inbox
+        fetchMessages();
+
+        // If a thread is open and this message belongs to it, refresh the thread
+        const openThread = selectedMessageRef.current;
+        if (openThread) {
+          if (newMsg.parent_id === openThread.id || newMsg.id === openThread.id) {
+            refreshThread(openThread.id);
+          }
+        }
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'internal_messages' }, () => {
+        fetchMessages();
+        const openThread = selectedMessageRef.current;
+        if (openThread) {
+          refreshThread(openThread.id);
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'internal_messages' }, () => {
         fetchMessages();
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [fetchMessages, getNameMap]);
+  }, [fetchMessages, getNameMap, refreshThread]);
 
   const uploadFiles = async (files: UploadFile[], messageId: string, userId: string) => {
     for (const f of files) {
@@ -230,7 +311,7 @@ const MessagesTab: React.FC = () => {
       form.resetFields();
       setComposeFiles([]);
       setComposeOpen(false);
-      fetchMessages();
+      // fetchMessages() will be triggered by realtime
     } catch (err: any) {
       message.error('Failed to send: ' + err.message);
     } finally {
@@ -245,24 +326,7 @@ const MessagesTab: React.FC = () => {
         read_by: [...msg.read_by, currentUser.id],
       }).eq('id', msg.id);
     }
-    const { data } = await supabase
-      .from('internal_messages')
-      .select('*')
-      .eq('parent_id', msg.id)
-      .order('created_at', { ascending: true });
-
-    if (data && data.length > 0) {
-      const senderIds = [...new Set(data.map((m: any) => m.sender_id))];
-      const msgIds = data.map((m: any) => m.id);
-      const [nameMap, attachMap] = await Promise.all([getNameMap(senderIds), fetchAttachments(msgIds)]);
-      setThreadMessages(data.map((m: any) => ({
-        ...m,
-        sender_name: nameMap.get(m.sender_id) || 'Unknown',
-        attachments: attachMap.get(m.id) || [],
-      })));
-    } else {
-      setThreadMessages([]);
-    }
+    await refreshThread(msg.id);
   };
 
   const sendReply = async () => {
@@ -284,7 +348,7 @@ const MessagesTab: React.FC = () => {
 
       setReplyBody('');
       setReplyFiles([]);
-      openThread(selectedMessage);
+      // Thread will refresh via realtime subscription
     } catch (err: any) {
       message.error('Failed to reply');
     }
@@ -299,7 +363,6 @@ const MessagesTab: React.FC = () => {
       onOk: async () => {
         try {
           if (isParent) {
-            // Delete child replies first, then parent
             await supabase.from('internal_message_attachments')
               .delete().in('message_id',
                 [msgId, ...(threadMessages.map(t => t.id))]
@@ -311,10 +374,8 @@ const MessagesTab: React.FC = () => {
           } else {
             await supabase.from('internal_message_attachments').delete().eq('message_id', msgId);
             await supabase.from('internal_messages').delete().eq('id', msgId);
-            if (selectedMessage) openThread(selectedMessage);
           }
           message.success('Message deleted');
-          fetchMessages();
         } catch (err: any) {
           message.error('Delete failed: ' + err.message);
         }
