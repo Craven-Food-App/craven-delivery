@@ -111,12 +111,12 @@ const getCategoryColor = (cat: string) => {
 
 export const Expenses: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
   const [dateTo, setDateTo] = useState(dayjs().format('YYYY-MM-DD'));
-  const [useExpenseRequests, setUseExpenseRequests] = useState(false);
 
   // Create/Edit
   const [modalOpen, setModalOpen] = useState(false);
