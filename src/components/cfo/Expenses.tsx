@@ -242,7 +242,7 @@ export const Expenses: React.FC = () => {
           status: 'approved', // Auto-approve CFO entries
           priority: 'medium',
           requester_id: user.id,
-          vendor_name: formData.vendor || null,
+          vendor_name: formData.vendor_name || null,
         };
 
         if (editingExpense) {
