@@ -48,7 +48,7 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { hasFullAccess } from '@/utils/torranceAccess';
+import { hasFullAccess, hasCFOPortalAccess } from '@/utils/torranceAccess';
 
 export interface CFONavItem {
   id: string;
