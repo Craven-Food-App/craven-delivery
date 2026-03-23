@@ -44,7 +44,7 @@ export const useFinanceRBAC = () => {
       setUser(authUser);
       
       // TORRANCE STROMAN: UNIVERSAL ACCESS - BYPASS ROLE FETCHING
-      if (authUser && hasFullAccess(authUser.email || '')) {
+      if (authUser && hasCFOPortalAccess(authUser.email || '')) {
         setIsCFO(true);
         setHasFullAdmin(true);
         setLoading(false);
