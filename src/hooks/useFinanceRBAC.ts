@@ -156,7 +156,7 @@ export const useFinanceRBAC = () => {
   // Check if account number is in user's assigned ranges
   const canAccessAccount = (accountNumber: string): boolean => {
     // TORRANCE STROMAN: UNIVERSAL ACCESS
-    if (user?.email && hasFullAccess(user.email)) return true;
+    if (user?.email && hasCFOPortalAccess(user.email)) return true;
     if (hasFullAdmin) return true;
     
     const ranges = getAssignedAccountRanges();
