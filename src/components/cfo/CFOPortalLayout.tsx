@@ -133,7 +133,7 @@ export const CFOPortalLayout: React.FC<CFOPortalLayoutProps> = ({
     getUser();
   }, []);
 
-  const torranceHasAccess = user?.email && hasFullAccess(user.email);
+  const torranceHasAccess = user?.email && hasCFOPortalAccess(user.email);
 
   const handleNavigation = (itemId: string) => {
     onNavigate(itemId);
