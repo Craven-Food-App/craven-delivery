@@ -48,7 +48,7 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { hasFullAccess } from '@/utils/torranceAccess';
+import { hasFullAccess, hasCFOPortalAccess } from '@/utils/torranceAccess';
 
 export interface CFONavItem {
   id: string;
@@ -133,7 +133,7 @@ export const CFOPortalLayout: React.FC<CFOPortalLayoutProps> = ({
     getUser();
   }, []);
 
-  const torranceHasAccess = user?.email && hasFullAccess(user.email);
+  const torranceHasAccess = user?.email && hasCFOPortalAccess(user.email);
 
   const handleNavigation = (itemId: string) => {
     onNavigate(itemId);

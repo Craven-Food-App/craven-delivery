@@ -43,6 +43,14 @@ export const hasFullAccess = (email: string | null | undefined): boolean => {
 };
 
 /**
+ * CFO Portal full access - returns true if user is CEO or CFO.
+ * Justin Sweet has unrestricted access to everything within the CFO portal.
+ */
+export const hasCFOPortalAccess = (email: string | null | undefined): boolean => {
+  return isTorrance(email) || isJustin(email);
+};
+
+/**
  * Investor access check - returns true if user is CEO or CFO.
  */
 export const hasInvestorAccess = (email: string | null | undefined): boolean => {
