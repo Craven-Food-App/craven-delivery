@@ -292,7 +292,7 @@ export const Expenses: React.FC = () => {
     if (!window.confirm(`Delete this expense?`)) return;
     try {
       const { error } = await supabase.from('expense_requests').delete().eq('id', expense.id);
-      const { error } = await supabase.from(table).delete().eq('id', expense.id);
+      // removed duplicate line
       if (error) throw error;
       notifications.show({ title: 'Deleted', message: 'Expense removed', color: 'orange' });
       fetchExpenses();
