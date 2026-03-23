@@ -516,7 +516,7 @@ export const Invoices: React.FC = () => {
         expense_date: dayjs().format('YYYY-MM-DD'),
         status: 'approved',
         priority: 'low',
-        submitted_by: user.id,
+        requester_id: user.id,
       });
 
       await handleStatusChange(invoice, 'paid');

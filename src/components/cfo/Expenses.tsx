@@ -241,7 +241,8 @@ export const Expenses: React.FC = () => {
           expense_date: formData.expense_date,
           status: 'approved', // Auto-approve CFO entries
           priority: 'medium',
-          submitted_by: user.id,
+          requester_id: user.id,
+          vendor_name: formData.vendor || null,
         };
 
         if (editingExpense) {
