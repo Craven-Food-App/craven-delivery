@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { hasFullAccess } from '@/utils/torranceAccess';
+import { hasFullAccess, hasCFOPortalAccess } from '@/utils/torranceAccess';
 
 export interface FinanceRole {
   id: string;
