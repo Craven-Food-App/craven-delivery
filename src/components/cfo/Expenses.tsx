@@ -48,21 +48,24 @@ import dayjs from 'dayjs';
 
 // ── Types ───────────────────────────────────────────────────────────
 
-const EXPENSE_CATEGORIES = [
-  'Stripe Fees',
-  'Materials',
-  'Labor',
-  'Equipment',
-  'Marketing',
-  'Software & SaaS',
-  'Insurance',
-  'Rent & Utilities',
+interface ExpenseCategory {
+  id: string;
+  name: string;
+}
+
+const FALLBACK_CATEGORIES = [
   'Travel',
+  'Meals & Entertainment',
   'Office Supplies',
+  'Software & Subscriptions',
+  'Marketing & Advertising',
   'Professional Services',
-  'Food & Delivery Costs',
-  'Vehicle Maintenance',
-  'Miscellaneous',
+  'Utilities',
+  'Rent & Facilities',
+  'Equipment',
+  'Training & Development',
+  'Insurance',
+  'Other',
 ] as const;
 
 interface Expense {
