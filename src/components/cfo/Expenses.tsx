@@ -139,8 +139,24 @@ export const Expenses: React.FC = () => {
   // ── Fetch ──────────────────────────────────────────────────────
 
   useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
     fetchExpenses();
   }, [dateFrom, dateTo]);
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('expense_categories')
+        .select('id, name')
+        .order('name');
+      if (!error && data) setCategories(data);
+    } catch (e) {
+      console.error('Failed to load expense categories:', e);
+    }
+  };
 
   const fetchExpenses = async () => {
     setLoading(true);
