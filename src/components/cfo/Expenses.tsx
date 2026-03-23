@@ -291,7 +291,7 @@ export const Expenses: React.FC = () => {
   const handleDelete = async (expense: Expense) => {
     if (!window.confirm(`Delete this expense?`)) return;
     try {
-      const table = useExpenseRequests ? 'expense_requests' : 'expense_requests';
+      const { error } = await supabase.from('expense_requests').delete().eq('id', expense.id);
       const { error } = await supabase.from(table).delete().eq('id', expense.id);
       if (error) throw error;
       notifications.show({ title: 'Deleted', message: 'Expense removed', color: 'orange' });
