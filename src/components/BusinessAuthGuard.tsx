@@ -1,5 +1,5 @@
 import React, { useEffect, useState, startTransition, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
@@ -17,10 +17,21 @@ const LoadingFallback = () => (
  * Guard component that protects business portal routes
  * Redirects to /auth if user is not authenticated
  */
+const loginWithReturn = (navigate: ReturnType<typeof useNavigate>, pathname: string, search: string) => {
+  const returnTo = `${pathname}${search || ''}`;
+  const q = new URLSearchParams();
+  q.set('hq', 'true');
+  if (returnTo && returnTo !== '/auth' && !returnTo.startsWith('/auth?')) {
+    q.set('redirect', returnTo);
+  }
+  navigate(`/auth?${q.toString()}`);
+};
+
 const BusinessAuthGuard: React.FC<BusinessAuthGuardProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     checkAuth();
@@ -30,7 +41,11 @@ const BusinessAuthGuard: React.FC<BusinessAuthGuardProps> = ({ children }) => {
         if (event === 'SIGNED_OUT' || !session) {
           setIsAuthenticated(false);
           startTransition(() => {
-            navigate('/auth?hq=true');
+            loginWithReturn(
+              navigate,
+              typeof window !== 'undefined' ? window.location.pathname : location.pathname,
+              typeof window !== 'undefined' ? window.location.search : location.search,
+            );
           });
         } else if (event === 'SIGNED_IN' && session?.user) {
           setIsAuthenticated(true);
@@ -39,41 +54,29 @@ const BusinessAuthGuard: React.FC<BusinessAuthGuardProps> = ({ children }) => {
     );
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, location.pathname, location.search]);
 
   const checkAuth = async () => {
-    const currentPath = window.location.pathname;
-    console.log('[BusinessAuthGuard] Checking auth for path:', currentPath);
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
-      
+
       if (error || !user) {
-        console.log('[BusinessAuthGuard] Not authenticated, redirecting to /auth?hq=true');
         setIsAuthenticated(false);
         startTransition(() => {
-          navigate('/auth?hq=true');
+          loginWithReturn(navigate, location.pathname, location.search);
         });
       } else {
-        console.log('[BusinessAuthGuard] Authenticated, user:', user.email);
         setIsAuthenticated(true);
       }
-    } catch (error) {
-      console.error('[BusinessAuthGuard] Auth check error:', error);
+    } catch {
       setIsAuthenticated(false);
       startTransition(() => {
-        navigate('/auth?hq=true');
+        loginWithReturn(navigate, location.pathname, location.search);
       });
     } finally {
       setLoading(false);
     }
   };
-
-  // Debug: Log route changes
-  useEffect(() => {
-    const currentPath = window.location.pathname;
-    console.log('[BusinessAuthGuard] Route changed to:', currentPath);
-    console.log('[BusinessAuthGuard] Auth state:', { loading, isAuthenticated });
-  }, [loading, isAuthenticated]);
 
   if (loading) {
     return (

@@ -34,8 +34,8 @@ import MerchantMetrics from './tabs/MerchantMetrics';
 const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
 const TABS: PortalTab[] = [
+  { id: 'pipeline', label: 'Pipeline', description: 'Deal pipeline and strategic partners.', section: 'Operations', icon: IconLine },
   { id: 'dashboard', label: 'Dashboard', description: 'Partnership metrics and executive overview.', section: 'Operations', icon: IconLayoutDashboard },
-  { id: 'pipeline', label: 'Pipeline', description: 'Partner pipeline and deal tracking.', section: 'Operations', icon: IconLine },
   { id: 'contracts', label: 'Contracts', description: 'Contract management and secure uploads.', section: 'Operations', icon: IconFileText },
   { id: 'activity', label: 'Activity Log', description: 'Partnership activity and session tracking.', section: 'Operations', icon: IconTimeline },
   { id: 'onboarding', label: 'Onboarding', description: 'Partner onboarding checklists.', section: 'Management', icon: IconChecklist },
@@ -53,7 +53,7 @@ const CPOPortal: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('pipeline');
   const [userEmail, setUserEmail] = useState('');
 
   useActivityTracking('cpo');
@@ -66,7 +66,7 @@ const CPOPortal: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate('/auth?hq=true&redirect=/cpo');
+        navigate('/auth?hq=true&redirect=/cpo-portal');
         return;
       }
       setUserEmail(user.email || '');

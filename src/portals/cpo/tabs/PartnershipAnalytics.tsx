@@ -44,7 +44,7 @@ const PartnershipAnalytics: React.FC = () => {
 
   const totalValue = partnerships.reduce((sum, p) => sum + (Number(p.deal_value) || 0), 0);
   const activeValue = partnerships
-    .filter(p => p.status === 'active')
+    .filter(p => p.status === 'signed' || p.status === 'active')
     .reduce((sum, p) => sum + (Number(p.deal_value) || 0), 0);
 
   const totalRevenueYTD = partnerships.reduce((sum, p) => sum + (Number(p.revenue_ytd) || 0), 0);
@@ -58,12 +58,26 @@ const PartnershipAnalytics: React.FC = () => {
     co_marketing: 'Co-Marketing',
     vendor: 'Vendor',
     other: 'Other',
+    strategic_distribution: 'Strategic Distribution',
+    demand: 'Demand',
+    infrastructure: 'Infrastructure',
   };
 
   const statusColors: Record<string, string> = {
-    lead: 'gray', prospect: 'blue', negotiation: 'yellow',
-    contract_review: 'orange', active: 'green', on_hold: 'red',
-    churned: 'dark', terminated: 'dark',
+    lead: 'gray',
+    contacted: 'blue',
+    in_talks: 'cyan',
+    negotiating: 'yellow',
+    verbal_agreement: 'orange',
+    signed: 'green',
+    lost: 'red',
+    prospect: 'blue',
+    negotiation: 'yellow',
+    contract_review: 'orange',
+    active: 'green',
+    on_hold: 'red',
+    churned: 'dark',
+    terminated: 'dark',
   };
 
   const topPartners = [...partnerships]
@@ -110,7 +124,7 @@ const PartnershipAnalytics: React.FC = () => {
           <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Revenue MTD</Text>
           <Title order={2} mt="xs">${totalRevenueMTD.toLocaleString()}</Title>
           <Text size="xs" c="dimmed">Conversion: {partnerships.length > 0
-            ? `${Math.round((byStatus['active'] || 0) / partnerships.length * 100)}%`
+            ? `${Math.round(((byStatus['signed'] || 0) + (byStatus['active'] || 0)) / partnerships.length * 100)}%`
             : '0%'}</Text>
         </Card>
       </SimpleGrid>

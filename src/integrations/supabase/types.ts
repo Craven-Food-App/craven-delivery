@@ -21267,6 +21267,50 @@ export type Database = {
           },
         ]
       }
+      partnership_tasks: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string | null
+          id: string
+          owner_user_id: string | null
+          partnership_id: string
+          title: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          owner_user_id?: string | null
+          partnership_id: string
+          title: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          owner_user_id?: string | null
+          partnership_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_tasks_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partnership_kpis: {
         Row: {
           actual_value: number | null
@@ -21359,11 +21403,17 @@ export type Database = {
           contract_start_date: string | null
           created_at: string
           created_by: string | null
+          deal_snapshot_notes: string | null
+          deal_type: string | null
           deal_value: number | null
           description: string | null
+          estimated_locations_reach: number | null
+          estimated_monthly_volume_impact: string | null
           health_score: number | null
           id: string
           industry: string | null
+          last_activity_at: string | null
+          leverage_score: string | null
           logo_url: string | null
           merchant_id: string | null
           metadata: Json | null
@@ -21374,11 +21424,14 @@ export type Database = {
           payment_terms: string | null
           priority: string | null
           renewal_date: string | null
+          relationship_intel: string | null
           revenue_mtd: number | null
           revenue_share_percentage: number | null
           revenue_ytd: number | null
+          stage_entered_at: string | null
           status: Database["public"]["Enums"]["partnership_status"]
           tags: string[] | null
+          timeline_to_close: string | null
           updated_at: string
           website_url: string | null
         }
@@ -21388,11 +21441,17 @@ export type Database = {
           contract_start_date?: string | null
           created_at?: string
           created_by?: string | null
+          deal_snapshot_notes?: string | null
+          deal_type?: string | null
           deal_value?: number | null
           description?: string | null
+          estimated_locations_reach?: number | null
+          estimated_monthly_volume_impact?: string | null
           health_score?: number | null
           id?: string
           industry?: string | null
+          last_activity_at?: string | null
+          leverage_score?: string | null
           logo_url?: string | null
           merchant_id?: string | null
           metadata?: Json | null
@@ -21403,11 +21462,14 @@ export type Database = {
           payment_terms?: string | null
           priority?: string | null
           renewal_date?: string | null
+          relationship_intel?: string | null
           revenue_mtd?: number | null
           revenue_share_percentage?: number | null
           revenue_ytd?: number | null
+          stage_entered_at?: string | null
           status?: Database["public"]["Enums"]["partnership_status"]
           tags?: string[] | null
+          timeline_to_close?: string | null
           updated_at?: string
           website_url?: string | null
         }
@@ -21417,11 +21479,17 @@ export type Database = {
           contract_start_date?: string | null
           created_at?: string
           created_by?: string | null
+          deal_snapshot_notes?: string | null
+          deal_type?: string | null
           deal_value?: number | null
           description?: string | null
+          estimated_locations_reach?: number | null
+          estimated_monthly_volume_impact?: string | null
           health_score?: number | null
           id?: string
           industry?: string | null
+          last_activity_at?: string | null
+          leverage_score?: string | null
           logo_url?: string | null
           merchant_id?: string | null
           metadata?: Json | null
@@ -21432,11 +21500,14 @@ export type Database = {
           payment_terms?: string | null
           priority?: string | null
           renewal_date?: string | null
+          relationship_intel?: string | null
           revenue_mtd?: number | null
           revenue_share_percentage?: number | null
           revenue_ytd?: number | null
+          stage_entered_at?: string | null
           status?: Database["public"]["Enums"]["partnership_status"]
           tags?: string[] | null
+          timeline_to_close?: string | null
           updated_at?: string
           website_url?: string | null
         }
@@ -31864,6 +31935,12 @@ export type Database = {
         | "on_hold"
         | "churned"
         | "terminated"
+        | "contacted"
+        | "in_talks"
+        | "negotiating"
+        | "verbal_agreement"
+        | "signed"
+        | "lost"
       partnership_type:
         | "restaurant_merchant"
         | "strategic_corporate"
@@ -31872,6 +31949,9 @@ export type Database = {
         | "co_marketing"
         | "vendor"
         | "other"
+        | "strategic_distribution"
+        | "demand"
+        | "infrastructure"
       role_name:
         | "admin"
         | "moderator"
@@ -32120,6 +32200,12 @@ export const Constants = {
         "on_hold",
         "churned",
         "terminated",
+        "contacted",
+        "in_talks",
+        "negotiating",
+        "verbal_agreement",
+        "signed",
+        "lost",
       ],
       partnership_type: [
         "restaurant_merchant",
@@ -32129,6 +32215,9 @@ export const Constants = {
         "co_marketing",
         "vendor",
         "other",
+        "strategic_distribution",
+        "demand",
+        "infrastructure",
       ],
       role_name: [
         "admin",

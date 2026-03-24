@@ -128,8 +128,20 @@ const PartnerDirectory: React.FC = () => {
   };
 
   const statusColors: Record<string, string> = {
-    active: 'green', lead: 'gray', prospect: 'blue', negotiation: 'yellow',
-    contract_review: 'orange', on_hold: 'red', churned: 'dark', terminated: 'dark',
+    signed: 'green',
+    active: 'green',
+    lead: 'gray',
+    contacted: 'blue',
+    in_talks: 'cyan',
+    negotiating: 'yellow',
+    verbal_agreement: 'orange',
+    lost: 'red',
+    prospect: 'blue',
+    negotiation: 'yellow',
+    contract_review: 'orange',
+    on_hold: 'red',
+    churned: 'dark',
+    terminated: 'dark',
   };
 
   if (loading) return <Stack gap="md">{[1, 2, 3].map(i => <Skeleton key={i} height={120} radius="md" />)}</Stack>;

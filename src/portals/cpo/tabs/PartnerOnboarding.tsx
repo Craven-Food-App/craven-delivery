@@ -18,6 +18,7 @@ import {
 import { notifications } from '@mantine/notifications';
 import { IconPlus, IconTrash, IconChecklist } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { ONBOARDING_DEFAULT_STEPS as DEFAULT_STEPS } from '../dealConstants';
 
 interface OnboardingItem {
   id: string;
@@ -33,17 +34,6 @@ interface PartnerSummary {
   partner_name: string;
   status: string;
 }
-
-const DEFAULT_STEPS = [
-  'NDA Signed',
-  'Contract Executed',
-  'Integration Setup',
-  'Technical Onboarding',
-  'First Order / Transaction',
-  'Marketing Materials Shared',
-  'Training Completed',
-  'Go-Live Confirmed',
-];
 
 const PartnerOnboarding: React.FC = () => {
   const [partnerships, setPartnerships] = useState<PartnerSummary[]>([]);

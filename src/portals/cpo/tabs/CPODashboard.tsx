@@ -47,13 +47,15 @@ const CPODashboard: React.FC = () => {
     try {
       const { data: partnerships } = await supabase.from('partnerships').select('*');
       const all = partnerships || [];
-      const active = all.filter(p => p.status === 'active');
-      const pipeline = all.filter(p => ['lead', 'prospect', 'negotiation', 'contract_review'].includes(p.status));
+      const active = all.filter(p => p.status === 'signed' || p.status === 'active');
+      const pipeline = all.filter(p =>
+        ['lead', 'contacted', 'in_talks', 'negotiating', 'verbal_agreement', 'prospect', 'negotiation', 'contract_review', 'on_hold'].includes(p.status),
+      );
 
       const thirtyDaysOut = new Date();
       thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
       const expiring = all.filter(p =>
-        p.contract_end_date && new Date(p.contract_end_date) <= thirtyDaysOut && p.status === 'active'
+        p.contract_end_date && new Date(p.contract_end_date) <= thirtyDaysOut && (p.status === 'signed' || p.status === 'active')
       );
 
       const totalDealValue = all.reduce((sum, p) => sum + (Number(p.deal_value) || 0), 0);
