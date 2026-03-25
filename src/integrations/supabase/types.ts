@@ -21267,50 +21267,6 @@ export type Database = {
           },
         ]
       }
-      partnership_tasks: {
-        Row: {
-          completed: boolean
-          completed_at: string | null
-          created_at: string
-          created_by: string | null
-          due_at: string | null
-          id: string
-          owner_user_id: string | null
-          partnership_id: string
-          title: string
-        }
-        Insert: {
-          completed?: boolean
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          due_at?: string | null
-          id?: string
-          owner_user_id?: string | null
-          partnership_id: string
-          title: string
-        }
-        Update: {
-          completed?: boolean
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          due_at?: string | null
-          id?: string
-          owner_user_id?: string | null
-          partnership_id?: string
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "partnership_tasks_partnership_id_fkey"
-            columns: ["partnership_id"]
-            isOneToOne: false
-            referencedRelation: "partnerships"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       partnership_kpis: {
         Row: {
           actual_value: number | null
@@ -21396,6 +21352,64 @@ export type Database = {
           },
         ]
       }
+      partnership_tasks: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string | null
+          id: string
+          owner_user_id: string | null
+          partnership_id: string
+          title: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          owner_user_id?: string | null
+          partnership_id: string
+          title: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          owner_user_id?: string | null
+          partnership_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "partnership_tasks_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "partnership_tasks_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partnerships: {
         Row: {
           assigned_to: string | null
@@ -21423,8 +21437,8 @@ export type Database = {
           partner_type: Database["public"]["Enums"]["partnership_type"]
           payment_terms: string | null
           priority: string | null
-          renewal_date: string | null
           relationship_intel: string | null
+          renewal_date: string | null
           revenue_mtd: number | null
           revenue_share_percentage: number | null
           revenue_ytd: number | null
@@ -21461,8 +21475,8 @@ export type Database = {
           partner_type?: Database["public"]["Enums"]["partnership_type"]
           payment_terms?: string | null
           priority?: string | null
-          renewal_date?: string | null
           relationship_intel?: string | null
+          renewal_date?: string | null
           revenue_mtd?: number | null
           revenue_share_percentage?: number | null
           revenue_ytd?: number | null
@@ -21499,8 +21513,8 @@ export type Database = {
           partner_type?: Database["public"]["Enums"]["partnership_type"]
           payment_terms?: string | null
           priority?: string | null
-          renewal_date?: string | null
           relationship_intel?: string | null
+          renewal_date?: string | null
           revenue_mtd?: number | null
           revenue_share_percentage?: number | null
           revenue_ytd?: number | null
