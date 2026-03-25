@@ -38,6 +38,7 @@ const OfficersTab: React.FC = () => {
   const [formExecId, setFormExecId] = useState('');
   const [formAppointedDate, setFormAppointedDate] = useState<Date | null>(new Date());
   const [formTermStart, setFormTermStart] = useState<Date | null>(new Date());
+  // @ts-ignore - DatePickerInput onChange type mismatch
 
   useEffect(() => {
     loadOfficers();
