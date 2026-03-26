@@ -1,0 +1,1 @@
+UPDATE public.exec_users SET role = 'cpo' WHERE user_id = '06847119-d5e5-44dc-a5f4-6b3b677d9423';
