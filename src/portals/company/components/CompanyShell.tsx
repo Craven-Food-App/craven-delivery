@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import CompanySidebar from './CompanySidebar';
 import { CompanyHeader } from './CompanyHeader';
+import ExecutiveGlobalNotifications from './ExecutiveGlobalNotifications';
 
 interface CompanyShellProps {
   children: React.ReactNode;
@@ -67,6 +68,7 @@ export const CompanyShell: React.FC<CompanyShellProps> = ({ children }) => {
           backgroundColor: '#ffffff',
         }}
       >
+        <ExecutiveGlobalNotifications />
         {children}
       </AppShell.Main>
     </AppShell>
