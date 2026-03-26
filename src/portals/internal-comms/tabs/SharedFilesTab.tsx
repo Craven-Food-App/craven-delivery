@@ -16,6 +16,17 @@ interface SharedFile {
   uploader_name?: string;
 }
 
+const INTERNAL_COMMS_BUCKET = 'internal-comms-files';
+
+const extractStoragePath = (fileUrlOrPath: string) => {
+  if (!fileUrlOrPath) return '';
+  if (!fileUrlOrPath.startsWith('http')) return fileUrlOrPath;
+  const marker = `/${INTERNAL_COMMS_BUCKET}/`;
+  const idx = fileUrlOrPath.indexOf(marker);
+  if (idx === -1) return fileUrlOrPath;
+  return decodeURIComponent(fileUrlOrPath.slice(idx + marker.length));
+};
+
 const fileIcon = (type: string | null) => {
   if (!type) return <FileOutlined />;
   if (type.includes('pdf')) return <FilePdfOutlined style={{ color: '#ef4444' }} />;
@@ -95,10 +106,6 @@ const SharedFilesTab: React.FC = () => {
         .upload(filePath, file);
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('internal-comms-files')
-        .getPublicUrl(filePath);
-
       // Create a placeholder message for standalone file uploads
       const { data: msgData, error: msgError } = await supabase
         .from('internal_messages')
@@ -117,7 +124,7 @@ const SharedFilesTab: React.FC = () => {
       const { error: attachError } = await supabase.from('internal_message_attachments').insert([{
         message_id: msgData.id,
         file_name: file.name,
-        file_url: urlData.publicUrl,
+        file_url: filePath,
         file_size_bytes: file.size,
         file_type: file.type,
         uploaded_by: currentUser.id,
@@ -137,6 +144,18 @@ const SharedFilesTab: React.FC = () => {
   const filtered = files.filter(f =>
     f.file_name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const openFile = async (record: SharedFile) => {
+    const filePath = extractStoragePath(record.file_url);
+    const { data, error } = await supabase.storage
+      .from(INTERNAL_COMMS_BUCKET)
+      .createSignedUrl(filePath, 60 * 5);
+    if (error || !data?.signedUrl) {
+      message.error(`Unable to open ${record.file_name}`);
+      return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  };
 
   const columns = [
     {
@@ -181,8 +200,7 @@ const SharedFilesTab: React.FC = () => {
           <Button
             type="text"
             icon={<DownloadOutlined />}
-            href={record.file_url}
-            target="_blank"
+            onClick={() => openFile(record)}
             style={{ color: '#FF6B35' }}
           />
         </Tooltip>

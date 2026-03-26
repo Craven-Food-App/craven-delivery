@@ -40,6 +40,17 @@ interface Attachment {
   file_type: string | null;
 }
 
+const INTERNAL_COMMS_BUCKET = 'internal-comms-files';
+
+const extractStoragePath = (fileUrlOrPath: string) => {
+  if (!fileUrlOrPath) return '';
+  if (!fileUrlOrPath.startsWith('http')) return fileUrlOrPath;
+  const marker = `/${INTERNAL_COMMS_BUCKET}/`;
+  const idx = fileUrlOrPath.indexOf(marker);
+  if (idx === -1) return fileUrlOrPath;
+  return decodeURIComponent(fileUrlOrPath.slice(idx + marker.length));
+};
+
 interface Message {
   id: string;
   sender_id: string;
@@ -75,19 +86,32 @@ const formatSize = (bytes: number | null) => {
 
 const AttachmentList: React.FC<{ attachments: Attachment[] }> = ({ attachments }) => {
   if (!attachments || attachments.length === 0) return null;
+
+  const openAttachment = async (attachment: Attachment) => {
+    const filePath = extractStoragePath(attachment.file_url);
+    const { data, error } = await supabase.storage
+      .from(INTERNAL_COMMS_BUCKET)
+      .createSignedUrl(filePath, 60 * 5);
+    if (error || !data?.signedUrl) {
+      message.error(`Unable to open ${attachment.file_name}`);
+      return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
       {attachments.map((a) => (
-        <a
+        <button
           key={a.id}
-          href={a.file_url}
-          target="_blank"
-          rel="noopener noreferrer"
+          type="button"
+          onClick={() => openAttachment(a)}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
             background: '#f3f4f6', borderRadius: 6, padding: '4px 8px',
             fontSize: 12, color: '#374151', textDecoration: 'none',
             border: '1px solid #e5e7eb',
+            cursor: 'pointer',
           }}
         >
           {fileIcon(a.file_type)}
@@ -96,7 +120,7 @@ const AttachmentList: React.FC<{ attachments: Attachment[] }> = ({ attachments }
           </span>
           {a.file_size_bytes && <span style={{ color: '#9ca3af' }}>({formatSize(a.file_size_bytes)})</span>}
           <DownloadOutlined style={{ color: '#FF6B35' }} />
-        </a>
+        </button>
       ))}
     </div>
   );
@@ -273,14 +297,10 @@ const MessagesTab: React.FC = () => {
         .upload(filePath, file);
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('internal-comms-files')
-        .getPublicUrl(filePath);
-
       const { error: attachError } = await supabase.from('internal_message_attachments').insert([{
         message_id: messageId,
         file_name: file.name,
-        file_url: urlData.publicUrl,
+        file_url: filePath,
         file_size_bytes: file.size,
         file_type: file.type,
         uploaded_by: userId,
