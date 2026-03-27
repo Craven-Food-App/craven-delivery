@@ -126,8 +126,10 @@ const CapTableEquityPageEnhanced: React.FC = () => {
       const { data: capData, error: capError } = await supabase
         .from('cap_tables')
         .select('*')
+        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (capError) throw new Error(`Cap table error: ${capError.message}`);
       if (!capData) {
