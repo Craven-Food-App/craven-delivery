@@ -119,7 +119,7 @@ const CapTableOverview: React.FC = () => {
         .from('cap_tables')
         .select('total_authorized')
         .limit(1)
-        .maybeSingle();
+        .single();
 
       const totalAuthorized = capData?.total_authorized || 100000000;
 

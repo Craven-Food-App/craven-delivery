@@ -1,1 +1,0 @@
-UPDATE equity_grants SET strike_price = 0.001 WHERE strike_price != 0.001;

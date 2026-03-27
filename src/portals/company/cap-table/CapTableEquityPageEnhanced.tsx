@@ -84,23 +84,10 @@ const CapTableEquityPageEnhanced: React.FC = () => {
         .from('cap_tables')
         .select('*')
         .limit(1)
-        .maybeSingle();
+        .single();
 
       if (capError) throw new Error(`Cap table error: ${capError.message}`);
-      if (!capData) {
-        // No cap table exists yet - use defaults
-        setCapTable({
-          id: '',
-          total_authorized: 100000000,
-          total_issued: 0,
-          total_unissued: 100000000,
-          as_of_date: new Date().toISOString().split('T')[0],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        } as any);
-        setLoading(false);
-        return;
-      }
+      if (!capData) throw new Error('No cap table data found');
 
       setCapTable(capData);
 
