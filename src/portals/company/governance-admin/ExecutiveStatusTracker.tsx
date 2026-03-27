@@ -89,7 +89,7 @@ const ExecutiveStatusTracker: React.FC = () => {
             .from('user_profiles')
             .select('user_id')
             .eq('email', officer.email)
-            .single();
+            .maybeSingle();
 
           let roles: string[] = [];
           if (userProfile) {

@@ -218,7 +218,7 @@ const AppointmentList: React.FC = () => {
               .from('user_profiles')
               .select('full_name, email')
               .eq('user_id', exec.user_id)
-              .single();
+              .maybeSingle();
 
             if (profileData) {
               fullName = profileData.full_name || fullName;

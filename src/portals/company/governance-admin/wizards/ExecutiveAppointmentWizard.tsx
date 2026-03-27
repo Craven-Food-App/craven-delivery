@@ -95,7 +95,7 @@ const ExecutiveAppointmentWizard: React.FC = () => {
           .from('company_settings')
           .select('setting_value')
           .eq('setting_key', 'has_articles_of_incorporation')
-          .single();
+          .maybeSingle();
         
         const hasArticlesOnFile = data?.setting_value === 'true';
         setHasArticles(hasArticlesOnFile);

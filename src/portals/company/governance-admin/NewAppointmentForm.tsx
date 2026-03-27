@@ -64,7 +64,7 @@ const NewAppointmentForm: React.FC = () => {
           .from('company_settings')
           .select('setting_value')
           .eq('setting_key', 'has_articles_of_incorporation')
-          .single();
+          .maybeSingle();
         
         // If no record exists or value is false/null, default formation_mode to true
         const settingValue = data?.setting_value;
