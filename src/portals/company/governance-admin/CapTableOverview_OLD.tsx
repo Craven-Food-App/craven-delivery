@@ -121,7 +121,7 @@ const CapTableOverview: React.FC = () => {
         .limit(1)
         .single();
 
-      const totalAuthorized = capData?.total_authorized || 100000000;
+      const totalAuthorized = capData?.total_authorized || 70000000;
 
       // For each grant, get the recipient name
       const formattedGrants: EquityGrant[] = [];

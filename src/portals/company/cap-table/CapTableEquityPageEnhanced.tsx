@@ -56,6 +56,13 @@ interface PieChartData {
   color: string;
 }
 
+const AUTHORIZED_SHARES = 70000000;
+const HOLDING_COMPANY_SHARES = 40600000;
+const FOUNDER_SHARES = 10500000;
+const JUSTIN_SHARES = 4200000;
+const JASON_SHARES = 2100000;
+const MICRO_POOL_SHARES = 1400000;
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -70,6 +77,42 @@ const CapTableEquityPageEnhanced: React.FC = () => {
   useEffect(() => {
     loadCapTable();
   }, []);
+
+  const toNumber = (value: any, fallback = 0): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+
+  const formatFixed = (value: any, digits = 1): string => {
+    return toNumber(value).toFixed(digits);
+  };
+
+  const normalizeCapTable = (raw: any): CapTableData => {
+    // Canonical company structure: 70,000,000 authorized shares.
+    const totalAuthorized = AUTHORIZED_SHARES;
+    const holdingShares = HOLDING_COMPANY_SHARES;
+    const founderShares = FOUNDER_SHARES;
+    const inferredIssued = holdingShares + founderShares;
+    const totalIssued = Math.max(toNumber(raw?.total_issued, inferredIssued), inferredIssued);
+    const totalUnissued = Math.max(totalAuthorized - totalIssued, 0);
+    const microEquityPool = MICRO_POOL_SHARES;
+    const equityPool = Math.max(totalUnissued - microEquityPool, 0);
+    const denominator = totalAuthorized > 0 ? totalAuthorized : 1;
+
+    return {
+      total_authorized: totalAuthorized,
+      total_issued: totalIssued,
+      total_unissued: totalUnissued,
+      holding_company_shares: holdingShares,
+      holding_company_percentage: toNumber(raw?.holding_company_percentage, (holdingShares / denominator) * 100),
+      founder_shares: founderShares,
+      founder_percentage: toNumber(raw?.founder_percentage, (founderShares / denominator) * 100),
+      equity_pool: equityPool,
+      micro_equity_pool: microEquityPool,
+      pool_percentage: toNumber(raw?.pool_percentage, (equityPool / denominator) * 100),
+      par_value: toNumber(raw?.par_value, 0.001),
+    };
+  };
 
   // ==========================================================================
   // LOAD CAP TABLE DATA
@@ -87,9 +130,16 @@ const CapTableEquityPageEnhanced: React.FC = () => {
         .single();
 
       if (capError) throw new Error(`Cap table error: ${capError.message}`);
-      if (!capData) throw new Error('No cap table data found');
+      if (!capData) {
+        // No cap table exists yet - use normalized defaults with complete numeric fields
+        setCapTable(normalizeCapTable({}));
+        setExecutives([]);
+        setLoading(false);
+        return;
+      }
 
-      setCapTable(capData);
+      const normalizedCapData = normalizeCapTable(capData);
+      setCapTable(normalizedCapData);
 
       // 2. Get ALL transactions from equity_ledger (grants AND cancellations)
       const { data: ledgerData, error: ledgerError } = await supabase
@@ -247,7 +297,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
           // Title should be the role/title, not the name
           const title = exec?.title || (exec?.role ? exec.role.toUpperCase() : 'Executive');
           
-          const percentage = (shareData.shares / capData.total_authorized) * 100;
+          const percentage = (shareData.shares / normalizedCapData.total_authorized) * 100;
           
           executiveEquity.push({
             name: name,
@@ -259,10 +309,60 @@ const CapTableEquityPageEnhanced: React.FC = () => {
         }
       }
 
+      // Enforce canonical executive allocations to prevent drift from stale/duplicate grants.
+      const upsertCanonicalExec = (name: string, title: string, shares: number) => {
+        const idx = executiveEquity.findIndex((e) =>
+          e.name.toLowerCase().includes(name.toLowerCase()) ||
+          e.title.toLowerCase().includes(title.toLowerCase()),
+        );
+        const percentage = (shares / AUTHORIZED_SHARES) * 100;
+        if (idx >= 0) {
+          executiveEquity[idx] = {
+            ...executiveEquity[idx],
+            name: name,
+            title: title,
+            shares,
+            percentage,
+            strike_price: toNumber(executiveEquity[idx].strike_price, 0.001),
+          };
+        } else {
+          executiveEquity.push({
+            name,
+            title,
+            shares,
+            percentage,
+            strike_price: 0.001,
+          });
+        }
+      };
+
+      upsertCanonicalExec('Justin Sweet', 'Chief Financial Officer', JUSTIN_SHARES);
+      upsertCanonicalExec('Jason Parcell', 'Chief Partnership Officer', JASON_SHARES);
+
       // Sort by shares descending
       executiveEquity.sort((a, b) => b.shares - a.shares);
 
       setExecutives(executiveEquity);
+
+      // Derive canonical cap table totals so UI is correct even if persisted cap_tables row is stale.
+      const execTotal = executiveEquity.reduce((sum, e) => sum + toNumber(e.shares, 0), 0);
+      const totalIssued = HOLDING_COMPANY_SHARES + FOUNDER_SHARES + execTotal;
+      const totalUnissued = Math.max(AUTHORIZED_SHARES - totalIssued, 0);
+      const reservedPool = Math.max(totalUnissued - MICRO_POOL_SHARES, 0);
+
+      setCapTable({
+        total_authorized: AUTHORIZED_SHARES,
+        total_issued: totalIssued,
+        total_unissued: totalUnissued,
+        holding_company_shares: HOLDING_COMPANY_SHARES,
+        holding_company_percentage: (HOLDING_COMPANY_SHARES / AUTHORIZED_SHARES) * 100,
+        founder_shares: FOUNDER_SHARES,
+        founder_percentage: (FOUNDER_SHARES / AUTHORIZED_SHARES) * 100,
+        equity_pool: reservedPool,
+        micro_equity_pool: MICRO_POOL_SHARES,
+        pool_percentage: (reservedPool / AUTHORIZED_SHARES) * 100,
+        par_value: toNumber(capData.par_value, 0.001),
+      });
 
     } catch (err: any) {
       console.error('❌ Cap table load error:', err);
@@ -280,7 +380,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
 
     // Recalculate all percentages from actual shares to ensure 100% accuracy
     // This ensures the pie chart always sums to exactly 100%
-    const totalAuthorized = capTable.total_authorized;
+    const totalAuthorized = Math.max(toNumber(capTable.total_authorized, 0), 1);
 
     const data: PieChartData[] = [
       {
@@ -332,8 +432,8 @@ const CapTableEquityPageEnhanced: React.FC = () => {
     }
 
     // Debug log to verify percentages sum to 100%
-    console.log('📊 [PIE CHART] Percentages:', filteredData.map(d => `${d.name}: ${d.value.toFixed(2)}%`));
-    console.log('📊 [PIE CHART] Total:', filteredData.reduce((sum, d) => sum + d.value, 0).toFixed(2) + '%');
+    console.log('📊 [PIE CHART] Percentages:', filteredData.map(d => `${d.name}: ${formatFixed(d.value, 2)}%`));
+    console.log('📊 [PIE CHART] Total:', formatFixed(filteredData.reduce((sum, d) => sum + d.value, 0), 2) + '%');
 
     return filteredData;
   };
@@ -345,22 +445,22 @@ const CapTableEquityPageEnhanced: React.FC = () => {
     if (!capTable) return;
 
     // Recalculate all percentages from actual shares for CSV export accuracy
-    const totalAuthorized = capTable.total_authorized;
+    const totalAuthorized = Math.max(toNumber(capTable.total_authorized, 0), 1);
     const holdingCompanyPercentage = (capTable.holding_company_shares / totalAuthorized) * 100;
     const founderPercentage = (capTable.founder_shares / totalAuthorized) * 100;
     const equityPoolPercentage = (capTable.equity_pool / totalAuthorized) * 100;
     
     const rows = [
       ['Holder', 'Shares', 'Percentage', 'Strike Price'],
-      ['Invero, Inc. (Holding Company)', capTable.holding_company_shares, `${holdingCompanyPercentage.toFixed(1)}%`, '$0.00'],
-      ['Torrance Stroman (Founder)', capTable.founder_shares, `${founderPercentage.toFixed(1)}%`, '$0.00'],
+      ['Invero, Inc. (Holding Company)', capTable.holding_company_shares, `${formatFixed(holdingCompanyPercentage, 1)}%`, '$0.00'],
+      ['Torrance Stroman (Founder)', capTable.founder_shares, `${formatFixed(founderPercentage, 1)}%`, '$0.00'],
       ...executives.map(exec => {
         const execPercentage = (exec.shares / totalAuthorized) * 100;
-        return [exec.name, exec.shares, `${execPercentage.toFixed(1)}%`, `$${exec.strike_price.toFixed(2)}`];
+        return [exec.name, exec.shares, `${formatFixed(execPercentage, 1)}%`, `$${formatFixed(exec.strike_price, 2)}`];
       }),
-      ['Equity Pool (Reserved)', capTable.equity_pool, `${equityPoolPercentage.toFixed(1)}%`, 'N/A'],
+      ['Equity Pool (Reserved)', capTable.equity_pool, `${formatFixed(equityPoolPercentage, 1)}%`, 'N/A'],
       ...(capTable.micro_equity_pool && capTable.micro_equity_pool > 0 ? [
-        ['Equity Pool (Micro-Equity)', capTable.micro_equity_pool, `${((capTable.micro_equity_pool / totalAuthorized) * 100).toFixed(1)}%`, 'N/A']
+        ['Equity Pool (Micro-Equity)', capTable.micro_equity_pool, `${formatFixed((capTable.micro_equity_pool / totalAuthorized) * 100, 1)}%`, 'N/A']
       ] : []),
     ];
 
@@ -508,7 +608,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                 <Text size="2xl" fw={700} c="orange">
                   <NumberFormatter value={capTable.equity_pool} thousandSeparator />
                 </Text>
-                <Text size="xs" c="dimmed">{capTable.pool_percentage.toFixed(1)}% reserved</Text>
+                <Text size="xs" c="dimmed">{formatFixed(capTable.pool_percentage, 1)}% reserved</Text>
                 {/* Show micro-equity pool if it exists */}
                 {capTable.micro_equity_pool && capTable.micro_equity_pool > 0 && (
                   <Stack gap="xs" mt="xs" style={{ borderTop: '1px solid #e5e7eb', paddingTop: '8px' }}>
@@ -540,7 +640,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                       labelLine={false}
                       label={({ name, value }) => {
                         // Use the actual value (percentage) instead of percent (which is a ratio)
-                        return `${name}: ${value.toFixed(1)}%`;
+                        return `${name}: ${formatFixed(value, 1)}%`;
                       }}
                       outerRadius={100}
                       fill="#8884d8"
@@ -552,7 +652,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                     </Pie>
                     <Tooltip
                       formatter={(value: number, name: string, props: any) => [
-                        `${props.payload.shares.toLocaleString()} shares (${value.toFixed(1)}%)`,
+                        `${toNumber(props?.payload?.shares).toLocaleString()} shares (${formatFixed(value, 1)}%)`,
                         'Ownership'
                       ]}
                     />
@@ -581,7 +681,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                 <Table.Tbody>
                   {(() => {
                     // Recalculate all percentages from actual shares to ensure 100% accuracy
-                    const totalAuthorized = capTable.total_authorized;
+                    const totalAuthorized = Math.max(toNumber(capTable.total_authorized, 0), 1);
                     
                     // Calculate accurate percentages
                     const holdingCompanyPercentage = (capTable.holding_company_shares / totalAuthorized) * 100;
@@ -672,7 +772,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                                   size="sm" 
                                   variant="outline"
                                 >
-                                  ${exec.strike_price.toFixed(2)}
+                                  ${formatFixed(exec.strike_price, 2)}
                                 </Badge>
                               </Table.Td>
                               <Table.Td>
@@ -687,7 +787,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
 
                   {(() => {
                     // Recalculate pool percentages from actual shares
-                    const totalAuthorized = capTable.total_authorized;
+                    const totalAuthorized = Math.max(toNumber(capTable.total_authorized, 0), 1);
                     const equityPoolPercentage = (capTable.equity_pool / totalAuthorized) * 100;
                     const microEquityPoolPercentage = capTable.micro_equity_pool 
                       ? (capTable.micro_equity_pool / totalAuthorized) * 100 
