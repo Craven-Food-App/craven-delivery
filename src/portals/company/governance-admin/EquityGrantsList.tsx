@@ -50,6 +50,11 @@ interface RevokedGrant extends EquityGrant {
   revocation_reason?: string;
 }
 
+function isMarkaylaDanzyRecipient(name: string | undefined | null): boolean {
+  const n = (name || '').toLowerCase();
+  return n.includes('markayla') && n.includes('danzy');
+}
+
 const EquityGrantsList: React.FC = () => {
   const [grants, setGrants] = useState<EquityGrant[]>([]);
   const [revokedGrants, setRevokedGrants] = useState<RevokedGrant[]>([]);
@@ -330,7 +335,7 @@ const EquityGrantsList: React.FC = () => {
           let recipientName = '';
           
           if ((sharesNum >= 17500000 && sharesNum <= 18500000) || (sharesNum >= 10400000 && sharesNum <= 10600000)) {
-            recipientName = 'Torrance Stroman';
+            recipientName = 'Torrance Stroman (Founder CEO)';
             recipientEmail = 'tstroman.ceo@cravenusa.com';
             console.log('✅ TORRANCE:', sharesNum, 'shares');
           } else if (sharesNum >= 4500000 && sharesNum <= 5500000) {
@@ -428,7 +433,7 @@ const EquityGrantsList: React.FC = () => {
               if (!recipientName || !recipientEmail) {
                 const shares = sharesNum;
                 if (shares === 18000000 || Math.abs(shares - 18000000) < 1) {
-                  recipientName = 'Torrance Stroman';
+                  recipientName = 'Torrance Stroman (Founder CEO)';
                   recipientEmail = 'tstroman.ceo@cravenusa.com';
                 } else if (shares === 5000000 || Math.abs(shares - 5000000) < 1) {
                   recipientName = 'Justin Sweet';
@@ -525,6 +530,11 @@ const EquityGrantsList: React.FC = () => {
             unvestedShares = 0;
           }
 
+          if (isMarkaylaDanzyRecipient(recipientName)) {
+            console.log('🚫 Skipping equity grant row: Markayla Danzy (non-executive, no equity)');
+            continue;
+          }
+
           grantsWithUsers.push({
             id: entry.id,
             recipient_user_id: entry.recipient_user_id,
@@ -613,6 +623,10 @@ const EquityGrantsList: React.FC = () => {
             }
             
             if (recipientName || recipientEmail) {
+              if (isMarkaylaDanzyRecipient(recipientName)) {
+                console.log('🚫 Skipping equity_grants row: Markayla Danzy (non-executive, no equity)');
+                continue;
+              }
               grantsWithUsers.push({
                 id: grant.id,
                 recipient_user_id: userId,
@@ -779,8 +793,8 @@ const EquityGrantsList: React.FC = () => {
         let recipientEmail = '';
         
         const sharesNum = Number(entry.shares_amount) || 0;
-        if (sharesNum >= 17500000 && sharesNum <= 18500000) {
-          recipientName = 'Torrance Stroman';
+        if ((sharesNum >= 17500000 && sharesNum <= 18500000) || (sharesNum >= 10400000 && sharesNum <= 10600000)) {
+          recipientName = 'Torrance Stroman (Founder CEO)';
           recipientEmail = 'tstroman.ceo@cravenusa.com';
         } else if (sharesNum >= 4500000 && sharesNum <= 5500000) {
           recipientName = 'Justin Sweet';
@@ -1218,7 +1232,7 @@ const EquityGrantsList: React.FC = () => {
                   if (!displayName || displayName === 'Unknown' || !displayEmail || displayEmail === 'N/A') {
                     const grantShares = grant.shares_amount;
                     if ((grantShares >= 17500000 && grantShares <= 18500000) || (grantShares >= 10400000 && grantShares <= 10600000)) {
-                      displayName = 'Torrance Stroman';
+                      displayName = 'Torrance Stroman (Founder CEO)';
                       displayEmail = 'tstroman.ceo@cravenusa.com';
                     } else if (grantShares >= 4500000 && grantShares <= 5500000) {
                       displayName = 'Justin Sweet';

@@ -14,7 +14,7 @@ export const FALLBACK_EXECUTIVES: FallbackExecutive[] = [
   {
     id: 'fallback-torrance-stroman',
     role: 'ceo',
-    title: 'Chief Executive Officer',
+    title: 'Founder CEO',
     department: 'Executive Office',
     name: 'Torrance Stroman',
     email: 'tstroman.ceo@cravenusa.com',

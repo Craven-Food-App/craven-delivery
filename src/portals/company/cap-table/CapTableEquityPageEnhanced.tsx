@@ -63,6 +63,19 @@ const JUSTIN_SHARES = 4200000;
 const JASON_SHARES = 2100000;
 const MICRO_POOL_SHARES = 1400000;
 
+const FOUNDER_CEO_LABEL = 'Founder CEO';
+const FOUNDER_BOARD_ROLES_LINE = 'Secretary · Board Chair · Director';
+
+function isTorranceStromanDisplayName(name: string | undefined | null): boolean {
+  const n = (name || '').toLowerCase();
+  return n.includes('torrance') && n.includes('stroman');
+}
+
+function isMarkaylaDanzyDisplayName(name: string | undefined | null): boolean {
+  const n = (name || '').toLowerCase();
+  return (n.includes('markayla') && n.includes('danzy')) || n.includes('markayla danzy');
+}
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -265,11 +278,11 @@ const CapTableEquityPageEnhanced: React.FC = () => {
       for (const userId of recipientUserIds) {
         const exec = execData?.find(e => e.user_id === userId);
         const shareData = sharesByUserId[userId];
-        
+
         if (shareData && shareData.shares > 0) {
           // Get name - prioritize actual name, never use title as name
           let name = nameMap[userId];
-          
+
           // Final fallback - use a generic name but log warning
           if (!name) {
             console.warn(`⚠️ No name found for user_id: ${userId}, using role/title as fallback`);
@@ -295,10 +308,23 @@ const CapTableEquityPageEnhanced: React.FC = () => {
             console.log(`🚫 Skipping duplicate CEO entry for user_id ${userId} - name: ${name}, title: ${exec?.title}`);
             continue;
           }
+
+          // Founder / CEO stake is the single 10.5M (15%) founder row — not a separate executive line.
+          if (isTorranceStromanDisplayName(name)) {
+            console.log(
+              `🚫 Skipping ledger-only row for Torrance (shown as ${FOUNDER_CEO_LABEL} / ${FOUNDER_SHARES.toLocaleString()} shares): user_id ${userId}`,
+            );
+            continue;
+          }
           
           // Title should be the role/title, not the name
           const title = exec?.title || (exec?.role ? exec.role.toUpperCase() : 'Executive');
-          
+
+          if (isMarkaylaDanzyDisplayName(name)) {
+            console.log(`🚫 Skipping non-executive equity row (Markayla Danzy) for user_id ${userId}`);
+            continue;
+          }
+
           const percentage = (shareData.shares / normalizedCapData.total_authorized) * 100;
           
           executiveEquity.push({
@@ -392,7 +418,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
         color: '#3b82f6', // Blue
       },
       {
-        name: 'Torrance Stroman',
+        name: `Torrance Stroman — ${FOUNDER_CEO_LABEL}`,
         value: (capTable.founder_shares / totalAuthorized) * 100,
         shares: capTable.founder_shares,
         color: '#8b5cf6', // Purple
@@ -455,7 +481,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
     const rows = [
       ['Holder', 'Shares', 'Percentage', 'Strike Price'],
       ['Invero, Inc. (Holding Company)', capTable.holding_company_shares, `${formatFixed(holdingCompanyPercentage, 1)}%`, '$0.00'],
-      ['Torrance Stroman (Founder)', capTable.founder_shares, `${formatFixed(founderPercentage, 1)}%`, '$0.00'],
+      [`Torrance Stroman (${FOUNDER_CEO_LABEL})`, capTable.founder_shares, `${formatFixed(founderPercentage, 1)}%`, '$0.00'],
       ...executives.map(exec => {
         const execPercentage = (exec.shares / totalAuthorized) * 100;
         return [exec.name, exec.shares, `${formatFixed(execPercentage, 1)}%`, `$${formatFixed(exec.strike_price, 2)}`];
@@ -724,7 +750,8 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                           <Table.Td>
                             <div>
                               <Text fw={600} size="sm">Torrance Stroman</Text>
-                              <Text size="xs" c="dimmed">Founder & CEO</Text>
+                              <Text size="xs" c="dimmed">{FOUNDER_CEO_LABEL}</Text>
+                              <Text size="xs" c="dimmed">{FOUNDER_BOARD_ROLES_LINE}</Text>
                             </div>
                           </Table.Td>
                           <Table.Td>
