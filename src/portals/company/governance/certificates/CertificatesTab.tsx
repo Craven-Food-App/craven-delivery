@@ -409,7 +409,8 @@ const CertificatesTab: React.FC = () => {
 
         if (!response.ok) {
           // If it fails because certificate exists, try issue-shares which may handle updates
-          const error = await response.json();
+          const errorText = await response.text();
+          const error = errorText ? JSON.parse(errorText) : { error: `HTTP ${response.status}` };
           if (error.error?.includes('unique') || error.error?.includes('exists')) {
             // Fall back to issue-shares which should handle existing certificates
             const issueResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/governance-issue-shares`, {
@@ -426,7 +427,8 @@ const CertificatesTab: React.FC = () => {
             });
 
             if (!issueResponse.ok) {
-              const issueError = await issueResponse.json();
+              const issueText = await issueResponse.text();
+              const issueError = issueText ? JSON.parse(issueText) : { error: `HTTP ${issueResponse.status}` };
               throw new Error(issueError.error || 'Failed to generate certificate document');
             }
           } else {
@@ -434,7 +436,8 @@ const CertificatesTab: React.FC = () => {
           }
         } else {
           // Success - update existing certificate with document_url if returned
-          const result = await response.json();
+          const resultText = await response.text();
+          const result = resultText ? JSON.parse(resultText) : {};
           if (result.document_url && existingCert.id) {
             await supabase
               .from('share_certificates')
@@ -461,7 +464,8 @@ const CertificatesTab: React.FC = () => {
         });
 
         if (!response.ok) {
-          const error = await response.json();
+          const errText = await response.text();
+          const error = errText ? JSON.parse(errText) : { error: `HTTP ${response.status}` };
           throw new Error(error.error || 'Failed to generate certificate');
         }
       }
