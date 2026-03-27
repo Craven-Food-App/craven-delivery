@@ -70,7 +70,7 @@ const CapTableOverview: React.FC = () => {
         .from('cap_tables')
         .select('*')
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (capError) throw new Error(`Cap table error: ${capError.message}`);
       if (!capData) throw new Error('No cap table data found');
