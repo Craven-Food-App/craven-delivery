@@ -32,6 +32,8 @@ import {
   IconPlus,
   IconPaperclip,
   IconDownload,
+  IconCalendarPlus,
+  IconUsers,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,6 +41,7 @@ import { expandMonthInstances, instanceTouchesDay, type RecurrenceJson } from '@
 
 const DAYS_IN_WEEK = 7;
 const CALENDAR_BUCKET = 'executive-calendar-files';
+const PERSONAL_CALENDAR_VALUE = '__personal__';
 
 /** Exited executives — must not appear in calendar invite picker (see AboutUs.tsx same rule). */
 const EXCLUDED_EXEC_INVITE_USER_IDS = new Set<string>([
@@ -97,6 +100,7 @@ type DbEvent = {
   event_type: string;
   /** private = organizer + invitees; executives = all exec_users (apply migration 20260328210000). */
   visibility?: 'private' | 'executives' | null;
+  shared_calendar_id?: string | null;
   recurrence?: RecurrenceJson | null;
   invites?: InviteRow[];
   attachments?: AttachmentRow[];
@@ -157,6 +161,18 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [existingAttachments, setExistingAttachments] = useState<AttachmentRow[]>([]);
 
+  const [sharedCalendars, setSharedCalendars] = useState<{ id: string; name: string; description: string | null; created_by: string }[]>([]);
+  const [eventSharedCalendarId, setEventSharedCalendarId] = useState<string | null>(null);
+
+  const [newCalOpen, { open: openNewCal, close: closeNewCal }] = useDisclosure(false);
+  const [newCalName, setNewCalName] = useState('');
+  const [newCalDescription, setNewCalDescription] = useState('');
+  const [newCalEditorIds, setNewCalEditorIds] = useState<string[]>([]);
+
+  const [manageCalOpen, { open: openManageCal, close: closeManageCal }] = useDisclosure(false);
+  const [manageSelectedCalId, setManageSelectedCalId] = useState<string | null>(null);
+  const [manageMemberIds, setManageMemberIds] = useState<string[]>([]);
+
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
@@ -172,6 +188,31 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
     });
     return m;
   }, [rawEvents]);
+
+  const sharedCalendarNameById = useMemo(() => {
+    const m: Record<string, string> = {};
+    sharedCalendars.forEach((c) => {
+      m[c.id] = c.name;
+    });
+    return m;
+  }, [sharedCalendars]);
+
+  const myOwnedCalendars = useMemo(
+    () => sharedCalendars.filter((c) => currentUserId && c.created_by === currentUserId),
+    [sharedCalendars, currentUserId],
+  );
+
+  const loadSharedCalendars = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('executive_shared_calendars')
+      .select('id, name, description, created_by')
+      .order('name', { ascending: true });
+    if (error) {
+      console.warn('[ExecutiveCalendar] Shared calendars not loaded (apply migration 20260328230000):', error.message);
+      return;
+    }
+    setSharedCalendars(data || []);
+  }, []);
 
   const loadExecDirectory = useCallback(async () => {
     const { data: execRowsRaw } = await supabase
@@ -251,6 +292,10 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
   useEffect(() => {
     loadExecDirectory();
   }, [loadExecDirectory]);
+
+  useEffect(() => {
+    loadSharedCalendars();
+  }, [loadSharedCalendars]);
 
   const loadEvents = useCallback(async () => {
     setLoading(true);
@@ -371,11 +416,19 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'executive_calendar_events' }, () => loadEvents())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'executive_calendar_event_invites' }, () => loadEvents())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'executive_calendar_event_attachments' }, () => loadEvents())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'executive_shared_calendars' }, () => {
+        loadSharedCalendars();
+        loadEvents();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'executive_shared_calendar_members' }, () => {
+        loadSharedCalendars();
+        loadEvents();
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [loadEvents]);
+  }, [loadEvents, loadSharedCalendars]);
 
   const resetForm = () => {
     setEditing(null);
@@ -397,6 +450,7 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
     setPendingFiles([]);
     setExistingAttachments([]);
     setEventVisibility('private');
+    setEventSharedCalendarId(null);
   };
 
   const openCreateForDate = (date: Date) => {
@@ -421,6 +475,7 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
     setPendingFiles([]);
     setExistingAttachments([]);
     setEventVisibility('private');
+    setEventSharedCalendarId(null);
     openForm();
     closeDayModal();
   };
@@ -453,8 +508,115 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
     setPendingFiles([]);
     setExistingAttachments(base.attachments || []);
     setEventVisibility(base.visibility === 'private' ? 'private' : 'executives');
+    setEventSharedCalendarId(base.shared_calendar_id || null);
     openForm();
     closeDayModal();
+  };
+
+  const loadManageMembers = useCallback(async (calendarId: string) => {
+    const { data, error } = await supabase.from('executive_shared_calendar_members').select('user_id').eq('calendar_id', calendarId);
+    if (error) {
+      console.warn('[ExecutiveCalendar] Members load failed:', error.message);
+      setManageMemberIds([]);
+      return;
+    }
+    setManageMemberIds((data || []).map((r) => r.user_id));
+  }, []);
+
+  useEffect(() => {
+    if (manageCalOpen && manageSelectedCalId) {
+      loadManageMembers(manageSelectedCalId);
+    }
+  }, [manageCalOpen, manageSelectedCalId, loadManageMembers]);
+
+  const handleOpenManageCalendars = () => {
+    if (myOwnedCalendars.length) {
+      setManageSelectedCalId(myOwnedCalendars[0].id);
+    } else {
+      setManageSelectedCalId(null);
+      setManageMemberIds([]);
+    }
+    openManageCal();
+  };
+
+  const handleCreateSharedCalendar = async () => {
+    if (!newCalName.trim()) {
+      notifications.show({ title: 'Name required', message: 'Give the shared calendar a name.', color: 'orange' });
+      return;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    setSaving(true);
+    try {
+      const { data: cal, error: cErr } = await supabase
+        .from('executive_shared_calendars')
+        .insert({ name: newCalName.trim(), description: newCalDescription.trim() || null, created_by: user.id })
+        .select('id')
+        .single();
+      if (cErr) throw cErr;
+      const memberUids = [...new Set([user.id, ...newCalEditorIds.filter(Boolean)])];
+      const rows = memberUids.map((user_id) => ({
+        calendar_id: cal.id,
+        user_id,
+        role: 'editor',
+      }));
+      const { error: mErr } = await supabase.from('executive_shared_calendar_members').insert(rows);
+      if (mErr) throw mErr;
+      notifications.show({ title: 'Shared calendar created', color: 'green' });
+      setNewCalName('');
+      setNewCalDescription('');
+      setNewCalEditorIds([]);
+      closeNewCal();
+      await loadSharedCalendars();
+    } catch (e) {
+      notifications.show({ title: 'Could not create calendar', message: e?.message, color: 'red' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveManageMembers = async () => {
+    if (!manageSelectedCalId || !currentUserId) return;
+    const cal = myOwnedCalendars.find((c) => c.id === manageSelectedCalId);
+    if (!cal) return;
+    setSaving(true);
+    try {
+      await supabase.from('executive_shared_calendar_members').delete().eq('calendar_id', manageSelectedCalId);
+      const uids = [...new Set([cal.created_by, ...manageMemberIds.filter(Boolean)])];
+      const rows = uids.map((user_id) => ({
+        calendar_id: manageSelectedCalId,
+        user_id,
+        role: 'editor',
+      }));
+      const { error } = await supabase.from('executive_shared_calendar_members').insert(rows);
+      if (error) throw error;
+      notifications.show({ title: 'Members updated', color: 'green' });
+      await loadSharedCalendars();
+      closeManageCal();
+    } catch (e) {
+      notifications.show({ title: 'Update failed', message: e?.message, color: 'red' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteSharedCalendar = async () => {
+    if (!manageSelectedCalId) return;
+    if (!window.confirm('Delete this shared calendar? Events stay on the schedule but are unlinked from this calendar.')) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('executive_shared_calendars').delete().eq('id', manageSelectedCalId);
+      if (error) throw error;
+      notifications.show({ title: 'Calendar removed', color: 'green' });
+      closeManageCal();
+      setManageSelectedCalId(null);
+      await loadSharedCalendars();
+      await loadEvents();
+    } catch (e) {
+      notifications.show({ title: 'Delete failed', message: e?.message, color: 'red' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const buildRecurrencePayload = (): RecurrenceJson | null => {
@@ -548,6 +710,8 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
 
     setSaving(true);
     try {
+      const effectiveVisibility = eventSharedCalendarId ? 'private' : eventVisibility;
+
       const payload: Record<string, unknown> = {
         title: title.trim(),
         description: description.trim() || null,
@@ -556,7 +720,8 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
         ends_at: ends.toISOString(),
         all_day: allDay,
         event_type: eventType,
-        visibility: eventVisibility,
+        visibility: effectiveVisibility,
+        shared_calendar_id: eventSharedCalendarId,
       };
       // Omit when null so DBs without a recurrence column (base migration only) still work.
       if (recurrence !== null) {
@@ -736,16 +901,28 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
     : [];
 
   const headerSubtitle = showRenewalLayer
-    ? 'Partner renewals plus shared schedule with invites, attachments, and recurring meetings.'
-    : 'Shared executive schedule — invites, RSVPs, attachments, and recurring events. Edit or delete only events you created.';
+    ? 'Partner renewals plus shared schedule with invites, attachments, recurring meetings, and optional shared calendars.'
+    : 'Executive schedule with invites, RSVPs, attachments, recurring events, and shared calendars your team can see. Edit or delete only events you created (calendar owners/editors can also manage invites and files on shared calendars).';
 
   return (
     <Stack gap="md">
       <div>
-        <Title order={4}>Schedule</Title>
-        <Text size="sm" c="dimmed">
-          {headerSubtitle}
-        </Text>
+        <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
+          <div>
+            <Title order={4}>Schedule</Title>
+            <Text size="sm" c="dimmed">
+              {headerSubtitle}
+            </Text>
+          </div>
+          <Group gap="xs">
+            <Button size="xs" variant="light" leftSection={<IconCalendarPlus size={14} />} onClick={openNewCal}>
+              New shared calendar
+            </Button>
+            <Button size="xs" variant="light" leftSection={<IconUsers size={14} />} onClick={handleOpenManageCalendars}>
+              Manage calendars
+            </Button>
+          </Group>
+        </Group>
       </div>
 
       <Card shadow="sm" radius="md" padding="lg" withBorder>
@@ -920,6 +1097,11 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                               Repeats
                             </Badge>
                           ) : null}
+                          {ev.shared_calendar_id && sharedCalendarNameById[ev.shared_calendar_id] ? (
+                            <Badge ml={8} size="xs" variant="outline" color="orange">
+                              {sharedCalendarNameById[ev.shared_calendar_id]}
+                            </Badge>
+                          ) : null}
                           {ev.visibility === 'private' ? (
                             <Badge ml={8} size="xs" variant="outline" color="gray">
                               Private
@@ -1018,6 +1200,24 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
         <Stack gap="sm">
           <TextInput label="Title" required value={title} onChange={(e) => setTitle(e.currentTarget.value)} placeholder="e.g. Q2 partnership review" />
           <Select
+            label="Calendar"
+            description={
+              eventSharedCalendarId
+                ? 'Everyone on this shared calendar sees these events. You can still invite people below for RSVP.'
+                : 'Personal events use the visibility setting below. Pick a shared calendar to collaborate with a defined group.'
+            }
+            data={[
+              { value: PERSONAL_CALENDAR_VALUE, label: 'Personal' },
+              ...sharedCalendars.map((c) => ({ value: c.id, label: c.name })),
+            ]}
+            value={eventSharedCalendarId ?? PERSONAL_CALENDAR_VALUE}
+            onChange={(v) => {
+              const id = v === PERSONAL_CALENDAR_VALUE || !v ? null : v;
+              setEventSharedCalendarId(id);
+              if (id) setEventVisibility('private');
+            }}
+          />
+          <Select
             label="Type"
             data={[
               { value: 'meeting', label: 'Meeting' },
@@ -1028,20 +1228,22 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
             value={eventType}
             onChange={(v) => setEventType(v || 'meeting')}
           />
-          <Select
-            label="Who can see this event?"
-            description={
-              eventVisibility === 'private'
-                ? 'Only you and people you invite (default). Others will not see it on their calendar.'
-                : 'Every executive with portal access sees this event (all-hands, milestones, etc.).'
-            }
-            data={[
-              { value: 'private', label: 'Only me & invited executives' },
-              { value: 'executives', label: 'All executives (organization-wide)' },
-            ]}
-            value={eventVisibility}
-            onChange={(v) => setEventVisibility(v === 'executives' ? 'executives' : 'private')}
-          />
+          {!eventSharedCalendarId && (
+            <Select
+              label="Who can see this event?"
+              description={
+                eventVisibility === 'private'
+                  ? 'Only you and people you invite (default). Others will not see it on their calendar.'
+                  : 'Every executive with portal access sees this event (all-hands, milestones, etc.).'
+              }
+              data={[
+                { value: 'private', label: 'Only me & invited executives' },
+                { value: 'executives', label: 'All executives (organization-wide)' },
+              ]}
+              value={eventVisibility}
+              onChange={(v) => setEventVisibility(v === 'executives' ? 'executives' : 'private')}
+            />
+          )}
           <Switch label="All day" checked={allDay} onChange={(e) => setAllDay(e.currentTarget.checked)} />
           {allDay ? (
             <DatePickerInput label="Date" value={allDayDate} onChange={setAllDayDate} />
@@ -1103,7 +1305,11 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
                     <IconPaperclip size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />
                     {att.file_name}
                   </Text>
-                  {editing && currentUserId === editing.created_by && (
+                  {editing &&
+                    currentUserId &&
+                    (editing.created_by === currentUserId ||
+                      (editing.shared_calendar_id &&
+                        myOwnedCalendars.some((c) => c.id === editing.shared_calendar_id))) && (
                     <Button size="xs" color="red" variant="light" onClick={() => removeAttachment(att)}>
                       Remove
                     </Button>
@@ -1134,6 +1340,71 @@ const ExecutiveCalendar: React.FC<ExecutiveCalendarProps> = ({
               {editing ? 'Save' : 'Schedule'}
             </Button>
           </Group>
+        </Stack>
+      </Modal>
+
+      <Modal opened={newCalOpen} onClose={closeNewCal} title="New shared calendar" size="md">
+        <Stack gap="sm">
+          <TextInput label="Name" required value={newCalName} onChange={(e) => setNewCalName(e.currentTarget.value)} placeholder="e.g. Partnership pod" />
+          <Textarea label="Description (optional)" value={newCalDescription} onChange={(e) => setNewCalDescription(e.currentTarget.value)} minRows={2} />
+          <MultiSelect
+            label="Members (can view and add events)"
+            description="You are always included. Pick other executives for this calendar."
+            data={execOptions}
+            value={newCalEditorIds}
+            onChange={setNewCalEditorIds}
+            searchable
+            clearable
+          />
+          <Group justify="flex-end">
+            <Button variant="default" onClick={closeNewCal}>
+              Cancel
+            </Button>
+            <Button color="orange" loading={saving} onClick={handleCreateSharedCalendar}>
+              Create
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal opened={manageCalOpen} onClose={closeManageCal} title="Manage shared calendars" size="md">
+        <Stack gap="sm">
+          {myOwnedCalendars.length === 0 ? (
+            <Text size="sm" c="dimmed">
+              You have not created any shared calendars yet. Use &quot;New shared calendar&quot; to add one.
+            </Text>
+          ) : (
+            <>
+              <Select
+                label="Calendar"
+                data={myOwnedCalendars.map((c) => ({ value: c.id, label: c.name }))}
+                value={manageSelectedCalId || ''}
+                onChange={(v) => setManageSelectedCalId(v || null)}
+              />
+              <MultiSelect
+                label="Members (can view and add events)"
+                description="Calendar creator is always kept on the roster."
+                data={execOptions}
+                value={manageMemberIds}
+                onChange={setManageMemberIds}
+                searchable
+                clearable
+              />
+              <Group justify="space-between">
+                <Button color="red" variant="light" loading={saving} onClick={handleDeleteSharedCalendar} disabled={!manageSelectedCalId}>
+                  Delete calendar
+                </Button>
+                <Group gap="xs">
+                  <Button variant="default" onClick={closeManageCal}>
+                    Close
+                  </Button>
+                  <Button color="orange" loading={saving} onClick={handleSaveManageMembers}>
+                    Save members
+                  </Button>
+                </Group>
+              </Group>
+            </>
+          )}
         </Stack>
       </Modal>
     </Stack>

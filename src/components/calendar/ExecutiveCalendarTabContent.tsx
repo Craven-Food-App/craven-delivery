@@ -12,7 +12,7 @@ export function ExecutiveCalendarTabContent() {
       <div>
         <Title order={2}>Executive Calendar</Title>
         <Text c="dimmed" size="sm" mt={4}>
-          New events are private by default—only the organizer and invited executives see them. You can mark an item as visible to all executives for shared milestones or all-hands. Recurring meetings, attachments, and RSVP (accept / maybe / decline) are supported; only the organizer can edit or delete an event they created.
+          New events are private by default—only the organizer and invited executives see them. You can mark an item as visible to all executives for shared milestones or all-hands, or place events on a shared calendar so every member of that calendar sees them. Recurring meetings, attachments, and RSVP (accept / maybe / decline) are supported; only the organizer can edit or delete an event they created (shared calendar owners and editors can help with invites and attachments).
         </Text>
       </div>
       <ExecutiveCalendar showRenewalLayer={false} />
