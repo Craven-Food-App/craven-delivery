@@ -28,6 +28,7 @@ import {
   DesktopOutlined,
   EyeOutlined,
   MessageOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 import { ConfigProvider } from "antd";
 import { cravenDriverTheme } from "@/config/antd-theme";
@@ -72,7 +73,7 @@ interface HubSection {
 const isPortalInDepartment = (portalId: string, deptId: string): boolean => {
   switch (deptId) {
     case "executive":
-      return ["ceo", "admin", "company", "investors", "cxo", "cfo", "cpo"].includes(portalId);
+      return ["ceo", "admin", "company", "executive-calendar", "investors", "cxo", "cfo", "cpo"].includes(portalId);
     case "operations":
       return [
         "coo",
@@ -1440,11 +1441,19 @@ const MainHub: React.FC = () => {
       color: "#6366f1",
     },
     {
+      id: "executive-calendar",
+      name: "Executive Calendar",
+      description: "Shared leadership schedule, meetings, and invites (also under Company Portal)",
+      icon: CalendarOutlined,
+      path: "/company/calendar",
+      color: "#ff6a00",
+    },
+    {
       id: "cpo",
       name: "CPO Partnership Portal",
-      description: "Partnership management, pipeline, contracts, and analytics",
+      description: "Partnerships, pipeline, contracts, analytics; Calendar tab adds partnership renewals on top of the shared executive schedule",
       icon: TeamOutlined,
-      path: "/cpo-portal",
+      path: "/cpo-portal?tab=calendar",
       color: "#e67e22",
     },
     {
@@ -1462,7 +1471,7 @@ const MainHub: React.FC = () => {
       id: "executive-leadership",
       title: "Executive & Leadership",
       subtitle: "Strategic leadership and corporate governance",
-      portalIds: ["ceo", "admin", "company", "investors", "investor-demo", "cpo", "internal-comms"],
+      portalIds: ["ceo", "admin", "company", "executive-calendar", "investors", "investor-demo", "cpo", "internal-comms"],
     },
     {
       id: "operations-delivery",
@@ -1563,12 +1572,14 @@ const MainHub: React.FC = () => {
     // JASON PARCELL (CPO): Limited access to specific portals only
     const isJasonParcell = userEmail === 'jparcell2022@gmail.com';
     if (isJasonParcell) {
-      const jasonAllowedPortals = ['cpo', 'merchant-operations', 'driver-operations', 'internal-comms', 'company', 'intern', 'intern-manager', 'intern-sponsor', 'intern-program-admin', 'talent-management'];
+      const jasonAllowedPortals = ['cpo', 'merchant-operations', 'driver-operations', 'internal-comms', 'company', 'executive-calendar', 'intern', 'intern-manager', 'intern-sponsor', 'intern-program-admin', 'talent-management'];
       return jasonAllowedPortals.includes(id);
     }
 
     switch (id) {
-      case 'company': return hasCompanyAccess;
+      case 'company':
+      case 'executive-calendar':
+        return hasCompanyAccess;
       case 'admin': return canAdmin;
       case 'marketing': return canMarketing;
       case 'market-demand': return canMarketing;
@@ -2194,7 +2205,7 @@ const MainHub: React.FC = () => {
                           let badgeBg = "#dbeafe";
                           let badgeColor = "#1e40af";
 
-                          if (["ceo", "admin", "company", "investors", "cxo"].includes(portal.id)) {
+                          if (["ceo", "admin", "company", "executive-calendar", "investors", "cxo"].includes(portal.id)) {
                             badgeLabel = "Executive";
                             badgeBg = "#dbeafe";
                             badgeColor = "#1e40af";

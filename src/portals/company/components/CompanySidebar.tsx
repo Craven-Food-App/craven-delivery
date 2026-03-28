@@ -15,6 +15,7 @@ import {
   IconChevronRight,
   IconBuildingSkyscraper,
   IconChartPie,
+  IconCalendar,
 } from '@tabler/icons-react';
 import { fetchUserRoles, canManageGovernance, canVoteOnResolutions } from '@/lib/roles';
 import { supabase } from '@/integrations/supabase/client';
@@ -94,6 +95,12 @@ const CompanySidebar: React.FC = () => {
       roles: ['CRAVEN_FOUNDER', 'CRAVEN_CORPORATE_SECRETARY', 'CRAVEN_EXECUTIVE'],
     },
     {
+      label: 'Calendar',
+      icon: IconCalendar,
+      path: '/company/calendar',
+      roles: ['all'],
+    },
+    {
       label: 'Governance',
       icon: IconShield,
       path: '/company/governance',
@@ -169,7 +176,7 @@ const CompanySidebar: React.FC = () => {
         {navItems.map((item) => {
           // JASON PARCELL: keep focused executive access while allowing onboarding docs/navigation
           const isJason = userEmail === JASON_EMAIL;
-          if (isJason && !['Team', 'Executives', 'Leadership'].includes(item.label)) {
+          if (isJason && !['Team', 'Executives', 'Leadership', 'Calendar'].includes(item.label)) {
             return null;
           }
 

@@ -51,8 +51,10 @@ import {
   IconMail,
   IconMessageCircle,
   IconSettings,
+  IconCalendar,
 } from '@tabler/icons-react';
 import { UnifiedPortalShell, PortalTab, PortalKPI, PortalLoadingState, PortalAccessDenied } from '@/components/portal/UnifiedPortalShell';
+import { ExecutiveCalendarTabContent } from '@/components/calendar/ExecutiveCalendarTabContent';
 import { useExecAuth } from '@/hooks/useExecAuth';
 import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -100,6 +102,7 @@ const TABS: PortalTab[] = [
   { id: 'evaluation', label: 'CFO Evaluation Gate', description: 'Board-defensible CFO evaluation workflow.', section: 'Executive', icon: IconShield },
   { id: 'onboarding', label: 'Onboarding & Governance', description: 'CFO onboarding and governance framework.', section: 'Executive', icon: IconChecklist },
   { id: 'overview', label: 'CFO Command Center', description: 'Executive financial dashboard and KPIs.', section: 'Executive', icon: IconChartBar },
+  { id: 'calendar', label: 'Executive Calendar', description: 'Shared leadership schedule (same as Company Portal).', section: 'Executive', icon: IconCalendar },
   // Core Accounting
   { id: 'general-ledger', label: 'General Ledger', description: 'Chart of accounts and journal entries.', section: 'Accounting', icon: IconBuildingBank },
   { id: 'ap', label: 'Accounts Payable', description: 'Vendor invoices and payment processing.', section: 'Accounting', icon: IconCurrencyDollar },
@@ -210,6 +213,8 @@ function CFOPortalContent() {
         return <Suspense fallback={<ModuleLoader />}><CFOOnboardingGovernance /></Suspense>;
       case 'overview':
         return <Suspense fallback={<ModuleLoader />}><EnhancedCFODashboard /></Suspense>;
+      case 'calendar':
+        return <ExecutiveCalendarTabContent />;
       case 'general-ledger':
         return <Suspense fallback={<ModuleLoader />}><CorporateGeneralLedger /></Suspense>;
       case 'ap':

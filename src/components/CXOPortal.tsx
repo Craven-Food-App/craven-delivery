@@ -17,6 +17,7 @@ import {
   IconSchool,
   IconBook,
   IconMessageCircle,
+  IconCalendar,
 } from '@tabler/icons-react';
 
 import CxoDashboard from '@/components/cxo/pages/CxoDashboard';
@@ -32,6 +33,7 @@ import CxoReports from '@/components/cxo/pages/CxoReports';
 import CXOOnboardingGovernance from '@/components/cxo/CXOOnboardingGovernance';
 import CxoTrainingHome from '@/components/cxo/training/CxoTrainingHome';
 import { UnifiedPortalShell, PortalTab } from '@/components/portal/UnifiedPortalShell';
+import { ExecutiveCalendarTabContent } from '@/components/calendar/ExecutiveCalendarTabContent';
 
 const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
@@ -39,6 +41,7 @@ const TABS: PortalTab[] = [
   { id: 'onboarding', label: 'Onboarding', description: 'CXO onboarding and governance framework.', section: 'Governance', icon: IconBook },
   { id: 'training', label: 'Training', description: 'CXO training modules and progress.', section: 'Governance', icon: IconSchool },
   { id: 'dashboard', label: 'Dashboard', description: 'Experience metrics and executive overview.', section: 'Operations', icon: IconLayoutDashboard },
+  { id: 'calendar', label: 'Executive Calendar', description: 'Shared leadership schedule (same as Company Portal).', section: 'Operations', icon: IconCalendar },
   { id: 'tickets', label: 'Tickets', description: 'Customer experience ticket management.', section: 'Operations', icon: IconTicket },
   { id: 'drivers', label: 'Drivers', description: 'Driver experience and satisfaction.', section: 'Operations', icon: IconUsers },
   { id: 'customers', label: 'Customers', description: 'Customer experience and feedback.', section: 'Operations', icon: IconShoppingCart },
@@ -72,6 +75,7 @@ const CXOPortal: React.FC = () => {
       case 'onboarding': return <CXOOnboardingGovernance />;
       case 'training': return <CxoTrainingHome />;
       case 'dashboard': return <CxoDashboard />;
+      case 'calendar': return <ExecutiveCalendarTabContent />;
       case 'tickets': return <CxoTickets />;
       case 'drivers': return <CxoDrivers />;
       case 'customers': return <CxoCustomers />;

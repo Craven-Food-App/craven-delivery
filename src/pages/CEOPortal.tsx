@@ -22,12 +22,14 @@ import {
   IconShield,
   IconTrophy,
   IconUsers,
+  IconCalendar,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useExecAuth } from '@/hooks/useExecAuth';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { cn } from '@/lib/utils';
+import { ExecutiveCalendarTabContent } from '@/components/calendar/ExecutiveCalendarTabContent';
 
 // Lazy-loaded modules
 const PersonnelManager = lazy(() => import('@/components/ceo/PersonnelManager').then(m => ({ default: m.PersonnelManager })));
@@ -80,7 +82,8 @@ type TabId =
   | 'signature'
   | 'word'
   | 'communications'
-  | 'c-comms';
+  | 'c-comms'
+  | 'calendar';
 
 interface TabDefinition {
   id: TabId;
@@ -92,6 +95,7 @@ interface TabDefinition {
 
 const TAB_DEFINITIONS: TabDefinition[] = [
   { id: 'overview', label: 'Command Center', description: 'Executive snapshot and rapid action workflows.', section: 'Operations', icon: IconChartBar },
+  { id: 'calendar', label: 'Executive Calendar', description: 'Shared leadership schedule (same as Company Portal).', section: 'Operations', icon: IconCalendar },
   { id: 'active-users', label: 'Live Users', description: 'Active sessions, traffic, and behavioral signal stream.', section: 'Operations', icon: IconActivity },
   { id: 'financial', label: 'Spend Approvals', description: 'Approve and triage pending spending decisions.', section: 'Approvals', icon: IconCurrencyDollar },
   { id: 'code-changes', label: 'Code Reviews', description: 'Production code-change approval and release risk gate.', section: 'Approvals', icon: IconCode },
@@ -149,6 +153,8 @@ const CEOPortal: React.FC = () => {
     switch (activeTab) {
       case 'overview':
         return <QuickActions onNavigate={handleTabChange} />;
+      case 'calendar':
+        return <ExecutiveCalendarTabContent />;
       case 'executive-evaluations':
         return (
           <div className="space-y-4">

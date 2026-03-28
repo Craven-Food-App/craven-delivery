@@ -10,12 +10,14 @@ import {
   IconChartBar,
   IconMail,
   IconFileText,
+  IconCalendar,
 } from '@tabler/icons-react';
 import { useExecAuth } from '@/hooks/useExecAuth';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { supabase } from '@/integrations/supabase/client';
 import { UnifiedPortalShell, PortalTab, PortalKPI, PortalLoadingState, PortalAccessDenied } from '@/components/portal/UnifiedPortalShell';
+import { ExecutiveCalendarTabContent } from '@/components/calendar/ExecutiveCalendarTabContent';
 
 // Lazy load heavy components
 const BusinessEmailSystem = lazy(() => import('@/components/executive/BusinessEmailSystem'));
@@ -129,6 +131,7 @@ function OperationsAnalytics() {
 }
 
 const TABS: PortalTab[] = [
+  { id: 'calendar', label: 'Executive Calendar', description: 'Shared leadership schedule (same as Company Portal).', section: 'Operations', icon: IconCalendar },
   { id: 'fleet', label: 'Fleet Management', description: 'Vehicle fleet tracking and maintenance.', section: 'Operations', icon: IconCar },
   { id: 'partners', label: 'Partners & Vendors', description: 'Vendor relationships and performance.', section: 'Operations', icon: IconBuildingStore },
   { id: 'purchase-orders', label: 'Purchase Orders', description: 'Create and manage purchase orders.', section: 'Operations', icon: IconShoppingCart },
@@ -174,6 +177,7 @@ export default function COOPortal() {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'calendar': return <ExecutiveCalendarTabContent />;
       case 'fleet': return <FleetDashboard />;
       case 'partners': return <PartnerManagement />;
       case 'purchase-orders': return <Suspense fallback={<div className="flex items-center justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-primary" /></div>}><PurchaseOrderManagement /></Suspense>;

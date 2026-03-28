@@ -15,7 +15,7 @@ import {
   IconBuildingStore,
   IconMessage,
 } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { hasFullAccess } from '@/utils/torranceAccess';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
@@ -39,7 +39,7 @@ const TABS: PortalTab[] = [
   { id: 'contracts', label: 'Contracts', description: 'Contract management and secure uploads.', section: 'Operations', icon: IconFileText },
   { id: 'activity', label: 'Activity Log', description: 'Partnership activity and session tracking.', section: 'Operations', icon: IconTimeline },
   { id: 'onboarding', label: 'Onboarding', description: 'Partner onboarding checklists.', section: 'Management', icon: IconChecklist },
-  { id: 'calendar', label: 'Calendar', description: 'Renewal calendar and deadlines.', section: 'Management', icon: IconCalendar },
+  { id: 'calendar', label: 'Renewals & calendar', description: 'Partnership renewal deadlines plus the shared executive schedule (CPO-only combined view).', section: 'Management', icon: IconCalendar },
   { id: 'scorecards', label: 'Scorecards', description: 'Partner performance scorecards.', section: 'Management', icon: IconTargetArrow },
   { id: 'merchants', label: 'Merchants', description: 'Merchant ecosystem overview.', section: 'Management', icon: IconBuildingStore },
   { id: 'analytics', label: 'Analytics', description: 'Partnership analytics and reporting.', section: 'Insights', icon: IconChartBar },
@@ -49,12 +49,22 @@ const TABS: PortalTab[] = [
 
 const SECTIONS = ['Operations', 'Management', 'Insights'];
 
+const VALID_TABS = new Set(TABS.map((t) => t.id));
+
 const CPOPortal: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [activeTab, setActiveTab] = useState('pipeline');
   const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && VALID_TABS.has(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   useActivityTracking('cpo');
 
@@ -144,7 +154,15 @@ const CPOPortal: React.FC = () => {
       tabs={TABS}
       sections={SECTIONS}
       activeTab={activeTab}
-      onTabChange={setActiveTab}
+      onTabChange={(id) => {
+        setActiveTab(id);
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev);
+          if (id === 'pipeline') next.delete('tab');
+          else next.set('tab', id);
+          return next;
+        });
+      }}
       lastUpdated={new Date()}
       userTitle="Chief Partnership Officer"
       onBack={() => navigate('/hub')}

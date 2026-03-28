@@ -18,6 +18,7 @@ import {
   IconChartBar,
   IconSchool,
   IconMessageCircle,
+  IconCalendar,
 } from '@tabler/icons-react';
 import { useExecAuth } from '@/hooks/useExecAuth';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
@@ -27,6 +28,7 @@ import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 import { useToast } from '@/hooks/useEmbeddedToast';
 import { hasFullAccess } from '@/utils/torranceAccess';
 import { UnifiedPortalShell, PortalTab, PortalKPI, PortalLoadingState, PortalAccessDenied } from '@/components/portal/UnifiedPortalShell';
+import { ExecutiveCalendarTabContent } from '@/components/calendar/ExecutiveCalendarTabContent';
 
 // Lazy load heavy components
 const BusinessEmailSystem = React.lazy(() => import('@/components/executive/BusinessEmailSystem'));
@@ -55,6 +57,7 @@ import CtoTrainingRouter from '@/components/cto/training/CtoTrainingRouter';
 const TABS: PortalTab[] = [
   // Command Center
   { id: 'overview', label: 'CTO Dashboard', description: 'Technology executive overview and key metrics.', section: 'Command Center', icon: IconChartBar },
+  { id: 'calendar', label: 'Executive Calendar', description: 'Shared leadership schedule (same as Company Portal).', section: 'Command Center', icon: IconCalendar },
   { id: 'morning-review', label: 'Morning Review', description: 'Daily technical review and standup notes.', section: 'Command Center', icon: IconChartBar },
   // Governance
   { id: 'evaluation', label: 'Evaluation Gate', description: 'Board-defensible CTO evaluation workflow.', section: 'Governance', icon: IconShield },
@@ -134,6 +137,7 @@ function CTOPortalContent() {
   const renderContent = () => {
     switch (activeSection) {
       case 'overview': return <EnhancedCTODashboard />;
+      case 'calendar': return <ExecutiveCalendarTabContent />;
       case 'morning-review': return <Suspense fallback={null}><MorningTechnicalReview /></Suspense>;
       case 'evaluation': return <CtoEvaluationGatePanel />;
       case 'onboarding': return <CTOOnboardingGovernance />;
