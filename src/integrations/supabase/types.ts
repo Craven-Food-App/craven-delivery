@@ -16998,6 +16998,7 @@ export type Database = {
           recipient_ids: string[]
           sender_id: string
           subject: string | null
+          thread_root_id: string
         }
         Insert: {
           body: string
@@ -17009,6 +17010,7 @@ export type Database = {
           recipient_ids?: string[]
           sender_id: string
           subject?: string | null
+          thread_root_id: string
         }
         Update: {
           body?: string
@@ -17020,6 +17022,7 @@ export type Database = {
           recipient_ids?: string[]
           sender_id?: string
           subject?: string | null
+          thread_root_id?: string
         }
         Relationships: [
           {
@@ -31097,6 +31100,10 @@ export type Database = {
       increment_missed_review_count: {
         Args: { engagement_id_param: string }
         Returns: undefined
+      }
+      internal_comms_storage_object_readable: {
+        Args: { object_path: string }
+        Returns: boolean
       }
       is_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
