@@ -31098,10 +31098,6 @@ export type Database = {
         Args: { engagement_id_param: string }
         Returns: undefined
       }
-      internal_comms_storage_object_readable: {
-        Args: { object_path: string }
-        Returns: boolean
-      }
       is_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
       is_c_level_position: { Args: { position_text: string }; Returns: boolean }
