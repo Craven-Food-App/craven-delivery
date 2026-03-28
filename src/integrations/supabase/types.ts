@@ -16998,6 +16998,7 @@ export type Database = {
           recipient_ids: string[]
           sender_id: string
           subject: string | null
+          thread_root_id: string | null
         }
         Insert: {
           body: string
@@ -17009,6 +17010,7 @@ export type Database = {
           recipient_ids?: string[]
           sender_id: string
           subject?: string | null
+          thread_root_id?: string | null
         }
         Update: {
           body?: string
@@ -17020,6 +17022,7 @@ export type Database = {
           recipient_ids?: string[]
           sender_id?: string
           subject?: string | null
+          thread_root_id?: string | null
         }
         Relationships: [
           {
@@ -31098,6 +31101,10 @@ export type Database = {
         Args: { engagement_id_param: string }
         Returns: undefined
       }
+      internal_comms_storage_object_readable: {
+        Args: { object_path: string }
+        Returns: boolean
+      }
       is_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
       is_c_level_position: { Args: { position_text: string }; Returns: boolean }
@@ -31114,6 +31121,10 @@ export type Database = {
       }
       is_executive_role_safe: {
         Args: { exec_role?: string; user_uuid: string }
+        Returns: boolean
+      }
+      is_thread_participant: {
+        Args: { _thread_root_id: string; _user_id: string }
         Returns: boolean
       }
       is_torrance_or_admin: { Args: { user_uuid: string }; Returns: boolean }
