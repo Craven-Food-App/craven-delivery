@@ -515,7 +515,7 @@ const MessagesTab: React.FC = () => {
         await uploadFiles(composeFiles, msgData.id, currentUser.id);
       }
 
-      notifications.show({ title: 'Message sent', color: 'green' });
+      notifications.show({ title: 'Message sent', message: '', color: 'green' });
       composeForm.reset();
       setComposeFiles([]);
       setComposeMode('none');
@@ -606,7 +606,7 @@ const MessagesTab: React.FC = () => {
             await supabase.from('internal_message_attachments').delete().eq('message_id', msgId);
             await supabase.from('internal_messages').delete().eq('id', msgId);
           }
-          notifications.show({ title: 'Message deleted', color: 'green' });
+          notifications.show({ title: 'Message deleted', message: '', color: 'green' });
         } catch (err: any) {
           notifications.show({ title: 'Delete failed', message: err.message, color: 'red' });
         }
