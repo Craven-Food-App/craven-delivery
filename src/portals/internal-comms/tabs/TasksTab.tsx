@@ -309,7 +309,7 @@ const TasksTab: React.FC = () => {
                 placeholder="Optional"
                 clearable
                 value={form.values.due_date}
-                onChange={(d) => form.setFieldValue('due_date', d as Date)}
+                onChange={(d: any) => form.setFieldValue('due_date', d)}
               />
             </Group>
             <Group justify="flex-end" gap="sm">
