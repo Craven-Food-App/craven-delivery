@@ -36,10 +36,22 @@ const getAllowedOrigins = (): string[] => {
   return combined;
 };
 
+const isLovableAppPreviewOrigin = (origin: string): boolean => {
+  try {
+    const u = new URL(origin);
+    return u.protocol === "https:" && u.hostname.endsWith(".lovable.app");
+  } catch {
+    return false;
+  }
+};
+
 export const getCorsHeaders = (origin: string | null) => {
   const allowedOrigins = getAllowedOrigins();
-  const allowedOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
-  
+  const ok =
+    origin != null &&
+    (allowedOrigins.includes(origin) || isLovableAppPreviewOrigin(origin));
+  const allowedOrigin = ok ? origin! : allowedOrigins[0];
+
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
