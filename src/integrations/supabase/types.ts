@@ -16998,7 +16998,7 @@ export type Database = {
           recipient_ids: string[]
           sender_id: string
           subject: string | null
-          thread_root_id: string
+          thread_root_id: string | null
         }
         Insert: {
           body: string
@@ -17010,7 +17010,7 @@ export type Database = {
           recipient_ids?: string[]
           sender_id: string
           subject?: string | null
-          thread_root_id: string
+          thread_root_id?: string | null
         }
         Update: {
           body?: string
@@ -17022,7 +17022,7 @@ export type Database = {
           recipient_ids?: string[]
           sender_id?: string
           subject?: string | null
-          thread_root_id?: string
+          thread_root_id?: string | null
         }
         Relationships: [
           {
