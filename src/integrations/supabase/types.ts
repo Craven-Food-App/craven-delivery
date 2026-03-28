@@ -30698,6 +30698,10 @@ export type Database = {
         Args: { p_feeder_id: string }
         Returns: undefined
       }
+      exec_shared_calendar_is_member: {
+        Args: { _calendar_id: string; _user_id: string }
+        Returns: boolean
+      }
       expire_old_investor_tokens: { Args: never; Returns: undefined }
       finalize_order_transfers: {
         Args: {
