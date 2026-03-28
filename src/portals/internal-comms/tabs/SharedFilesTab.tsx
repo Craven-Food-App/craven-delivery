@@ -1,9 +1,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Upload, Table, Input, Empty, Spin, message, Typography, Tooltip } from 'antd';
-import { UploadOutlined, DownloadOutlined, FileOutlined, FilePdfOutlined, FileImageOutlined, FileExcelOutlined, SearchOutlined } from '@ant-design/icons';
+import {
+  TextInput,
+  Group,
+  Text,
+  Loader,
+  Center,
+  ActionIcon,
+  Tooltip,
+  Stack,
+  FileInput,
+} from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import {
+  IconFile,
+  IconFileTypePdf,
+  IconPhoto,
+  IconFileSpreadsheet,
+  IconDownload,
+  IconUpload,
+  IconSearch,
+} from '@tabler/icons-react';
+import { MantineTable } from '@/components/cfo/MantineTable';
 import { supabase } from '@/integrations/supabase/client';
-
-const { Text } = Typography;
+import { INTERNAL_COMMS_BUCKET, extractInternalCommsStoragePath } from '@/lib/internalCommsStorage';
 
 interface SharedFile {
   id: string;
@@ -16,30 +35,19 @@ interface SharedFile {
   uploader_name?: string;
 }
 
-const INTERNAL_COMMS_BUCKET = 'internal-comms-files';
-
-const extractStoragePath = (fileUrlOrPath: string) => {
-  if (!fileUrlOrPath) return '';
-  if (!fileUrlOrPath.startsWith('http')) return fileUrlOrPath;
-  const marker = `/${INTERNAL_COMMS_BUCKET}/`;
-  const idx = fileUrlOrPath.indexOf(marker);
-  if (idx === -1) return fileUrlOrPath;
-  return decodeURIComponent(fileUrlOrPath.slice(idx + marker.length));
-};
-
 const fileIcon = (type: string | null) => {
-  if (!type) return <FileOutlined />;
-  if (type.includes('pdf')) return <FilePdfOutlined style={{ color: '#ef4444' }} />;
-  if (type.includes('image')) return <FileImageOutlined style={{ color: '#3b82f6' }} />;
-  if (type.includes('sheet') || type.includes('excel')) return <FileExcelOutlined style={{ color: '#10b981' }} />;
-  return <FileOutlined />;
+  if (!type) return <IconFile size={18} />;
+  if (type.includes('pdf')) return <IconFileTypePdf size={18} color="#ef4444" />;
+  if (type.includes('image')) return <IconPhoto size={18} color="#3b82f6" />;
+  if (type.includes('sheet') || type.includes('excel')) return <IconFileSpreadsheet size={18} color="#10b981" />;
+  return <IconFile size={18} />;
 };
 
 const formatSize = (bytes: number | null) => {
   if (!bytes) return '-';
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
 const SharedFilesTab: React.FC = () => {
@@ -47,7 +55,7 @@ const SharedFilesTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState('');
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
 
   const getNameMap = useCallback(async (userIds: string[]): Promise<Map<string, string>> => {
     if (userIds.length === 0) return new Map();
@@ -56,7 +64,7 @@ const SharedFilesTab: React.FC = () => {
       .select('user_id, full_name, email')
       .in('user_id', userIds);
     const map = new Map<string, string>();
-    (profiles || []).forEach((p: any) => {
+    (profiles || []).forEach((p: { user_id: string; full_name: string | null; email: string | null }) => {
       map.set(p.user_id, p.full_name || p.email || 'Unknown');
     });
     return map;
@@ -74,9 +82,9 @@ const SharedFilesTab: React.FC = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const uploaderIds = [...new Set(data.map((f: any) => f.uploaded_by))];
+        const uploaderIds = [...new Set(data.map((f: SharedFile) => f.uploaded_by))];
         const nameMap = await getNameMap(uploaderIds);
-        setFiles(data.map((f: any) => ({ ...f, uploader_name: nameMap.get(f.uploaded_by) || 'Unknown' })));
+        setFiles(data.map((f: SharedFile) => ({ ...f, uploader_name: nameMap.get(f.uploaded_by) || 'Unknown' })));
       } else {
         setFiles([]);
       }
@@ -93,20 +101,19 @@ const SharedFilesTab: React.FC = () => {
       setCurrentUser(user);
       await fetchFiles();
     };
-    init();
+    void init();
   }, [fetchFiles]);
 
-  const handleUpload = async (file: File) => {
-    if (!currentUser) return false;
+  const handleUpload = async (file: File | null) => {
+    if (!file || !currentUser) return;
     setUploading(true);
     try {
       const filePath = `${currentUser.id}/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage
-        .from('internal-comms-files')
+        .from(INTERNAL_COMMS_BUCKET)
         .upload(filePath, file);
       if (uploadError) throw uploadError;
 
-      // Create a placeholder message for standalone file uploads
       const { data: msgData, error: msgError } = await supabase
         .from('internal_messages')
         .insert([{
@@ -131,123 +138,131 @@ const SharedFilesTab: React.FC = () => {
       }]);
       if (attachError) throw attachError;
 
-      message.success(`${file.name} uploaded`);
+      notifications.show({ title: 'Uploaded', message: file.name, color: 'green' });
       fetchFiles();
-    } catch (err: any) {
-      message.error('Upload failed: ' + err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Upload failed';
+      notifications.show({ title: 'Upload failed', message, color: 'red' });
     } finally {
       setUploading(false);
     }
-    return false;
   };
 
-  const filtered = files.filter(f =>
+  const filtered = files.filter((f) =>
     f.file_name.toLowerCase().includes(search.toLowerCase())
   );
 
   const openFile = async (record: SharedFile) => {
-    const filePath = extractStoragePath(record.file_url);
+    const filePath = extractInternalCommsStoragePath(record.file_url);
+    if (!filePath) {
+      notifications.show({ title: 'Error', message: `Unable to open ${record.file_name}`, color: 'red' });
+      return;
+    }
     const { data, error } = await supabase.storage
       .from(INTERNAL_COMMS_BUCKET)
       .createSignedUrl(filePath, 60 * 5);
-    if (error || !data?.signedUrl) {
-      message.error(`Unable to open ${record.file_name}`);
+    if (!error && data?.signedUrl) {
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
       return;
     }
-    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    const { data: blob, error: downloadError } = await supabase.storage
+      .from(INTERNAL_COMMS_BUCKET)
+      .download(filePath);
+    if (downloadError || !blob) {
+      notifications.show({
+        title: 'Error',
+        message: `${record.file_name}: ${error?.message || downloadError?.message || 'Download failed'}`,
+        color: 'red',
+      });
+      return;
+    }
+    const objectUrl = URL.createObjectURL(blob);
+    window.open(objectUrl, '_blank', 'noopener,noreferrer');
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
   };
 
-  const columns = [
-    {
-      title: 'File',
-      dataIndex: 'file_name',
-      key: 'file_name',
-      render: (name: string, record: SharedFile) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {fileIcon(record.file_type)}
-          <Text>{name}</Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Size',
-      dataIndex: 'file_size_bytes',
-      key: 'size',
-      width: 100,
-      render: (bytes: number) => formatSize(bytes),
-    },
-    {
-      title: 'Uploaded By',
-      dataIndex: 'uploader_name',
-      key: 'uploader',
-      width: 150,
-      responsive: ['md'] as any,
-    },
-    {
-      title: 'Date',
-      dataIndex: 'created_at',
-      key: 'date',
-      width: 160,
-      responsive: ['md'] as any,
-      render: (date: string) => new Date(date).toLocaleDateString(),
-    },
-    {
-      title: '',
-      key: 'action',
-      width: 60,
-      render: (_: any, record: SharedFile) => (
-        <Tooltip title="Download">
-          <Button
-            type="text"
-            icon={<DownloadOutlined />}
-            onClick={() => openFile(record)}
-            style={{ color: '#FF6B35' }}
-          />
-        </Tooltip>
-      ),
-    },
-  ];
-
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-        <Text strong style={{ fontSize: 16 }}>Shared Files</Text>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Input
-            prefix={<SearchOutlined />}
+    <Stack gap="md">
+      <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+        <Text fw={700} size="md">Shared Files</Text>
+        <Group gap="sm" wrap="wrap">
+          <TextInput
+            leftSection={<IconSearch size={18} />}
             placeholder="Search files..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ width: 200 }}
+            onChange={(e) => setSearch(e.currentTarget.value)}
+            w={220}
           />
-          <Upload
-            beforeUpload={(file) => { handleUpload(file as File); return false; }}
-            showUploadList={false}
+          <FileInput
+            placeholder="Upload File"
             accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt"
-          >
-            <Button icon={<UploadOutlined />} loading={uploading}
-              style={{ borderColor: '#FF6B35', color: '#FF6B35' }}>
-              Upload File
-            </Button>
-          </Upload>
-        </div>
-      </div>
+            leftSection={<IconUpload size={18} />}
+            disabled={uploading || !currentUser}
+            onChange={handleUpload}
+            style={{ minWidth: 160 }}
+          />
+        </Group>
+      </Group>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40 }}><Spin size="large" /></div>
+        <Center py={40}>
+          <Loader size="lg" />
+        </Center>
+      ) : files.length === 0 ? (
+        <Text c="dimmed" ta="center" py={40}>No files shared yet</Text>
       ) : filtered.length === 0 ? (
-        <Empty description="No files shared yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Text c="dimmed" ta="center" py={40}>No files match your search</Text>
       ) : (
-        <Table
-          columns={columns}
-          dataSource={filtered}
+        <MantineTable
+          data={filtered}
           rowKey="id"
-          pagination={{ pageSize: 15 }}
           size="small"
           scroll={{ x: 500 }}
+          pagination={{ pageSize: 15 }}
+          columns={[
+            {
+              title: 'File',
+              dataIndex: 'file_name',
+              render: (name: string, record: SharedFile) => (
+                <Group gap={8} wrap="nowrap">
+                  {fileIcon(record.file_type)}
+                  <Text size="sm">{name}</Text>
+                </Group>
+              ),
+            },
+            {
+              title: 'Size',
+              dataIndex: 'file_size_bytes',
+              width: 100,
+              render: (bytes: number | null) => formatSize(bytes),
+            },
+            {
+              title: 'Uploaded By',
+              dataIndex: 'uploader_name',
+              width: 150,
+            },
+            {
+              title: 'Date',
+              dataIndex: 'created_at',
+              width: 160,
+              render: (date: string) => new Date(date).toLocaleDateString(),
+            },
+            {
+              title: '',
+              key: 'action',
+              width: 60,
+              render: (_: unknown, record: SharedFile) => (
+                <Tooltip label="Download">
+                  <ActionIcon variant="subtle" color="orange" onClick={() => void openFile(record)}>
+                    <IconDownload size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              ),
+            },
+          ]}
         />
       )}
-    </div>
+    </Stack>
   );
 };
 

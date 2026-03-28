@@ -1,6 +1,10 @@
 import React from 'react';
-import { Tabs } from 'antd';
-import { NotificationOutlined, FileOutlined, CheckSquareOutlined } from '@ant-design/icons';
+import { Tabs, Paper } from '@mantine/core';
+import {
+  IconBell,
+  IconFile,
+  IconCheckbox,
+} from '@tabler/icons-react';
 import cravenCLogo from '@/assets/craven-c-new.png';
 import MessagesTab from './tabs/MessagesTab';
 import AnnouncementsTab from './tabs/AnnouncementsTab';
@@ -13,50 +17,40 @@ import TasksTab from './tabs/TasksTab';
  */
 const EmbeddedCComms: React.FC = () => {
   return (
-    <div style={{ background: '#ffffff', borderRadius: 8, padding: 16 }}>
-      <Tabs
-        defaultActiveKey="messages"
-        size="large"
-        items={[
-          {
-            key: 'messages',
-            label: (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <img src={cravenCLogo} alt="C" style={{ height: 16, width: 'auto' }} /> Messages
-              </span>
-            ),
-            children: <MessagesTab />,
-          },
-          {
-            key: 'announcements',
-            label: (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <NotificationOutlined /> Announcements
-              </span>
-            ),
-            children: <AnnouncementsTab />,
-          },
-          {
-            key: 'files',
-            label: (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <FileOutlined /> Shared Files
-              </span>
-            ),
-            children: <SharedFilesTab />,
-          },
-          {
-            key: 'tasks',
-            label: (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <CheckSquareOutlined /> Tasks
-              </span>
-            ),
-            children: <TasksTab />,
-          },
-        ]}
-      />
-    </div>
+    <Paper radius="md" p="md" withBorder>
+      <Tabs defaultValue="messages" keepMounted={false}>
+        <Tabs.List>
+          <Tabs.Tab
+            value="messages"
+            leftSection={<img src={cravenCLogo} alt="" style={{ height: 16, width: 'auto' }} />}
+          >
+            Messages
+          </Tabs.Tab>
+          <Tabs.Tab value="announcements" leftSection={<IconBell size={16} />}>
+            Announcements
+          </Tabs.Tab>
+          <Tabs.Tab value="files" leftSection={<IconFile size={16} />}>
+            Shared Files
+          </Tabs.Tab>
+          <Tabs.Tab value="tasks" leftSection={<IconCheckbox size={16} />}>
+            Tasks
+          </Tabs.Tab>
+        </Tabs.List>
+
+        <Tabs.Panel value="messages" pt="md">
+          <MessagesTab />
+        </Tabs.Panel>
+        <Tabs.Panel value="announcements" pt="md">
+          <AnnouncementsTab />
+        </Tabs.Panel>
+        <Tabs.Panel value="files" pt="md">
+          <SharedFilesTab />
+        </Tabs.Panel>
+        <Tabs.Panel value="tasks" pt="md">
+          <TasksTab />
+        </Tabs.Panel>
+      </Tabs>
+    </Paper>
   );
 };
 

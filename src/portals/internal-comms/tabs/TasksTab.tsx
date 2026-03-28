@@ -1,10 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Table, Tag, Modal, Form, Input, Select, DatePicker, Empty, Spin, message, Typography, Segmented } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import {
+  Button,
+  TextInput,
+  Textarea,
+  Modal,
+  Select,
+  Stack,
+  Group,
+  Text,
+  Loader,
+  Center,
+  Badge,
+  SegmentedControl,
+} from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
+import { useForm } from '@mantine/form';
+import { notifications } from '@mantine/notifications';
+import { IconPlus } from '@tabler/icons-react';
+import { MantineTable } from '@/components/cfo/MantineTable';
 import { supabase } from '@/integrations/supabase/client';
-
-const { TextArea } = Input;
-const { Text } = Typography;
 
 interface Task {
   id: string;
@@ -26,22 +40,41 @@ interface Recipient {
   label: string;
 }
 
-const priorityColors: Record<string, string> = {
-  low: 'default',
-  medium: 'blue',
-  high: 'orange',
-  urgent: 'red',
+const priorityBadgeColor = (p: string) => {
+  if (p === 'urgent') return 'red';
+  if (p === 'high') return 'orange';
+  if (p === 'medium') return 'blue';
+  return 'gray';
 };
+
+const statusOptions = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+];
 
 const TasksTab: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [filter, setFilter] = useState<string>('assigned_to_me');
-  const [form] = Form.useForm();
+
+  const form = useForm({
+    initialValues: {
+      title: '',
+      description: '',
+      assigned_to: '',
+      priority: 'medium',
+      due_date: null as Date | null,
+    },
+    validate: {
+      title: (v) => (!v?.trim() ? 'Enter title' : null),
+      assigned_to: (v) => (!v ? 'Select assignee' : null),
+    },
+  });
 
   const getNameMap = useCallback(async (userIds: string[]): Promise<Map<string, string>> => {
     if (userIds.length === 0) return new Map();
@@ -50,7 +83,7 @@ const TasksTab: React.FC = () => {
       .select('user_id, full_name, email')
       .in('user_id', userIds);
     const map = new Map<string, string>();
-    (profiles || []).forEach((p: any) => {
+    (profiles || []).forEach((p: { user_id: string; full_name: string | null; email: string | null }) => {
       map.set(p.user_id, p.full_name || p.email || 'Unknown');
     });
     return map;
@@ -68,9 +101,12 @@ const TasksTab: React.FC = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const userIds = [...new Set([...data.map((t: any) => t.assigned_to), ...data.map((t: any) => t.assigned_by)])];
+        const userIds = [...new Set([
+          ...data.map((t: Task) => t.assigned_to),
+          ...data.map((t: Task) => t.assigned_by),
+        ])];
         const nameMap = await getNameMap(userIds);
-        setTasks(data.map((t: any) => ({
+        setTasks(data.map((t: Task) => ({
           ...t,
           assignee_name: nameMap.get(t.assigned_to) || 'Unknown',
           assigner_name: nameMap.get(t.assigned_by) || 'Unknown',
@@ -90,15 +126,14 @@ const TasksTab: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
 
-      // Get exec users for assignee picker
       const { data: execs } = await supabase
         .from('exec_users')
         .select('user_id, role, title');
 
       if (execs && execs.length > 0) {
-        const userIds = execs.map((e: any) => e.user_id);
+        const userIds = execs.map((e: { user_id: string }) => e.user_id);
         const nameMap = await getNameMap(userIds);
-        setRecipients(execs.map((e: any) => ({
+        setRecipients(execs.map((e: { user_id: string; role: string; title: string | null }) => ({
           user_id: e.user_id,
           label: `${nameMap.get(e.user_id) || e.role} (${e.title || e.role})`,
         })));
@@ -106,190 +141,187 @@ const TasksTab: React.FC = () => {
 
       await fetchTasks();
     };
-    init();
+    void init();
   }, [fetchTasks, getNameMap]);
 
-  const handleCreate = async (values: any) => {
+  const handleCreate = form.onSubmit(async (values) => {
     if (!currentUser) return;
     setSaving(true);
     try {
       const { error } = await supabase.from('internal_tasks').insert([{
         title: values.title,
-        description: values.description || null,
+        description: values.description.trim() ? values.description : null,
         assigned_to: values.assigned_to,
         assigned_by: currentUser.id,
         priority: (values.priority || 'medium') as 'low' | 'medium' | 'high' | 'urgent',
-        due_date: values.due_date ? values.due_date.format('YYYY-MM-DD') : null,
+        due_date: values.due_date ? values.due_date.toISOString().split('T')[0] : null,
       }]);
       if (error) throw error;
-      message.success('Task created');
-      form.resetFields();
+      notifications.show({ title: 'Created', message: 'Task created', color: 'green' });
+      form.reset();
       setCreateOpen(false);
       fetchTasks();
-    } catch (err: any) {
-      message.error('Failed: ' + err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed';
+      notifications.show({ title: 'Error', message, color: 'red' });
     } finally {
       setSaving(false);
     }
-  };
+  });
 
   const updateStatus = async (taskId: string, newStatus: string) => {
     try {
-      const updates: any = { status: newStatus };
+      const updates: { status: string; completed_at?: string } = { status: newStatus };
       if (newStatus === 'completed') updates.completed_at = new Date().toISOString();
       const { error } = await supabase.from('internal_tasks').update(updates).eq('id', taskId);
       if (error) throw error;
-      message.success('Status updated');
+      notifications.show({ message: 'Status updated', color: 'green' });
       fetchTasks();
     } catch {
-      message.error('Update failed');
+      notifications.show({ message: 'Update failed', color: 'red' });
     }
   };
 
-  const filteredTasks = tasks.filter(t => {
+  const filteredTasks = tasks.filter((t) => {
     if (!currentUser) return true;
     if (filter === 'assigned_to_me') return t.assigned_to === currentUser.id;
     if (filter === 'assigned_by_me') return t.assigned_by === currentUser.id;
     return true;
   });
 
-  const columns = [
-    {
-      title: 'Task',
-      dataIndex: 'title',
-      key: 'title',
-      render: (title: string, record: Task) => (
-        <div>
-          <Text strong>{title}</Text>
-          {record.description && (
-            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-              {record.description.length > 80 ? record.description.slice(0, 80) + '...' : record.description}
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: 'Priority',
-      dataIndex: 'priority',
-      key: 'priority',
-      width: 90,
-      render: (p: string) => <Tag color={priorityColors[p]}>{p}</Tag>,
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      render: (s: string, record: Task) => (
-        <Select
-          value={s}
-          size="small"
-          style={{ width: 110 }}
-          onChange={(val) => updateStatus(record.id, val)}
-          options={[
-            { value: 'pending', label: 'Pending' },
-            { value: 'in_progress', label: 'In Progress' },
-            { value: 'completed', label: 'Completed' },
-          ]}
-        />
-      ),
-    },
-    {
-      title: 'Assignee',
-      dataIndex: 'assignee_name',
-      key: 'assignee',
-      width: 140,
-      responsive: ['md'] as any,
-    },
-    {
-      title: 'Due',
-      dataIndex: 'due_date',
-      key: 'due',
-      width: 100,
-      responsive: ['md'] as any,
-      render: (d: string | null) => {
-        if (!d) return '-';
-        const isOverdue = new Date(d) < new Date();
-        return <Text type={isOverdue ? 'danger' : undefined}>{new Date(d).toLocaleDateString()}</Text>;
-      },
-    },
-  ];
-
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-        <Segmented
+    <Stack gap="md">
+      <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+        <SegmentedControl
           value={filter}
-          onChange={(val) => setFilter(val as string)}
-          options={[
+          onChange={setFilter}
+          data={[
             { value: 'assigned_to_me', label: 'Assigned to Me' },
             { value: 'assigned_by_me', label: 'Assigned by Me' },
             { value: 'all', label: 'All' },
           ]}
         />
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}
-          style={{ background: '#FF6B35', borderColor: '#FF6B35' }}>
+        <Button
+          leftSection={<IconPlus size={18} />}
+          onClick={() => setCreateOpen(true)}
+          styles={{ root: { backgroundColor: '#FF6B35' } }}
+        >
           New Task
         </Button>
-      </div>
+      </Group>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40 }}><Spin size="large" /></div>
+        <Center py={40}>
+          <Loader size="lg" />
+        </Center>
       ) : filteredTasks.length === 0 ? (
-        <Empty description="No tasks" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Text c="dimmed" ta="center" py={40}>No tasks</Text>
       ) : (
-        <Table
-          columns={columns}
-          dataSource={filteredTasks}
+        <MantineTable
+          data={filteredTasks}
           rowKey="id"
-          pagination={{ pageSize: 15 }}
           size="small"
           scroll={{ x: 500 }}
+          pagination={{ pageSize: 15 }}
+          columns={[
+            {
+              title: 'Task',
+              dataIndex: 'title',
+              render: (title: string, record: Task) => (
+                <Stack gap={4}>
+                  <Text fw={700} size="sm">{title}</Text>
+                  {record.description && (
+                    <Text size="xs" c="dimmed">
+                      {record.description.length > 80 ? `${record.description.slice(0, 80)}…` : record.description}
+                    </Text>
+                  )}
+                </Stack>
+              ),
+            },
+            {
+              title: 'Priority',
+              dataIndex: 'priority',
+              width: 100,
+              render: (p: string) => <Badge color={priorityBadgeColor(p)} variant="light" size="sm">{p}</Badge>,
+            },
+            {
+              title: 'Status',
+              dataIndex: 'status',
+              width: 140,
+              render: (s: string, record: Task) => (
+                <Select
+                  size="xs"
+                  w={130}
+                  value={s}
+                  onChange={(val) => val && updateStatus(record.id, val)}
+                  data={statusOptions}
+                />
+              ),
+            },
+            {
+              title: 'Assignee',
+              dataIndex: 'assignee_name',
+              width: 140,
+            },
+            {
+              title: 'Due',
+              dataIndex: 'due_date',
+              width: 110,
+              render: (d: string | null) => {
+                if (!d) return '-';
+                const isOverdue = new Date(d) < new Date();
+                return (
+                  <Text size="sm" c={isOverdue ? 'red' : undefined}>
+                    {new Date(d).toLocaleDateString()}
+                  </Text>
+                );
+              },
+            },
+          ]}
         />
       )}
 
-      <Modal title="Create Task" open={createOpen} onCancel={() => setCreateOpen(false)} footer={null} width={500}>
-        <Form form={form} onFinish={handleCreate} layout="vertical">
-          <Form.Item name="title" label="Title" rules={[{ required: true, message: 'Enter title' }]}>
-            <Input placeholder="Task title" />
-          </Form.Item>
-          <Form.Item name="description" label="Description">
-            <TextArea rows={3} placeholder="Optional description..." />
-          </Form.Item>
-          <Form.Item name="assigned_to" label="Assign To" rules={[{ required: true, message: 'Select assignee' }]}>
+      <Modal opened={createOpen} onClose={() => setCreateOpen(false)} title="Create Task" size="md">
+        <form onSubmit={handleCreate}>
+          <Stack gap="md">
+            <TextInput label="Title" placeholder="Task title" {...form.getInputProps('title')} />
+            <Textarea label="Description" placeholder="Optional description..." minRows={3} {...form.getInputProps('description')} />
             <Select
+              label="Assign To"
               placeholder="Select person"
-              showSearch
-              filterOption={(input, option) =>
-                (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
-              }
-              options={recipients.map(r => ({ value: r.user_id, label: r.label }))}
+              searchable
+              data={recipients.map((r) => ({ value: r.user_id, label: r.label }))}
+              {...form.getInputProps('assigned_to')}
             />
-          </Form.Item>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <Form.Item name="priority" label="Priority" style={{ flex: 1 }}>
-              <Select defaultValue="medium" options={[
-                { value: 'low', label: 'Low' },
-                { value: 'medium', label: 'Medium' },
-                { value: 'high', label: 'High' },
-                { value: 'urgent', label: 'Urgent' },
-              ]} />
-            </Form.Item>
-            <Form.Item name="due_date" label="Due Date" style={{ flex: 1 }}>
-              <DatePicker style={{ width: '100%' }} />
-            </Form.Item>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button type="primary" htmlType="submit" loading={saving}
-              style={{ background: '#FF6B35', borderColor: '#FF6B35' }}>
-              Create
-            </Button>
-          </div>
-        </Form>
+            <Group grow align="flex-start">
+              <Select
+                label="Priority"
+                data={[
+                  { value: 'low', label: 'Low' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'high', label: 'High' },
+                  { value: 'urgent', label: 'Urgent' },
+                ]}
+                {...form.getInputProps('priority')}
+              />
+              <DatePickerInput
+                label="Due Date"
+                placeholder="Optional"
+                clearable
+                value={form.values.due_date}
+                onChange={(d) => form.setFieldValue('due_date', d)}
+              />
+            </Group>
+            <Group justify="flex-end" gap="sm">
+              <Button variant="default" onClick={() => setCreateOpen(false)}>Cancel</Button>
+              <Button type="submit" loading={saving} styles={{ root: { backgroundColor: '#FF6B35' } }}>
+                Create
+              </Button>
+            </Group>
+          </Stack>
+        </form>
       </Modal>
-    </div>
+    </Stack>
   );
 };
 

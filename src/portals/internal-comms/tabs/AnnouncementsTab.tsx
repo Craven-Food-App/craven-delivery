@@ -1,10 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Input, Tag, Modal, Form, Select, Empty, Spin, message, Typography, Card, Badge, Tooltip } from 'antd';
-import { PushpinOutlined, PlusOutlined, EyeOutlined, CheckOutlined } from '@ant-design/icons';
+import {
+  Button,
+  TextInput,
+  Textarea,
+  Modal,
+  Select,
+  Stack,
+  Group,
+  Text,
+  Paper,
+  Badge,
+  Tooltip,
+  Loader,
+  Center,
+  Switch,
+} from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { notifications } from '@mantine/notifications';
+import { IconPin, IconPlus, IconEye, IconCheck } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
-
-const { TextArea } = Input;
-const { Text } = Typography;
 
 interface Announcement {
   id: string;
@@ -19,10 +33,10 @@ interface Announcement {
   author_name?: string;
 }
 
-const priorityColors: Record<string, string> = {
-  normal: 'default',
-  urgent: 'orange',
-  critical: 'red',
+const priorityBadgeColor = (p: string) => {
+  if (p === 'critical') return 'red';
+  if (p === 'urgent') return 'orange';
+  return 'gray';
 };
 
 const AnnouncementsTab: React.FC = () => {
@@ -30,8 +44,20 @@ const AnnouncementsTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [sending, setSending] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [form] = Form.useForm();
+  const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
+
+  const form = useForm({
+    initialValues: {
+      title: '',
+      body: '',
+      priority: 'normal',
+      pinned: false,
+    },
+    validate: {
+      title: (v) => (!v?.trim() ? 'Enter title' : null),
+      body: (v) => (!v?.trim() ? 'Enter body' : null),
+    },
+  });
 
   const getNameMap = useCallback(async (userIds: string[]): Promise<Map<string, string>> => {
     if (userIds.length === 0) return new Map();
@@ -40,7 +66,7 @@ const AnnouncementsTab: React.FC = () => {
       .select('user_id, full_name, email')
       .in('user_id', userIds);
     const map = new Map<string, string>();
-    (profiles || []).forEach((p: any) => {
+    (profiles || []).forEach((p: { user_id: string; full_name: string | null; email: string | null }) => {
       map.set(p.user_id, p.full_name || p.email || 'Unknown');
     });
     return map;
@@ -59,9 +85,9 @@ const AnnouncementsTab: React.FC = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const authorIds = [...new Set(data.map((a: any) => a.author_id))];
+        const authorIds = [...new Set(data.map((a: Announcement) => a.author_id))];
         const nameMap = await getNameMap(authorIds);
-        setAnnouncements(data.map((a: any) => ({ ...a, author_name: nameMap.get(a.author_id) || 'Unknown' })));
+        setAnnouncements(data.map((a: Announcement) => ({ ...a, author_name: nameMap.get(a.author_id) || 'Unknown' })));
       } else {
         setAnnouncements([]);
       }
@@ -78,7 +104,7 @@ const AnnouncementsTab: React.FC = () => {
       setCurrentUser(user);
       await fetchAnnouncements();
     };
-    init();
+    void init();
 
     const channel = supabase
       .channel('internal-announcements-changes')
@@ -90,7 +116,7 @@ const AnnouncementsTab: React.FC = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchAnnouncements]);
 
-  const handleCreate = async (values: any) => {
+  const handleCreate = form.onSubmit(async (values) => {
     if (!currentUser) return;
     setSending(true);
     try {
@@ -99,20 +125,21 @@ const AnnouncementsTab: React.FC = () => {
         body: values.body,
         priority: (values.priority || 'normal') as 'normal' | 'urgent' | 'critical',
         author_id: currentUser.id,
-        pinned: values.pinned || false,
+        pinned: values.pinned,
         read_by: [currentUser.id],
       }]);
       if (error) throw error;
-      message.success('Announcement published');
-      form.resetFields();
+      notifications.show({ title: 'Published', message: 'Announcement published', color: 'green' });
+      form.reset();
       setCreateOpen(false);
       fetchAnnouncements();
-    } catch (err: any) {
-      message.error('Failed to publish: ' + err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      notifications.show({ title: 'Error', message: `Failed to publish: ${message}`, color: 'red' });
     } finally {
       setSending(false);
     }
-  };
+  });
 
   const markAsRead = async (announcement: Announcement) => {
     if (!currentUser || announcement.read_by.includes(currentUser.id)) return;
@@ -123,93 +150,111 @@ const AnnouncementsTab: React.FC = () => {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Text strong style={{ fontSize: 16 }}>Company Announcements</Text>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}
-          style={{ background: '#FF6B35', borderColor: '#FF6B35' }}>
+    <Stack gap="md">
+      <Group justify="space-between" align="center">
+        <Text fw={700} size="md">Company Announcements</Text>
+        <Button
+          leftSection={<IconPlus size={18} />}
+          onClick={() => setCreateOpen(true)}
+          styles={{ root: { backgroundColor: '#FF6B35' } }}
+        >
           New Announcement
         </Button>
-      </div>
+      </Group>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40 }}><Spin size="large" /></div>
+        <Center py={40}>
+          <Loader size="lg" />
+        </Center>
       ) : announcements.length === 0 ? (
-        <Empty description="No announcements" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Text c="dimmed" ta="center" py={40}>No announcements</Text>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <Stack gap="sm">
           {announcements.map((a) => {
             const isRead = currentUser && a.read_by.includes(currentUser.id);
+            const borderColor = a.priority === 'critical' ? '#ef4444' : a.priority === 'urgent' ? '#f59e0b' : '#d1d5db';
             return (
-              <Card
+              <Paper
                 key={a.id}
-                size="small"
-                style={{
-                  borderLeft: `4px solid ${a.priority === 'critical' ? '#ef4444' : a.priority === 'urgent' ? '#f59e0b' : '#d1d5db'}`,
-                  background: isRead ? '#ffffff' : '#fffbf5',
-                }}
+                p="md"
+                withBorder
+                radius="sm"
                 onClick={() => markAsRead(a)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    void markAsRead(a);
+                  }
+                }}
+                style={{
+                  cursor: 'pointer',
+                  borderLeftWidth: 4,
+                  borderLeftColor: borderColor,
+                  background: isRead ? undefined : '#fffbf5',
+                }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                      {a.pinned && <PushpinOutlined style={{ color: '#FF6B35' }} />}
-                      <Text strong style={{ fontSize: 15 }}>{a.title}</Text>
-                      <Tag color={priorityColors[a.priority]}>{a.priority}</Tag>
-                      {!isRead && <Badge dot color="#FF6B35" />}
-                    </div>
-                    <div style={{ color: '#4b5563', fontSize: 13, whiteSpace: 'pre-wrap', marginBottom: 8 }}>
-                      {a.body}
-                    </div>
-                    <div style={{ display: 'flex', gap: 12, fontSize: 11, color: '#9ca3af', flexWrap: 'wrap' }}>
-                      <span>By {a.author_name}</span>
-                      <span>{new Date(a.created_at).toLocaleString()}</span>
-                      <Tooltip title="Read receipts">
-                        <span><EyeOutlined /> {a.read_by.length} read</span>
+                <Group justify="space-between" align="flex-start" wrap="nowrap">
+                  <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                    <Group gap={8} wrap="wrap">
+                      {a.pinned && <IconPin size={18} style={{ color: '#FF6B35', flexShrink: 0 }} />}
+                      <Text fw={700} size="sm">{a.title}</Text>
+                      <Badge color={priorityBadgeColor(a.priority)} variant="light" size="sm">{a.priority}</Badge>
+                      {!isRead && <Badge size="xs" color="#FF6B35" variant="dot">New</Badge>}
+                    </Group>
+                    <Text size="sm" c="dimmed" style={{ whiteSpace: 'pre-wrap' }}>{a.body}</Text>
+                    <Group gap="md">
+                      <Text size="xs" c="dimmed">By {a.author_name}</Text>
+                      <Text size="xs" c="dimmed">{new Date(a.created_at).toLocaleString()}</Text>
+                      <Tooltip label="Read receipts">
+                        <Group gap={4} style={{ cursor: 'help' }}>
+                          <IconEye size={14} />
+                          <Text size="xs" c="dimmed">{a.read_by.length} read</Text>
+                        </Group>
                       </Tooltip>
-                    </div>
-                  </div>
-                  {isRead && <CheckOutlined style={{ color: '#10b981', fontSize: 16 }} />}
-                </div>
-              </Card>
+                    </Group>
+                  </Stack>
+                  {isRead && <IconCheck size={20} color="#10b981" style={{ flexShrink: 0 }} />}
+                </Group>
+              </Paper>
             );
           })}
-        </div>
+        </Stack>
       )}
 
-      <Modal title="New Announcement" open={createOpen} onCancel={() => setCreateOpen(false)} footer={null} width={600}>
-        <Form form={form} onFinish={handleCreate} layout="vertical">
-          <Form.Item name="title" label="Title" rules={[{ required: true, message: 'Enter title' }]}>
-            <Input placeholder="Announcement title" />
-          </Form.Item>
-          <Form.Item name="body" label="Body" rules={[{ required: true, message: 'Enter body' }]}>
-            <TextArea rows={5} placeholder="Announcement content..." />
-          </Form.Item>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <Form.Item name="priority" label="Priority" style={{ flex: 1 }}>
-              <Select defaultValue="normal" options={[
-                { value: 'normal', label: 'Normal' },
-                { value: 'urgent', label: '⚠️ Urgent' },
-                { value: 'critical', label: '🚨 Critical' },
-              ]} />
-            </Form.Item>
-            <Form.Item name="pinned" label="Pinned" style={{ flex: 1 }}>
-              <Select defaultValue={false} options={[
-                { value: false, label: 'No' },
-                { value: true, label: '📌 Yes' },
-              ]} />
-            </Form.Item>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button type="primary" htmlType="submit" loading={sending}
-              style={{ background: '#FF6B35', borderColor: '#FF6B35' }}>
-              Publish
-            </Button>
-          </div>
-        </Form>
+      <Modal opened={createOpen} onClose={() => setCreateOpen(false)} title="New Announcement" size="lg">
+        <form onSubmit={handleCreate}>
+          <Stack gap="md">
+            <TextInput label="Title" placeholder="Announcement title" {...form.getInputProps('title')} />
+            <Textarea label="Body" placeholder="Announcement content..." minRows={5} {...form.getInputProps('body')} />
+            <Group grow align="flex-start">
+              <Select
+                label="Priority"
+                data={[
+                  { value: 'normal', label: 'Normal' },
+                  { value: 'urgent', label: '⚠️ Urgent' },
+                  { value: 'critical', label: '🚨 Critical' },
+                ]}
+                {...form.getInputProps('priority')}
+              />
+              <Switch
+                label="Pinned"
+                mt="lg"
+                checked={form.values.pinned}
+                onChange={(e) => form.setFieldValue('pinned', e.currentTarget.checked)}
+              />
+            </Group>
+            <Group justify="flex-end" gap="sm">
+              <Button variant="default" onClick={() => setCreateOpen(false)}>Cancel</Button>
+              <Button type="submit" loading={sending} styles={{ root: { backgroundColor: '#FF6B35' } }}>
+                Publish
+              </Button>
+            </Group>
+          </Stack>
+        </form>
       </Modal>
-    </div>
+    </Stack>
   );
 };
 

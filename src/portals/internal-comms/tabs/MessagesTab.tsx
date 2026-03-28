@@ -1,17 +1,57 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Button, Input, List, Avatar, Tag, Modal, Form, Select, Empty, Spin, message, Typography, Badge, Upload, Tooltip } from 'antd';
-import { SendOutlined, UserOutlined, PlusOutlined, PaperClipOutlined, FileOutlined, FilePdfOutlined, FileImageOutlined, DownloadOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  Button,
+  TextInput,
+  Textarea,
+  Stack,
+  Group,
+  Text,
+  Avatar,
+  Badge,
+  Loader,
+  Center,
+  FileInput,
+  Tooltip,
+  ActionIcon,
+  MultiSelect,
+  Box,
+  Divider,
+  UnstyledButton,
+  Title,
+  Modal,
+  Paper,
+} from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { modals } from '@mantine/modals';
+import { notifications } from '@mantine/notifications';
+import {
+  IconUser,
+  IconPlus,
+  IconPaperclip,
+  IconFile,
+  IconFileTypePdf,
+  IconPhoto,
+  IconDownload,
+  IconTrash,
+  IconSend,
+  IconMessages,
+  IconHash,
+  IconEye,
+  IconExternalLink,
+} from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
-import type { UploadFile } from 'antd/es/upload/interface';
+import {
+  INTERNAL_COMMS_BUCKET,
+  extractInternalCommsStoragePath,
+  resolveInternalCommsFileAccess,
+  downloadInternalCommsAttachment,
+  attachmentLooksLikeImage,
+  attachmentLooksLikePdf,
+} from '@/lib/internalCommsStorage';
 
-const { TextArea } = Input;
-const { Text } = Typography;
-
-// --- Notification sound utility ---
 const playNotificationSound = () => {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    // Two-tone chime
     const playTone = (freq: number, startTime: number, duration: number) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -40,17 +80,6 @@ interface Attachment {
   file_type: string | null;
 }
 
-const INTERNAL_COMMS_BUCKET = 'internal-comms-files';
-
-const extractStoragePath = (fileUrlOrPath: string) => {
-  if (!fileUrlOrPath) return '';
-  if (!fileUrlOrPath.startsWith('http')) return fileUrlOrPath;
-  const marker = `/${INTERNAL_COMMS_BUCKET}/`;
-  const idx = fileUrlOrPath.indexOf(marker);
-  if (idx === -1) return fileUrlOrPath;
-  return decodeURIComponent(fileUrlOrPath.slice(idx + marker.length));
-};
-
 interface Message {
   id: string;
   sender_id: string;
@@ -71,81 +100,228 @@ interface Recipient {
 }
 
 const fileIcon = (type: string | null) => {
-  if (!type) return <FileOutlined />;
-  if (type.includes('pdf')) return <FilePdfOutlined style={{ color: '#ef4444' }} />;
-  if (type.includes('image')) return <FileImageOutlined style={{ color: '#3b82f6' }} />;
-  return <FileOutlined />;
+  if (!type) return <IconFile size={14} />;
+  if (type.includes('pdf')) return <IconFileTypePdf size={14} color="var(--mantine-color-red-6)" />;
+  if (type.includes('image')) return <IconPhoto size={14} color="var(--mantine-color-blue-6)" />;
+  return <IconFile size={14} />;
 };
 
 const formatSize = (bytes: number | null) => {
   if (!bytes) return '';
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-const AttachmentList: React.FC<{ attachments: Attachment[] }> = ({ attachments }) => {
-  if (!attachments || attachments.length === 0) return null;
+/** Slack-style sidebar title: other participant(s) in the thread */
+function threadSidebarLabel(
+  msg: Message,
+  currentUserId: string | undefined,
+  labelFor: (id: string) => string,
+) {
+  const ids = Array.from(new Set([msg.sender_id, ...(msg.recipient_ids || [])]));
+  const others = ids.filter((id) => id !== currentUserId);
+  if (others.length === 0) return labelFor(msg.sender_id);
+  if (others.length === 1) return labelFor(others[0]);
+  const [a, b, ...rest] = others;
+  const left = `${labelFor(a)}, ${labelFor(b)}`;
+  return rest.length ? `${left} +${rest.length}` : left;
+}
 
-  const openAttachment = async (attachment: Attachment) => {
-    const filePath = extractStoragePath(attachment.file_url);
-    const { data, error } = await supabase.storage
-      .from(INTERNAL_COMMS_BUCKET)
-      .createSignedUrl(filePath, 60 * 5);
-    if (error || !data?.signedUrl) {
-      message.error(`Unable to open ${attachment.file_name}`);
-      return;
-    }
-    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+const AttachmentList: React.FC<{ attachments: Attachment[] }> = ({ attachments }) => {
+  const [preview, setPreview] = useState<{
+    fileName: string;
+    fileUrl: string;
+    url: string;
+    kind: 'image' | 'pdf';
+    cleanup?: () => void;
+  } | null>(null);
+
+  const closePreview = () => {
+    preview?.cleanup?.();
+    setPreview(null);
   };
 
+  const handleDownload = async (a: Attachment) => {
+    const { ok, error: err } = await downloadInternalCommsAttachment(a.file_url, a.file_name);
+    if (!ok) {
+      notifications.show({
+        title: 'Download failed',
+        message: `${a.file_name}: ${err || 'Unknown error'}`,
+        color: 'red',
+      });
+    }
+  };
+
+  const openPreview = async (a: Attachment) => {
+    const filePath = extractInternalCommsStoragePath(a.file_url);
+    if (!filePath) {
+      notifications.show({
+        title: 'Unable to preview',
+        message: `${a.file_name}: missing storage path`,
+        color: 'red',
+      });
+      return;
+    }
+    const { result, error } = await resolveInternalCommsFileAccess(filePath);
+    if (!result || error) {
+      notifications.show({
+        title: 'Unable to preview',
+        message: `${a.file_name}: ${error || 'Access denied'}`,
+        color: 'red',
+      });
+      return;
+    }
+    const cleanup = result.kind === 'blob' ? result.revoke : undefined;
+    const kind = attachmentLooksLikeImage(a.file_name, a.file_type)
+      ? 'image'
+      : 'pdf';
+    setPreview({
+      fileName: a.file_name,
+      fileUrl: a.file_url,
+      url: result.url,
+      kind,
+      cleanup,
+    });
+  };
+
+  const openInNewTab = () => {
+    if (!preview) return;
+    window.open(preview.url, '_blank', 'noopener,noreferrer');
+  };
+
+  if (!attachments || attachments.length === 0) return null;
+
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-      {attachments.map((a) => (
-        <button
-          key={a.id}
-          type="button"
-          onClick={() => openAttachment(a)}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 4,
-            background: '#f3f4f6', borderRadius: 6, padding: '4px 8px',
-            fontSize: 12, color: '#374151', textDecoration: 'none',
-            border: '1px solid #e5e7eb',
-            cursor: 'pointer',
-          }}
-        >
-          {fileIcon(a.file_type)}
-          <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {a.file_name}
-          </span>
-          {a.file_size_bytes && <span style={{ color: '#9ca3af' }}>({formatSize(a.file_size_bytes)})</span>}
-          <DownloadOutlined style={{ color: '#FF6B35' }} />
-        </button>
-      ))}
-    </div>
+    <>
+      <Group gap={6} mt={6} wrap="wrap">
+        {attachments.map((a) => {
+          const canPreview =
+            attachmentLooksLikeImage(a.file_name, a.file_type) ||
+            attachmentLooksLikePdf(a.file_name, a.file_type);
+          return (
+            <Paper key={a.id} withBorder px="xs" py={6} radius="sm" bg="gray.0">
+              <Group gap={8} wrap="nowrap">
+                {fileIcon(a.file_type)}
+                <Text size="xs" truncate maw={160}>
+                  {a.file_name}
+                  {a.file_size_bytes ? ` · ${formatSize(a.file_size_bytes)}` : ''}
+                </Text>
+                <Group gap={4} wrap="nowrap">
+                  {canPreview && (
+                    <Tooltip label="Preview">
+                      <ActionIcon
+                        size="sm"
+                        variant="light"
+                        color="orange"
+                        onClick={() => void openPreview(a)}
+                      >
+                        <IconEye size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                  <Tooltip label="Download">
+                    <ActionIcon
+                      size="sm"
+                      variant="light"
+                      color="gray"
+                      onClick={() => void handleDownload(a)}
+                    >
+                      <IconDownload size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Group>
+              </Group>
+            </Paper>
+          );
+        })}
+      </Group>
+
+      <Modal
+        opened={!!preview}
+        onClose={closePreview}
+        title={preview?.fileName}
+        size="xl"
+        radius="md"
+      >
+        {preview && (
+          <Stack gap="md">
+            {preview.kind === 'image' ? (
+              <Box style={{ textAlign: 'center', maxHeight: '70vh', overflow: 'auto' }}>
+                <img
+                  src={preview.url}
+                  alt={preview.fileName}
+                  style={{ maxWidth: '100%', maxHeight: '65vh', objectFit: 'contain' }}
+                />
+              </Box>
+            ) : (
+              <iframe
+                title={preview.fileName}
+                src={preview.url}
+                style={{ width: '100%', height: '65vh', border: '1px solid var(--mantine-color-gray-3)', borderRadius: 8 }}
+              />
+            )}
+            <Group justify="flex-end" gap="sm">
+              <Button
+                variant="default"
+                leftSection={<IconExternalLink size={16} />}
+                onClick={openInNewTab}
+              >
+                Open in new tab
+              </Button>
+              <Button
+                color="orange"
+                leftSection={<IconDownload size={16} />}
+                onClick={() => {
+                  void downloadInternalCommsAttachment(preview.fileUrl, preview.fileName);
+                }}
+              >
+                Download
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </Modal>
+    </>
   );
 };
 
 const MessagesTab: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const [composeOpen, setComposeOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [replyBody, setReplyBody] = useState('');
   const [threadMessages, setThreadMessages] = useState<Message[]>([]);
-  const [composeFiles, setComposeFiles] = useState<UploadFile[]>([]);
-  const [replyFiles, setReplyFiles] = useState<UploadFile[]>([]);
-  const [form] = Form.useForm();
+  const [composeFiles, setComposeFiles] = useState<File[]>([]);
+  const [replyFiles, setReplyFiles] = useState<File[]>([]);
+  const [composeMode, setComposeMode] = useState<'none' | 'new'>('none');
+  const feedEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Refs to access latest state inside realtime callback
+  const labelForUserId = useCallback(
+    (userId: string) => recipients.find((r) => r.user_id === userId)?.label || 'Unknown',
+    [recipients],
+  );
+
+  const composeForm = useForm({
+    initialValues: { subject: '', body: '', recipients: [] as string[] },
+    validate: {
+      recipients: (v) => (!v?.length ? 'Select at least one recipient' : null),
+      body: (v) => (!v?.trim() ? 'Enter a message' : null),
+    },
+  });
+
   const selectedMessageRef = useRef<Message | null>(null);
   const currentUserRef = useRef<any>(null);
 
-  useEffect(() => { selectedMessageRef.current = selectedMessage; }, [selectedMessage]);
-  useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
+  useEffect(() => {
+    selectedMessageRef.current = selectedMessage;
+  }, [selectedMessage]);
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
 
   const getNameMap = useCallback(async (userIds: string[]): Promise<Map<string, string>> => {
     if (userIds.length === 0) return new Map();
@@ -191,11 +367,13 @@ const MessagesTab: React.FC = () => {
         const senderIds = [...new Set(data.map((m: any) => m.sender_id))];
         const msgIds = data.map((m: any) => m.id);
         const [nameMap, attachMap] = await Promise.all([getNameMap(senderIds), fetchAttachments(msgIds)]);
-        setMessages(data.map((m: any) => ({
-          ...m,
-          sender_name: nameMap.get(m.sender_id) || 'Unknown',
-          attachments: attachMap.get(m.id) || [],
-        })));
+        setMessages(
+          data.map((m: any) => ({
+            ...m,
+            sender_name: nameMap.get(m.sender_id) || 'Unknown',
+            attachments: attachMap.get(m.id) || [],
+          })),
+        );
       } else {
         setMessages([]);
       }
@@ -206,44 +384,50 @@ const MessagesTab: React.FC = () => {
     }
   }, [getNameMap, fetchAttachments]);
 
-  // Refresh thread replies (called when realtime fires while a thread is open)
-  const refreshThread = useCallback(async (parentId: string) => {
-    const { data } = await supabase
-      .from('internal_messages')
-      .select('*')
-      .eq('parent_id', parentId)
-      .order('created_at', { ascending: true });
+  const refreshThread = useCallback(
+    async (parentId: string) => {
+      const { data } = await supabase
+        .from('internal_messages')
+        .select('*')
+        .eq('parent_id', parentId)
+        .order('created_at', { ascending: true });
 
-    if (data && data.length > 0) {
-      const senderIds = [...new Set(data.map((m: any) => m.sender_id))];
-      const msgIds = data.map((m: any) => m.id);
-      const [nameMap, attachMap] = await Promise.all([getNameMap(senderIds), fetchAttachments(msgIds)]);
-      setThreadMessages(data.map((m: any) => ({
-        ...m,
-        sender_name: nameMap.get(m.sender_id) || 'Unknown',
-        attachments: attachMap.get(m.id) || [],
-      })));
-    } else {
-      setThreadMessages([]);
-    }
-  }, [getNameMap, fetchAttachments]);
+      if (data && data.length > 0) {
+        const senderIds = [...new Set(data.map((m: any) => m.sender_id))];
+        const msgIds = data.map((m: any) => m.id);
+        const [nameMap, attachMap] = await Promise.all([getNameMap(senderIds), fetchAttachments(msgIds)]);
+        setThreadMessages(
+          data.map((m: any) => ({
+            ...m,
+            sender_name: nameMap.get(m.sender_id) || 'Unknown',
+            attachments: attachMap.get(m.id) || [],
+          })),
+        );
+      } else {
+        setThreadMessages([]);
+      }
+    },
+    [getNameMap, fetchAttachments],
+  );
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setCurrentUser(user);
 
-      const { data: execs } = await supabase
-        .from('exec_users')
-        .select('user_id, role, title');
+      const { data: execs } = await supabase.from('exec_users').select('user_id, role, title');
 
       if (execs && execs.length > 0) {
         const userIds = execs.map((e: any) => e.user_id);
         const nameMap = await getNameMap(userIds);
-        setRecipients(execs.map((e: any) => ({
-          user_id: e.user_id,
-          label: `${nameMap.get(e.user_id) || e.role} (${e.title || e.role})`,
-        })));
+        setRecipients(
+          execs.map((e: any) => ({
+            user_id: e.user_id,
+            label: `${nameMap.get(e.user_id) || e.role} (${e.title || e.role})`,
+          })),
+        );
       }
 
       await fetchMessages();
@@ -256,15 +440,12 @@ const MessagesTab: React.FC = () => {
         const newMsg = payload.new as any;
         const me = currentUserRef.current;
 
-        // Play sound if this message is from someone else
         if (me && newMsg.sender_id !== me.id) {
           playNotificationSound();
         }
 
-        // Refresh inbox
         fetchMessages();
 
-        // If a thread is open and this message belongs to it, refresh the thread
         const openThread = selectedMessageRef.current;
         if (openThread) {
           if (newMsg.parent_id === openThread.id || newMsg.id === openThread.id) {
@@ -284,67 +465,78 @@ const MessagesTab: React.FC = () => {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchMessages, getNameMap, refreshThread]);
 
-  const uploadFiles = async (files: UploadFile[], messageId: string, userId: string) => {
-    for (const f of files) {
-      const file = f.originFileObj as File;
+  const uploadFiles = async (files: File[], messageId: string, userId: string) => {
+    for (const file of files) {
       if (!file) continue;
       const filePath = `${userId}/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('internal-comms-files')
-        .upload(filePath, file);
+      const { error: uploadError } = await supabase.storage.from('internal-comms-files').upload(filePath, file);
       if (uploadError) throw uploadError;
 
-      const { error: attachError } = await supabase.from('internal_message_attachments').insert([{
-        message_id: messageId,
-        file_name: file.name,
-        file_url: filePath,
-        file_size_bytes: file.size,
-        file_type: file.type,
-        uploaded_by: userId,
-      }]);
+      const { error: attachError } = await supabase.from('internal_message_attachments').insert([
+        {
+          message_id: messageId,
+          file_name: file.name,
+          file_url: filePath,
+          file_size_bytes: file.size,
+          file_type: file.type,
+          uploaded_by: userId,
+        },
+      ]);
       if (attachError) throw attachError;
     }
   };
 
-  const handleSend = async (values: any) => {
+  const handleSend = composeForm.onSubmit(async (values) => {
     if (!currentUser) return;
     setSending(true);
     try {
-      const { data: msgData, error } = await supabase.from('internal_messages').insert([{
-        sender_id: currentUser.id,
-        subject: values.subject || null,
-        body: values.body,
-        channel: (values.recipients?.length > 1 ? 'group' : 'direct') as 'direct' | 'group',
-        recipient_ids: values.recipients,
-        read_by: [currentUser.id],
-      }]).select('id').single();
+      const { data: msgData, error } = await supabase
+        .from('internal_messages')
+        .insert([
+          {
+            sender_id: currentUser.id,
+            subject: values.subject || null,
+            body: values.body,
+            channel: (values.recipients?.length > 1 ? 'group' : 'direct') as 'direct' | 'group',
+            recipient_ids: values.recipients,
+            read_by: [currentUser.id],
+          },
+        ])
+        .select('id')
+        .single();
       if (error) throw error;
 
       if (composeFiles.length > 0) {
         await uploadFiles(composeFiles, msgData.id, currentUser.id);
       }
 
-      message.success('Message sent');
-      form.resetFields();
+      notifications.show({ title: 'Message sent', color: 'green' });
+      composeForm.reset();
       setComposeFiles([]);
-      setComposeOpen(false);
-      // fetchMessages() will be triggered by realtime
+      setComposeMode('none');
+      await fetchMessages();
     } catch (err: any) {
-      message.error('Failed to send: ' + err.message);
+      notifications.show({ title: 'Failed to send', message: err.message, color: 'red' });
     } finally {
       setSending(false);
     }
-  };
+  });
 
   const openThread = async (msg: Message) => {
+    setComposeMode('none');
     setSelectedMessage(msg);
     if (currentUser && !msg.read_by.includes(currentUser.id)) {
-      await supabase.from('internal_messages').update({
-        read_by: [...msg.read_by, currentUser.id],
-      }).eq('id', msg.id);
+      await supabase
+        .from('internal_messages')
+        .update({
+          read_by: [...msg.read_by, currentUser.id],
+        })
+        .eq('id', msg.id);
     }
     await refreshThread(msg.id);
   };
@@ -352,25 +544,28 @@ const MessagesTab: React.FC = () => {
   const sendReply = async () => {
     if (!currentUser || !selectedMessage || (!replyBody.trim() && replyFiles.length === 0)) return;
     try {
-      const participantIds = Array.from(new Set([
-        selectedMessage.sender_id,
-        ...(selectedMessage.recipient_ids || []),
-      ]));
+      const participantIds = Array.from(new Set([selectedMessage.sender_id, ...(selectedMessage.recipient_ids || [])]));
       const replyRecipientIds = participantIds.filter((id) => id !== currentUser.id);
 
       if (replyRecipientIds.length === 0) {
-        message.error('No recipients found for this conversation');
+        notifications.show({ title: 'No recipients', message: 'No recipients found for this conversation', color: 'red' });
         return;
       }
 
-      const { data: msgData, error } = await supabase.from('internal_messages').insert([{
-        sender_id: currentUser.id,
-        body: replyBody || '📎 Attachment',
-        channel: (replyRecipientIds.length > 1 ? 'group' : 'direct') as 'direct' | 'group',
-        parent_id: selectedMessage.id,
-        recipient_ids: replyRecipientIds,
-        read_by: [currentUser.id],
-      }]).select('id').single();
+      const { data: msgData, error } = await supabase
+        .from('internal_messages')
+        .insert([
+          {
+            sender_id: currentUser.id,
+            body: replyBody || '📎 Attachment',
+            channel: (replyRecipientIds.length > 1 ? 'group' : 'direct') as 'direct' | 'group',
+            parent_id: selectedMessage.id,
+            recipient_ids: replyRecipientIds,
+            read_by: [currentUser.id],
+          },
+        ])
+        .select('id')
+        .single();
       if (error) throw error;
 
       if (replyFiles.length > 0) {
@@ -379,260 +574,403 @@ const MessagesTab: React.FC = () => {
 
       setReplyBody('');
       setReplyFiles([]);
-      // Thread will refresh via realtime subscription
+      await refreshThread(selectedMessage.id);
     } catch (err: any) {
-      message.error('Failed to reply');
+      notifications.show({ title: 'Failed to reply', message: err?.message, color: 'red' });
     }
   };
 
   const handleDelete = async (msgId: string, isParent: boolean) => {
-    Modal.confirm({
+    modals.openConfirmModal({
       title: 'Delete message?',
-      content: isParent ? 'This will delete the message and all replies.' : 'This reply will be permanently deleted.',
-      okText: 'Delete',
-      okButtonProps: { danger: true },
-      onOk: async () => {
+      children: (
+        <Text size="sm">
+          {isParent ? 'This will delete the message and all replies.' : 'This reply will be permanently deleted.'}
+        </Text>
+      ),
+      labels: { confirm: 'Delete', cancel: 'Cancel' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
         try {
           if (isParent) {
-            await supabase.from('internal_message_attachments')
-              .delete().in('message_id',
-                [msgId, ...(threadMessages.map(t => t.id))]
-              );
+            await supabase
+              .from('internal_message_attachments')
+              .delete()
+              .in('message_id', [msgId, ...threadMessages.map((t) => t.id)]);
             await supabase.from('internal_messages').delete().eq('parent_id', msgId);
             await supabase.from('internal_messages').delete().eq('id', msgId);
             setSelectedMessage(null);
             setThreadMessages([]);
+            setComposeMode('none');
           } else {
             await supabase.from('internal_message_attachments').delete().eq('message_id', msgId);
             await supabase.from('internal_messages').delete().eq('id', msgId);
           }
-          message.success('Message deleted');
+          notifications.show({ title: 'Message deleted', color: 'green' });
         } catch (err: any) {
-          message.error('Delete failed: ' + err.message);
+          notifications.show({ title: 'Delete failed', message: err.message, color: 'red' });
         }
       },
     });
   };
 
   const isUnread = (msg: Message) => currentUser && !msg.read_by.includes(currentUser.id);
-
   const hasAttachments = (msg: Message) => msg.attachments && msg.attachments.length > 0;
 
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Text strong style={{ fontSize: 16 }}>Inbox</Text>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setComposeOpen(true)}
-          style={{ background: '#FF6B35', borderColor: '#FF6B35' }}>
-          Compose
-        </Button>
-      </div>
+  const recipientOptions = recipients
+    .filter((r) => r.user_id !== currentUser?.id)
+    .map((r) => ({ value: r.user_id, label: r.label }));
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 40 }}><Spin size="large" /></div>
-      ) : messages.length === 0 ? (
-        <Empty description="No messages yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-      ) : (
-        <List
-          dataSource={messages}
-          renderItem={(msg) => (
-            <List.Item
-              onClick={() => openThread(msg)}
-              style={{
-                cursor: 'pointer',
-                background: isUnread(msg) ? '#fff7f0' : '#ffffff',
-                padding: '12px 16px',
-                borderRadius: 6,
-                marginBottom: 4,
-                border: '1px solid #f0f0f0',
-              }}
-            >
-              <List.Item.Meta
-                avatar={
-                  <Avatar style={{ background: '#FF6B35' }} icon={<UserOutlined />}>
-                    {msg.sender_name?.charAt(0)}
-                  </Avatar>
-                }
-                title={
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    {isUnread(msg) && <Badge dot color="#FF6B35" />}
-                    <Text strong={!!isUnread(msg)}>{msg.subject || '(No subject)'}</Text>
-                    <Tag color={msg.channel === 'group' ? 'blue' : 'default'} style={{ fontSize: 10 }}>
-                      {msg.channel}
-                    </Tag>
-                    {hasAttachments(msg) && (
-                      <Tooltip title={`${msg.attachments!.length} attachment(s)`}>
-                        <PaperClipOutlined style={{ color: '#FF6B35', fontSize: 14 }} />
-                      </Tooltip>
-                    )}
-                  </div>
-                }
-                description={
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>{msg.sender_name}</Text>
-                    <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
-                      {new Date(msg.created_at).toLocaleString()}
-                    </Text>
-                    <div style={{ marginTop: 4, fontSize: 13, color: '#4b5563' }}>
-                      {msg.body.length > 120 ? msg.body.slice(0, 120) + '...' : msg.body}
-                    </div>
-                  </div>
-                }
-              />
-            </List.Item>
-          )}
-        />
-      )}
+  const feedMessages: Message[] = selectedMessage
+    ? [selectedMessage, ...threadMessages]
+    : [];
 
-      {/* Compose Modal */}
-      <Modal title="New Message" open={composeOpen} onCancel={() => { setComposeOpen(false); setComposeFiles([]); }} footer={null} width={600}>
-        <Form form={form} onFinish={handleSend} layout="vertical">
-          <Form.Item name="recipients" label="To" rules={[{ required: true, message: 'Select recipients' }]}>
-            <Select
-              mode="multiple"
-              placeholder="Select recipients"
-              options={recipients
-                .filter(r => r.user_id !== currentUser?.id)
-                .map(r => ({ value: r.user_id, label: r.label }))}
-              filterOption={(input, option) =>
-                (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
-              }
-            />
-          </Form.Item>
-          <Form.Item name="subject" label="Subject">
-            <Input placeholder="Subject (optional)" />
-          </Form.Item>
-          <Form.Item name="body" label="Message" rules={[{ required: true, message: 'Enter a message' }]}>
-            <TextArea rows={5} placeholder="Type your message..." />
-          </Form.Item>
-          <Form.Item label="Attachments">
-            <Upload
-              multiple
-              beforeUpload={() => false}
-              fileList={composeFiles}
-              onChange={({ fileList }) => setComposeFiles(fileList)}
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt,.zip"
-            >
-              <Button icon={<PaperClipOutlined />} style={{ borderColor: '#FF6B35', color: '#FF6B35' }}>
-                Attach Files
-              </Button>
-            </Upload>
-          </Form.Item>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button onClick={() => { setComposeOpen(false); setComposeFiles([]); }}>Cancel</Button>
-            <Button type="primary" htmlType="submit" loading={sending}
-              icon={<SendOutlined />} style={{ background: '#FF6B35', borderColor: '#FF6B35' }}>
-              Send
-            </Button>
-          </div>
-        </Form>
-      </Modal>
+  useEffect(() => {
+    if (!selectedMessage) return;
+    feedEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [selectedMessage?.id, threadMessages]);
 
-      {/* Thread Modal */}
-      <Modal
-        title={selectedMessage?.subject || 'Message Thread'}
-        open={!!selectedMessage}
-        onCancel={() => { setSelectedMessage(null); setThreadMessages([]); setReplyFiles([]); }}
-        footer={null}
-        width={650}
-      >
-        {selectedMessage && (
-          <div>
-            <div style={{ background: '#f9fafb', borderRadius: 8, padding: 12, marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <Avatar size="small" style={{ background: '#FF6B35' }}>
-                  {selectedMessage.sender_name?.charAt(0)}
-                </Avatar>
-                <Text strong>{selectedMessage.sender_name}</Text>
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  {new Date(selectedMessage.created_at).toLocaleString()}
-                </Text>
-                <div style={{ marginLeft: 'auto' }}>
-                  {selectedMessage.sender_id === currentUser?.id && (
-                    <Tooltip title="Delete conversation">
-                      <Button type="text" size="small" danger icon={<DeleteOutlined />}
-                        onClick={() => handleDelete(selectedMessage.id, true)} />
-                    </Tooltip>
-                  )}
-                </div>
-              </div>
-              <div style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{selectedMessage.body}</div>
-              <AttachmentList attachments={selectedMessage.attachments || []} />
-            </div>
+  const startNewConversation = () => {
+    setSelectedMessage(null);
+    setThreadMessages([]);
+    setReplyBody('');
+    setReplyFiles([]);
+    composeForm.reset();
+    setComposeFiles([]);
+    setComposeMode('new');
+  };
 
-            {threadMessages.map((reply) => (
-              <div key={reply.id} style={{
-                background: reply.sender_id === currentUser?.id ? '#fff7f0' : '#f3f4f6',
-                borderRadius: 8, padding: 10, marginBottom: 8,
-                marginLeft: reply.sender_id === currentUser?.id ? 40 : 0,
-                marginRight: reply.sender_id !== currentUser?.id ? 40 : 0,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                  <Text strong style={{ fontSize: 12 }}>{reply.sender_name}</Text>
-                  <Text type="secondary" style={{ fontSize: 10 }}>
-                    {new Date(reply.created_at).toLocaleString()}
-                  </Text>
-                  {reply.sender_id === currentUser?.id && (
-                    <Tooltip title="Delete reply">
-                      <Button type="text" size="small" danger icon={<DeleteOutlined />}
-                        onClick={() => handleDelete(reply.id, false)}
-                        style={{ marginLeft: 'auto', padding: 0, height: 20 }} />
-                    </Tooltip>
-                  )}
-                </div>
-                <div style={{ fontSize: 13 }}>{reply.body}</div>
-                <AttachmentList attachments={reply.attachments || []} />
-              </div>
-            ))}
-
-            <div style={{ marginTop: 12 }}>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <TextArea
-                  rows={2}
-                  value={replyBody}
-                  onChange={(e) => setReplyBody(e.target.value)}
-                  placeholder="Type a reply..."
-                  style={{ flex: 1 }}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignSelf: 'flex-end' }}>
-                  <Upload
-                    multiple
-                    beforeUpload={() => false}
-                    fileList={replyFiles}
-                    onChange={({ fileList }) => setReplyFiles(fileList)}
-                    showUploadList={false}
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt,.zip"
-                  >
-                    <Tooltip title="Attach files">
-                      <Button icon={<PaperClipOutlined />} style={{ borderColor: '#FF6B35', color: '#FF6B35' }} />
-                    </Tooltip>
-                  </Upload>
-                  <Button type="primary" icon={<SendOutlined />} onClick={sendReply}
-                    disabled={!replyBody.trim() && replyFiles.length === 0}
-                    style={{ background: '#FF6B35', borderColor: '#FF6B35' }}>
-                    Reply
-                  </Button>
-                </div>
-              </div>
-              {replyFiles.length > 0 && (
-                <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {replyFiles.map((f, i) => (
-                    <Tag
-                      key={i}
-                      closable
-                      onClose={() => setReplyFiles(prev => prev.filter((_, idx) => idx !== i))}
-                      style={{ fontSize: 11 }}
-                    >
-                      <PaperClipOutlined /> {f.name}
-                    </Tag>
-                  ))}
-                </div>
+  const renderSlackMessage = (msg: Message, opts: { isRoot: boolean }) => {
+    const isMine = msg.sender_id === currentUser?.id;
+    return (
+      <Box key={msg.id} py={6}>
+        <Group align="flex-start" wrap="nowrap" gap="sm">
+          <Avatar size="md" radius="sm" color="orange" style={{ flexShrink: 0 }}>
+            {msg.sender_name?.charAt(0).toUpperCase() || <IconUser size={18} />}
+          </Avatar>
+          <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+            <Group gap={8} wrap="nowrap" align="center">
+              <Text fw={700} size="sm">
+                {msg.sender_name}
+              </Text>
+              <Text size="xs" c="dimmed">
+                {new Date(msg.created_at).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+              </Text>
+              {isMine && !opts.isRoot && (
+                <Tooltip label="Delete message">
+                  <ActionIcon size="sm" variant="subtle" color="red" onClick={() => handleDelete(msg.id, false)}>
+                    <IconTrash size={14} />
+                  </ActionIcon>
+                </Tooltip>
               )}
-            </div>
-          </div>
-        )}
-      </Modal>
-    </div>
+            </Group>
+            {opts.isRoot && msg.subject ? (
+              <Text size="xs" c="dimmed" fs="italic">
+                {msg.subject}
+              </Text>
+            ) : null}
+            <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.45 }}>
+              {msg.body}
+            </Text>
+            <AttachmentList attachments={msg.attachments || []} />
+          </Stack>
+        </Group>
+      </Box>
+    );
+  };
+
+  return (
+    <Stack gap="sm" style={{ minHeight: 520 }}>
+      <Group gap="sm" wrap="nowrap" align="flex-start">
+        <IconMessages size={26} color="var(--mantine-color-orange-6)" style={{ flexShrink: 0, marginTop: 2 }} />
+        <Stack gap={2}>
+          <Title order={5}>Team messages</Title>
+          <Text size="xs" c="dimmed" maw={520}>
+            Slack-style direct messages between executives: pick a conversation on the left, scroll the thread, and reply at the bottom.
+          </Text>
+        </Stack>
+      </Group>
+
+      <Box
+        style={{
+          display: 'flex',
+          flexWrap: 'nowrap',
+          border: '1px solid var(--mantine-color-gray-3)',
+          borderRadius: 8,
+          overflow: 'hidden',
+          minHeight: 460,
+          background: 'var(--mantine-color-body)',
+        }}
+      >
+        {/* Sidebar — conversation list */}
+        <Box
+          w={300}
+          style={{
+            flexShrink: 0,
+            borderRight: '1px solid var(--mantine-color-gray-3)',
+            background: 'var(--mantine-color-gray-0)',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <Group justify="space-between" p="sm" wrap="nowrap" gap="xs">
+            <Text size="xs" fw={700} tt="uppercase" c="dimmed">
+              Direct messages
+            </Text>
+            <Tooltip label="New message">
+              <ActionIcon
+                variant="filled"
+                color="orange"
+                size="md"
+                radius="md"
+                onClick={startNewConversation}
+              >
+                <IconPlus size={18} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
+          <Divider />
+          <Box style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            {loading ? (
+              <Center py="xl">
+                <Loader />
+              </Center>
+            ) : messages.length === 0 ? (
+              <Text size="sm" c="dimmed" p="md">
+                No conversations yet. Use + to message someone on the team.
+              </Text>
+            ) : (
+              <Stack gap={4} p="xs">
+                {messages.map((msg) => (
+                  <UnstyledButton
+                    key={msg.id}
+                    onClick={() => void openThread(msg)}
+                    w="100%"
+                    p={8}
+                    style={{
+                      borderRadius: 8,
+                      borderLeft: isUnread(msg) ? '3px solid var(--mantine-color-orange-6)' : '3px solid transparent',
+                      background:
+                        selectedMessage?.id === msg.id && composeMode === 'none'
+                          ? 'var(--mantine-color-orange-0)'
+                          : undefined,
+                      textAlign: 'left',
+                    }}
+                  >
+                    <Group wrap="nowrap" gap="sm" align="flex-start">
+                      <Avatar size="sm" radius="sm" color="orange" style={{ flexShrink: 0 }}>
+                        {threadSidebarLabel(msg, currentUser?.id, labelForUserId).charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Box style={{ flex: 1, minWidth: 0 }}>
+                        <Group gap={6} wrap="nowrap" justify="space-between">
+                          <Text size="sm" fw={isUnread(msg) ? 700 : 500} truncate style={{ flex: 1 }}>
+                            {threadSidebarLabel(msg, currentUser?.id, labelForUserId)}
+                          </Text>
+                          {hasAttachments(msg) && (
+                            <IconPaperclip size={14} style={{ opacity: 0.55, flexShrink: 0 }} />
+                          )}
+                        </Group>
+                        <Text size="xs" c="dimmed" truncate>
+                          {msg.body.length > 56 ? `${msg.body.slice(0, 56)}…` : msg.body}
+                        </Text>
+                      </Box>
+                      {msg.channel === 'group' ? <IconHash size={14} style={{ opacity: 0.4, flexShrink: 0 }} /> : null}
+                    </Group>
+                  </UnstyledButton>
+                ))}
+              </Stack>
+            )}
+          </Box>
+        </Box>
+
+        {/* Main pane */}
+        <Box style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          {composeMode === 'new' ? (
+            <>
+              <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
+                <Group justify="space-between">
+                  <Text fw={700}>New message</Text>
+                  <Button variant="subtle" size="xs" color="gray" onClick={() => setComposeMode('none')}>
+                    Cancel
+                  </Button>
+                </Group>
+              </Box>
+              <Box p="md" style={{ flex: 1, overflow: 'auto' }}>
+                <form onSubmit={handleSend}>
+                  <Stack gap="sm" maw={640}>
+                    <MultiSelect
+                      label="To"
+                      description="One or more people (like a Slack DM or small group)"
+                      data={recipientOptions}
+                      value={composeForm.values.recipients}
+                      onChange={(v) => composeForm.setFieldValue('recipients', v)}
+                      error={composeForm.errors.recipients}
+                      placeholder="Search people…"
+                      searchable
+                    />
+                    <TextInput label="Subject" placeholder="Optional" {...composeForm.getInputProps('subject')} />
+                    <Textarea
+                      label="Message"
+                      placeholder="Type your message…"
+                      minRows={5}
+                      {...composeForm.getInputProps('body')}
+                    />
+                    <FileInput
+                      label="Attachments"
+                      placeholder="Attach files"
+                      multiple
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt,.zip"
+                      value={composeFiles.length ? composeFiles : null}
+                      onChange={(files) => setComposeFiles(files || [])}
+                      leftSection={<IconPaperclip size={16} />}
+                    />
+                    <Group justify="flex-end">
+                      <Button type="submit" color="orange" leftSection={<IconSend size={16} />} loading={sending}>
+                        Send
+                      </Button>
+                    </Group>
+                  </Stack>
+                </form>
+              </Box>
+            </>
+          ) : selectedMessage ? (
+            <>
+              <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
+                <Group justify="space-between" wrap="nowrap" align="flex-start">
+                  <Group gap="sm" wrap="nowrap">
+                    <Avatar size="md" radius="sm" color="orange">
+                      {threadSidebarLabel(selectedMessage, currentUser?.id, labelForUserId).charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Stack gap={2}>
+                      <Text fw={700}>
+                        {threadSidebarLabel(selectedMessage, currentUser?.id, labelForUserId)}
+                      </Text>
+                      <Group gap={8}>
+                        {selectedMessage.channel === 'group' ? (
+                          <Badge size="xs" variant="light" color="blue">
+                            Group
+                          </Badge>
+                        ) : (
+                          <Badge size="xs" variant="light" color="gray">
+                            Direct
+                          </Badge>
+                        )}
+                        {selectedMessage.subject ? (
+                          <Text size="xs" c="dimmed" truncate maw={400}>
+                            {selectedMessage.subject}
+                          </Text>
+                        ) : null}
+                      </Group>
+                    </Stack>
+                  </Group>
+                  {selectedMessage.sender_id === currentUser?.id && (
+                    <Tooltip label="Delete entire conversation">
+                      <ActionIcon color="red" variant="subtle" onClick={() => handleDelete(selectedMessage.id, true)}>
+                        <IconTrash size={18} />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                </Group>
+              </Box>
+
+              <Box style={{ flex: 1, minHeight: 200, overflowY: 'auto', padding: '8px 16px 16px' }}>
+                <Stack gap={0}>
+                  {feedMessages.map((msg, i) => (
+                    <React.Fragment key={msg.id}>
+                      {i > 0 ? <Divider my="xs" /> : null}
+                      {renderSlackMessage(msg, { isRoot: i === 0 })}
+                    </React.Fragment>
+                  ))}
+                  <div ref={feedEndRef} />
+                </Stack>
+              </Box>
+
+              <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)', background: 'var(--mantine-color-gray-0)' }}>
+                <Stack gap="sm">
+                  <Group align="flex-end" wrap="nowrap" gap="sm">
+                    <Textarea
+                      style={{ flex: 1 }}
+                      placeholder="Reply to this conversation…"
+                      minRows={2}
+                      autosize
+                      maxRows={6}
+                      value={replyBody}
+                      onChange={(e) => setReplyBody(e.currentTarget.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                          e.preventDefault();
+                          void sendReply();
+                        }
+                      }}
+                    />
+                    <Stack gap={6} style={{ flexShrink: 0 }}>
+                      <FileInput
+                        placeholder="Attach"
+                        multiple
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt,.zip"
+                        value={replyFiles.length ? replyFiles : null}
+                        onChange={(files) => setReplyFiles(files || [])}
+                        leftSection={<IconPaperclip size={16} />}
+                        size="sm"
+                        w={140}
+                      />
+                      <Button
+                        color="orange"
+                        leftSection={<IconSend size={16} />}
+                        onClick={() => void sendReply()}
+                        disabled={!replyBody.trim() && replyFiles.length === 0}
+                      >
+                        Send
+                      </Button>
+                    </Stack>
+                  </Group>
+                  <Text size="xs" c="dimmed">
+                    Tip: Ctrl+Enter to send
+                  </Text>
+                  {replyFiles.length > 0 ? (
+                    <Group gap="xs">
+                      {replyFiles.map((f, i) => (
+                        <Badge
+                          key={`${f.name}-${i}`}
+                          variant="light"
+                          rightSection={
+                            <ActionIcon
+                              size="xs"
+                              color="gray"
+                              variant="transparent"
+                              onClick={() => setReplyFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                            >
+                              ×
+                            </ActionIcon>
+                          }
+                        >
+                          {f.name}
+                        </Badge>
+                      ))}
+                    </Group>
+                  ) : null}
+                </Stack>
+              </Box>
+            </>
+          ) : (
+            <Center style={{ flex: 1, minHeight: 280 }}>
+              <Stack align="center" gap="md" maw={360}>
+                <IconMessages size={48} stroke={1.25} color="var(--mantine-color-gray-5)" />
+                <Text ta="center" fw={600}>
+                  Select a conversation
+                </Text>
+                <Text size="sm" c="dimmed" ta="center">
+                  Choose a direct message on the left, or start a new one with the + button—same idea as Slack DMs.
+                </Text>
+                <Button color="orange" leftSection={<IconPlus size={18} />} onClick={startNewConversation}>
+                  New message
+                </Button>
+              </Stack>
+            </Center>
+          )}
+        </Box>
+      </Box>
+    </Stack>
   );
 };
 
