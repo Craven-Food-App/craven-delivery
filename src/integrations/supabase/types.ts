@@ -31123,6 +31123,10 @@ export type Database = {
         Args: { exec_role?: string; user_uuid: string }
         Returns: boolean
       }
+      is_thread_participant: {
+        Args: { _thread_root_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_torrance_or_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_universal_ceo: { Args: never; Returns: boolean }
       is_user_admin: { Args: { user_id_param: string }; Returns: boolean }
