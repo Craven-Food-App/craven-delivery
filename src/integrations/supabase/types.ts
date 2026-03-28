@@ -12387,6 +12387,162 @@ export type Database = {
         }
         Relationships: []
       }
+      executive_calendar_event_attachments: {
+        Row: {
+          created_at: string
+          event_id: string
+          file_name: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          storage_path: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          file_name: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          storage_path: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          storage_path?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_calendar_event_attachments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "executive_calendar_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_calendar_event_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      executive_calendar_event_invites: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          response: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          response?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          response?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_calendar_event_invites_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "executive_calendar_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_calendar_event_invites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      executive_calendar_events: {
+        Row: {
+          all_day: boolean
+          created_at: string
+          created_by: string
+          description: string | null
+          ends_at: string
+          event_type: string
+          id: string
+          location: string | null
+          recurrence: Json | null
+          shared_calendar_id: string | null
+          starts_at: string
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          all_day?: boolean
+          created_at?: string
+          created_by: string
+          description?: string | null
+          ends_at: string
+          event_type?: string
+          id?: string
+          location?: string | null
+          recurrence?: Json | null
+          shared_calendar_id?: string | null
+          starts_at: string
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          all_day?: boolean
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          ends_at?: string
+          event_type?: string
+          id?: string
+          location?: string | null
+          recurrence?: Json | null
+          shared_calendar_id?: string | null
+          starts_at?: string
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_calendar_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "executive_calendar_events_shared_calendar_id_fkey"
+            columns: ["shared_calendar_id"]
+            isOneToOne: false
+            referencedRelation: "executive_shared_calendars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       executive_compensation: {
         Row: {
           activated_at: string | null
@@ -12852,6 +13008,80 @@ export type Database = {
           {
             foreignKeyName: "executive_saved_signatures_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      executive_shared_calendar_members: {
+        Row: {
+          calendar_id: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          calendar_id: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          calendar_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_shared_calendar_members_calendar_id_fkey"
+            columns: ["calendar_id"]
+            isOneToOne: false
+            referencedRelation: "executive_shared_calendars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_shared_calendar_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      executive_shared_calendars: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_shared_calendars_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
@@ -31858,6 +32088,7 @@ export type Database = {
         }
         Returns: string
       }
+      user_has_cpo_partnership_access: { Args: never; Returns: boolean }
       validate_appointment_status_transition: {
         Args: { new_status: string; old_status: string }
         Returns: boolean

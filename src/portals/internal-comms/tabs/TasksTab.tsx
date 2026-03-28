@@ -171,7 +171,7 @@ const TasksTab: React.FC = () => {
 
   const updateStatus = async (taskId: string, newStatus: string) => {
     try {
-      const updates: { status: string; completed_at?: string } = { status: newStatus };
+      const updates: { status: 'completed' | 'in_progress' | 'pending'; completed_at?: string } = { status: newStatus as 'completed' | 'in_progress' | 'pending' };
       if (newStatus === 'completed') updates.completed_at = new Date().toISOString();
       const { error } = await supabase.from('internal_tasks').update(updates).eq('id', taskId);
       if (error) throw error;
@@ -309,7 +309,7 @@ const TasksTab: React.FC = () => {
                 placeholder="Optional"
                 clearable
                 value={form.values.due_date}
-                onChange={(d) => form.setFieldValue('due_date', d)}
+                onChange={(d: any) => form.setFieldValue('due_date', d)}
               />
             </Group>
             <Group justify="flex-end" gap="sm">
