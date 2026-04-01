@@ -3,12 +3,15 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
 export default defineConfig(({ mode }) => {
+  const isCapacitorMode = mode === 'capacitor';
   const isCapacitorBuild =
     process.env.CAPACITOR === 'true' ||
-    process.env.BUILD_TARGET === 'capacitor';
+    process.env.BUILD_TARGET === 'capacitor' ||
+    isCapacitorMode;
 
+  // Native shells must use relative base so asset URLs resolve from file://.
   const base =
-    mode === 'production'
+    mode === 'production' || isCapacitorMode
       ? (isCapacitorBuild ? './' : '/')
       : '/';
 
@@ -45,7 +48,7 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: path.resolve(__dirname, "./dist"),
       emptyOutDir: true,
-      sourcemap: mode === 'development',
+      sourcemap: mode === 'development' && !isCapacitorMode,
       commonjsOptions: {
         transformMixedEsModules: true,
       },
