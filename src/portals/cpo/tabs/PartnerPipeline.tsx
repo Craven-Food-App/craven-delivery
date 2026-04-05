@@ -20,6 +20,10 @@ import {
   Divider,
   SegmentedControl,
   Switch,
+  Alert,
+  Paper,
+  List,
+  useMantineTheme,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
@@ -33,6 +37,7 @@ import {
   IconDownload,
   IconFileText,
   IconUpload,
+  IconInfoCircle,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { exportToCSV, exportToPrintPDF } from '../utils/exportHelpers';
@@ -99,7 +104,13 @@ function impactLine(p: Partnership): string {
   return parts.length ? parts.join(' · ') : '—';
 }
 
+function stageColumnBackground(theme: ReturnType<typeof useMantineTheme>, color: string) {
+  const row = theme.colors[color as keyof typeof theme.colors];
+  return Array.isArray(row) ? row[0] : theme.colors.gray[0];
+}
+
 const PartnerPipeline: React.FC = () => {
+  const theme = useMantineTheme();
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [loading, setLoading] = useState(true);
   const [opened, { open, close }] = useDisclosure(false);
@@ -564,89 +575,139 @@ const PartnerPipeline: React.FC = () => {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="flex-end" wrap="wrap">
-        <Stack gap={4}>
-          <Title order={3}>Partner pipeline</Title>
-          <Text size="sm" c="dimmed" maw={720}>
-            Record <strong>not interested</strong> and other closed outcomes for CRM export, re-engagement, and enterprise spreadsheet import.
-          </Text>
-        </Stack>
-        <SegmentedControl
-          value={pipelineFilter}
-          onChange={(v) => setPipelineFilter(v as 'all' | 'active' | 'closed')}
-          data={[
-            { label: 'All', value: 'all' },
-            { label: 'Active', value: 'active' },
-            { label: 'Closed / lost', value: 'closed' },
-          ]}
-        />
-      </Group>
+      <Stack gap="sm">
+        <Group justify="space-between" align="flex-start" wrap="wrap">
+          <Stack gap={6} maw={720}>
+            <Title order={3}>Partner pipeline</Title>
+            <Text size="sm" c="dimmed">
+              Track strategic partners from first lead through signature — or a documented close. Columns are{' '}
+              <strong>deal stages</strong> (left to right). Use the filter to focus on active work or closed deals.
+            </Text>
+          </Stack>
+          <Stack gap={6} align="flex-end">
+            <SegmentedControl
+              value={pipelineFilter}
+              onChange={(v) => setPipelineFilter(v as 'all' | 'active' | 'closed')}
+              data={[
+                { label: 'All', value: 'all' },
+                { label: 'Active', value: 'active' },
+                { label: 'Closed / lost', value: 'closed' },
+              ]}
+            />
+            <Text size="xs" c="dimmed" maw={320} ta="right">
+              <strong>All</strong> shows every stage. <strong>Active</strong> hides Lost. <strong>Closed</strong> shows lost deals
+              only (dispositions, follow-ups).
+            </Text>
+          </Stack>
+        </Group>
 
-      <Group justify="space-between">
-        <Group>
-          <Button
-            variant="light"
-            color="gray"
-            leftSection={<IconDownload size={16} />}
-            onClick={() => exportEnterpriseCsv(visiblePartnerships, 'partner-pipeline-enterprise')}
-          >
-            Export CSV (Excel)
-          </Button>
-          <Button
-            variant="light"
-            color="gray"
-            leftSection={<IconDownload size={16} />}
-            onClick={() => exportEnterpriseCsv(lostOnly, 'partner-closed-dispositions')}
-          >
-            Export closed only
-          </Button>
-          <Button variant="default" size="sm" onClick={downloadImportTemplate}>
-            CSV template
-          </Button>
-          <Button
-            variant="light"
-            color="gray"
-            leftSection={<IconUpload size={16} />}
-            onClick={() => importRef.current?.click()}
-          >
-            Import CSV
-          </Button>
-          <input
-            ref={importRef}
-            type="file"
-            accept=".csv,text/csv"
-            style={{ display: 'none' }}
-            onChange={(e) => void handleImportFile(e.target.files?.[0] ?? null)}
-          />
-          <Button
-            variant="light"
-            color="gray"
-            leftSection={<IconFileText size={16} />}
-            onClick={() => {
-              const rows = visiblePartnerships
-                .map(
-                  (p) =>
-                    `<tr><td>${p.partner_name}</td><td>${partnerTypeLabel(p.partner_type)}</td><td>${p.status}</td><td>${p.disposition ? dispositionLabel(p.disposition) : '—'}</td><td>$${Number(p.deal_value || 0).toLocaleString()}</td></tr>`,
-                )
-                .join('');
-              exportToPrintPDF(
-                'Partner Pipeline',
-                `<table><tr><th>Name</th><th>Type</th><th>Stage</th><th>Disposition</th><th>Deal Value</th></tr>${rows}</table>`,
-              );
-            }}
-          >
-            PDF
-          </Button>
-          <Button
-            leftSection={<IconPlus size={16} />}
-            color="orange"
-            onClick={() => {
-              setFormData(emptyForm);
-              open();
-            }}
-          >
-            New partner
-          </Button>
+        <Alert variant="light" color="gray" icon={<IconInfoCircle size={18} />} title="How this board works">
+          <List size="sm" spacing={6} withPadding>
+            <List.Item>
+              <strong>Stages</strong> — Each column is where that partner sits in the deal. Advance from the ⋮ menu, or set stage when
+              creating / importing.
+            </List.Item>
+            <List.Item>
+              <strong>Closed outcomes</strong> — Use <strong>Record closed / not interested</strong> to capture why they walked away;
+              export to CSV for CRM, re-engagement lists, and reporting.
+            </List.Item>
+            <List.Item>
+              <strong>Import / export</strong> — Template and CSV import add or update rows; exports match spreadsheet workflows.
+            </List.Item>
+          </List>
+        </Alert>
+      </Stack>
+
+      <Group justify="space-between" align="flex-start" wrap="wrap" gap="lg">
+        <Group align="flex-start" wrap="wrap" gap="xl">
+          <Stack gap={6}>
+            <Text size="xs" tt="uppercase" fw={600} c="dimmed" lts={0.5}>
+              Export & reports
+            </Text>
+            <Group gap="xs">
+              <Button
+                variant="light"
+                color="gray"
+                leftSection={<IconDownload size={16} />}
+                onClick={() => exportEnterpriseCsv(visiblePartnerships, 'partner-pipeline-enterprise')}
+              >
+                Export CSV (Excel)
+              </Button>
+              <Button
+                variant="light"
+                color="gray"
+                leftSection={<IconDownload size={16} />}
+                onClick={() => exportEnterpriseCsv(lostOnly, 'partner-closed-dispositions')}
+              >
+                Export closed only
+              </Button>
+              <Button
+                variant="light"
+                color="gray"
+                leftSection={<IconFileText size={16} />}
+                onClick={() => {
+                  const rows = visiblePartnerships
+                    .map(
+                      (p) =>
+                        `<tr><td>${p.partner_name}</td><td>${partnerTypeLabel(p.partner_type)}</td><td>${p.status}</td><td>${p.disposition ? dispositionLabel(p.disposition) : '—'}</td><td>$${Number(p.deal_value || 0).toLocaleString()}</td></tr>`,
+                    )
+                    .join('');
+                  exportToPrintPDF(
+                    'Partner Pipeline',
+                    `<table><tr><th>Name</th><th>Type</th><th>Stage</th><th>Disposition</th><th>Deal Value</th></tr>${rows}</table>`,
+                  );
+                }}
+              >
+                PDF
+              </Button>
+            </Group>
+          </Stack>
+
+          <Divider orientation="vertical" visibleFrom="sm" />
+
+          <Stack gap={6}>
+            <Text size="xs" tt="uppercase" fw={600} c="dimmed" lts={0.5}>
+              Import
+            </Text>
+            <Group gap="xs">
+              <Button variant="default" size="sm" onClick={downloadImportTemplate}>
+                CSV template
+              </Button>
+              <Button
+                variant="light"
+                color="gray"
+                leftSection={<IconUpload size={16} />}
+                onClick={() => importRef.current?.click()}
+              >
+                Import CSV
+              </Button>
+              <input
+                ref={importRef}
+                type="file"
+                accept=".csv,text/csv"
+                style={{ display: 'none' }}
+                onChange={(e) => void handleImportFile(e.target.files?.[0] ?? null)}
+              />
+            </Group>
+          </Stack>
+
+          <Divider orientation="vertical" visibleFrom="sm" />
+
+          <Stack gap={6}>
+            <Text size="xs" tt="uppercase" fw={600} c="dimmed" lts={0.5}>
+              Add
+            </Text>
+            <Button
+              leftSection={<IconPlus size={16} />}
+              color="orange"
+              onClick={() => {
+                setFormData(emptyForm);
+                open();
+              }}
+            >
+              New partner
+            </Button>
+          </Stack>
         </Group>
       </Group>
 
@@ -654,19 +715,32 @@ const PartnerPipeline: React.FC = () => {
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 7 }} style={{ minWidth: 1100 }}>
           {PIPELINE_STAGES.map((stage) => {
             const stagePartners = visiblePartnerships.filter((p) => p.status === stage.value);
+            const tint = stageColumnBackground(theme, stage.color);
             return (
-              <Card key={stage.value} shadow="xs" radius="md" padding="sm" withBorder style={{ minHeight: 220 }}>
-                <Group justify="space-between" mb="sm">
-                  <Badge color={stage.color} variant="light" size="lg">
-                    {stage.label}
-                  </Badge>
-                  <Badge color="gray" variant="light" size="sm">
-                    {stagePartners.length}
-                  </Badge>
-                </Group>
+              <Card
+                key={stage.value}
+                shadow="xs"
+                radius="md"
+                padding="sm"
+                withBorder
+                style={{ minHeight: 220, backgroundColor: tint }}
+              >
+                <Stack gap="xs" mb="sm">
+                  <Group justify="space-between" wrap="nowrap" align="flex-start">
+                    <Badge color={stage.color} variant="light" size="lg">
+                      {stage.label}
+                    </Badge>
+                    <Badge color="gray" variant="light" size="sm">
+                      {stagePartners.length}
+                    </Badge>
+                  </Group>
+                  <Text size="xs" c="dimmed" lh={1.45}>
+                    {stage.hint}
+                  </Text>
+                </Stack>
                 <Stack gap="xs">
                   {stagePartners.map((p) => (
-                    <Card key={p.id} shadow="xs" radius="sm" padding="sm" withBorder>
+                    <Paper key={p.id} shadow="xs" radius="sm" p="sm" withBorder bg="var(--mantine-color-body)">
                       <Group justify="space-between" wrap="nowrap" align="flex-start">
                         <div
                           style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
@@ -676,11 +750,14 @@ const PartnerPipeline: React.FC = () => {
                           <Text fw={600} size="sm" truncate>
                             {p.partner_name}
                           </Text>
-                          <Text size="xs" c="dimmed" truncate>
+                          <Text size="xs" c="dimmed" truncate mt={6}>
+                            <Text span fw={500} c="dimmed">
+                              Type:{' '}
+                            </Text>
                             {partnerTypeLabel(p.partner_type)}
                           </Text>
                           {p.status === 'lost' && p.disposition ? (
-                            <Badge size="xs" variant="light" color="red" mt={4}>
+                            <Badge size="xs" variant="light" color="red" mt={6}>
                               {dispositionLabel(p.disposition)}
                             </Badge>
                           ) : null}
@@ -689,16 +766,24 @@ const PartnerPipeline: React.FC = () => {
                               Follow-up: {new Date(p.next_follow_up_at).toLocaleDateString()}
                             </Text>
                           ) : null}
-                          <Text size="xs" c="dimmed" lineClamp={2}>
+                          <Text size="xs" c="dimmed" lineClamp={2} mt={6}>
+                            <Text span fw={500} c="dimmed">
+                              Impact:{' '}
+                            </Text>
                             {impactLine(p)}
                           </Text>
                           {p.deal_value ? (
-                            <Text size="xs" c="green" fw={500}>
+                            <Text size="xs" c="green" fw={500} mt={4}>
+                              <Text span fw={500} c="dimmed">
+                                Deal value:{' '}
+                              </Text>
                               ${Number(p.deal_value).toLocaleString()}
                             </Text>
                           ) : null}
-                          <Text size="xs" mt={4}>
-                            Last:{' '}
+                          <Text size="xs" mt={6}>
+                            <Text span fw={500} c="dimmed">
+                              Last activity:{' '}
+                            </Text>
                             <Text span c={!p.last_activity_at ? 'red' : 'dimmed'}>
                               {formatRelative(p.last_activity_at)}
                             </Text>
@@ -733,11 +818,11 @@ const PartnerPipeline: React.FC = () => {
                           </Menu.Dropdown>
                         </Menu>
                       </Group>
-                    </Card>
+                    </Paper>
                   ))}
                   {stagePartners.length === 0 && (
-                    <Text size="xs" c="dimmed" ta="center" py="md">
-                      No partners
+                    <Text size="xs" c="dimmed" ta="center" py="md" px="xs" lh={1.5}>
+                      {stage.emptyHint}
                     </Text>
                   )}
                 </Stack>

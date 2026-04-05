@@ -1,13 +1,56 @@
 /** CPO deal pipeline — shared labels and onboarding steps */
 
+/** Kanban columns: left → right is deal progression; Lost is terminal. */
 export const PIPELINE_STAGES = [
-  { value: 'lead', label: 'Lead', color: 'gray' },
-  { value: 'contacted', label: 'Contacted', color: 'blue' },
-  { value: 'in_talks', label: 'In Talks', color: 'cyan' },
-  { value: 'negotiating', label: 'Negotiating', color: 'yellow' },
-  { value: 'verbal_agreement', label: 'Verbal Agreement', color: 'orange' },
-  { value: 'signed', label: 'Signed', color: 'green' },
-  { value: 'lost', label: 'Lost', color: 'red' },
+  {
+    value: 'lead',
+    label: 'Lead',
+    color: 'gray',
+    hint: 'Identified target — outreach not started yet.',
+    emptyHint: 'Add a partner with New partner, or import a CSV.',
+  },
+  {
+    value: 'contacted',
+    label: 'Contacted',
+    color: 'blue',
+    hint: 'First touch made — awaiting reply or follow-up.',
+    emptyHint: 'Advance a lead here once outreach has started.',
+  },
+  {
+    value: 'in_talks',
+    label: 'In Talks',
+    color: 'cyan',
+    hint: 'Active conversation — exploring fit, scope, and timing.',
+    emptyHint: 'Move deals forward from Contacted when they’re engaged.',
+  },
+  {
+    value: 'negotiating',
+    label: 'Negotiating',
+    color: 'yellow',
+    hint: 'Terms in play — pricing, contract, or rollout details.',
+    emptyHint: 'Advance when you’re past discovery and into deal mechanics.',
+  },
+  {
+    value: 'verbal_agreement',
+    label: 'Verbal Agreement',
+    color: 'orange',
+    hint: 'Yes in principle — paperwork or signature still pending.',
+    emptyHint: 'Use when they’ve committed verbally, before it’s fully signed.',
+  },
+  {
+    value: 'signed',
+    label: 'Signed',
+    color: 'green',
+    hint: 'Agreement executed — onboarding or go-live next.',
+    emptyHint: 'Advance deals here once the contract is signed.',
+  },
+  {
+    value: 'lost',
+    label: 'Lost',
+    color: 'red',
+    hint: 'Closed without a win — record disposition for reporting and follow-up.',
+    emptyHint: 'Use Record closed on a deal, import closed rows, or review dispositions.',
+  },
 ] as const;
 
 export const PIPELINE_STAGE_VALUES = PIPELINE_STAGES.map((s) => s.value) as string[];
