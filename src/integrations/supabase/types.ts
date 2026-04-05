@@ -19454,6 +19454,51 @@ export type Database = {
           },
         ]
       }
+      merchant_agreements: {
+        Row: {
+          accepted_at: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          merchant_id: string
+          terms_version: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          merchant_id: string
+          terms_version: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          merchant_id?: string
+          terms_version?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_agreements_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_accounts"
+            referencedColumns: ["merchant_id"]
+          },
+          {
+            foreignKeyName: "merchant_agreements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_accounts: {
         Row: {
           created_at: string

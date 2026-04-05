@@ -70,6 +70,7 @@ import MarketDemand from "./pages/admin/MarketDemand";
 import CraveMoreSubscription from "./pages/CraveMoreSubscription";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
+import MerchantTermsOfServicePage from "./pages/MerchantTermsOfServicePage";
 import CraveMoreTermsPage from "./pages/CraveMoreTermsPage";
 import HelpCenter from "./pages/HelpCenter";
 import Safety from "./pages/Safety";
@@ -538,6 +539,7 @@ const App = () => {
                   <Route path="/solutions" element={<SolutionsCenter />} />
                   <Route path="/most-loved" element={<MostLovedProgram />} />
                   <Route path="/request-delivery" element={<RequestDelivery />} />
+                  <Route path="/legal/merchant-terms" element={<MerchantTermsOfServicePage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
@@ -746,6 +748,7 @@ const App = () => {
           <Route path="/crave-more-subscription" element={<CraveMoreSubscription />} />
           <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/legal/terms" element={<TermsOfServicePage />} />
+          <Route path="/legal/merchant-terms" element={<MerchantTermsOfServicePage />} />
           <Route path="/legal/cravemore" element={<CraveMoreTermsPage />} />
           <Route path="/mobile" element={<MobileDriverDashboard />} />
           <Route path="/mobile/background-check-status" element={<MobileBackgroundCheckStatus />} />

@@ -23,6 +23,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { MERCHANT_TERMS_PATH } from '@/constants/merchantTerms';
 
 interface MerchantSignupForm {
   storeName: string;
@@ -53,6 +55,7 @@ export default function MerchantLandingPage() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<{ city: string; state: string } | null>(null);
   const [showEarningsExplanation, setShowEarningsExplanation] = useState(false);
+  const [agreedToMerchantTerms, setAgreedToMerchantTerms] = useState(false);
   const isAutoDetectingRef = useRef(false);
 
   // Automatically detect user location on page load
@@ -460,6 +463,11 @@ export default function MerchantLandingPage() {
       return;
     }
 
+    if (!agreedToMerchantTerms) {
+      toast.error('Please agree to the Merchant Terms of Service to continue');
+      return;
+    }
+
     let finalCity = formData.city;
     let finalState = formData.state;
     
@@ -728,15 +736,37 @@ export default function MerchantLandingPage() {
                   </div>
                 </div>
 
-                {/* Legal Line */}
+                <div className="flex items-start gap-3 rounded-[12px] border border-gray-200 bg-gray-50 p-4">
+                  <Checkbox
+                    id="merchant-terms"
+                    checked={agreedToMerchantTerms}
+                    onCheckedChange={(v) => setAgreedToMerchantTerms(v === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="merchant-terms" className="text-sm text-gray-700 leading-snug cursor-pointer">
+                    I agree to the{' '}
+                    <Link
+                      to={MERCHANT_TERMS_PATH}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-orange-600 font-medium underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Merchant Terms of Service
+                    </Link>
+                    , including commission, payouts, refunds, and operational standards.
+                  </label>
+                </div>
+
                 <p className="text-xs text-gray-600 leading-relaxed">
-                  By clicking "Start Onboarding", you agree to receive operational updates and onboarding messages from Crave'n.
+                  By clicking &quot;Start Onboarding&quot;, you also agree to receive operational updates and onboarding messages from Crave&apos;n.
                 </p>
 
                 {/* Submit Button */}
                 <Button
                   type="submit"
-                  className="w-full h-12 text-base font-semibold bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-[12px] transition-all shadow-md"
+                  disabled={!agreedToMerchantTerms}
+                  className="w-full h-12 text-base font-semibold bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-[12px] transition-all shadow-md disabled:opacity-50 disabled:pointer-events-none"
                   disabled={isLoading || isCalculating}
                 >
                   {isLoading ? 'Starting...' : 'Start Onboarding'}

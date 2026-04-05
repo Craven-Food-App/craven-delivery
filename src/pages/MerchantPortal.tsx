@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Button,
@@ -70,6 +70,9 @@ import { AddLocationWizard } from "@/components/merchant/AddLocationWizard";
 import StoreActivation from "@/components/merchant/StoreActivation";
 import GoLiveSection from "@/components/merchant/GoLiveSection";
 import CraveNSetupSection from "@/components/merchant/CraveNSetupSection";
+import MerchantTermsAcceptanceModal from "@/components/merchant/MerchantTermsAcceptanceModal";
+import { useMerchantTermsAcceptance } from "@/hooks/useMerchantTermsAcceptance";
+import { MERCHANT_TERMS_PATH } from "@/constants/merchantTerms";
 import cravenCLogo from "@/assets/craven-c-new.png";
 
 // Helper function to format restaurant type for display
@@ -118,7 +121,10 @@ const RestaurantSetup = () => {
   const [fullName, setFullName] = useState<string | null>(null);
   const [showWelcomeConfetti, setShowWelcomeConfetti] = useState(false);
   const [addLocationModalOpen, setAddLocationModalOpen] = useState(false);
+  const [merchantAccountId, setMerchantAccountId] = useState<string | null>(null);
+  const [merchantAccountLoading, setMerchantAccountLoading] = useState(false);
   const { restaurants, selectedRestaurant: restaurant, loading: restaurantLoading, selectRestaurant, refetchRestaurants } = useRestaurantSelector();
+  const termsAcceptance = useMerchantTermsAcceptance(merchantAccountId);
   const { progress, readiness, loading: onboardingLoading, refreshData } = useRestaurantOnboarding(restaurant?.id);
   const labels = getMerchantLabels(restaurant?.restaurant_type);
 
@@ -134,6 +140,34 @@ const RestaurantSetup = () => {
     };
     checkAuth();
   }, [navigate]);
+
+  useLayoutEffect(() => {
+    if (!restaurant) {
+      setMerchantAccountLoading(false);
+      setMerchantAccountId(null);
+      return;
+    }
+    setMerchantAccountLoading(true);
+  }, [restaurant?.id]);
+
+  useEffect(() => {
+    if (!authChecked || !restaurant) return;
+    let cancelled = false;
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const { data: mid, error } = await supabase.rpc("ensure_merchant_account", { p_user_id: user.id });
+      if (cancelled) return;
+      if (error) console.error("ensure_merchant_account", error);
+      setMerchantAccountId(typeof mid === "string" ? mid : null);
+      setMerchantAccountLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authChecked, restaurant?.id]);
 
   // Sync tab from URL on mount and when URL changes
   useEffect(() => {
@@ -260,6 +294,17 @@ const RestaurantSetup = () => {
     );
   }
 
+  const termsGateLoading =
+    Boolean(restaurant) && (merchantAccountLoading || (merchantAccountId ? termsAcceptance.loading : false));
+
+  if (termsGateLoading) {
+    return (
+      <Box style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
+        <Loader size="xl" color="orange" />
+      </Box>
+    );
+  }
+
   if (!restaurant) {
     return (
       <Box style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
@@ -272,6 +317,26 @@ const RestaurantSetup = () => {
             </Button>
           </Stack>
         </Card>
+      </Box>
+    );
+  }
+
+  const mustAcceptMerchantTerms =
+    Boolean(merchantAccountId) && !termsAcceptance.hasAcceptedCurrent;
+
+  if (mustAcceptMerchantTerms) {
+    return (
+      <Box
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 16,
+          background: 'var(--mantine-color-body)',
+        }}
+      >
+        <MerchantTermsAcceptanceModal opened allowClose={false} onAccept={termsAcceptance.accept} />
       </Box>
     );
   }
@@ -369,6 +434,7 @@ const RestaurantSetup = () => {
           <Menu.Dropdown>
             <Menu.Item component="a" href="/legal/privacy" target="_blank" rel="noopener noreferrer" leftSection={<IconFileText size={14} />}>Privacy</Menu.Item>
             <Menu.Item component="a" href="/legal/terms" target="_blank" rel="noopener noreferrer" leftSection={<IconFileText size={14} />}>Terms</Menu.Item>
+            <Menu.Item component="a" href={MERCHANT_TERMS_PATH} target="_blank" rel="noopener noreferrer" leftSection={<IconFileText size={14} />}>Merchant terms</Menu.Item>
             <Menu.Item component="a" href="/drive-on-demand-merchant-terms" target="_blank" rel="noopener noreferrer" leftSection={<IconFileText size={14} />}>Drive terms</Menu.Item>
             <Menu.Divider />
             <Menu.Item leftSection={<IconPlus size={14} />} onClick={() => navigate(window.location.pathname.startsWith('/portal') ? '/solutions' : '/restaurant/solutions')}>Add solutions</Menu.Item>
