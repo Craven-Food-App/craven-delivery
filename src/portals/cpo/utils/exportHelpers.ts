@@ -1,4 +1,4 @@
-export const exportToCSV = (data: Record<string, any>[], filename: string) => {
+export const exportToCSV = (data: Record<string, any>[], filename: string, options?: { utf8Bom?: boolean }) => {
   if (data.length === 0) return;
   const headers = Object.keys(data[0]);
   const csvRows = [
@@ -13,7 +13,9 @@ export const exportToCSV = (data: Record<string, any>[], filename: string) => {
       }).join(',')
     ),
   ];
-  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+  const body = csvRows.join('\n');
+  const payload = options?.utf8Bom ? `\uFEFF${body}` : body;
+  const blob = new Blob([payload], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

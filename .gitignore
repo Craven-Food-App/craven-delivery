@@ -26,6 +26,9 @@ dist-ssr
 # Google API credentials (keep out of version control)
 service_account_credentials.json
 
+# Supabase CLI local cache (version pin, etc.)
+supabase/.temp/
+
 # Environment variables (keep out of version control)
 .env
 .env.local

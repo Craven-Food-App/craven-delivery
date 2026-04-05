@@ -48,3 +48,21 @@ export const DEAL_TYPE_OPTIONS = [
   { value: 'nda_only', label: 'NDA / exploratory' },
   { value: 'other', label: 'Other' },
 ];
+
+/** When a deal is closed / lost — reason codes for CRM, export, and re-engagement. */
+export const PARTNERSHIP_DISPOSITIONS = [
+  { value: 'not_interested', label: 'Not interested' },
+  { value: 'not_now', label: 'Not now (timing)' },
+  { value: 'competitor', label: 'Lost to competitor' },
+  { value: 'pricing', label: 'Pricing / economics' },
+  { value: 'no_fit', label: 'No fit / wrong ICP' },
+  { value: 'no_response', label: 'No response / ghosted' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+export const PARTNERSHIP_DISPOSITION_VALUES = PARTNERSHIP_DISPOSITIONS.map((d) => d.value) as string[];
+
+export function dispositionLabel(value: string | null | undefined): string {
+  if (!value) return '—';
+  return PARTNERSHIP_DISPOSITIONS.find((d) => d.value === value)?.label ?? value;
+}

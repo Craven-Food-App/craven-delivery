@@ -21399,6 +21399,53 @@ export type Database = {
           },
         ]
       }
+      partnership_disposition_events: {
+        Row: {
+          disposition: string | null
+          id: string
+          new_status: Database["public"]["Enums"]["partnership_status"]
+          notes: string | null
+          next_follow_up_at: string | null
+          ok_to_reengage: boolean
+          partnership_id: string
+          previous_status: Database["public"]["Enums"]["partnership_status"] | null
+          recorded_at: string
+          recorded_by: string | null
+        }
+        Insert: {
+          disposition?: string | null
+          id?: string
+          new_status: Database["public"]["Enums"]["partnership_status"]
+          notes?: string | null
+          next_follow_up_at?: string | null
+          ok_to_reengage?: boolean
+          partnership_id: string
+          previous_status?: Database["public"]["Enums"]["partnership_status"] | null
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Update: {
+          disposition?: string | null
+          id?: string
+          new_status?: Database["public"]["Enums"]["partnership_status"]
+          notes?: string | null
+          next_follow_up_at?: string | null
+          ok_to_reengage?: boolean
+          partnership_id?: string
+          previous_status?: Database["public"]["Enums"]["partnership_status"] | null
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_disposition_events_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partnership_contacts: {
         Row: {
           created_at: string
@@ -21654,6 +21701,10 @@ export type Database = {
           deal_type: string | null
           deal_value: number | null
           description: string | null
+          disposition: string | null
+          disposition_notes: string | null
+          disposition_recorded_at: string | null
+          disposition_recorded_by: string | null
           estimated_locations_reach: number | null
           estimated_monthly_volume_impact: string | null
           health_score: number | null
@@ -21664,7 +21715,9 @@ export type Database = {
           logo_url: string | null
           merchant_id: string | null
           metadata: Json | null
+          next_follow_up_at: string | null
           notes: string | null
+          ok_to_reengage: boolean
           owner_user_id: string | null
           partner_name: string
           partner_type: Database["public"]["Enums"]["partnership_type"]
@@ -21692,6 +21745,10 @@ export type Database = {
           deal_type?: string | null
           deal_value?: number | null
           description?: string | null
+          disposition?: string | null
+          disposition_notes?: string | null
+          disposition_recorded_at?: string | null
+          disposition_recorded_by?: string | null
           estimated_locations_reach?: number | null
           estimated_monthly_volume_impact?: string | null
           health_score?: number | null
@@ -21702,7 +21759,9 @@ export type Database = {
           logo_url?: string | null
           merchant_id?: string | null
           metadata?: Json | null
+          next_follow_up_at?: string | null
           notes?: string | null
+          ok_to_reengage?: boolean
           owner_user_id?: string | null
           partner_name: string
           partner_type?: Database["public"]["Enums"]["partnership_type"]
@@ -21730,6 +21789,10 @@ export type Database = {
           deal_type?: string | null
           deal_value?: number | null
           description?: string | null
+          disposition?: string | null
+          disposition_notes?: string | null
+          disposition_recorded_at?: string | null
+          disposition_recorded_by?: string | null
           estimated_locations_reach?: number | null
           estimated_monthly_volume_impact?: string | null
           health_score?: number | null
@@ -21740,7 +21803,9 @@ export type Database = {
           logo_url?: string | null
           merchant_id?: string | null
           metadata?: Json | null
+          next_follow_up_at?: string | null
           notes?: string | null
+          ok_to_reengage?: boolean
           owner_user_id?: string | null
           partner_name?: string
           partner_type?: Database["public"]["Enums"]["partnership_type"]

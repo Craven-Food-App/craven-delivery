@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Card,
   Title,
@@ -18,7 +18,10 @@ import {
   ActionIcon,
   Menu,
   Divider,
+  SegmentedControl,
+  Switch,
 } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import {
@@ -29,14 +32,22 @@ import {
   IconArrowRight,
   IconDownload,
   IconFileText,
+  IconUpload,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { exportToCSV, exportToPrintPDF } from '../utils/exportHelpers';
-import { PIPELINE_STAGES, PARTNER_TYPES, partnerTypeLabel } from '../dealConstants';
+import {
+  PIPELINE_STAGES,
+  PARTNER_TYPES,
+  partnerTypeLabel,
+  PARTNERSHIP_DISPOSITIONS,
+  dispositionLabel,
+} from '../dealConstants';
+import { parseCsvRows, rowToImportPayload, PARTNERSHIP_CSV_HEADERS } from '../utils/partnershipDispositionCsv';
 import PartnerDealDrawer from '../components/PartnerDealDrawer';
 import { pushSignedToOnboarding } from '../partnerOnboardingPush';
 
-/** Stages that can be advanced forward (excludes Lost — use Mark lost). */
+/** Stages that can be advanced forward (excludes Lost — use Record closed). */
 const ADVANCE_ORDER = PIPELINE_STAGES.filter((s) => s.value !== 'lost').map((s) => s.value);
 
 interface Partnership {
@@ -60,6 +71,11 @@ interface Partnership {
   last_activity_at: string | null;
   stage_entered_at: string | null;
   leverage_score: string | null;
+  disposition?: string | null;
+  disposition_notes?: string | null;
+  next_follow_up_at?: string | null;
+  disposition_recorded_at?: string | null;
+  ok_to_reengage?: boolean | null;
 }
 
 function formatRelative(iso: string | null): string {
@@ -90,6 +106,20 @@ const PartnerPipeline: React.FC = () => {
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pipelineFilter, setPipelineFilter] = useState<'all' | 'active' | 'closed'>('all');
+
+  const [lostOpened, { open: openLost, close: closeLost }] = useDisclosure(false);
+  const [lostPartnershipId, setLostPartnershipId] = useState<string | null>(null);
+  const [lostPartnerName, setLostPartnerName] = useState('');
+  const [savingLost, setSavingLost] = useState(false);
+  const [lostForm, setLostForm] = useState({
+    disposition: 'not_interested',
+    disposition_notes: '',
+    next_follow_up_at: null,
+    ok_to_reengage: true,
+  });
+
+  const importRef = useRef<HTMLInputElement>(null);
 
   const emptyForm = {
     partner_name: '',
@@ -123,6 +153,12 @@ const PartnerPipeline: React.FC = () => {
   useEffect(() => {
     loadPartnerships();
   }, []);
+
+  const visiblePartnerships = useMemo(() => {
+    if (pipelineFilter === 'active') return partnerships.filter((p) => p.status !== 'lost');
+    if (pipelineFilter === 'closed') return partnerships.filter((p) => p.status === 'lost');
+    return partnerships;
+  }, [partnerships, pipelineFilter]);
 
   const openDeal = (id: string) => {
     setDrawerId(id);
@@ -208,14 +244,77 @@ const PartnerPipeline: React.FC = () => {
     notifications.show({ title: 'Stage updated', message: `Moved to ${nextStatus}`, color: 'green' });
   };
 
-  const markLost = async (id: string) => {
-    const { error } = await supabase.from('partnerships').update({ status: 'lost' }).eq('id', id);
-    if (error) {
-      notifications.show({ title: 'Could not update', message: error.message, color: 'red' });
+  const openLostModal = (id: string, name: string) => {
+    setLostPartnershipId(id);
+    setLostPartnerName(name);
+    setLostForm({
+      disposition: 'not_interested',
+      disposition_notes: '',
+      next_follow_up_at: null,
+      ok_to_reengage: true,
+    });
+    openLost();
+  };
+
+  const submitLost = async () => {
+    if (!lostPartnershipId || !lostForm.disposition) {
+      notifications.show({ title: 'Disposition required', message: 'Choose why this deal closed.', color: 'red' });
       return;
     }
-    loadPartnerships();
-    notifications.show({ title: 'Marked lost', color: 'orange' });
+    setSavingLost(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const prev = partnerships.find((p) => p.id === lostPartnershipId);
+      const now = new Date().toISOString();
+      const nextIso = lostForm.next_follow_up_at
+        ? new Date(lostForm.next_follow_up_at).toISOString()
+        : null;
+
+      const { error: upErr } = await supabase
+        .from('partnerships')
+        .update({
+          status: 'lost',
+          disposition: lostForm.disposition,
+          disposition_notes: lostForm.disposition_notes.trim() || null,
+          next_follow_up_at: nextIso,
+          ok_to_reengage: lostForm.ok_to_reengage,
+          disposition_recorded_at: now,
+          disposition_recorded_by: user?.id ?? null,
+        })
+        .eq('id', lostPartnershipId);
+
+      if (upErr) throw upErr;
+
+      const { error: evErr } = await supabase.from('partnership_disposition_events').insert({
+        partnership_id: lostPartnershipId,
+        previous_status: prev?.status ?? null,
+        new_status: 'lost',
+        disposition: lostForm.disposition,
+        notes: lostForm.disposition_notes.trim() || null,
+        next_follow_up_at: nextIso,
+        ok_to_reengage: lostForm.ok_to_reengage,
+        recorded_by: user?.id ?? null,
+      });
+      if (evErr) throw evErr;
+
+      const { error: actErr } = await supabase.from('partnership_activities').insert({
+        partnership_id: lostPartnershipId,
+        activity_type: 'note',
+        title: 'Disposition recorded',
+        description: `${dispositionLabel(lostForm.disposition)}${lostForm.disposition_notes ? ` — ${lostForm.disposition_notes}` : ''}`,
+        performed_by: user?.id ?? null,
+      });
+      if (actErr) console.warn('activity log', actErr);
+
+      notifications.show({ title: 'Recorded', message: 'Closed deal saved for export & follow-up.', color: 'green' });
+      closeLost();
+      setLostPartnershipId(null);
+      loadPartnerships();
+    } catch (err: any) {
+      notifications.show({ title: 'Error', message: err.message, color: 'red' });
+    } finally {
+      setSavingLost(false);
+    }
   };
 
   const deletePartnership = async (id: string) => {
@@ -226,6 +325,114 @@ const PartnerPipeline: React.FC = () => {
     }
     loadPartnerships();
     notifications.show({ title: 'Deleted', message: 'Partner removed', color: 'orange' });
+  };
+
+  const buildExportRows = (rows: Partnership[]) =>
+    rows.map((p) => ({
+      partner_name: p.partner_name,
+      partner_type: p.partner_type,
+      type_label: partnerTypeLabel(p.partner_type),
+      status: p.status,
+      disposition: p.disposition || '',
+      disposition_label: p.disposition ? dispositionLabel(p.disposition) : '',
+      disposition_notes: p.disposition_notes || '',
+      next_follow_up_at: p.next_follow_up_at || '',
+      ok_to_reengage: p.ok_to_reengage === false ? 'no' : 'yes',
+      disposition_recorded_at: p.disposition_recorded_at || '',
+      deal_value: p.deal_value ?? '',
+      priority: p.priority,
+      industry: p.industry || '',
+      website_url: p.website_url || '',
+      assigned_to: p.assigned_to || '',
+      last_activity_at: p.last_activity_at || '',
+      description: p.description || '',
+    }));
+
+  const exportEnterpriseCsv = (rows: Partnership[], filename: string) => {
+    exportToCSV(buildExportRows(rows), filename, { utf8Bom: true });
+  };
+
+  const downloadImportTemplate = () => {
+    const templateRow: Record<string, string> = {};
+    PARTNERSHIP_CSV_HEADERS.forEach((h) => {
+      templateRow[h] = '';
+    });
+    exportToCSV([templateRow], 'partner-import-template', { utf8Bom: true });
+  };
+
+  const handleImportFile = async (file: File | null) => {
+    if (!file) return;
+    const text = await file.text();
+    const { rows: parsed } = parseCsvRows(text);
+    let ok = 0;
+    let skipped = 0;
+    for (const row of parsed) {
+      const payload = rowToImportPayload(row);
+      if (!payload) {
+        skipped++;
+        continue;
+      }
+      const disposition =
+        payload.disposition || (payload.status === 'lost' ? 'other' : null);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: inserted, error } = await supabase
+          .from('partnerships')
+          .insert({
+            partner_name: payload.partner_name,
+            partner_type: payload.partner_type,
+            status: payload.status,
+            description: payload.description,
+            industry: payload.industry,
+            website_url: payload.website_url,
+            assigned_to: payload.assigned_to || 'CPO',
+            priority: payload.priority,
+            created_by: user?.id,
+            owner_user_id: user?.id,
+            disposition: disposition || null,
+            disposition_notes: payload.disposition_notes,
+            next_follow_up_at: payload.next_follow_up_at,
+            ok_to_reengage: payload.ok_to_reengage,
+            disposition_recorded_at: payload.status === 'lost' && disposition ? new Date().toISOString() : null,
+            disposition_recorded_by: payload.status === 'lost' && disposition ? user?.id : null,
+          })
+          .select('id')
+          .single();
+        if (error) throw error;
+        if (inserted?.id && payload.contact_email) {
+          await supabase.from('partnership_contacts').insert({
+            partnership_id: inserted.id,
+            full_name: 'Imported contact',
+            email: payload.contact_email,
+            phone: payload.contact_phone,
+            is_primary: true,
+          });
+        }
+        if (inserted?.id && payload.status === 'lost' && disposition) {
+          await supabase.from('partnership_disposition_events').insert({
+            partnership_id: inserted.id,
+            previous_status: null,
+            new_status: 'lost',
+            disposition,
+            notes: payload.disposition_notes,
+            next_follow_up_at: payload.next_follow_up_at,
+            ok_to_reengage: payload.ok_to_reengage,
+            recorded_by: user?.id ?? null,
+          });
+        }
+        ok++;
+      } catch (e: any) {
+        console.error(e);
+        skipped++;
+      }
+    }
+    notifications.show({
+      title: 'Import finished',
+      message: `Imported ${ok} row(s). Skipped ${skipped}.`,
+      color: ok ? 'green' : 'orange',
+    });
+    if (importRef.current) importRef.current.value = '';
+    loadPartnerships();
   };
 
   if (loading) {
@@ -353,43 +560,79 @@ const PartnerPipeline: React.FC = () => {
     </Stack>
   );
 
+  const lostOnly = partnerships.filter((p) => p.status === 'lost');
+
   return (
     <Stack gap="lg">
+      <Group justify="space-between" align="flex-end" wrap="wrap">
+        <Stack gap={4}>
+          <Title order={3}>Partner pipeline</Title>
+          <Text size="sm" c="dimmed" maw={720}>
+            Record <strong>not interested</strong> and other closed outcomes for CRM export, re-engagement, and enterprise spreadsheet import.
+          </Text>
+        </Stack>
+        <SegmentedControl
+          value={pipelineFilter}
+          onChange={(v) => setPipelineFilter(v as 'all' | 'active' | 'closed')}
+          data={[
+            { label: 'All', value: 'all' },
+            { label: 'Active', value: 'active' },
+            { label: 'Closed / lost', value: 'closed' },
+          ]}
+        />
+      </Group>
+
       <Group justify="space-between">
-        <Title order={3}>Partner pipeline</Title>
         <Group>
           <Button
             variant="light"
             color="gray"
             leftSection={<IconDownload size={16} />}
-            onClick={() => {
-              exportToCSV(
-                partnerships.map((p) => ({
-                  Name: p.partner_name,
-                  Type: partnerTypeLabel(p.partner_type),
-                  Stage: p.status,
-                  'Deal value': p.deal_value || 0,
-                  Priority: p.priority,
-                  'Last activity': p.last_activity_at || '',
-                })),
-                'partner-pipeline',
-              );
-            }}
+            onClick={() => exportEnterpriseCsv(visiblePartnerships, 'partner-pipeline-enterprise')}
           >
-            CSV
+            Export CSV (Excel)
           </Button>
+          <Button
+            variant="light"
+            color="gray"
+            leftSection={<IconDownload size={16} />}
+            onClick={() => exportEnterpriseCsv(lostOnly, 'partner-closed-dispositions')}
+          >
+            Export closed only
+          </Button>
+          <Button variant="default" size="sm" onClick={downloadImportTemplate}>
+            CSV template
+          </Button>
+          <Button
+            variant="light"
+            color="gray"
+            leftSection={<IconUpload size={16} />}
+            onClick={() => importRef.current?.click()}
+          >
+            Import CSV
+          </Button>
+          <input
+            ref={importRef}
+            type="file"
+            accept=".csv,text/csv"
+            style={{ display: 'none' }}
+            onChange={(e) => void handleImportFile(e.target.files?.[0] ?? null)}
+          />
           <Button
             variant="light"
             color="gray"
             leftSection={<IconFileText size={16} />}
             onClick={() => {
-              const rows = partnerships
+              const rows = visiblePartnerships
                 .map(
                   (p) =>
-                    `<tr><td>${p.partner_name}</td><td>${partnerTypeLabel(p.partner_type)}</td><td>${p.status}</td><td>$${Number(p.deal_value || 0).toLocaleString()}</td></tr>`,
+                    `<tr><td>${p.partner_name}</td><td>${partnerTypeLabel(p.partner_type)}</td><td>${p.status}</td><td>${p.disposition ? dispositionLabel(p.disposition) : '—'}</td><td>$${Number(p.deal_value || 0).toLocaleString()}</td></tr>`,
                 )
                 .join('');
-              exportToPrintPDF('Partner Pipeline', `<table><tr><th>Name</th><th>Type</th><th>Stage</th><th>Deal Value</th></tr>${rows}</table>`);
+              exportToPrintPDF(
+                'Partner Pipeline',
+                `<table><tr><th>Name</th><th>Type</th><th>Stage</th><th>Disposition</th><th>Deal Value</th></tr>${rows}</table>`,
+              );
             }}
           >
             PDF
@@ -410,7 +653,7 @@ const PartnerPipeline: React.FC = () => {
       <div style={{ overflowX: 'auto' }}>
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 7 }} style={{ minWidth: 1100 }}>
           {PIPELINE_STAGES.map((stage) => {
-            const stagePartners = partnerships.filter((p) => p.status === stage.value);
+            const stagePartners = visiblePartnerships.filter((p) => p.status === stage.value);
             return (
               <Card key={stage.value} shadow="xs" radius="md" padding="sm" withBorder style={{ minHeight: 220 }}>
                 <Group justify="space-between" mb="sm">
@@ -436,6 +679,16 @@ const PartnerPipeline: React.FC = () => {
                           <Text size="xs" c="dimmed" truncate>
                             {partnerTypeLabel(p.partner_type)}
                           </Text>
+                          {p.status === 'lost' && p.disposition ? (
+                            <Badge size="xs" variant="light" color="red" mt={4}>
+                              {dispositionLabel(p.disposition)}
+                            </Badge>
+                          ) : null}
+                          {p.status === 'lost' && p.next_follow_up_at ? (
+                            <Text size="xs" c="orange" mt={4}>
+                              Follow-up: {new Date(p.next_follow_up_at).toLocaleDateString()}
+                            </Text>
+                          ) : null}
                           <Text size="xs" c="dimmed" lineClamp={2}>
                             {impactLine(p)}
                           </Text>
@@ -451,7 +704,7 @@ const PartnerPipeline: React.FC = () => {
                             </Text>
                           </Text>
                         </div>
-                        <Menu shadow="md" width={180}>
+                        <Menu shadow="md" width={220}>
                           <Menu.Target>
                             <ActionIcon variant="subtle" size="sm" onClick={(e) => e.stopPropagation()}>
                               <IconDotsVertical size={14} />
@@ -469,9 +722,11 @@ const PartnerPipeline: React.FC = () => {
                                 Advance stage
                               </Menu.Item>
                             )}
-                            <Menu.Item color="red" onClick={() => markLost(p.id)}>
-                              Mark lost
-                            </Menu.Item>
+                            {stage.value !== 'lost' ? (
+                              <Menu.Item color="red" onClick={() => openLostModal(p.id, p.partner_name)}>
+                                Record closed / not interested
+                              </Menu.Item>
+                            ) : null}
                             <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={() => deletePartnership(p.id)}>
                               Delete
                             </Menu.Item>
@@ -501,6 +756,52 @@ const PartnerPipeline: React.FC = () => {
             </Button>
             <Button color="orange" loading={saving} onClick={handleCreate}>
               Create
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={lostOpened}
+        onClose={closeLost}
+        title={`Record closed — ${lostPartnerName}`}
+        size="md"
+      >
+        <Stack gap="md">
+          <Select
+            label="Disposition"
+            description="Why they said no or walked away — used for reporting and re-engagement."
+            data={PARTNERSHIP_DISPOSITIONS.map((d) => ({ value: d.value, label: d.label }))}
+            value={lostForm.disposition}
+            onChange={(v) => setLostForm((f) => ({ ...f, disposition: v || 'not_interested' }))}
+            required
+          />
+          <Textarea
+            label="Notes"
+            placeholder="Context for your team (objections, competitor name, timing, etc.)"
+            minRows={3}
+            value={lostForm.disposition_notes}
+            onChange={(e) => setLostForm((f) => ({ ...f, disposition_notes: e.target.value }))}
+          />
+          <DatePickerInput
+            label="Next follow-up (optional)"
+            description="For “not now” or nurture — shows on the card and in export."
+            value={lostForm.next_follow_up_at}
+            onChange={(d) => setLostForm((f) => ({ ...f, next_follow_up_at: d }))}
+            clearable
+          />
+          <Switch
+            label="OK to re-engage / cold outreach"
+            description="Turn off for a hard no or do-not-contact."
+            checked={lostForm.ok_to_reengage}
+            onChange={(e) => setLostForm((f) => ({ ...f, ok_to_reengage: e.currentTarget.checked }))}
+          />
+          <Group justify="flex-end">
+            <Button variant="default" onClick={closeLost}>
+              Cancel
+            </Button>
+            <Button color="red" loading={savingLost} onClick={() => void submitLost()}>
+              Save & move to Lost
             </Button>
           </Group>
         </Stack>
