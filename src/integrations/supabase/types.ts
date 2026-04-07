@@ -19454,6 +19454,32 @@ export type Database = {
           },
         ]
       }
+      merchant_accounts: {
+        Row: {
+          created_at: string
+          merchant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          merchant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          merchant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       merchant_agreements: {
         Row: {
           accepted_at: string
@@ -19494,32 +19520,6 @@ export type Database = {
             foreignKeyName: "merchant_agreements_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      merchant_accounts: {
-        Row: {
-          created_at: string
-          merchant_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          merchant_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          merchant_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "merchant_accounts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
           },
@@ -21444,53 +21444,6 @@ export type Database = {
           },
         ]
       }
-      partnership_disposition_events: {
-        Row: {
-          disposition: string | null
-          id: string
-          new_status: Database["public"]["Enums"]["partnership_status"]
-          notes: string | null
-          next_follow_up_at: string | null
-          ok_to_reengage: boolean
-          partnership_id: string
-          previous_status: Database["public"]["Enums"]["partnership_status"] | null
-          recorded_at: string
-          recorded_by: string | null
-        }
-        Insert: {
-          disposition?: string | null
-          id?: string
-          new_status: Database["public"]["Enums"]["partnership_status"]
-          notes?: string | null
-          next_follow_up_at?: string | null
-          ok_to_reengage?: boolean
-          partnership_id: string
-          previous_status?: Database["public"]["Enums"]["partnership_status"] | null
-          recorded_at?: string
-          recorded_by?: string | null
-        }
-        Update: {
-          disposition?: string | null
-          id?: string
-          new_status?: Database["public"]["Enums"]["partnership_status"]
-          notes?: string | null
-          next_follow_up_at?: string | null
-          ok_to_reengage?: boolean
-          partnership_id?: string
-          previous_status?: Database["public"]["Enums"]["partnership_status"] | null
-          recorded_at?: string
-          recorded_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "partnership_disposition_events_partnership_id_fkey"
-            columns: ["partnership_id"]
-            isOneToOne: false
-            referencedRelation: "partnerships"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       partnership_contacts: {
         Row: {
           created_at: string
@@ -21532,6 +21485,66 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "partnerships"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      partnership_disposition_events: {
+        Row: {
+          disposition: string | null
+          id: string
+          new_status: Database["public"]["Enums"]["partnership_status"]
+          next_follow_up_at: string | null
+          notes: string | null
+          ok_to_reengage: boolean
+          partnership_id: string
+          previous_status:
+            | Database["public"]["Enums"]["partnership_status"]
+            | null
+          recorded_at: string
+          recorded_by: string | null
+        }
+        Insert: {
+          disposition?: string | null
+          id?: string
+          new_status: Database["public"]["Enums"]["partnership_status"]
+          next_follow_up_at?: string | null
+          notes?: string | null
+          ok_to_reengage?: boolean
+          partnership_id: string
+          previous_status?:
+            | Database["public"]["Enums"]["partnership_status"]
+            | null
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Update: {
+          disposition?: string | null
+          id?: string
+          new_status?: Database["public"]["Enums"]["partnership_status"]
+          next_follow_up_at?: string | null
+          notes?: string | null
+          ok_to_reengage?: boolean
+          partnership_id?: string
+          previous_status?:
+            | Database["public"]["Enums"]["partnership_status"]
+            | null
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_disposition_events_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_disposition_events_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -21872,6 +21885,13 @@ export type Database = {
           {
             foreignKeyName: "partnerships_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "partnerships_disposition_recorded_by_fkey"
+            columns: ["disposition_recorded_by"]
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
