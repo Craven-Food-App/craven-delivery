@@ -765,9 +765,8 @@ export default function MerchantLandingPage() {
                 {/* Submit Button */}
                 <Button
                   type="submit"
-                  disabled={!agreedToMerchantTerms}
+                  disabled={!agreedToMerchantTerms || isLoading || isCalculating}
                   className="w-full h-12 text-base font-semibold bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-[12px] transition-all shadow-md disabled:opacity-50 disabled:pointer-events-none"
-                  disabled={isLoading || isCalculating}
                 >
                   {isLoading ? 'Starting...' : 'Start Onboarding'}
                 </Button>

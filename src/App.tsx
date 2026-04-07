@@ -141,6 +141,7 @@ const PlatformInfrastructureHub = lazy(() => import("./pages/PlatformInfrastruct
 const ProductCommandCenter = lazy(() => import("./pages/ProductCommandCenter"));
 const QualityReleasePortal = lazy(() => import("./pages/QualityReleasePortal"));
 const InternalITOperations = lazy(() => import("./pages/InternalITOperations"));
+const InternalCommsPortal = lazy(() => import("./portals/internal-comms/InternalCommsPortal"));
 // EnterpriseFinancePortal consolidated into CFO Portal - redirecting /finance to /cfo
 const DriverCompensationPortal = lazy(() => import("./pages/DriverCompensationPortal"));
 const MarketingPortal = lazy(() => import("./pages/MarketingPortal"));
@@ -386,6 +387,7 @@ const App = () => {
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
                   <Route path="/hub" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Hub" />}><MainHub /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/hub/internal-comms" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Internal Communications" />}><InternalCommsPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/hub/foundational/invites" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Foundational Invites" />}><HubFoundationalInvites /></Suspense></BusinessAuthGuard>} />
                   <Route path="/hub/investor-demo" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Investor Demo Management" />}><HubInvestorDemoManagement /></Suspense></BusinessAuthGuard>} />
                   <Route path="/investor-demo-access" element={<Suspense fallback={<SuspenseLoader message="Loading Demo Access" />}><InvestorDemoAccess /></Suspense>} />
@@ -775,6 +777,7 @@ const App = () => {
           <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><DepartmentHub /></BusinessAuthGuard>} />
           <Route path="/hub/market-demand" element={<BusinessAuthGuard><MarketDemand /></BusinessAuthGuard>} />
           <Route path="/hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
+          <Route path="/hub/internal-comms" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Internal Communications" />}><InternalCommsPortal /></Suspense></BusinessAuthGuard>} />
           <Route path="/technology/developer-portal" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Developer Portal" />}><DeveloperPortal /></Suspense></BusinessAuthGuard>} />
           <Route path="/main-hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
           <Route path="/hr-portal" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading HR Portal" />}><HRPortal /></Suspense></BusinessAuthGuard>} />
