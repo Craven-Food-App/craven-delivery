@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ErrorBoundary } from "@root/components/ErrorBoundary";
 import BusinessAuth from "@root/pages/BusinessAuth";
 import MainHub from "@root/pages/MainHub";
+import InternalCommsPortal from "@root/portals/internal-comms/InternalCommsPortal";
 import ExecutiveAuthGuard from "./components/ExecutiveAuthGuard";
 
 const queryClient = new QueryClient({
@@ -47,6 +48,14 @@ const App: React.FC = () => {
         >
           <Routes>
             <Route path="/auth" element={<BusinessAuth />} />
+            <Route
+              path="/hub/internal-comms"
+              element={
+                <ExecutiveAuthGuard>
+                  <InternalCommsPortal />
+                </ExecutiveAuthGuard>
+              }
+            />
             <Route
               path="/hub"
               element={
