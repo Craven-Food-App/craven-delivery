@@ -864,18 +864,36 @@ const RestaurantMenuPage = () => {
     }, 3000);
   }, [restaurant?.id, addToCartContext]);
 
-           const openItemModal = useCallback((item: MenuItem) => {
-               if (isRetailStore(restaurant)) {
-                   setRetailSelectedItem(item);
-                   setShowRetailItemModal(true);
-               } else {
-                   setSelectedItem(item);
-                   setShowItemModal(true);
-                   setModalQuantity(1);
-                   setSelectedRecommendedOption(1);
-                   setSelectedMenuItem(null);
-               }
-           }, [restaurant]);
+            const openItemModal = useCallback(async (item: MenuItem) => {
+                if (isRetailStore(restaurant)) {
+                    setRetailSelectedItem(item);
+                    setShowRetailItemModal(true);
+                } else {
+                    setSelectedItem(item);
+                    setShowItemModal(true);
+                    setModalQuantity(1);
+                    setSelectedRecommendedOption(1);
+                    setSelectedMenuItem(null);
+                    setSelectedModifiers([]);
+                    // Fetch modifiers for this menu item
+                    try {
+                        const { data, error } = await supabase
+                            .from('menu_item_modifiers')
+                            .select('*')
+                            .eq('menu_item_id', item.id)
+                            .eq('is_available', true)
+                            .order('display_order', { ascending: true });
+                        if (!error && data) {
+                            setMenuItemModifiers(data);
+                        } else {
+                            setMenuItemModifiers([]);
+                        }
+                    } catch (err) {
+                        console.error('Error fetching modifiers:', err);
+                        setMenuItemModifiers([]);
+                    }
+                }
+            }, [restaurant]);
 
            const closeItemModal = useCallback(() => {
                setShowItemModal(false);
