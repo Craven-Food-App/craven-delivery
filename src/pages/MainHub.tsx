@@ -2556,7 +2556,6 @@ const MainHub: React.FC = () => {
                 ? 'Please enter the last 4 characters of your Executive ID to confirm'
                 : 'Please enter the last 4 digits of your Social Security Number to confirm'}
             </Text>
-            </Text>
             
             <Input
               type="text"
