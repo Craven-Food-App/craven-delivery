@@ -772,8 +772,9 @@ const MainHub: React.FC = () => {
       return;
     }
     
-    if (!/^\d{4}$/.test(ssnInput)) {
-      message.error('Please enter only numbers');
+    const validPattern = userAccess.isExecutive ? /^[0-9a-f]{4}$/ : /^\d{4}$/;
+    if (!validPattern.test(ssnInput)) {
+      message.error(userAccess.isExecutive ? 'Please enter valid hex characters' : 'Please enter only numbers');
       return;
     }
     
