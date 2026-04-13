@@ -7,15 +7,10 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import { DeliveryAddressProvider } from "@/contexts/DeliveryAddressContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import SuspenseLoader from "@/components/SuspenseLoader";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { MantineProvider } from '@mantine/core'; // ADD THIS
-import '@mantine/core/styles.css'; // ADD THIS
-import '@mantine/notifications/styles.css'; // ADD THIS
 import LoadingScreen from "@/components/LoadingScreen";
 
 // Customer-only pages
-import Index from "@/pages/Index";
 import Restaurants from "@/pages/Restaurants";
 import Favorites from "@/pages/Favorites";
 import OrderHistory from "@/pages/OrderHistory";
@@ -92,29 +87,18 @@ function App() {
     return () => clearTimeout(timer);
   }, [isMobile]);
 
-  // Show loading screen first, before anything else (only on mobile)
-  // Wait for isMobile to be determined before showing
-  if (showLoadingScreen && isMobile === true) {
-    return (
-      <MantineProvider>
-        <LoadingScreen />
-      </MantineProvider>
-    );
+  // main.tsx already wraps <App /> in MantineProvider — do not nest another provider here (breaks theme/context).
+  if (isMobile === undefined) {
+    return <LoadingScreen />;
   }
 
-  // Show nothing while determining if mobile (prevents flash of content)
-  if (isMobile === undefined && showLoadingScreen) {
-    return (
-      <MantineProvider>
-        <LoadingScreen />
-      </MantineProvider>
-    );
+  if (isMobile === true && showLoadingScreen) {
+    return <LoadingScreen />;
   }
 
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <MantineProvider> {/* ADD THIS */}
           <ThemeProvider defaultTheme="system">
             <TooltipProvider>
               <Toaster />
@@ -193,7 +177,6 @@ function App() {
               </BrowserRouter>
             </TooltipProvider>
           </ThemeProvider>
-        </MantineProvider> {/* ADD THIS */}
       </QueryClientProvider>
     </ErrorBoundary>
   );

@@ -2464,25 +2464,29 @@ const Restaurants = () => {
 
             {/* Craven Quick Picks - Promoted Restaurants */}
             {weeklyDeals.length > 0 && (
-              <Box style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', overflow: 'hidden' }}>
-                <Group justify="space-between" gap="xs" px="md" pt="sm" mb={0} style={{ minHeight: 'auto', margin: 0, padding: '12px 16px 0 16px', height: 'auto' }}>
+              <Stack
+                gap="sm"
+                style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', overflow: 'hidden' }}
+                px="md"
+                pt="sm"
+                pb="xs"
+              >
+                <Group justify="space-between" align="center" gap="xs" wrap="nowrap" style={{ margin: 0, padding: 0 }}>
                   <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Craven Quick Picks</Title>
-                  <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
+                  <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0, flexShrink: 0 }}>
                     <IconChevronRight size={18} />
                   </ActionIcon>
                 </Group>
-                <Box style={{ marginTop: '-16px' }}>
-                  <RestaurantGrid 
-                    searchQuery={searchQuery} 
-                    deliveryAddress={location} 
-                    cuisineFilter={undefined}
-                    excludeCuisine={undefined}
-                    sectionTitle={undefined}
-                    horizontal={true}
-                    customRestaurants={weeklyDeals}
-                  />
-                </Box>
-              </Box>
+                <RestaurantGrid
+                  searchQuery={searchQuery}
+                  deliveryAddress={location}
+                  cuisineFilter={undefined}
+                  excludeCuisine={undefined}
+                  sectionTitle={undefined}
+                  horizontal={true}
+                  customRestaurants={weeklyDeals}
+                />
+              </Stack>
             )}
 
             {/* Great Deals - Restaurants with Promotions */}
