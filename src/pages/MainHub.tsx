@@ -766,7 +766,7 @@ const MainHub: React.FC = () => {
   // Handle SSN verification submission
   const handleSSNSubmit = async () => {
     if (!ssnInput || ssnInput.length !== 4) {
-      message.error(permissions.isExecutive 
+      message.error(userAccess.isExecutive 
         ? 'Please enter the last 4 characters of your Executive ID' 
         : 'Please enter the last 4 digits of your Social Security Number');
       return;
@@ -2552,7 +2552,7 @@ const MainHub: React.FC = () => {
         >
           <div style={{ padding: '20px 0' }}>
             <Text type="secondary" style={{ display: 'block', textAlign: 'center', marginBottom: 24 }}>
-              {permissions.isExecutive 
+              {userAccess.isExecutive 
                 ? 'Please enter the last 4 characters of your Executive ID to confirm'
                 : 'Please enter the last 4 digits of your Social Security Number to confirm'}
             </Text>
