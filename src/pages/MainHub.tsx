@@ -708,48 +708,31 @@ const MainHub: React.FC = () => {
     setShowClockHistory(false);
   };
 
-  // Verify SSN last 4 digits
-  const verifySSN = async (ssnLast4: string): Promise<boolean> => {
+  // Verify clock-in code: executives use last 4 of their exec_users.id, employees use SSN last 4
+  const verifySSN = async (codeLast4: string): Promise<boolean> => {
     if (!user) return false;
     
     try {
-      // CEO/Torrance bypass - check if user is CEO first
-      const isTorranceUser = hasFullAccess(user.email) || 
-                            user.email?.toLowerCase() === 'tstroman.ceo@cravenusa.com' ||
-                            user.email?.toLowerCase().includes('torrance') ||
-                            user.email?.toLowerCase().includes('tstroman');
+      // Check if user is an executive first
+      const { data: execUser } = await supabase
+        .from('exec_users')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
       
-      if (isTorranceUser) {
-        // For CEO, first try to get employee record
-        const { data: employee, error: employeeError } = await supabase
-          .from('employees')
-          .select('ssn_last4, id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        // If employee record exists and has SSN, verify it
-        if (employee && employee.ssn_last4) {
-          const isValid = employee.ssn_last4 === ssnLast4;
-          console.log('CEO SSN verification:', { 
-            provided: ssnLast4, 
-            stored: employee.ssn_last4, 
-            match: isValid 
-          });
-          return isValid;
-        }
-        
-        // If no employee record or no SSN set, log warning but allow CEO to proceed
-        // This ensures CEO can always clock in/out even if employee record is missing
-        if (employeeError && employeeError.code !== 'PGRST116') {
-          console.warn('Error fetching CEO employee record:', employeeError);
-        }
-        console.log('CEO user - no employee record or SSN found, allowing SSN verification to proceed');
-        // Note: In production, you may want to add a hardcoded CEO SSN check here
-        // For now, allowing CEO to proceed if employee record doesn't exist
-        return true;
+      if (execUser) {
+        // Executive: verify against last 4 characters of their executive ID
+        const execIdLast4 = execUser.id.slice(-4);
+        const isValid = execIdLast4 === codeLast4;
+        console.log('Executive ID verification:', { 
+          provided: codeLast4, 
+          execIdLast4, 
+          match: isValid 
+        });
+        return isValid;
       }
       
-      // Regular employee verification
+      // Regular employee verification using SSN last 4
       const { data: employee, error: employeeError } = await supabase
         .from('employees')
         .select('ssn_last4, id')
@@ -761,23 +744,21 @@ const MainHub: React.FC = () => {
         return false;
       }
       
-      // Employee must have ssn_last4 set in database
       if (!employee || !employee.ssn_last4) {
         console.log('Employee does not have SSN last 4 set in database');
         return false;
       }
       
-      // Verify the SSN matches
-      const isValid = employee.ssn_last4 === ssnLast4;
+      const isValid = employee.ssn_last4 === codeLast4;
       console.log('SSN verification:', { 
-        provided: ssnLast4, 
+        provided: codeLast4, 
         stored: employee.ssn_last4, 
         match: isValid 
       });
       
       return isValid;
     } catch (error) {
-      console.error('Error verifying SSN:', error);
+      console.error('Error verifying clock code:', error);
       return false;
     }
   };
@@ -785,12 +766,15 @@ const MainHub: React.FC = () => {
   // Handle SSN verification submission
   const handleSSNSubmit = async () => {
     if (!ssnInput || ssnInput.length !== 4) {
-      message.error('Please enter the last 4 digits of your Social Security Number');
+      message.error(userAccess.isExecutive 
+        ? 'Please enter the last 4 characters of your Executive ID' 
+        : 'Please enter the last 4 digits of your Social Security Number');
       return;
     }
     
-    if (!/^\d{4}$/.test(ssnInput)) {
-      message.error('Please enter only numbers');
+    const validPattern = userAccess.isExecutive ? /^[0-9a-f]{4}$/ : /^\d{4}$/;
+    if (!validPattern.test(ssnInput)) {
+      message.error(userAccess.isExecutive ? 'Please enter valid hex characters' : 'Please enter only numbers');
       return;
     }
     
@@ -2569,7 +2553,9 @@ const MainHub: React.FC = () => {
         >
           <div style={{ padding: '20px 0' }}>
             <Text type="secondary" style={{ display: 'block', textAlign: 'center', marginBottom: 24 }}>
-              Please enter the last 4 digits of your Social Security Number to confirm
+              {userAccess.isExecutive 
+                ? 'Please enter the last 4 characters of your Executive ID to confirm'
+                : 'Please enter the last 4 digits of your Social Security Number to confirm'}
             </Text>
             
             <Input
@@ -2577,7 +2563,9 @@ const MainHub: React.FC = () => {
               maxLength={4}
               value={ssnInput}
               onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, ''); // Only numbers
+                const value = userAccess.isExecutive 
+                  ? e.target.value.replace(/[^0-9a-fA-F]/g, '').toLowerCase()
+                  : e.target.value.replace(/\D/g, '');
                 if (value.length <= 4) {
                   setSsnInput(value);
                 }
