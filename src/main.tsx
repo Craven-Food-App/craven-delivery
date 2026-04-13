@@ -202,8 +202,8 @@ if (!rootEl) throw new Error('Root element #root not found');
 createRoot(rootEl).render(
   <React.StrictMode>
     <MUIThemeProvider theme={muiTheme}>
-      {/* Single ReactNode for MUI ThemeProvider (avoids invalid children prop-type warnings) */}
-      <>
+      {/* MUI ThemeProvider PropTypes expect a single ReactNode; Fragment can fail validation in dev */}
+      <div>
         <CssBaseline />
         <MantineProvider theme={theme}>
           <DatesProvider settings={{ firstDayOfWeek: 0 }}>
@@ -213,7 +213,7 @@ createRoot(rootEl).render(
             </ModalsProvider>
           </DatesProvider>
         </MantineProvider>
-      </>
+      </div>
     </MUIThemeProvider>
   </React.StrictMode>
 );
