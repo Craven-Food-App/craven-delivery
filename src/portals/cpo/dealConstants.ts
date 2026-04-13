@@ -64,7 +64,7 @@ export const PARTNER_TYPES: { value: string; label: string }[] = [
   { value: 'technology_integration', label: 'Technology / Integration (legacy)' },
   { value: 'revenue_share', label: 'Revenue Share (legacy)' },
   { value: 'co_marketing', label: 'Co-Marketing (legacy)' },
-  { value: 'vendor', label: 'Vendor (legacy)' },
+  { value: 'vendor', label: 'Vendor' },
   { value: 'other', label: 'Other' },
 ];
 

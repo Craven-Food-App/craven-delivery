@@ -1,0 +1,15 @@
+{
+  "extends": "../../tablet/corporate/tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@comms/*": ["src/*"],
+      "@root/*": ["../../..//src/*"],
+      "@/*": ["../../..//src/*"]
+    }
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+

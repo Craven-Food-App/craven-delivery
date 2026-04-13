@@ -44,7 +44,6 @@ import {
   IconPhone,
   IconNavigation,
   IconMessageCircle,
-  IconCircleCheck,
   IconFilter,
   IconSearch,
   IconChefHat,
@@ -1136,7 +1135,7 @@ const RestaurantMenuPage = () => {
     }, 3000);
   }, [restaurant?.id, addToCartContext]);
 
-           const openItemModal = useCallback((item: MenuItem) => {
+           const openItemModal = useCallback(async (item: MenuItem) => {
                if (isRetailStore(restaurant)) {
                    setRetailSelectedItem(item);
                    setShowRetailItemModal(true);
@@ -1146,6 +1145,23 @@ const RestaurantMenuPage = () => {
                    setModalQuantity(1);
                    setSelectedRecommendedOption(1);
                    setSelectedMenuItem(null);
+                   setSelectedModifiers([]);
+                   try {
+                       const { data, error } = await supabase
+                           .from('menu_item_modifiers')
+                           .select('*')
+                           .eq('menu_item_id', item.id)
+                           .eq('is_available', true)
+                           .order('display_order', { ascending: true });
+                       if (!error && data) {
+                           setMenuItemModifiers(data);
+                       } else {
+                           setMenuItemModifiers([]);
+                       }
+                   } catch (err) {
+                       console.error('Error fetching modifiers:', err);
+                       setMenuItemModifiers([]);
+                   }
                }
            }, [restaurant]);
 
@@ -1197,7 +1213,7 @@ const RestaurantMenuPage = () => {
                    
                    closeItemModal();
                }
-           }, [selectedItem, modalQuantity, restaurant?.id, addToCartContext, closeItemModal]);
+           }, [selectedItem, modalQuantity, selectedModifiers, menuItemModifiers, specialInstructions, restaurant?.id, addToCartContext, closeItemModal]);
 
   const removeFromCart = useCallback((itemId: string) => {
     removeFromCartContext(itemId);
@@ -1617,82 +1633,6 @@ const RestaurantMenuPage = () => {
             return acc;
         }, {} as Record<string, any[]>);
 
-        // Helper function to render a modifier section
-        const renderModifierSection = (type: string, title: string, maxSelections?: number) => {
-            const modifiers = modifiersByType[type] || [];
-            if (modifiers.length === 0) return null;
-
-            const maxSelect = maxSelections || modifiers[0]?.max_selections || 999;
-            const isRequired = modifiers[0]?.is_required || false;
-            const selectedCount = selectedModifiers.filter(id => 
-                modifiers.some(m => m.id === id)
-            ).length;
-
-            return (
-                <Stack gap="md" mb="lg" key={type}>
-                    <Stack gap="xs">
-                        <Text size="md" fw={600}>{title}</Text>
-                        <Text size="sm" c="dimmed">
-                            {isRequired ? 'Required' : 'Optional'} • {maxSelect === 999 ? 'Choose any' : `Select up to ${maxSelect}`}
-                        </Text>
-                    </Stack>
-                    <Stack gap="xs">
-                        {modifiers.map((modifier) => {
-                            const isSelected = selectedModifiers.includes(modifier.id);
-                            const canSelect = !isSelected && (maxSelect === 999 || selectedCount < maxSelect);
-                            
-                            return (
-                                <Group
-                                    key={modifier.id}
-                                    justify="space-between"
-                                    p="sm"
-                        style={{ 
-                                        cursor: canSelect || isSelected ? 'pointer' : 'not-allowed',
-                                        borderRadius: '4px',
-                                        opacity: canSelect || isSelected ? 1 : 0.5,
-                        }}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                                        if (isSelected) {
-                                            setSelectedModifiers(selectedModifiers.filter(id => id !== modifier.id));
-                                        } else if (canSelect) {
-                                            setSelectedModifiers([...selectedModifiers, modifier.id]);
-                                        }
-                                    }}
-                                >
-                                    <Group gap="sm">
-                                    <Box
-                                        style={{
-                                                width: '20px',
-                                                height: '20px',
-                                                border: isSelected ? '2px solid var(--mantine-color-orange-6)' : '2px solid var(--mantine-color-gray-4)',
-                                                borderRadius: '4px',
-                                                backgroundColor: isSelected ? 'var(--mantine-color-orange-6)' : 'transparent',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                            {isSelected && (
-                                                <IconCircleCheck size={14} style={{ color: 'white' }} />
-                                        )}
-                                    </Box>
-                                        <Text size="sm" fw={500}>{modifier.name}</Text>
-                                </Group>
-                                    {modifier.price_cents > 0 && (
-                                        <Text size="sm" fw={500} c="gray.7">
-                                            +${(modifier.price_cents / 100).toFixed(2)}
-                                </Text>
-                                    )}
-                                </Group>
-                            );
-                        })}
-                            </Stack>
-                </Stack>
-            );
-        };
-
         // Sort modifier entries: required first, then by type priority
         const typeOrder = ['size', 'preparation', 'side', 'addon', 'beverage', 'dessert', 'app', 'removal', 'substitution'];
         const sortedModifierEntries = Object.entries(modifiersByType).sort(([typeA, modsA], [typeB, modsB]) => {
@@ -1701,6 +1641,12 @@ const RestaurantMenuPage = () => {
             if (aRequired !== bRequired) return aRequired - bRequired;
             return (typeOrder.indexOf(typeA) === -1 ? 99 : typeOrder.indexOf(typeA)) - (typeOrder.indexOf(typeB) === -1 ? 99 : typeOrder.indexOf(typeB));
         });
+
+        // Collect dietary/ingredient tags
+        const ingredientTags: string[] = [];
+        if (selectedItem.is_vegetarian) ingredientTags.push('Vegetarian');
+        if (selectedItem.is_vegan) ingredientTags.push('Vegan');
+        if (selectedItem.is_gluten_free) ingredientTags.push('Gluten Free');
 
         return (
             <Modal
@@ -1714,214 +1660,232 @@ const RestaurantMenuPage = () => {
                     content: { height: '100%', maxHeight: '100%' },
                 }}
             >
-                <Box style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: 'white', position: 'relative' }}>
-                    {/* Fixed Back/Share Buttons - static position */}
-                    <ActionIcon
-                        variant="filled"
-                        color="white"
-                        onClick={closeItemModal}
-                        style={{ 
-                            position: 'fixed',
-                            top: '16px',
-                            left: '16px',
-                            backgroundColor: 'white',
-                            color: 'var(--mantine-color-gray-9)',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                            zIndex: 10001,
-                        }}
-                        size="lg"
-                        radius="xl"
-                    >
-                        <IconChevronLeft size={24} />
-                    </ActionIcon>
-                    <ActionIcon
-                        variant="filled"
-                        color="white"
-                        onClick={async () => {
-                            const shareData = {
-                              title: selectedItem.name,
-                              text: selectedItem.description || '',
-                              url: window.location.href,
-                            };
-                            if (navigator.share) {
-                              try { await navigator.share(shareData); } catch { /* user cancelled */ }
-                            } else {
-                              try {
-                                await navigator.clipboard.writeText(`${selectedItem.name} — ${window.location.href}`);
-                                notifications.show({ title: 'Link Copied', message: 'Item link copied to clipboard!', color: 'green' });
-                              } catch {
-                                notifications.show({ title: 'Share', message: window.location.href, color: 'blue' });
-                              }
-                            }
-                        }}
-                        style={{ 
-                            position: 'fixed',
-                            top: '16px',
-                            right: '16px',
-                            backgroundColor: 'white',
-                            color: 'var(--mantine-color-gray-9)',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                            zIndex: 10001,
-                        }}
-                        size="lg"
-                        radius="xl"
-                    >
-                        <IconShare size={20} />
-                    </ActionIcon>
+                <Box style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#fafafa', position: 'relative' }}>
+                    {/* Top Bar: Back + Favorite */}
+                    <Box style={{ 
+                        position: 'fixed', top: 0, left: 0, right: 0, 
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '16px 16px 0', zIndex: 10001 
+                    }}>
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            onClick={closeItemModal}
+                            size="lg"
+                            radius="xl"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.85)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+                        >
+                            <IconChevronLeft size={22} />
+                        </ActionIcon>
+                        <ActionIcon
+                            variant="subtle"
+                            color="red"
+                            size="lg"
+                            radius="xl"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.85)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+                            onClick={() => {
+                                if (navigator.share) {
+                                    navigator.share({ title: selectedItem.name, text: selectedItem.description || '' });
+                                }
+                            }}
+                        >
+                            <IconHeart size={22} style={{ color: '#ef4444' }} />
+                        </ActionIcon>
+                    </Box>
 
-                    {/* Scrollable Content - image scrolls with content */}
-                    <ScrollArea 
-                        style={{ flex: 1 }}
-                        ref={modalScrollRef}
-                    >
-                        <Box>
-                            {/* Food Image - scrolls with content */}
-                            <Box style={{ width: '100%', height: '300px', overflow: 'hidden' }}>
-                                <MantineImage
-                                    src={selectedItem.image_url || 'https://placehold.co/600x300/CCCCCC/666666?text=Item'}
-                                    alt={selectedItem.name}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                    fit="cover"
-                                />
-                            </Box>
-
-                            <Box p="md" pb="120px">
-                            {/* 1. Item Name, Description & Price */}
-                            <Stack gap="xs" mb="lg">
-                                <Title order={2} fw={700} style={{ fontSize: '24px', lineHeight: 1.2 }}>
+                    {/* Scrollable Content */}
+                    <ScrollArea style={{ flex: 1 }} ref={modalScrollRef}>
+                        <Box pb="140px">
+                            {/* Item Name + Large Price Row */}
+                            <Box px="lg" pt="72px" pb="xs">
+                                <Title order={2} fw={700} style={{ fontSize: '26px', lineHeight: 1.2, color: '#1a1a2e', fontStyle: 'italic' }}>
                                     {selectedItem.name}
                                 </Title>
                                 {selectedItem.description && (
-                                    <Text size="sm" c="dimmed" style={{ lineHeight: 1.6 }}>
+                                    <Text size="sm" c="dimmed" mt="xs" style={{ lineHeight: 1.6 }}>
                                         {selectedItem.description}
                                     </Text>
                                 )}
-                                <Group gap="xs" mt="xs">
-                                    {selectedItem.is_vegetarian && <Badge variant="light" color="green" size="sm">Vegetarian</Badge>}
-                                    {selectedItem.is_vegan && <Badge variant="light" color="green" size="sm">Vegan</Badge>}
-                                    {selectedItem.is_gluten_free && <Badge variant="light" color="blue" size="sm">Gluten Free</Badge>}
-                                </Group>
-                            </Stack>
+                            </Box>
 
-                            {/* 2. Your Recommended Options - popular combos */}
-                            {sortedModifierEntries.length > 0 && (
-                                <Box mb="lg">
-                                    <Title order={4} fw={700} mb="sm" style={{ fontSize: '18px' }}>
-                                        Your recommended options
-                                    </Title>
-                                    <ScrollArea scrollbars="x" type="never">
-                                        <Group gap="sm" style={{ flexWrap: 'nowrap' }} pb="xs">
-                                            {/* Recommended option #1 - auto-generate from required modifiers */}
-                                            {(() => {
-                                                // Build recommendation from first option of each required modifier group
-                                                const requiredEntries = sortedModifierEntries.filter(([, mods]) => (mods as any[])[0]?.is_required);
-                                                if (requiredEntries.length === 0) return null;
-                                                
-                                                const firstOptions = requiredEntries.map(([, mods]) => (mods as any[])[0]?.name).filter(Boolean);
-                                                const firstPrice = requiredEntries.reduce((sum, [, mods]) => sum + ((mods as any[])[0]?.price_cents || 0), 0);
-                                                const recTotalPrice = ((selectedItem.price_cents + firstPrice) / 100).toFixed(2);
-                                                
-                                                return (
-                                                    <Card
-                                                        withBorder
-                                                        p="md"
-                                                        radius="md"
-                                                        style={{ minWidth: '280px', maxWidth: '320px', flexShrink: 0, cursor: 'pointer' }}
-                                                        onClick={() => {
-                                                            // Auto-select first option from each required group
-                                                            const newModifiers: string[] = [];
-                                                            requiredEntries.forEach(([, mods]) => {
-                                                                if ((mods as any[])[0]?.id) newModifiers.push((mods as any[])[0].id);
-                                                            });
-                                                            setSelectedModifiers(newModifiers);
-                                                        }}
-                                                    >
-                                                        <Text size="sm" fw={700} mb="xs">#1 • Most Popular</Text>
-                                                        <Text size="xs" c="dimmed" lineClamp={2} mb="xs">
-                                                            {[selectedItem.name, ...firstOptions].join(' • ')}
-                                                        </Text>
-                                                        <Text size="sm" fw={600}>${recTotalPrice}</Text>
-                                                    </Card>
-                                                );
-                                            })()}
-                                            {/* Recommended option #2 - last option of each required group (e.g. Large) */}
-                                            {(() => {
-                                                const requiredEntries = sortedModifierEntries.filter(([, mods]) => (mods as any[])[0]?.is_required);
-                                                if (requiredEntries.length === 0) return null;
-                                                
-                                                const lastOptions = requiredEntries.map(([, mods]) => {
-                                                    const modArr = mods as any[];
-                                                    return modArr[modArr.length - 1]?.name;
-                                                }).filter(Boolean);
-                                                const lastPrice = requiredEntries.reduce((sum, [, mods]) => {
-                                                    const modArr = mods as any[];
-                                                    return sum + (modArr[modArr.length - 1]?.price_cents || 0);
-                                                }, 0);
-                                                const recTotalPrice = ((selectedItem.price_cents + lastPrice) / 100).toFixed(2);
-                                                
-                                                return (
-                                                    <Card
-                                                        withBorder
-                                                        p="md"
-                                                        radius="md"
-                                                        style={{ minWidth: '280px', maxWidth: '320px', flexShrink: 0, cursor: 'pointer' }}
-                                                        onClick={() => {
-                                                            const newModifiers: string[] = [];
-                                                            requiredEntries.forEach(([, mods]) => {
-                                                                const modArr = mods as any[];
-                                                                if (modArr[modArr.length - 1]?.id) newModifiers.push(modArr[modArr.length - 1].id);
-                                                            });
-                                                            setSelectedModifiers(newModifiers);
-                                                        }}
-                                                    >
-                                                        <Text size="sm" fw={700} mb="xs">#2 • Premium Pick</Text>
-                                                        <Text size="xs" c="dimmed" lineClamp={2} mb="xs">
-                                                            {[selectedItem.name, ...lastOptions].join(' • ')}
-                                                        </Text>
-                                                        <Text size="sm" fw={600}>${recTotalPrice}</Text>
-                                                    </Card>
-                                                );
-                                            })()}
+                            {/* Price + Quantity Side-by-Side */}
+                            <Box px="lg" pb="md">
+                                <Group justify="space-between" align="flex-start">
+                                    <Text fw={800} style={{ fontSize: '32px', color: '#ef4444' }}>
+                                        ${(selectedItem.price_cents / 100).toFixed(2)}
+                                    </Text>
+                                    {/* Framed Quantity Selector */}
+                                    <Box style={{
+                                        border: '1px solid #e5e7eb',
+                                        borderRadius: '12px',
+                                        padding: '4px 0',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: '2px',
+                                        backgroundColor: 'white',
+                                        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                                        minWidth: '44px',
+                                    }}>
+                                        <ActionIcon
+                                            variant="subtle"
+                                            color="gray"
+                                            size="sm"
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                const scrollContainer = modalScrollRef.current?.querySelector('.mantine-ScrollArea-viewport') as HTMLElement;
+                                                const scrollPosition = scrollContainer?.scrollTop || 0;
+                                                setModalQuantity((prev) => prev + 1);
+                                                requestAnimationFrame(() => { if (scrollContainer) scrollContainer.scrollTop = scrollPosition; });
+                                            }}
+                                        >
+                                            <IconPlus size={16} />
+                                        </ActionIcon>
+                                        <Text fw={700} size="lg" style={{ lineHeight: 1 }}>{modalQuantity}</Text>
+                                        <ActionIcon
+                                            variant="subtle"
+                                            color="gray"
+                                            size="sm"
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                const scrollContainer = modalScrollRef.current?.querySelector('.mantine-ScrollArea-viewport') as HTMLElement;
+                                                const scrollPosition = scrollContainer?.scrollTop || 0;
+                                                setModalQuantity((prev) => Math.max(1, prev - 1));
+                                                requestAnimationFrame(() => { if (scrollContainer) scrollContainer.scrollTop = scrollPosition; });
+                                            }}
+                                        >
+                                            <IconMinus size={16} />
+                                        </ActionIcon>
+                                    </Box>
+                                </Group>
+                            </Box>
+
+                            {/* Food Image - Centered Plate Style */}
+                            <Box style={{ display: 'flex', justifyContent: 'center', padding: '8px 24px 16px' }}>
+                                <Box style={{
+                                    width: '260px', height: '260px',
+                                    borderRadius: '50%',
+                                    overflow: 'hidden',
+                                    boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                                    border: '6px solid white',
+                                }}>
+                                    <MantineImage
+                                        src={selectedItem.image_url || 'https://placehold.co/300x300/CCCCCC/666666?text=Item'}
+                                        alt={selectedItem.name}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        fit="cover"
+                                    />
+                                </Box>
+                            </Box>
+
+                            {/* Ingredient / Dietary Tags */}
+                            {ingredientTags.length > 0 && (
+                                <Group justify="center" gap="sm" px="lg" pb="md">
+                                    {ingredientTags.map((tag) => (
+                                        <Group key={tag} gap={4} align="center">
+                                            <Box style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#1a1a2e' }} />
+                                            <Text size="xs" c="gray.7" fw={500}>{tag}</Text>
                                         </Group>
-                                    </ScrollArea>
+                                    ))}
+                                </Group>
+                            )}
+
+                            {/* Add-ons / Customization as Chips */}
+                            {sortedModifierEntries.length > 0 && (
+                                <Box px="lg" pb="md">
+                                    {sortedModifierEntries.map(([type, modifiers]) => {
+                                        const typeDisplayNames: Record<string, string> = {
+                                            'side': 'Add Extra Side',
+                                            'addon': 'Add Extra Topping',
+                                            'beverage': 'Add a Drink',
+                                            'dessert': 'Add Dessert',
+                                            'app': 'Add Appetizer',
+                                            'size': 'Choose Size',
+                                            'preparation': 'Preparation',
+                                            'removal': 'Remove Items',
+                                            'substitution': 'Substitutions',
+                                        };
+                                        const displayName = typeDisplayNames[type] || type.charAt(0).toUpperCase() + type.slice(1);
+                                        const isRequired = (modifiers as any[])[0]?.is_required || false;
+                                        const maxSelect = (modifiers as any[])[0]?.max_selections || 999;
+                                        const selectedCount = selectedModifiers.filter(id =>
+                                            (modifiers as any[]).some(m => m.id === id)
+                                        ).length;
+
+                                        return (
+                                            <Box key={type} mb="md">
+                                                <Text size="lg" fw={700} mb="xs" style={{ color: '#1a1a2e' }}>{displayName}</Text>
+                                                {isRequired && (
+                                                    <Text size="xs" c="dimmed" mb="xs">Required • Select up to {maxSelect === 999 ? 'any' : maxSelect}</Text>
+                                                )}
+                                                <Group gap="sm">
+                                                    {(modifiers as any[]).map((modifier) => {
+                                                        const isSelected = selectedModifiers.includes(modifier.id);
+                                                        const canSelect = !isSelected && (maxSelect === 999 || selectedCount < maxSelect);
+                                                        return (
+                                                            <Button
+                                                                key={modifier.id}
+                                                                variant={isSelected ? 'filled' : 'outline'}
+                                                                color={isSelected ? 'orange' : 'gray'}
+                                                                size="xs"
+                                                                radius="xl"
+                                                                style={{
+                                                                    fontWeight: 500,
+                                                                    opacity: canSelect || isSelected ? 1 : 0.5,
+                                                                    borderColor: isSelected ? 'var(--mantine-color-orange-6)' : '#d1d5db',
+                                                                }}
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    if (isSelected) {
+                                                                        setSelectedModifiers(selectedModifiers.filter(id => id !== modifier.id));
+                                                                    } else if (canSelect) {
+                                                                        setSelectedModifiers([...selectedModifiers, modifier.id]);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {modifier.name}{modifier.price_cents > 0 ? ` +$${(modifier.price_cents / 100).toFixed(2)}` : ''}
+                                                            </Button>
+                                                        );
+                                                    })}
+                                                </Group>
+                                            </Box>
+                                        );
+                                    })}
                                 </Box>
                             )}
 
-                            <Divider mb="lg" />
+                            {/* Rating + Delivery Time */}
+                            <Box px="lg" pb="md">
+                                <Group justify="space-between" align="center">
+                                    <Group gap="xs">
+                                        <Rating value={5} readOnly size="sm" color="orange" />
+                                        <Text size="sm" fw={600} c="gray.8">5.0</Text>
+                                    </Group>
+                                    <Group gap={4}>
+                                        <IconClock size={16} style={{ color: '#9ca3af' }} />
+                                        <Text size="sm" c="dimmed">
+                                            {selectedItem.preparation_time ? `${selectedItem.preparation_time} Min` : '10-15 Min'}
+                                        </Text>
+                                    </Group>
+                                </Group>
+                            </Box>
 
-                            {/* 3. Customization Sections - required first, then optional */}
-                            {sortedModifierEntries.map(([type, modifiers]) => {
-                                const typeDisplayNames: Record<string, string> = {
-                                    'side': 'Sides',
-                                    'addon': 'Add-ons',
-                                    'beverage': 'Recommended Beverages',
-                                    'dessert': 'Recommended Desserts',
-                                    'app': 'Recommended Sides And Apps',
-                                    'size': 'Choose Your Size:',
-                                    'preparation': 'Preparation',
-                                    'removal': 'Remove Items',
-                                    'substitution': 'Substitutions',
-                                };
-                                
-                                const displayName = typeDisplayNames[type] || type.charAt(0).toUpperCase() + type.slice(1);
-                                const maxSelections = (modifiers as any[])[0]?.max_selections;
-                                
-                                return renderModifierSection(type, displayName, maxSelections);
-                            })}
-
-                            <Divider mb="lg" />
-
-                            {/* 4. Special Instructions */}
-                            <Box mb="lg">
+                            {/* Special Instructions */}
+                            <Box px="lg" pb="md">
                                 <Button
                                     variant="light"
                                     color="gray"
                                     fullWidth
                                     leftSection={<IconMessageCircle size={18} />}
                                     onClick={() => setShowSpecialInstructions(!showSpecialInstructions)}
-                                    style={{ 
-                                        backgroundColor: 'var(--mantine-color-gray-0)',
-                                        border: '1px solid var(--mantine-color-gray-3)',
+                                    style={{
+                                        backgroundColor: 'white',
+                                        border: '1px solid #e5e7eb',
                                     }}
                                 >
                                     Special instructions
@@ -1936,94 +1900,30 @@ const RestaurantMenuPage = () => {
                                 )}
                             </Box>
 
-                            <Divider mb="lg" />
-
-                            {/* 5. Quantity Selector */}
-                            <Group justify="center" mb="lg">
-                                <ActionIcon
-                                    variant="light"
-                                    color="gray"
-                                    radius="xl"
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setModalQuantity((prev) => Math.max(1, prev - 1));
-                                    }}
-                                    size="lg"
-                                    disabled={modalQuantity <= 1}
-                                    style={{
-                                        backgroundColor: 'var(--mantine-color-gray-0)',
-                                        border: '1px solid var(--mantine-color-gray-3)',
-                                    }}
-                                >
-                                    <IconMinus size={18} />
-                                </ActionIcon>
-                                <Text size="xl" fw={700} style={{ minWidth: '40px', textAlign: 'center' }}>
-                                    {modalQuantity}
-                                </Text>
-                                <ActionIcon
-                                    variant="light"
-                                    color="gray"
-                                    radius="xl"
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setModalQuantity((prev) => prev + 1);
-                                    }}
-                                    size="lg"
-                                    style={{
-                                        backgroundColor: 'var(--mantine-color-gray-0)',
-                                        border: '1px solid var(--mantine-color-gray-3)',
-                                    }}
-                                >
-                                    <IconPlus size={18} />
-                                </ActionIcon>
-                            </Group>
-
-                            <Divider mb="lg" />
-
-                            {/* 6. Stack Section - suggest drinks/desserts from this restaurant */}
+                            {/* Stack your order - suggest drinks/desserts */}
                             {(() => {
-                                // Find drink & dessert categories from the restaurant's menu
                                 const drinkKeywords = ['drink', 'beverage', 'juice', 'smoothie', 'shake', 'coffee', 'tea', 'soda', 'water'];
                                 const dessertKeywords = ['dessert', 'sweet', 'cake', 'cookie', 'ice cream', 'pastry', 'pie'];
                                 const stackKeywords = [...drinkKeywords, ...dessertKeywords, 'side', 'appetizer', 'app'];
-
-                                // Get categories that look like drinks/desserts/sides
                                 const stackCategoryIds = categories
                                     .filter(cat => stackKeywords.some(kw => cat.name.toLowerCase().includes(kw)))
                                     .map(cat => cat.id);
-
-                                // Get items from those categories, excluding the current item
-                                let stackItems = menuItems.filter(item => 
-                                    item.id !== selectedItem.id && 
-                                    item.is_available &&
-                                    stackCategoryIds.includes(item.category_id)
+                                let stackItems = menuItems.filter(item =>
+                                    item.id !== selectedItem.id && item.is_available && stackCategoryIds.includes(item.category_id)
                                 );
-
-                                // If no category-matched items, fall back to random available items from the restaurant
                                 if (stackItems.length === 0) {
-                                    stackItems = menuItems.filter(item => 
-                                        item.id !== selectedItem.id && item.is_available
-                                    );
+                                    stackItems = menuItems.filter(item => item.id !== selectedItem.id && item.is_available);
                                 }
-
-                                // Shuffle and take up to 6
                                 const shuffled = [...stackItems].sort(() => Math.random() - 0.5).slice(0, 6);
-
                                 if (shuffled.length === 0) return null;
 
                                 return (
-                                    <Box mb="lg">
+                                    <Box px="lg" pb="md">
                                         <Group gap="sm" mb="xs">
                                             <IconShoppingCart size={20} style={{ color: 'var(--mantine-color-orange-6)' }} />
                                             <Text size="md" fw={700}>Stack your order</Text>
                                         </Group>
-                                        <Text size="sm" c="dimmed" mb="sm">
-                                            Add a drink or dessert — save on delivery
-                                        </Text>
+                                        <Text size="sm" c="dimmed" mb="sm">Add a drink or dessert — save on delivery</Text>
                                         <ScrollArea scrollbars="x" type="never">
                                             <Group gap="sm" style={{ flexWrap: 'nowrap' }} pb="xs">
                                                 {shuffled.map((item) => (
@@ -2034,22 +1934,12 @@ const RestaurantMenuPage = () => {
                                                         radius="md"
                                                         style={{ minWidth: '140px', maxWidth: '160px', flexShrink: 0, cursor: 'pointer', overflow: 'hidden' }}
                                                         onClick={() => {
-                                                            // Quick-add this item to cart with quantity 1
                                                             if (restaurant?.id) {
                                                                 addToCartContext({
-                                                                    id: item.id,
-                                                                    name: item.name,
-                                                                    price_cents: item.price_cents,
-                                                                    quantity: 1,
-                                                                    modifiers: [],
-                                                                    restaurant_id: restaurant.id,
+                                                                    id: item.id, name: item.name, price_cents: item.price_cents,
+                                                                    quantity: 1, modifiers: [], restaurant_id: restaurant.id,
                                                                 }, restaurant.id);
-                                                                notifications.show({
-                                                                    title: 'Added to order',
-                                                                    message: `${item.name} added`,
-                                                                    color: 'green',
-                                                                    autoClose: 2000,
-                                                                });
+                                                                notifications.show({ title: 'Added to order', message: `${item.name} added`, color: 'green', autoClose: 2000 });
                                                             }
                                                         }}
                                                     >
@@ -2078,46 +1968,36 @@ const RestaurantMenuPage = () => {
                                 );
                             })()}
                         </Box>
-                        </Box>
                     </ScrollArea>
 
-                    {/* Add to Order Button - Fixed at Bottom */}
+                    {/* ADD TO CART Button - Fixed at Bottom */}
                     <Box
                         style={{
                             position: 'sticky',
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
+                            bottom: 0, left: 0, right: 0,
                             backgroundColor: 'white',
-                            borderTop: '1px solid var(--mantine-color-gray-3)',
-                            padding: '0px 16px',
-                            height: '140px',
+                            borderTop: '1px solid #e5e7eb',
+                            padding: '12px 16px',
+                            paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
                             zIndex: 10,
                         }}
                     >
-                    <Button
+                        <Button
                             fullWidth
-                            size="lg"
-                        color="orange"
-                            radius="md"
-                        onClick={addToCartFromModal}
+                            size="xl"
+                            color="red"
+                            radius="xl"
+                            onClick={addToCartFromModal}
                             style={{
                                 height: '56px',
-                                fontSize: '16px',
-                                fontWeight: 600,
-                                marginTop: '10px',
-                                marginBottom: '10px',
+                                fontSize: '18px',
+                                fontWeight: 700,
+                                backgroundColor: '#ef4444',
+                                textTransform: 'uppercase',
+                                letterSpacing: '1px',
                             }}
                         >
-                            <Group justify="space-between" style={{ width: '100%' }}>
-                                <Group gap="xs">
-                                    <IconShoppingCart size={20} />
-                                    <Text fw={600} size="md">Add to Order</Text>
-                </Group>
-                                <Text fw={700} size="lg">
-                                    ${totalPrice.toFixed(2)}
-                                </Text>
-                            </Group>
+                            ADD TO CART • ${totalPrice.toFixed(2)}
                         </Button>
                     </Box>
                 </Box>

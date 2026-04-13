@@ -5,6 +5,31 @@ import { LogIn, User, Lock, Loader2, Mail, ArrowLeft } from 'lucide-react';
 // Import the background image
 import hubBackgroundImage from '@/assets/hub_background.png';
 
+/**
+ * Normalize ?redirect= so navigation always targets an app path (leading /).
+ * Values like "merchant-portal" would otherwise resolve relative to /business-auth and break.
+ */
+function normalizeRedirectPath(raw: string | null | undefined): string {
+  const fallback = '/hub';
+  if (raw == null || typeof raw !== 'string') return fallback;
+  let path = raw.trim();
+  if (!path) return fallback;
+  if (/^https?:\/\//i.test(path)) {
+    try {
+      const u = new URL(path);
+      if (u.origin === window.location.origin) {
+        return `${u.pathname}${u.search}${u.hash}`;
+      }
+      return fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  if (path.startsWith('//')) return fallback;
+  if (!path.startsWith('/')) path = `/${path}`;
+  return path;
+}
+
 const BusinessAuth: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,11 +47,22 @@ const BusinessAuth: React.FC = () => {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const { toast } = useToast();
 
-  // Get redirect parameter from URL
+  // Get redirect parameter from URL (always a safe same-origin path)
   const getRedirectPath = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const redirect = urlParams.get('redirect');
-    return redirect || '/hub';
+    return normalizeRedirectPath(urlParams.get('redirect'));
+  };
+
+  const replaceLocationToRedirect = () => {
+    let path = getRedirectPath();
+    const next = new URL(path, window.location.origin);
+    const want = `${next.pathname}${next.search}`;
+    const cur = `${window.location.pathname}${window.location.search}`;
+    // Avoid reload loop (e.g. ?redirect=/business-auth while on this page)
+    if (want === cur || next.pathname === '/business-auth') {
+      path = '/hub';
+    }
+    window.location.replace(new URL(path, window.location.origin).href);
   };
 
   const redirectToExecutiveProfile = () => {
@@ -45,9 +81,9 @@ const BusinessAuth: React.FC = () => {
           redirectToExecutiveProfile();
           return;
         }
-        setUser(user);
-        const redirectPath = getRedirectPath();
-        window.location.href = redirectPath;
+        // Hard-navigate without setUser — avoids an infinite "Redirecting to portal..." state if navigation fails
+        replaceLocationToRedirect();
+        return;
       }
     };
     
@@ -77,9 +113,8 @@ const BusinessAuth: React.FC = () => {
               title: "Welcome!",
               description: "You've been signed in successfully.",
             });
-            const redirectPath = getRedirectPath();
             setTimeout(() => {
-              window.location.href = redirectPath;
+              replaceLocationToRedirect();
             }, 1000);
           }
         }
@@ -132,10 +167,8 @@ const BusinessAuth: React.FC = () => {
           title: "Success!",
           description: "Signing you in...",
         });
-        const redirectPath = getRedirectPath();
-        // Use relative path to stay on current domain (important for hq.cravenusa.com)
         setTimeout(() => {
-          window.location.href = redirectPath;
+          replaceLocationToRedirect();
         }, 1000);
       }
     } catch (error: any) {
@@ -294,10 +327,9 @@ const BusinessAuth: React.FC = () => {
         // Clear URL parameters
         window.history.replaceState({}, document.title, '/business-auth');
         
-        // Redirect to hub
-        const redirectPath = getRedirectPath();
+        // Redirect to hub (query was cleared above; getRedirectPath → /hub)
         setTimeout(() => {
-          window.location.href = redirectPath;
+          replaceLocationToRedirect();
         }, 1000);
       } else {
         // Clear the form and show login

@@ -4,6 +4,7 @@ import { Burger, Button, Group } from '@mantine/core';
 import { IconBell, IconHome } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { uuidLastFour } from '@/utils/executiveUuidDisplay';
 
 interface CompanyHeaderProps {
   opened?: boolean;
@@ -20,6 +21,8 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   const [isExecutive, setIsExecutive] = React.useState(false);
+  /** Last 4 of exec_users.id when present; else auth user id for executives without a row yet. */
+  const [executiveIdHint, setExecutiveIdHint] = React.useState<string | null>(null);
   const [notificationCount, setNotificationCount] = React.useState(0);
   const initializedRef = React.useRef(false);
   const lastCountRef = React.useRef(0);
@@ -95,7 +98,7 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
 
       const [rolesRes, execRes] = await Promise.all([
         supabase.from('user_roles').select('role').eq('user_id', user.id),
-        supabase.from('exec_users').select('user_id').eq('user_id', user.id).maybeSingle(),
+        supabase.from('exec_users').select('id, user_id').eq('user_id', user.id).maybeSingle(),
       ]);
       if (cancelled) return;
 
@@ -110,6 +113,16 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
       const hasRole = (rolesRes.data || []).some((r: any) => execRoles.has(r.role));
       const allowed = hasRole || !!execRes.data;
       setIsExecutive(allowed);
+
+      if (allowed) {
+        const execRow = execRes.data as { id?: string; user_id?: string } | null;
+        const fromExec = uuidLastFour(execRow?.id);
+        const fromAuth = uuidLastFour(user.id);
+        setExecutiveIdHint(fromExec ?? fromAuth ?? null);
+      } else {
+        setExecutiveIdHint(null);
+      }
+
       if (!allowed) return;
 
       await refreshNotifications(user.id);
@@ -243,6 +256,20 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
           >
             Corporate HQ
           </div>
+          {isExecutive && executiveIdHint ? (
+            <div
+              style={{
+                fontSize: 10,
+                color: '#9ca3af',
+                marginTop: 2,
+                letterSpacing: '0.04em',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+              }}
+              title="Last 4 characters of your executive record UUID (or account ID if no record yet)"
+            >
+              Exec ID ·•••{executiveIdHint}
+            </div>
+          ) : null}
         </div>
       </div>
       <div

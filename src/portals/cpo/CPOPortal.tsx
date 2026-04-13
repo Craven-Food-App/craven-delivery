@@ -14,6 +14,7 @@ import {
   IconTargetArrow,
   IconBuildingStore,
   IconMessage,
+  IconPackage,
 } from '@tabler/icons-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,11 +31,19 @@ import PartnerOnboarding from './tabs/PartnerOnboarding';
 import RenewalCalendar from './tabs/RenewalCalendar';
 import PartnerScorecards from './tabs/PartnerScorecards';
 import MerchantMetrics from './tabs/MerchantMetrics';
+import VendorRecords from './tabs/VendorRecords';
 
 const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
 const TABS: PortalTab[] = [
   { id: 'pipeline', label: 'Pipeline', description: 'Deal pipeline and strategic partners.', section: 'Operations', icon: IconLine },
+  {
+    id: 'vendors',
+    label: 'Vendors',
+    description: 'Vendor directory: names, points of contact, terms, renewals — not the deal pipeline.',
+    section: 'Operations',
+    icon: IconPackage,
+  },
   { id: 'dashboard', label: 'Dashboard', description: 'Partnership metrics and executive overview.', section: 'Operations', icon: IconLayoutDashboard },
   { id: 'contracts', label: 'Contracts', description: 'Contract management and secure uploads.', section: 'Operations', icon: IconFileText },
   { id: 'activity', label: 'Activity Log', description: 'Partnership activity and session tracking.', section: 'Operations', icon: IconTimeline },
@@ -129,6 +138,7 @@ const CPOPortal: React.FC = () => {
     switch (activeTab) {
       case 'dashboard': return <CPODashboard />;
       case 'pipeline': return <PartnerPipeline />;
+      case 'vendors': return <VendorRecords />;
       case 'contracts': return <ContractManagement />;
       case 'activity': return <ActivityLog />;
       case 'onboarding': return <PartnerOnboarding />;

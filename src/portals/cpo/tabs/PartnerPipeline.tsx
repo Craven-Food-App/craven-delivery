@@ -604,7 +604,7 @@ const PartnerPipeline: React.FC = () => {
         <Alert variant="light" color="gray" icon={<IconInfoCircle size={18} />} title="How this board works">
           <List size="sm" spacing={6} withPadding>
             <List.Item>
-              <strong>Stages</strong> — Each column is where that partner sits in the deal. Advance from the ⋮ menu, or set stage when
+              <strong>Stages</strong> — Each column is where this relationship sits in the deal. Advance from the ⋮ menu, or set stage when
               creating / importing.
             </List.Item>
             <List.Item>

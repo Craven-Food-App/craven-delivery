@@ -13,6 +13,7 @@ import EquityDashboard from './EquityDashboard';
 import VestingProgress from './VestingProgress';
 import ExecutiveGuidedTour from './ExecutiveGuidedTour';
 import { Tabs } from '@mantine/core';
+import { uuidLastFour } from '@/utils/executiveUuidDisplay';
 
 const ExecutiveDashboard: React.FC = () => {
   const [activeOfficers, setActiveOfficers] = useState(0);
@@ -96,6 +97,11 @@ const ExecutiveDashboard: React.FC = () => {
           <Text c="dimmed" size="lg">
             View your appointment details and corporate officer directory.
           </Text>
+          {execUserId && uuidLastFour(execUserId) ? (
+            <Text size="xs" c="dimmed" mt="xs" style={{ fontFamily: 'ui-monospace, Menlo, Monaco, Consolas, monospace' }}>
+              Executive record ID ·•••{uuidLastFour(execUserId)}
+            </Text>
+          ) : null}
         </div>
 
         <Grid>

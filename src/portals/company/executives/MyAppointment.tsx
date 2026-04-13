@@ -16,6 +16,7 @@ import { notifications } from '@mantine/notifications';
 import { IconDownload } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import ActivationTimeline from './ActivationTimeline';
+import { uuidLastFour } from '@/utils/executiveUuidDisplay';
 
 interface CorporateOfficer {
   id: string;
@@ -53,6 +54,8 @@ const normalizeDisplayStatus = (status?: string) => {
 const MyAppointment: React.FC = () => {
   const [officer, setOfficer] = useState<CorporateOfficer | null>(null);
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
+  /** exec_users.id — last 4 shown as Executive record ID */
+  const [executiveRecordId, setExecutiveRecordId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -68,6 +71,7 @@ const MyAppointment: React.FC = () => {
 
       if (!user) {
         setOfficer(null);
+        setExecutiveRecordId(null);
         return;
       }
 
@@ -76,6 +80,8 @@ const MyAppointment: React.FC = () => {
         .select('id, title, role, metadata')
         .eq('user_id', user.id)
         .maybeSingle();
+
+      setExecutiveRecordId(execUser?.id ?? null);
 
       let appointmentQuery = supabase
         .from('executive_appointments')
@@ -190,6 +196,11 @@ const MyAppointment: React.FC = () => {
         <Center>
           <Stack align="center" gap="md">
             <Text c="dimmed">No appointment found for your account</Text>
+            {executiveRecordId && uuidLastFour(executiveRecordId) ? (
+              <Text size="xs" c="dimmed" style={{ fontFamily: 'ui-monospace, Menlo, Monaco, Consolas, monospace' }}>
+                Executive record ID ·•••{uuidLastFour(executiveRecordId)}
+              </Text>
+            ) : null}
             <Text size="sm" c="dimmed">
               If you believe this is an error, please contact the Corporate Secretary.
             </Text>
@@ -218,6 +229,11 @@ const MyAppointment: React.FC = () => {
               <Text size="lg" c="dimmed">
                 {officer.title}
               </Text>
+              {executiveRecordId && uuidLastFour(executiveRecordId) ? (
+                <Text size="xs" c="dimmed" mt={6} style={{ fontFamily: 'ui-monospace, Menlo, Monaco, Consolas, monospace' }}>
+                  Executive record ID ·•••{uuidLastFour(executiveRecordId)}
+                </Text>
+              ) : null}
             </div>
             <Badge color={getStatusColor(officer.status)} size="lg" variant="light">
               {officer.status}
