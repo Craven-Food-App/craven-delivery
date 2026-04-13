@@ -2562,7 +2562,9 @@ const MainHub: React.FC = () => {
               maxLength={4}
               value={ssnInput}
               onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, ''); // Only numbers
+                const value = userAccess.isExecutive 
+                  ? e.target.value.replace(/[^0-9a-fA-F]/g, '').toLowerCase()
+                  : e.target.value.replace(/\D/g, '');
                 if (value.length <= 4) {
                   setSsnInput(value);
                 }
