@@ -14,6 +14,8 @@ import {
   IconChevronsRight,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
+import { useFeatureHighlights } from '@/hooks/useFeatureHighlights';
+import { FeatureHighlight } from './FeatureHighlight';
 
 export interface PortalTab {
   id: string;
@@ -33,6 +35,7 @@ export interface PortalKPI {
 }
 
 interface UnifiedPortalShellProps {
+  portalId?: string;
   portalName: string;
   portalSubtitle: string;
   sectionLabel: string;
@@ -52,6 +55,7 @@ interface UnifiedPortalShellProps {
 }
 
 export function UnifiedPortalShell({
+  portalId = 'general',
   portalName,
   portalSubtitle,
   sectionLabel,
@@ -74,6 +78,7 @@ export function UnifiedPortalShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(activeTabMeta?.section || null);
+  const { getFeature, markSeen } = useFeatureHighlights(portalId);
 
   // Close mobile nav on tab change
   const handleTabChange = (tabId: string) => {
@@ -112,17 +117,33 @@ export function UnifiedPortalShell({
                   <h1 className="mt-1 text-lg font-semibold text-foreground">{portalName}</h1>
                   <p className="mt-1 text-xs text-muted-foreground">{portalSubtitle}</p>
                 </div>
-              )}
-              <button
-                onClick={() => setSidebarCollapsed(c => !c)}
-                className={cn(
-                  'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors',
-                  sidebarCollapsed && 'mx-auto'
-                )}
-                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              >
-                {sidebarCollapsed ? <IconChevronsRight size={14} /> : <IconChevronsLeft size={14} />}
-              </button>
+               )}
+              {(() => {
+                const collapseFeature = getFeature('collapse-sidebar');
+                const collapseButton = (
+                  <button
+                    onClick={() => setSidebarCollapsed(c => !c)}
+                    className={cn(
+                      'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors',
+                      sidebarCollapsed && 'mx-auto'
+                    )}
+                    title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  >
+                    {sidebarCollapsed ? <IconChevronsRight size={14} /> : <IconChevronsLeft size={14} />}
+                  </button>
+                );
+                return collapseFeature ? (
+                  <FeatureHighlight
+                    active
+                    title={collapseFeature.title}
+                    description={collapseFeature.description}
+                    onDismiss={() => markSeen(collapseFeature.id)}
+                    position={sidebarCollapsed ? 'right' : 'bottom'}
+                  >
+                    {collapseButton}
+                  </FeatureHighlight>
+                ) : collapseButton;
+              })()}
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-3">

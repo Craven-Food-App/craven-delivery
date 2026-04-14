@@ -158,6 +158,7 @@ const CPOPortal: React.FC = () => {
 
   return (
     <UnifiedPortalShell
+      portalId="cpo"
       portalName="CPO Partnership Portal"
       portalSubtitle="Partnership ecosystem and merchant management"
       sectionLabel="Chief Partnership Officer"
