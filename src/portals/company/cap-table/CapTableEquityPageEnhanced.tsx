@@ -22,6 +22,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import EquityGrantsList from '../governance-admin/EquityGrantsList';
 import EquityGrantWizard from '../governance-admin/wizards/EquityGrantWizard';
+import {
+  fetchTorranceUserId,
+  FOUNDER_BOARD_ROLES_LINE,
+  FOUNDER_CEO_LABEL,
+} from '@/utils/capTableCanonical';
 
 // ============================================================================
 // TYPES
@@ -62,9 +67,6 @@ const FOUNDER_SHARES = 10500000;
 const JUSTIN_SHARES = 4200000;
 const JASON_SHARES = 2100000;
 const MICRO_POOL_SHARES = 1400000;
-
-const FOUNDER_CEO_LABEL = 'Founder CEO';
-const FOUNDER_BOARD_ROLES_LINE = 'Secretary · Board Chair · Director';
 
 function isTorranceStromanDisplayName(name: string | undefined | null): boolean {
   const n = (name || '').toLowerCase();
@@ -227,43 +229,58 @@ const CapTableEquityPageEnhanced: React.FC = () => {
       });
 
       console.log('📊 Net shares by user_id after filtering revoked:', sharesByUserId);
-      const recipientUserIds = Object.keys(sharesByUserId);
-      
-      if (recipientUserIds.length === 0) {
-        setExecutives([]);
-        return;
+
+      const torranceUserId = await fetchTorranceUserId();
+      if (torranceUserId && sharesByUserId[torranceUserId]) {
+        delete sharesByUserId[torranceUserId];
+        console.log(
+          '📌 Removed founder ledger aggregate for CEO user_id — stake shown only as canonical founder row',
+        );
       }
 
-      // 3. Get exec_users with role information
-      const { data: execData, error: execError } = await supabase
-        .from('exec_users')
-        .select('id, user_id, title, role')
-        .in('user_id', recipientUserIds);
+      const recipientUserIdsAfterFounder = Object.keys(sharesByUserId);
 
-      if (execError) throw new Error(`Exec users error: ${execError.message}`);
-      
+      // 3. Get exec_users with role information (skip .in([]) — PostgREST rejects empty IN lists)
+      let execData: { id: string; user_id: string; title: string | null; role: string }[] = [];
+      if (recipientUserIdsAfterFounder.length > 0) {
+        const { data, error: execError } = await supabase
+          .from('exec_users')
+          .select('id, user_id, title, role')
+          .in('user_id', recipientUserIdsAfterFounder);
+
+        if (execError) throw new Error(`Exec users error: ${execError.message}`);
+        execData = data || [];
+      }
+
       console.log('👥 Exec users found:', execData?.map(e => ({
         user_id: e.user_id,
         title: e.title,
         role: e.role
       })));
 
-      // 4. Get names from user_profiles
-      const { data: userProfiles } = await supabase
-        .from('user_profiles')
-        .select('id, full_name')
-        .in('id', recipientUserIds);
+      // 4. Get names from user_profiles (match auth user via user_id, not profile row id)
+      const { data: userProfiles } =
+        recipientUserIdsAfterFounder.length > 0
+          ? await supabase
+              .from('user_profiles')
+              .select('user_id, full_name')
+              .in('user_id', recipientUserIdsAfterFounder)
+          : { data: [] as { user_id: string | null; full_name: string | null }[] };
 
       // 5. Get names from employees (fallback)
-      const { data: employees } = await supabase
-        .from('employees')
-        .select('user_id, first_name, last_name')
-        .in('user_id', recipientUserIds);
+      const { data: employees } =
+        recipientUserIdsAfterFounder.length > 0
+          ? await supabase
+              .from('employees')
+              .select('user_id, first_name, last_name')
+              .in('user_id', recipientUserIdsAfterFounder)
+          : { data: [] as { user_id: string; first_name: string | null; last_name: string | null }[] };
 
       // Build name map - prioritize user_profiles, then employees
       const nameMap: Record<string, string> = {};
       (userProfiles || []).forEach(profile => {
-        if (profile.full_name) nameMap[profile.id] = profile.full_name;
+        const uid = profile.user_id;
+        if (uid && profile.full_name) nameMap[uid] = profile.full_name;
       });
       (employees || []).forEach(emp => {
         if (emp.user_id && !nameMap[emp.user_id]) {
@@ -275,7 +292,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
       // 6. Build executive equity list with proper names
       const executiveEquity: ExecutiveEquity[] = [];
 
-      for (const userId of recipientUserIds) {
+      for (const userId of recipientUserIdsAfterFounder) {
         const exec = execData?.find(e => e.user_id === userId);
         const shareData = sharesByUserId[userId];
 

@@ -14,6 +14,10 @@ import VestingProgress from './VestingProgress';
 import ExecutiveGuidedTour from './ExecutiveGuidedTour';
 import { Tabs } from '@mantine/core';
 import { uuidLastFour } from '@/utils/executiveUuidDisplay';
+import {
+  fetchExecutiveDirectoryOfficers,
+  officerMatchesActiveDirectoryFilter,
+} from '@/utils/executiveDirectoryData';
 
 const ExecutiveDashboard: React.FC = () => {
   const [activeOfficers, setActiveOfficers] = useState(0);
@@ -31,19 +35,13 @@ const ExecutiveDashboard: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      const [officersResult, execUsersResult] = await Promise.all([
-        supabase
-          .from('corporate_officers')
-          .select('*', { count: 'exact', head: true })
-          .in('status', ['ACTIVE', 'active', 'APPOINTED', 'appointed']),
-        supabase
-          .from('exec_users')
-          .select('*', { count: 'exact', head: true })
-          .in('officer_status', ['active', 'ACTIVE', 'appointed', 'APPOINTED']),
-      ]);
-
-      // exec_users is the authoritative source for active officers
-      setActiveOfficers(execUsersResult.count || 0);
+      // Same definition as Officer Directory default ("Active" filter): status includes "active"
+      try {
+        const directoryRows = await fetchExecutiveDirectoryOfficers();
+        setActiveOfficers(directoryRows.filter(officerMatchesActiveDirectoryFilter).length);
+      } catch {
+        setActiveOfficers(0);
+      }
 
       // Check guided tour status for current user
       if (user) {

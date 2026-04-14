@@ -2,10 +2,12 @@
 const DEV_ORIGINS = [
   "http://localhost:8080",
   "http://localhost:8081",
+  "http://localhost:8082",
   "http://localhost:5173",
   "http://localhost:8092",
   "http://127.0.0.1:8080",
   "http://127.0.0.1:8081",
+  "http://127.0.0.1:8082",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:8092",
   "capacitor://localhost",
@@ -13,6 +15,17 @@ const DEV_ORIGINS = [
   "http://localhost",
   "https://localhost",
 ];
+
+/** Any http(s)://localhost or 127.0.0.1 with any port — avoids CORS breaks when Vite uses a new port. */
+const isLocalhostHttpOrigin = (origin: string): boolean => {
+  try {
+    const u = new URL(origin);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    return u.hostname === "localhost" || u.hostname === "127.0.0.1";
+  } catch {
+    return false;
+  }
+};
 
 // Get allowed origins from environment or use defaults
 const getAllowedOrigins = (): string[] => {
@@ -49,7 +62,9 @@ export const getCorsHeaders = (origin: string | null) => {
   const allowedOrigins = getAllowedOrigins();
   const ok =
     origin != null &&
-    (allowedOrigins.includes(origin) || isLovableAppPreviewOrigin(origin));
+    (allowedOrigins.includes(origin) ||
+      isLovableAppPreviewOrigin(origin) ||
+      isLocalhostHttpOrigin(origin));
   const allowedOrigin = ok ? origin! : allowedOrigins[0];
 
   return {

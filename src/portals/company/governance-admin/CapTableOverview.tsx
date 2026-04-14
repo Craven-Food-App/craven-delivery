@@ -17,6 +17,11 @@ import {
 } from '@mantine/core';
 import { IconChartPie, IconAlertCircle } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  fetchTorranceUserId,
+  FOUNDER_BOARD_ROLES_LINE,
+  FOUNDER_CEO_LABEL,
+} from '@/utils/capTableCanonical';
 
 // ============================================================================
 // TYPES
@@ -78,40 +83,77 @@ const CapTableOverview: React.FC = () => {
 
       setCapTable(capData);
 
-      // 2. Get ALL executives from equity_ledger
+      const torranceUserId = await fetchTorranceUserId();
+
+      // 2. Equity ledger: aggregate net grants per recipient (one row per person)
       const { data: ledgerData, error: ledgerError } = await supabase
         .from('equity_ledger')
-        .select('recipient_user_id, shares_amount, price_per_share')
-        .eq('transaction_type', 'grant')
-        .order('shares_amount', { ascending: false });
+        .select('recipient_user_id, shares_amount, price_per_share, transaction_type')
+        .not('recipient_user_id', 'is', null);
 
       if (ledgerError) throw new Error(`Equity ledger error: ${ledgerError.message}`);
 
-      // 3. Get executive names from exec_users
+      const netByRecipient: Record<string, { shares: number; strike: number }> = {};
+      for (const row of ledgerData || []) {
+        const uid = row.recipient_user_id;
+        if (!uid) continue;
+        const amt = Number(row.shares_amount) || 0;
+        if (row.transaction_type === 'grant') {
+          if (amt >= 17500000 && amt <= 18500000) continue;
+          if (!netByRecipient[uid]) netByRecipient[uid] = { shares: 0, strike: Number(row.price_per_share) || 0 };
+          netByRecipient[uid].shares += amt;
+        } else if (row.transaction_type === 'cancellation') {
+          if (netByRecipient[uid]) netByRecipient[uid].shares -= amt;
+        }
+      }
+
+      if (torranceUserId) {
+        delete netByRecipient[torranceUserId];
+      }
+
+      Object.keys(netByRecipient).forEach((uid) => {
+        if (netByRecipient[uid].shares <= 0) delete netByRecipient[uid];
+      });
+
+      const recipientIds = Object.keys(netByRecipient);
+
+      // 3. Exec roster + display names
       const { data: execData, error: execError } = await supabase
         .from('exec_users')
-        .select('user_id, name, title');
+        .select('user_id, title, role');
 
       if (execError) throw new Error(`Exec users error: ${execError.message}`);
 
-      // 4. Match ledger to executives
+      let profiles: { user_id: string | null; full_name: string | null }[] = [];
+      if (recipientIds.length > 0) {
+        const { data: profData } = await supabase
+          .from('user_profiles')
+          .select('user_id, full_name')
+          .in('user_id', recipientIds);
+        profiles = profData || [];
+      }
+
       const executiveEquity: ExecutiveEquity[] = [];
 
-      for (const grant of ledgerData || []) {
-        const exec = execData?.find(e => e.user_id === grant.recipient_user_id);
-        
-        if (exec) {
-          const percentage = (grant.shares_amount / capData.total_authorized) * 100;
-          
-          executiveEquity.push({
-            name: exec.name || 'Executive',
-            title: exec.title || 'Executive',
-            shares: grant.shares_amount,
-            percentage: percentage,
-            strike_price: grant.price_per_share || 0,
-          });
-        }
+      for (const uid of recipientIds) {
+        const exec = execData?.find((e) => e.user_id === uid);
+        if (!exec) continue;
+
+        const prof = profiles.find((p) => p.user_id === uid);
+        const name = prof?.full_name?.trim() || 'Executive';
+        const net = netByRecipient[uid];
+        const percentage = (net.shares / capData.total_authorized) * 100;
+
+        executiveEquity.push({
+          name,
+          title: exec.title || exec.role || 'Executive',
+          shares: net.shares,
+          percentage,
+          strike_price: net.strike || 0,
+        });
       }
+
+      executiveEquity.sort((a, b) => b.shares - a.shares);
 
       setExecutives(executiveEquity);
       
@@ -323,7 +365,8 @@ const CapTableOverview: React.FC = () => {
                       <Table.Td>
                         <div>
                           <Text fw={600} size="sm">Torrance Stroman</Text>
-                          <Text size="xs" c="dimmed">Founder & CEO</Text>
+                          <Text size="xs" c="dimmed">{FOUNDER_CEO_LABEL}</Text>
+                          <Text size="xs" c="dimmed">{FOUNDER_BOARD_ROLES_LINE}</Text>
                         </div>
                       </Table.Td>
                       <Table.Td>

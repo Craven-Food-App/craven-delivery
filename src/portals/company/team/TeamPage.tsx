@@ -5,6 +5,7 @@ import { IconPlus, IconMail, IconEdit, IconEye, IconCheck } from '@tabler/icons-
 import { supabase } from '@/integrations/supabase/client';
 import { NumberFormatter } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+import { dedupeTeamExecutives } from '@/utils/executiveDuplicateMerge';
 
 const JASON_EMAIL = 'jparcell2022@gmail.com';
 
@@ -94,6 +95,7 @@ const TeamPage: React.FC = () => {
                 .from('equity_ledger')
                 .select('shares_amount, transaction_type, grant_id, recipient_user_id')
                 .eq('transaction_type', 'grant')
+                .eq('recipient_user_id', exec.user_id)
                 .gte('shares_amount', 10400000)
                 .lte('shares_amount', 10600000);
               if (torranceGrants?.length) equityData = torranceGrants;
@@ -103,6 +105,7 @@ const TeamPage: React.FC = () => {
                 .from('equity_ledger')
                 .select('shares_amount, transaction_type, grant_id, recipient_user_id')
                 .eq('transaction_type', 'grant')
+                .eq('recipient_user_id', exec.user_id)
                 .gte('shares_amount', 4100000)
                 .lte('shares_amount', 4300000);
               if (justinGrants?.length) equityData = justinGrants;
@@ -128,7 +131,8 @@ const TeamPage: React.FC = () => {
         })
       );
 
-      setExecutives(executivesWithEquity.filter((exec): exec is Executive => exec !== null));
+      const filtered = executivesWithEquity.filter((exec): exec is Executive => exec !== null);
+      setExecutives(dedupeTeamExecutives(filtered, totalAuthorized));
     } catch (err: any) {
       notifications.show({ title: 'Error', message: err.message || 'Failed to load executives', color: 'red' });
     } finally {
