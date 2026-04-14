@@ -23033,6 +23033,84 @@ export type Database = {
         }
         Relationships: []
       }
+      portal_feature_highlights: {
+        Row: {
+          created_at: string
+          description: string
+          feature_key: string
+          highlight_type: string
+          id: string
+          is_active: boolean
+          portal_id: string
+          priority: number
+          target_selector: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          feature_key: string
+          highlight_type?: string
+          id?: string
+          is_active?: boolean
+          portal_id: string
+          priority?: number
+          target_selector?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          feature_key?: string
+          highlight_type?: string
+          id?: string
+          is_active?: boolean
+          portal_id?: string
+          priority?: number
+          target_selector?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      portal_feature_seen: {
+        Row: {
+          feature_id: string
+          id: string
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          feature_id: string
+          id?: string
+          seen_at?: string
+          user_id: string
+        }
+        Update: {
+          feature_id?: string
+          id?: string
+          seen_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_feature_seen_feature_id_fkey"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "portal_feature_highlights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_feature_seen_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       positions: {
         Row: {
           code: string
