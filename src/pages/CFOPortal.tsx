@@ -36,7 +36,7 @@ import { FuturisticChart } from '@/components/cfo/FuturisticChart';
 import { MantineTable } from '@/components/cfo/MantineTable';
 import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 import { useToast } from '@/hooks/useEmbeddedToast';
-import { hasFullAccess } from '@/utils/torranceAccess';
+import { hasFullAccess, hasCFOPortalAccess } from '@/utils/torranceAccess';
 import {
   IconCurrencyDollar,
   IconFileText,
@@ -153,7 +153,7 @@ function CFOPortalContent() {
     getUser();
   }, []);
 
-  const isTorrance = user ? hasFullAccess(user.email) : false;
+  const isTorrance = user ? hasCFOPortalAccess(user.email) : false;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
