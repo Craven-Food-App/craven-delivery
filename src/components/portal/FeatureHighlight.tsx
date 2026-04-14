@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { IconInfoCircle, IconX } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +21,9 @@ export function FeatureHighlight({
   position = 'right',
 }: FeatureHighlightProps) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   // Auto-show tooltip after a short delay when active
   useEffect(() => {
@@ -29,11 +32,51 @@ export function FeatureHighlight({
     return () => clearTimeout(timer);
   }, [active]);
 
+  // Position the tooltip relative to the wrapper
+  useEffect(() => {
+    if (!showTooltip || !wrapperRef.current) return;
+    const updatePos = () => {
+      const rect = wrapperRef.current!.getBoundingClientRect();
+      const gap = 12;
+      let top = 0, left = 0;
+      switch (position) {
+        case 'top':
+          top = rect.top - gap;
+          left = rect.left + rect.width / 2;
+          break;
+        case 'bottom':
+          top = rect.bottom + gap;
+          left = rect.left + rect.width / 2;
+          break;
+        case 'left':
+          top = rect.top + rect.height / 2;
+          left = rect.left - gap;
+          break;
+        case 'right':
+        default:
+          top = rect.top + rect.height / 2;
+          left = rect.right + gap;
+          break;
+      }
+      setTooltipPos({ top, left });
+    };
+    updatePos();
+    window.addEventListener('scroll', updatePos, true);
+    window.addEventListener('resize', updatePos);
+    return () => {
+      window.removeEventListener('scroll', updatePos, true);
+      window.removeEventListener('resize', updatePos);
+    };
+  }, [showTooltip, position]);
+
   // Close on outside click
   useEffect(() => {
     if (!showTooltip) return;
     const handler = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+      if (
+        wrapperRef.current && !wrapperRef.current.contains(e.target as Node) &&
+        tooltipRef.current && !tooltipRef.current.contains(e.target as Node)
+      ) {
         handleDismiss();
       }
     };
@@ -48,11 +91,11 @@ export function FeatureHighlight({
 
   if (!active) return <>{children}</>;
 
-  const tooltipPositionClasses: Record<string, string> = {
-    top: 'bottom-full left-1/2 -translate-x-1/2 mb-3',
-    bottom: 'top-full left-1/2 -translate-x-1/2 mt-3',
-    left: 'right-full top-1/2 -translate-y-1/2 mr-3',
-    right: 'left-full top-1/2 -translate-y-1/2 ml-3',
+  const transformByPosition: Record<string, string> = {
+    top: 'translate(-50%, -100%)',
+    bottom: 'translate(-50%, 0)',
+    left: 'translate(-100%, -50%)',
+    right: 'translate(0, -50%)',
   };
 
   const arrowClasses: Record<string, string> = {
@@ -63,30 +106,38 @@ export function FeatureHighlight({
   };
 
   return (
-    <div ref={wrapperRef} className="relative inline-flex">
-      {/* Glow ring */}
-      <div
-        className="relative cursor-pointer"
-        onClick={() => {
-          if (showTooltip) {
-            handleDismiss();
-          } else {
-            setShowTooltip(true);
-          }
-        }}
-      >
-        <div className="feature-highlight-glow rounded-lg">
-          {children}
+    <>
+      <div ref={wrapperRef} className="relative inline-flex">
+        {/* Glow ring */}
+        <div
+          className="relative cursor-pointer"
+          onClick={() => {
+            if (showTooltip) {
+              handleDismiss();
+            } else {
+              setShowTooltip(true);
+            }
+          }}
+        >
+          <div className="feature-highlight-glow rounded-lg">
+            {children}
+          </div>
         </div>
       </div>
 
-      {/* Info tooltip */}
-      {showTooltip && (
+      {/* Tooltip rendered via portal to escape overflow:hidden */}
+      {showTooltip && createPortal(
         <div
-          className={cn(
-            'absolute z-[9999] animate-scale-in',
-            tooltipPositionClasses[position]
-          )}
+          ref={tooltipRef}
+          className="animate-scale-in"
+          style={{
+            position: 'fixed',
+            top: tooltipPos.top,
+            left: tooltipPos.left,
+            transform: transformByPosition[position],
+            zIndex: 99999,
+            pointerEvents: 'auto',
+          }}
         >
           {/* Arrow */}
           <div className={cn('absolute h-0 w-0 border-[6px]', arrowClasses[position])} />
@@ -115,7 +166,8 @@ export function FeatureHighlight({
               Got it
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <style>{`
@@ -144,6 +196,6 @@ export function FeatureHighlight({
           100% { background-position: 0% 50%; opacity: 0.5; }
         }
       `}</style>
-    </div>
+    </>
   );
 }
