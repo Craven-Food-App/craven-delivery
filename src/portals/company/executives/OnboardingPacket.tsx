@@ -188,6 +188,16 @@ const OnboardingPacket: React.FC = () => {
             .eq('id', myAppointment.id);
           setAppointmentStatus('READY_FOR_SECRETARY_REVIEW');
         }
+
+        // Auto-advance: if secretary approved AND compliance is already complete, skip to active
+        if (myAppointment.status === 'SECRETARY_APPROVED' && myAppointment.compliance_status === 'payroll_ready') {
+          await supabase
+            .from('executive_appointments')
+            .update({ status: 'active', updated_at: new Date().toISOString() })
+            .eq('id', myAppointment.id);
+          setAppointmentStatus('active');
+          setShowFinalActivation(false);
+        }
       }
     } catch (error: any) {
       notifications.show({
