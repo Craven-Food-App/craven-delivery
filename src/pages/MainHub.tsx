@@ -2640,6 +2640,14 @@ const MainHub: React.FC = () => {
             message.warning('You must set a new PIN to access the Hub.');
           }}
         />
+
+        {/* Unseen Announcement Popups - shown once after PIN login */}
+        {user && showAnnouncementPopup && (
+          <AnnouncementPopup
+            userId={user.id}
+            triggerCheck={showAnnouncementPopup}
+          />
+        )}
       </Layout>
     </ConfigProvider>
   );
