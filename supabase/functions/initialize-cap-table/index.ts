@@ -59,16 +59,16 @@ serve(async (req) => {
     const { data: newCapTable, error: createError } = await supabaseAdmin
       .from('cap_tables')
       .insert({
-        total_authorized: 100000000, // 100 million (using correct column name)
+        total_authorized: 70000000, // 70 million authorized shares
         par_value: 0.001,
-        total_issued: 0, // using correct column name
-        total_unissued: 100000000,
-        equity_pool: 20000000, // 20 million (20%)
-        trust_shares: 60000000, // 60 million (60%)
-        founder_shares: 20000000, // 20 million (20%)
-        trust_percentage: 60.00,
-        founder_percentage: 20.00,
-        pool_percentage: 20.00,
+        total_issued: 0,
+        total_unissued: 70000000,
+        equity_pool: 14700000, // ~21%
+        trust_shares: 40600000, // 58% (Invero, Inc.)
+        founder_shares: 10500000, // 15%
+        trust_percentage: 58.00,
+        founder_percentage: 15.00,
+        pool_percentage: 21.00,
         as_of_date: new Date().toISOString().split('T')[0],
       })
       .select()
