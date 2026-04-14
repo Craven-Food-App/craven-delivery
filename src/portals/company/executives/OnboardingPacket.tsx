@@ -35,6 +35,7 @@ const OnboardingPacket: React.FC = () => {
   const [executiveId, setExecutiveId] = useState<string | null>(null);
   const [executiveName, setExecutiveName] = useState<string>('');
   const [showFinalActivation, setShowFinalActivation] = useState(false);
+  const [canRegenerate, setCanRegenerate] = useState(false);
 
   useEffect(() => {
     loadOnboarding();
