@@ -587,6 +587,37 @@ serve(async (req) => {
       console.log(`[${appointment.id}] Errors:`, errors);
       console.log(`[${appointment.id}] ========================================`);
 
+      if (generatedDocs.length > 0) {
+        try {
+          const syncResponse = await fetch(
+            `${supabaseUrl}/functions/v1/governance-sync-appointment-documents`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': authHeader,
+                'apikey': supabaseAnonKey,
+              },
+              body: JSON.stringify({ appointment_id: appointment.id }),
+            }
+          );
+
+          const syncResult = await syncResponse.json().catch(() => null);
+
+          if (!syncResponse.ok) {
+            const syncError = syncResult?.error || `HTTP ${syncResponse.status}: Failed to sync executive documents`;
+            console.error(`[${appointment.id}] ✗ Failed syncing executive_documents:`, syncError);
+            errors.push(`sync_documents: ${syncError}`);
+          } else {
+            console.log(`[${appointment.id}] ✓ Refreshed executive_documents URLs after regeneration`);
+          }
+        } catch (syncErr: any) {
+          const syncError = syncErr?.message || syncErr?.toString() || 'Failed to sync executive documents';
+          console.error(`[${appointment.id}] ✗ Exception syncing executive_documents:`, syncError);
+          errors.push(`sync_documents: ${syncError}`);
+        }
+      }
+
       results.push({
         appointment_id: appointment.id,
         appointment_name: appointmentName,
