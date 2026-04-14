@@ -48,10 +48,10 @@ export async function fetchExecutiveDirectoryOfficers(): Promise<ExecutiveDirect
         .order('created_at', { ascending: false })
     : { data: [] as Record<string, unknown>[] };
 
-  const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
-  const corpMap = new Map((corpOfficers || []).map((c: { executive_id: string }) => [c.executive_id, c]));
+  const profileMap = new Map((profiles || []).map((p) => [p.user_id, p] as const));
+  const corpMap = new Map((corpOfficers || []).map((c: { executive_id: string }) => [c.executive_id, c] as const));
   const appointmentMap = new Map(
-    (appointments || []).map((a: { executive_id: string }) => [a.executive_id, a]),
+    (appointments || []).map((a: { executive_id: string }) => [a.executive_id, a] as const),
   );
 
   const transformed: ExecutiveDirectoryOfficer[] = (execUsers || []).map((exec: Record<string, unknown>) => {
