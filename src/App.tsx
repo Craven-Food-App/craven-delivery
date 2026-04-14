@@ -475,6 +475,7 @@ const App = () => {
                     <Route path="enforcement" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><EnforcementApprovals /></Suspense>} />
                     <Route path="audit-log" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorAuditLog /></Suspense>} />
                   </Route>
+                  <Route path="/executive/sign" element={<ExecutiveSigningPortal />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
@@ -569,6 +570,7 @@ const App = () => {
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
                   <Route path="/executive-portal/documents" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Documents" />}><ExecutiveDocumentPortal /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/executive/sign" element={<ExecutiveSigningPortal />} />
                   <Route path="*" element={<Navigate to="/company/board" replace />} />
                 </Routes>
               </BrowserRouter>
@@ -596,6 +598,7 @@ const App = () => {
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
                   <Route path="/executive-portal/documents" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Documents" />}><ExecutiveDocumentPortal /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/executive/sign" element={<ExecutiveSigningPortal />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
@@ -623,6 +626,7 @@ const App = () => {
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
                   <Route path="/executive-portal/documents" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Documents" />}><ExecutiveDocumentPortal /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/executive/sign" element={<ExecutiveSigningPortal />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
@@ -650,6 +654,7 @@ const App = () => {
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
                   <Route path="/executive-portal/documents" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Documents" />}><ExecutiveDocumentPortal /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/executive/sign" element={<ExecutiveSigningPortal />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
@@ -677,6 +682,7 @@ const App = () => {
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
                   <Route path="/executive-portal/documents" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Documents" />}><ExecutiveDocumentPortal /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/executive/sign" element={<ExecutiveSigningPortal />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
