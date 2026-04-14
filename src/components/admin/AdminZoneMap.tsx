@@ -85,13 +85,21 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
         }
 
         mapboxgl.accessToken = MAPBOX_CONFIG.accessToken;
-        mapRef.current = new mapboxgl.Map({
-          container: 'admin-zone-map',
-          style: MAPBOX_CONFIG.style,
-          center: MAPBOX_CONFIG.center as [number, number],
-          zoom: MAPBOX_CONFIG.zoom,
-          failIfMajorPerformanceCaveat: false,
-        });
+        let mapInstance: any;
+        try {
+          mapInstance = new mapboxgl.Map({
+            container: 'admin-zone-map',
+            style: MAPBOX_CONFIG.style,
+            center: MAPBOX_CONFIG.center as [number, number],
+            zoom: MAPBOX_CONFIG.zoom,
+            failIfMajorPerformanceCaveat: false,
+          });
+        } catch (e) {
+          console.warn('Mapbox initialization failed:', e);
+          setWebglError(true);
+          return;
+        }
+        mapRef.current = mapInstance;
 
         mapRef.current.on('load', () => {
           if (!mapRef.current) return;
