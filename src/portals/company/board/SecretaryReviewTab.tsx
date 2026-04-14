@@ -286,10 +286,11 @@ interface CardProps {
   onReject: () => void;
   processing: boolean;
   isPending: boolean;
+  onPreviewDoc: (url: string, title: string) => void;
 }
 
 const AppointmentReviewCard: React.FC<CardProps> = ({
-  appointment, notes, onNotesChange, onApprove, onReject, processing, isPending,
+  appointment, notes, onNotesChange, onApprove, onReject, processing, isPending, onPreviewDoc,
 }) => {
   const signedCount = appointment.documents.filter(d => d.signature_status === 'signed').length;
   const totalDocs = appointment.documents.length;
