@@ -77,7 +77,8 @@ export default function ExecutiveSigningPortal() {
                   title: doc.name,
                   document_type: doc.name,
                   file_url: doc.fileUrl,
-                  created_at: new Date().toISOString()
+                  created_at: new Date().toISOString(),
+                  signature_status: doc.signature_status,
                 });
               }
             }
@@ -91,6 +92,57 @@ export default function ExecutiveSigningPortal() {
 
         setDocuments(allDocuments);
         setUserInfo(docsData.user);
+
+        // Pre-populate signatures for already-signed documents
+        const preSigned: Record<string, DocumentSignature> = {};
+        if (docsData?.alreadySigned) {
+          for (const [docId, info] of Object.entries(docsData.alreadySigned as Record<string, any>)) {
+            preSigned[docId] = {
+              documentId: docId,
+              signatureName: info.signature || 'Signed',
+              signedAt: info.timestamp || new Date().toISOString(),
+              auditData: {
+                timestamp: info.timestamp || new Date().toISOString(),
+                ipAddress: 'recorded',
+                userAgent: 'recorded',
+                documentVersion: '1.0',
+              },
+            };
+          }
+        }
+        // Also check individual doc signature_status
+        for (const doc of allDocuments) {
+          if (doc.signature_status === 'signed' && !preSigned[doc.id]) {
+            preSigned[doc.id] = {
+              documentId: doc.id,
+              signatureName: docsData.user?.name || 'Signed',
+              signedAt: doc.created_at,
+              auditData: {
+                timestamp: doc.created_at,
+                ipAddress: 'recorded',
+                userAgent: 'recorded',
+                documentVersion: '1.0',
+              },
+            };
+          }
+        }
+        if (Object.keys(preSigned).length > 0) {
+          setDocumentSignatures(preSigned);
+        }
+
+        // Auto-navigate to first unsigned document
+        const firstUnsignedIndex = allDocuments.findIndex(
+          d => d.signature_status !== 'signed' && !preSigned[d.id]
+        );
+        if (firstUnsignedIndex >= 0) {
+          setCurrentDocIndex(firstUnsignedIndex);
+        }
+
+        // If all are already signed, show completion
+        if (allDocuments.length > 0 && allDocuments.every(d => d.signature_status === 'signed' || preSigned[d.id])) {
+          setCompletionTimestamp(new Date().toLocaleString());
+          setSigningComplete(true);
+        }
 
         // Fetch HTML for all documents
         const htmlCache: Record<string, string> = {};
