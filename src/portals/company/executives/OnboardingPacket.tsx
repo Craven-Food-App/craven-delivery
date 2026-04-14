@@ -44,9 +44,14 @@ const getDocumentCreatedTime = (doc: OnboardingDocument): number => {
 };
 
 const dedupeDocuments = (docs: OnboardingDocument[]): OnboardingDocument[] => {
+  // Filter out orphan docs that have no packet_id/signing_stage — they are
+  // legacy or regeneration artefacts that would shadow properly-staged docs.
+  const staged = docs.filter(d => d.packet_id && d.signing_stage != null);
+
   const latestByType = new Map<string, OnboardingDocument>();
 
-  [...docs]
+  // Sort newest first so, within the same canonical type, the freshest wins
+  [...staged]
     .sort((a, b) => getDocumentCreatedTime(b) - getDocumentCreatedTime(a))
     .forEach((doc) => {
       const key = getCanonicalDocumentType(doc.type);
