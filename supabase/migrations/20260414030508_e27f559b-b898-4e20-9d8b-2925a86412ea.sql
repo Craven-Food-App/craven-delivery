@@ -1,0 +1,1 @@
+UPDATE document_templates SET html_content = replace(html_content, '$0.0001', '$0.001') WHERE template_key = 'stock_certificate' AND is_active = true;
