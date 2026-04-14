@@ -43,6 +43,8 @@ export default function ExecutiveSigningPortal() {
   // Signature modal
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [documentSignatures, setDocumentSignatures] = useState<Record<string, DocumentSignature>>({});
+  const [signingComplete, setSigningComplete] = useState(false);
+  const [completionTimestamp, setCompletionTimestamp] = useState<string | null>(null);
   
   const documentViewerRef = useRef<HTMLDivElement>(null);
 
