@@ -115,7 +115,7 @@ serve(async (req) => {
       recipient_user_id: userId,
       shares_amount: grant.shares_amount,
       share_class: grant.share_class || 'Common',
-      price_per_share: 0.0001,
+      price_per_share: 0.001,
       transaction_date: new Date().toISOString().split('T')[0],
       effective_date: new Date().toISOString().split('T')[0],
       grant_id: grant.grant_id,

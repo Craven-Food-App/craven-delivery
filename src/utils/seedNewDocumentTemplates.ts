@@ -94,7 +94,7 @@ export async function seedNewDocumentTemplates() {
   <p>RESOLVED, that the officers are hereby authorized to open and maintain such bank accounts in the name of the Corporation at such financial institutions as they may determine, and any two officers, or such officer(s) as may be designated from time to time, are authorized signatories thereon.</p>
   
   <h3>5. Stock Authorization and Issuance</h3>
-  <p>RESOLVED, that the Corporation is authorized to issue up to 10,000,000 shares of common stock with a par value of $0.0001 per share, and that the officers are authorized to execute and deliver stock issuance and equity agreements consistent with the approved terms for founders and executives.</p>
+  <p>RESOLVED, that the Corporation is authorized to issue up to 10,000,000 shares of common stock with a par value of $0.001 per share, and that the officers are authorized to execute and deliver stock issuance and equity agreements consistent with the approved terms for founders and executives.</p>
   
   <h3>6. Ratification of Pre-Incorporation Actions</h3>
   <p>RESOLVED, that all actions taken on behalf of the Corporation by the incorporator, founders, or officers prior to the incorporation are hereby ratified, confirmed, and approved in all respects.</p>

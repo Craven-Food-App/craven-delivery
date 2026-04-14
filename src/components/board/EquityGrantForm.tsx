@@ -34,7 +34,7 @@ export function EquityGrantForm({ onGrantCreated }: { onGrantCreated?: () => voi
   const [sharesTotal, setSharesTotal] = useState<string>('');
   const [sharesPercentage, setSharesPercentage] = useState<string>('');
   const [shareClass, setShareClass] = useState<string>('Common Stock');
-  const [strikePrice, setStrikePrice] = useState<string>('0.0001');
+  const [strikePrice, setStrikePrice] = useState<string>('0.001');
   const [vestingType, setVestingType] = useState<string>('standard');
   const [cliffMonths, setCliffMonths] = useState<string>('12');
   const [durationMonths, setDurationMonths] = useState<string>('48');
@@ -294,7 +294,7 @@ export function EquityGrantForm({ onGrantCreated }: { onGrantCreated?: () => voi
               <Input
                 id="strike"
                 type="number"
-                step="0.0001"
+                step="0.001"
                 value={strikePrice}
                 onChange={(e) => setStrikePrice(e.target.value)}
                 required

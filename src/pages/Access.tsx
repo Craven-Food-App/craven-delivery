@@ -30,7 +30,7 @@ export default function Access() {
         email: response.data.invite.email,
         minAmount: response.data.invite.min_amount_cents,
         maxAmount: response.data.invite.max_amount_cents,
-        strikePrice: response.data.invite.strike_price || 0.0001,
+        strikePrice: response.data.invite.strike_price || 0.001,
       }));
 
       navigate(`/allocate?invite_id=${response.data.invite.id}`);

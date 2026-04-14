@@ -76,7 +76,7 @@ export async function fixTemplatePlaceholders(): Promise<{ updated: number; erro
         description: 'Share count placeholders' 
       },
       
-      // Prices - replace "$0.0001", "$0.001", etc. with {{price_per_share}} (without $ in replacement)
+      // Prices - replace "$0.001", "$0.001", etc. with {{price_per_share}} (without $ in replacement)
       { 
         pattern: /\$\s*(\d+\.\d{4,})/g, 
         replacement: '{{price_per_share}}', 

@@ -328,7 +328,7 @@ serve(async (req) => {
             recipient_user_id: recipientUserId,
             shares_amount: grant.shares_total,
             share_class: shareClass,
-            price_per_share: grant.strike_price || 0.0001,
+            price_per_share: grant.strike_price || 0.001,
             transaction_date: vestingStartDate,
             effective_date: vestingStartDate,
             resolution_id: grant.board_resolution_id,

@@ -60,7 +60,7 @@ serve(async (req) => {
       .from('cap_tables')
       .insert({
         total_authorized: 100000000, // 100 million (using correct column name)
-        par_value: 0.0001,
+        par_value: 0.001,
         total_issued: 0, // using correct column name
         total_unissued: 100000000,
         equity_pool: 20000000, // 20 million (20%)
