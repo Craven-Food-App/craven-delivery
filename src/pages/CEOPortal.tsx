@@ -41,7 +41,7 @@ const StrategicMindMap = lazy(() => import('@/components/ceo/StrategicMindMap').
 const AuditTrail = lazy(() => import('@/components/ceo/AuditTrail').then(m => ({ default: m.AuditTrail })));
 const QuickActions = lazy(() => import('@/components/ceo/QuickActions').then(m => ({ default: m.QuickActions })));
 const EquityDashboard = lazy(() => import('@/components/ceo/EquityDashboard').then(m => ({ default: m.EquityDashboard })));
-const ExecutiveCommunicationsCenter = lazy(() => import('@/components/executive/ExecutiveCommunicationsCenter'));
+
 const CEOSignatureManager = lazy(() => import('@/components/ceo/CEOSignatureManager'));
 const ExecutiveWordProcessor = lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
 const ActiveUsersMonitor = lazy(() => import('@/components/ceo/ActiveUsersMonitor'));
