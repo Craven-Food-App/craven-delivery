@@ -355,6 +355,33 @@ export const CorporateGeneralLedger: React.FC = () => {
     message.success('General Ledger exported successfully');
   };
 
+  const handleDeleteEntry = (record: GLTransaction) => {
+    Modal.confirm({
+      title: 'Delete General Ledger Entry',
+      content: `Are you sure you want to delete entry "${record.journal_entry_number}"? This action cannot be undone.`,
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          const realId = record.id.replace(/^(exp-|inv-)/, '');
+          if (record.id.startsWith('exp-')) {
+            const { error } = await supabase.from('expense_requests').delete().eq('id', realId);
+            if (error) throw error;
+          } else if (record.id.startsWith('inv-')) {
+            const { error } = await supabase.from('invoices').delete().eq('id', realId);
+            if (error) throw error;
+          }
+          message.success('Entry deleted successfully');
+          fetchGLData();
+        } catch (error: any) {
+          console.error('Error deleting entry:', error);
+          message.error(error.message || 'Failed to delete entry');
+        }
+      },
+    });
+  };
+
   const columns: ColumnsType<GLTransaction> = [
     {
       title: 'Date',
@@ -472,7 +499,7 @@ export const CorporateGeneralLedger: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 100,
+      width: 140,
       fixed: 'right',
       render: (_: any, record: GLTransaction) => (
         <Space>
@@ -487,6 +514,17 @@ export const CorporateGeneralLedger: React.FC = () => {
               }}
             />
           </Tooltip>
+          {canManage && (
+            <Tooltip title="Delete Entry">
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+                size="small"
+                onClick={() => handleDeleteEntry(record)}
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
     },
