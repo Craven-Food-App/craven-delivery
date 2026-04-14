@@ -843,7 +843,22 @@ const PartnerPipeline: React.FC = () => {
         </div>
       </div>
 
-      <Modal opened={opened} onClose={close} title="New strategic partner" size="lg">
+      <Alert variant="light" color="gray" icon={<IconInfoCircle size={18} />} title="How this board works" mt="md">
+        <List size="sm" spacing={6} withPadding>
+          <List.Item>
+            <strong>Stages</strong> — Each column is where this relationship sits in the deal. Advance from the ⋮ menu, or set stage when
+            creating / importing.
+          </List.Item>
+          <List.Item>
+            <strong>Closed outcomes</strong> — Use <strong>Record closed / not interested</strong> to capture why they walked away;
+            export to CSV for CRM, re-engagement lists, and reporting.
+          </List.Item>
+          <List.Item>
+            <strong>Import / export</strong> — Template and CSV import add or update rows; exports match spreadsheet workflows.
+          </List.Item>
+        </List>
+      </Alert>
+
         <Stack gap="md">
           {renderCreateForm()}
           <Group justify="flex-end">
