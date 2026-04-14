@@ -51,18 +51,55 @@ const formatDocType = (type: string) =>
 const formatDate = (d: string | null) =>
   d ? new Date(d).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 
+const isHtmlDocumentUrl = (url: string) => /\.html?(?:[?#].*)?$/i.test(url);
+
 const SecretaryReviewTab: React.FC = () => {
   const [appointments, setAppointments] = useState<AppointmentReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [processing, setProcessing] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const closePreview = () => {
+    setPreviewUrl(null);
+    setPreviewHtml(null);
+    setPreviewTitle('');
+    setPreviewLoading(false);
+  };
+
+  const handlePreviewDoc = async (url: string, title: string) => {
+    setPreviewTitle(title);
+    setPreviewUrl(null);
+    setPreviewHtml(null);
+    setPreviewLoading(true);
+
+    try {
+      if (isHtmlDocumentUrl(url)) {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`Failed to load document (${response.status})`);
+        }
+
+        const html = await response.text();
+        setPreviewHtml(html);
+      } else {
+        setPreviewUrl(url);
+      }
+    } catch (err: any) {
+      console.error('Document preview error:', err);
+      toast.error('Failed to load document preview');
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
 
   const fetchAppointments = async () => {
     setLoading(true);
     try {
-      // Get appointments that are ready for review or already reviewed
       const { data: appts, error: apptErr } = await supabase
         .from('executive_appointments')
         .select('id, executive_id, proposed_officer_name, proposed_title, status, appointment_date, effective_date, created_at')
@@ -76,7 +113,6 @@ const SecretaryReviewTab: React.FC = () => {
         return;
       }
 
-      // Get documents for these appointments
       const apptIds = appts.map(a => a.id);
       const { data: docs, error: docErr } = await supabase
         .from('executive_documents')
@@ -104,7 +140,9 @@ const SecretaryReviewTab: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchAppointments(); }, []);
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
 
   const handleApprove = async (apptId: string) => {
     setProcessing(apptId);
@@ -120,7 +158,6 @@ const SecretaryReviewTab: React.FC = () => {
 
       if (error) throw error;
 
-      // Log to appointment_audit_log
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from('appointment_audit_log').insert({
@@ -147,6 +184,7 @@ const SecretaryReviewTab: React.FC = () => {
       toast.error('Please provide rejection notes before rejecting.');
       return;
     }
+
     setProcessing(apptId);
     try {
       const { error } = await supabase
@@ -203,29 +241,40 @@ const SecretaryReviewTab: React.FC = () => {
 
   const pendingReview = appointments.filter(a => a.status === 'READY_FOR_SECRETARY_REVIEW');
   const reviewed = appointments.filter(a => a.status !== 'READY_FOR_SECRETARY_REVIEW');
+  const previewOpen = previewLoading || !!previewUrl || !!previewHtml;
 
   return (
     <Stack gap="lg">
-      {/* Document Preview Modal */}
       <Modal
-        opened={!!previewUrl}
-        onClose={() => setPreviewUrl(null)}
-        title={previewTitle}
+        opened={previewOpen}
+        onClose={closePreview}
+        title={previewTitle || 'Document Preview'}
         size="xl"
         centered
         styles={{ body: { padding: 0, height: '70vh' } }}
       >
-        {previewUrl && (
+        {previewLoading ? (
+          <Stack align="center" justify="center" h="100%" py="xl">
+            <Loader size="lg" />
+            <Text size="sm" c="dimmed">Loading document preview…</Text>
+          </Stack>
+        ) : previewHtml ? (
           <iframe
-            src={previewUrl}
-            style={{ width: '100%', height: '100%', border: 'none' }}
+            srcDoc={previewHtml}
+            style={{ width: '100%', height: '100%', border: 'none', background: 'white' }}
             title={previewTitle}
             sandbox="allow-same-origin"
           />
-        )}
+        ) : previewUrl ? (
+          <iframe
+            src={previewUrl}
+            style={{ width: '100%', height: '100%', border: 'none', background: 'white' }}
+            title={previewTitle}
+            sandbox="allow-same-origin"
+          />
+        ) : null}
       </Modal>
 
-      {/* Stats */}
       <Group gap="md">
         <Badge size="lg" variant="light" color="blue" leftSection={<IconClock size={14} />}>
           {pendingReview.length} Pending Review
@@ -235,7 +284,6 @@ const SecretaryReviewTab: React.FC = () => {
         </Badge>
       </Group>
 
-      {/* Pending Review */}
       {pendingReview.length > 0 && (
         <Stack gap="md">
           <Title order={3} style={{ fontSize: 18 }}>⏳ Pending Secretary Review</Title>
@@ -249,13 +297,12 @@ const SecretaryReviewTab: React.FC = () => {
               onReject={() => handleReject(appt.id)}
               processing={processing === appt.id}
               isPending
-              onPreviewDoc={(url, title) => { setPreviewUrl(url); setPreviewTitle(title); }}
+              onPreviewDoc={handlePreviewDoc}
             />
           ))}
         </Stack>
       )}
 
-      {/* Already Reviewed */}
       {reviewed.length > 0 && (
         <Stack gap="md">
           <Title order={3} style={{ fontSize: 18 }}>✅ Previously Reviewed</Title>
@@ -269,7 +316,7 @@ const SecretaryReviewTab: React.FC = () => {
               onReject={() => {}}
               processing={false}
               isPending={false}
-              onPreviewDoc={(url, title) => { setPreviewUrl(url); setPreviewTitle(title); }}
+              onPreviewDoc={handlePreviewDoc}
             />
           ))}
         </Stack>
@@ -286,7 +333,7 @@ interface CardProps {
   onReject: () => void;
   processing: boolean;
   isPending: boolean;
-  onPreviewDoc: (url: string, title: string) => void;
+  onPreviewDoc: (url: string, title: string) => void | Promise<void>;
 }
 
 const AppointmentReviewCard: React.FC<CardProps> = ({
@@ -296,7 +343,6 @@ const AppointmentReviewCard: React.FC<CardProps> = ({
   const totalDocs = appointment.documents.length;
   const allSigned = signedCount === totalDocs && totalDocs > 0;
 
-  // Group documents by packet/stage
   const stages = appointment.documents.reduce<Record<string, DocumentReview[]>>((acc, doc) => {
     const key = doc.packet_id || `Stage ${doc.signing_stage || '?'}`;
     if (!acc[key]) acc[key] = [];
@@ -306,7 +352,6 @@ const AppointmentReviewCard: React.FC<CardProps> = ({
 
   return (
     <Card withBorder shadow="sm" p="lg" radius="md">
-      {/* Header */}
       <Group justify="space-between" mb="md">
         <div>
           <Group gap="sm">
@@ -339,7 +384,6 @@ const AppointmentReviewCard: React.FC<CardProps> = ({
 
       <Divider mb="md" />
 
-      {/* Document Audit Table */}
       <Accordion variant="contained" radius="md">
         {Object.entries(stages).map(([stageKey, docs]) => (
           <Accordion.Item key={stageKey} value={stageKey}>
@@ -347,9 +391,11 @@ const AppointmentReviewCard: React.FC<CardProps> = ({
               <Group gap="sm">
                 <IconFileText size={16} />
                 <Text size="sm" fw={500}>{stageKey.replace(/_/g, ' ').replace(/P\d+\s*/i, 'Packet ')}</Text>
-                <Badge size="sm" variant="light" color={
-                  docs.every(d => d.signature_status === 'signed') ? 'green' : 'yellow'
-                }>
+                <Badge
+                  size="sm"
+                  variant="light"
+                  color={docs.every(d => d.signature_status === 'signed') ? 'green' : 'yellow'}
+                >
                   {docs.filter(d => d.signature_status === 'signed').length}/{docs.length}
                 </Badge>
               </Group>
@@ -390,7 +436,7 @@ const AppointmentReviewCard: React.FC<CardProps> = ({
                                 size="sm"
                                 variant="light"
                                 color="blue"
-                                onClick={() => onPreviewDoc(doc.signed_file_url!, formatDocType(doc.type) + ' (Signed)')}
+                                onClick={() => onPreviewDoc(doc.signed_file_url!, `${formatDocType(doc.type)} (Signed)`)}
                               >
                                 <IconEye size={14} />
                               </ActionIcon>
@@ -419,7 +465,6 @@ const AppointmentReviewCard: React.FC<CardProps> = ({
         ))}
       </Accordion>
 
-      {/* Approve / Reject Actions */}
       {isPending && (
         <Stack gap="sm" mt="md">
           <Textarea
