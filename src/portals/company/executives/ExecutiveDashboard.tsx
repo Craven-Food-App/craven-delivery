@@ -99,6 +99,53 @@ const ExecutiveDashboard: React.FC = () => {
     }
   };
 
+  const handleRegeneratePacket = async () => {
+    if (!appointmentId) {
+      notifications.show({ title: 'Error', message: 'No active appointment found', color: 'red' });
+      return;
+    }
+    setRegenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('governance-backfill-appointment-documents', {
+        body: { appointment_id: appointmentId, force_regenerate: true },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Reset document statuses for re-signing
+      await supabase
+        .from('executive_documents')
+        .update({
+          signature_status: 'pending',
+          status: 'generated',
+          signed_file_url: null,
+          signed_at: null,
+          signed_by_user: null,
+          signer_roles: null,
+        })
+        .eq('appointment_id', appointmentId);
+
+      // Generate fresh signature tokens
+      await supabase.functions.invoke('generate-executive-signature-token', {
+        body: { appointment_id: appointmentId },
+      });
+
+      notifications.show({
+        title: 'Documents Regenerated',
+        message: 'All onboarding documents have been regenerated with the latest templates.',
+        color: 'green',
+      });
+    } catch (error: any) {
+      notifications.show({
+        title: 'Regeneration Failed',
+        message: error.message || 'Failed to regenerate documents',
+        color: 'red',
+      });
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   if (loading) {
     return (
       <Container size="xl" py="xl">
@@ -118,19 +165,32 @@ const ExecutiveDashboard: React.FC = () => {
         existingMetadata={execMetadata}
       />
       <Stack gap="xl">
-        <div>
-          <Title order={1} c="dark" mb="xs">
-            Executive Dashboard
-          </Title>
-          <Text c="dimmed" size="lg">
-            View your appointment details and corporate officer directory.
-          </Text>
-          {execUserId && uuidLastFour(execUserId) ? (
-            <Text size="xs" c="dimmed" mt="xs" style={{ fontFamily: 'ui-monospace, Menlo, Monaco, Consolas, monospace' }}>
-              Executive record ID ·•••{uuidLastFour(execUserId)}
+        <Group justify="space-between" align="flex-start">
+          <div>
+            <Title order={1} c="dark" mb="xs">
+              Executive Dashboard
+            </Title>
+            <Text c="dimmed" size="lg">
+              View your appointment details and corporate officer directory.
             </Text>
-          ) : null}
-        </div>
+            {execUserId && uuidLastFour(execUserId) ? (
+              <Text size="xs" c="dimmed" mt="xs" style={{ fontFamily: 'ui-monospace, Menlo, Monaco, Consolas, monospace' }}>
+                Executive record ID ·•••{uuidLastFour(execUserId)}
+              </Text>
+            ) : null}
+          </div>
+          {canRegenerate && (
+            <Button
+              variant="outline"
+              color="orange"
+              leftSection={<IconRefresh size={16} />}
+              onClick={handleRegeneratePacket}
+              loading={regenerating}
+            >
+              Regenerate Onboarding Packet
+            </Button>
+          )}
+        </Group>
 
         <Grid>
           <Grid.Col span={{ base: 12, sm: 4 }}>
