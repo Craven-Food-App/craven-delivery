@@ -711,125 +711,155 @@ const PartnerPipeline: React.FC = () => {
         </Group>
       </Group>
 
-      <div style={{ overflowX: 'auto' }}>
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 7 }} style={{ minWidth: 1100 }}>
-          {PIPELINE_STAGES.map((stage) => {
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <div style={{ display: 'flex', gap: 0, minWidth: 1200 }}>
+          {PIPELINE_STAGES.map((stage, idx) => {
             const stagePartners = visiblePartnerships.filter((p) => p.status === stage.value);
-            const tint = stageColumnBackground(theme, stage.color);
+            const isLast = idx === PIPELINE_STAGES.length - 1;
+
+            // Subtle left-border accent per stage
+            const accentMap: Record<string, string> = {
+              gray: '#868e96', blue: '#339af0', cyan: '#22b8cf',
+              yellow: '#fab005', orange: '#ff922b', green: '#40c057', red: '#fa5252',
+            };
+            const accent = accentMap[stage.color] || '#868e96';
+
             return (
-              <Card
+              <div
                 key={stage.value}
-                shadow="xs"
-                radius="md"
-                padding="sm"
-                withBorder
-                style={{ minHeight: 220, backgroundColor: tint }}
+                style={{
+                  flex: '1 1 0',
+                  minWidth: 165,
+                  borderRight: isLast ? 'none' : '1px solid var(--mantine-color-gray-2)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
               >
-                <Stack gap="xs" mb="sm">
-                  <Group justify="space-between" wrap="nowrap" align="flex-start">
-                    <Badge color={stage.color} variant="light" size="lg">
-                      {stage.label}
-                    </Badge>
-                    <Badge color="gray" variant="light" size="sm">
+                {/* ── Column header ── */}
+                <div style={{
+                  padding: '10px 12px 8px',
+                  borderBottom: '2px solid var(--mantine-color-gray-2)',
+                  background: 'var(--mantine-color-gray-0)',
+                }}>
+                  <Group justify="space-between" wrap="nowrap" gap={4}>
+                    <Group gap={6} wrap="nowrap" align="center">
+                      <div style={{
+                        width: 8, height: 8, borderRadius: '50%',
+                        backgroundColor: accent, flexShrink: 0,
+                      }} />
+                      <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: '0.04em' }}>
+                        {stage.label}
+                      </Text>
+                    </Group>
+                    <Badge
+                      size="sm"
+                      variant="filled"
+                      color={stagePartners.length > 0 ? stage.color : 'gray'}
+                      radius="xl"
+                      style={{ minWidth: 22, height: 20, padding: '0 6px', fontVariantNumeric: 'tabular-nums' }}
+                    >
                       {stagePartners.length}
                     </Badge>
                   </Group>
-                  <Text size="xs" c="dimmed" lh={1.45}>
-                    {stage.hint}
-                  </Text>
-                </Stack>
-                <Stack gap="xs">
-                  {stagePartners.map((p) => (
-                    <Paper key={p.id} shadow="xs" radius="sm" p="sm" withBorder bg="var(--mantine-color-body)">
-                      <Group justify="space-between" wrap="nowrap" align="flex-start">
-                        <div
-                          style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
-                          onClick={() => openDeal(p.id)}
-                          role="presentation"
-                        >
-                          <Text fw={600} size="sm" truncate>
-                            {p.partner_name}
-                          </Text>
-                          <Text size="xs" c="dimmed" truncate mt={6}>
-                            <Text span fw={500} c="dimmed">
-                              Type:{' '}
+                </div>
+
+                {/* ── Column body ── */}
+                <div style={{
+                  flex: 1,
+                  padding: '8px 8px',
+                  overflowY: 'auto',
+                  maxHeight: 'calc(100vh - 340px)',
+                  minHeight: 180,
+                }}>
+                  <Stack gap={6}>
+                    {stagePartners.map((p) => (
+                      <div
+                        key={p.id}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 6,
+                          border: '1px solid var(--mantine-color-gray-2)',
+                          background: 'var(--mantine-color-body)',
+                          cursor: 'pointer',
+                          transition: 'box-shadow 120ms ease, border-color 120ms ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = accent;
+                          e.currentTarget.style.boxShadow = `0 1px 4px ${accent}22`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = 'var(--mantine-color-gray-2)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      >
+                        <Group justify="space-between" wrap="nowrap" align="flex-start" gap={4}>
+                          <div
+                            style={{ flex: 1, minWidth: 0 }}
+                            onClick={() => openDeal(p.id)}
+                            role="presentation"
+                          >
+                            <Text fw={600} size="sm" truncate lh={1.3}>
+                              {p.partner_name}
                             </Text>
-                            {partnerTypeLabel(p.partner_type)}
-                          </Text>
-                          {p.status === 'lost' && p.disposition ? (
-                            <Badge size="xs" variant="light" color="red" mt={6}>
-                              {dispositionLabel(p.disposition)}
-                            </Badge>
-                          ) : null}
-                          {p.status === 'lost' && p.next_follow_up_at ? (
-                            <Text size="xs" c="orange" mt={4}>
-                              Follow-up: {new Date(p.next_follow_up_at).toLocaleDateString()}
+                            <Text size="xs" c="dimmed" mt={4} truncate>
+                              {partnerTypeLabel(p.partner_type)}
                             </Text>
-                          ) : null}
-                          <Text size="xs" c="dimmed" lineClamp={2} mt={6}>
-                            <Text span fw={500} c="dimmed">
-                              Impact:{' '}
-                            </Text>
-                            {impactLine(p)}
-                          </Text>
-                          {p.deal_value ? (
-                            <Text size="xs" c="green" fw={500} mt={4}>
-                              <Text span fw={500} c="dimmed">
-                                Deal value:{' '}
+                            {p.deal_value ? (
+                              <Text size="xs" c="teal" fw={600} mt={2} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                                ${Number(p.deal_value).toLocaleString()}
                               </Text>
-                              ${Number(p.deal_value).toLocaleString()}
-                            </Text>
-                          ) : null}
-                          <Text size="xs" mt={6}>
-                            <Text span fw={500} c="dimmed">
-                              Last activity:{' '}
-                            </Text>
-                            <Text span c={!p.last_activity_at ? 'red' : 'dimmed'}>
+                            ) : null}
+                            {p.status === 'lost' && p.disposition ? (
+                              <Badge size="xs" variant="light" color="red" mt={4}>
+                                {dispositionLabel(p.disposition)}
+                              </Badge>
+                            ) : null}
+                            <Text size="xs" c={!p.last_activity_at ? 'red' : 'dimmed'} mt={4}>
                               {formatRelative(p.last_activity_at)}
                             </Text>
-                          </Text>
-                        </div>
-                        <Menu shadow="md" width={220}>
-                          <Menu.Target>
-                            <ActionIcon variant="subtle" size="sm" onClick={(e) => e.stopPropagation()}>
-                              <IconDotsVertical size={14} />
-                            </ActionIcon>
-                          </Menu.Target>
-                          <Menu.Dropdown>
-                            <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => openDeal(p.id)}>
-                              Open workspace
-                            </Menu.Item>
-                            {stage.value !== 'signed' && stage.value !== 'lost' && (
-                              <Menu.Item
-                                leftSection={<IconArrowRight size={14} />}
-                                onClick={() => advanceStage(p.id, p.status)}
-                              >
-                                Advance stage
+                          </div>
+                          <Menu shadow="md" width={220}>
+                            <Menu.Target>
+                              <ActionIcon variant="subtle" size="xs" color="gray" onClick={(e) => e.stopPropagation()}>
+                                <IconDotsVertical size={13} />
+                              </ActionIcon>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => openDeal(p.id)}>
+                                Open workspace
                               </Menu.Item>
-                            )}
-                            {stage.value !== 'lost' ? (
-                              <Menu.Item color="red" onClick={() => openLostModal(p.id, p.partner_name)}>
-                                Record closed / not interested
+                              {stage.value !== 'signed' && stage.value !== 'lost' && (
+                                <Menu.Item
+                                  leftSection={<IconArrowRight size={14} />}
+                                  onClick={() => advanceStage(p.id, p.status)}
+                                >
+                                  Advance stage
+                                </Menu.Item>
+                              )}
+                              {stage.value !== 'lost' ? (
+                                <Menu.Item color="red" onClick={() => openLostModal(p.id, p.partner_name)}>
+                                  Record closed
+                                </Menu.Item>
+                              ) : null}
+                              <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={() => deletePartnership(p.id)}>
+                                Delete
                               </Menu.Item>
-                            ) : null}
-                            <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={() => deletePartnership(p.id)}>
-                              Delete
-                            </Menu.Item>
-                          </Menu.Dropdown>
-                        </Menu>
-                      </Group>
-                    </Paper>
-                  ))}
-                  {stagePartners.length === 0 && (
-                    <Text size="xs" c="dimmed" ta="center" py="md" px="xs" lh={1.5}>
-                      {stage.emptyHint}
-                    </Text>
-                  )}
-                </Stack>
-              </Card>
+                            </Menu.Dropdown>
+                          </Menu>
+                        </Group>
+                      </div>
+                    ))}
+                    {stagePartners.length === 0 && (
+                      <Text size="xs" c="dimmed" ta="center" py="xl" px="xs" lh={1.5} fs="italic">
+                        No deals
+                      </Text>
+                    )}
+                  </Stack>
+                </div>
+              </div>
             );
           })}
-        </SimpleGrid>
+        </div>
       </div>
 
       <Modal opened={opened} onClose={close} title="New strategic partner" size="lg">
