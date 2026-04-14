@@ -128,6 +128,7 @@ export default function ExecutiveSigningPortal() {
         }
         if (Object.keys(preSigned).length > 0) {
           setDocumentSignatures(preSigned);
+          setPreSignedDocIds(new Set(Object.keys(preSigned)));
         }
 
         // Auto-navigate to first unsigned document
