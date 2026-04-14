@@ -372,16 +372,18 @@ const OnboardingPacket: React.FC = () => {
               Review and sign your appointment documents to complete your onboarding.
             </Text>
           </div>
-          <Button
-            variant="outline"
-            color="orange"
-            leftSection={<IconRefresh size={16} />}
-            onClick={handleRegeneratePacket}
-            loading={regenerating}
-            size="sm"
-          >
-            Regenerate Documents
-          </Button>
+          {canRegenerate && (
+            <Button
+              variant="outline"
+              color="orange"
+              leftSection={<IconRefresh size={16} />}
+              onClick={handleRegeneratePacket}
+              loading={regenerating}
+              size="sm"
+            >
+              Regenerate Documents
+            </Button>
+          )}
         </Group>
 
         <Card padding="lg" radius="md" withBorder>
