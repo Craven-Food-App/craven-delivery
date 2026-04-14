@@ -15,7 +15,7 @@ import {
   Paper,
   SimpleGrid,
 } from '@mantine/core';
-import { IconFileText, IconCheck, IconClock, IconAlertCircle, IconSignature, IconDownload, IconCircleCheck } from '@tabler/icons-react';
+import { IconFileText, IconCheck, IconClock, IconAlertCircle, IconSignature, IconDownload, IconCircleCheck, IconRefresh } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { notifications } from '@mantine/notifications';
@@ -30,6 +30,7 @@ const OnboardingPacket: React.FC = () => {
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
   const [documents, setDocuments] = useState<OnboardingDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [regenerating, setRegenerating] = useState(false);
   const [signingDeadline, setSigningDeadline] = useState<string | null>(null);
   const [executiveId, setExecutiveId] = useState<string | null>(null);
   const [executiveName, setExecutiveName] = useState<string>('');
