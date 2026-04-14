@@ -36,6 +36,7 @@ import cravenLogo from "@/assets/craven-logo.png";
 import { usePermission } from '@/hooks/usePermission';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import PinChangeModal from '@/components/hub/PinChangeModal';
+import AnnouncementPopup from '@/components/hub/AnnouncementPopup';
 import { hasFullAccess } from '@/utils/torranceAccess';
 
 const { Header, Content } = Layout;
@@ -135,6 +136,7 @@ const MainHub: React.FC = () => {
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [pinLoading, setPinLoading] = useState(false);
   const [showPinChangeModal, setShowPinChangeModal] = useState(false);
+  const [showAnnouncementPopup, setShowAnnouncementPopup] = useState(false);
   
   // Time clock state - initialize with default values
   const [clockStatus, setClockStatus] = useState<{
