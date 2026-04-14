@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { isCLevelPosition, getExecRoleFromPosition } from '@/utils/roleUtils';
 import { FALLBACK_EXECUTIVES } from '@/data/executiveFallbacks';
-import { isTorrance, hasFullAccess } from '@/utils/torranceAccess';
+import { getExecutiveBypassRole } from '@/utils/torranceAccess';
 
 interface SupabaseAuthUser {
   id: string;
@@ -31,8 +31,6 @@ interface EmployeeRecord {
   work_email: string | null;
 }
 
-const PRIVILEGED_ROLES = new Set(['ceo', 'board_member', 'chairperson', 'chairman']);
-
 const deriveRoleFromPosition = (position: string | null): string | null => {
   if (!position) return null;
   const derived = getExecRoleFromPosition(position);
@@ -40,6 +38,25 @@ const deriveRoleFromPosition = (position: string | null): string | null => {
   if (isCLevelPosition(position)) return 'executive';
   return null;
 };
+
+const canAccessRole = (
+  userRole: string,
+  requiredRole?: 'ceo' | 'board_member' | 'cfo' | 'coo' | 'cto'
+): boolean => {
+  return !requiredRole || userRole === requiredRole || userRole === 'ceo';
+};
+
+const buildExecutiveBypassUser = (
+  authUser: SupabaseAuthUser,
+  role: 'ceo' | 'cfo'
+): ExecUser => ({
+  id: authUser.id,
+  user_id: authUser.id,
+  role,
+  access_level: role === 'ceo' ? 10 : 8,
+  title: role === 'ceo' ? 'Founder CEO' : 'Chief Financial Officer',
+  department: role === 'ceo' ? 'Executive Office' : 'Finance',
+});
 
 export const useExecAuth = (requiredRole?: 'ceo' | 'board_member' | 'cfo' | 'coo' | 'cto') => {
   const [loading, setLoading] = useState(true);
@@ -57,12 +74,13 @@ export const useExecAuth = (requiredRole?: 'ceo' | 'board_member' | 'cfo' | 'coo
 
   const resolveExecFromEmployee = useCallback(
     async (authUser: SupabaseAuthUser): Promise<boolean> => {
-      const selectColumns = 'id, user_id, position, department, first_name, last_name, email';
+      const selectColumns = 'id, user_id, position, department, first_name, last_name, email, work_email';
       const email = authUser.email ?? '';
 
       const queries = [
         supabase.from('employees' as any).select(selectColumns).eq('user_id', authUser.id).maybeSingle(),
         supabase.from('employees' as any).select(selectColumns).ilike('email', email).maybeSingle(),
+        supabase.from('employees' as any).select(selectColumns).ilike('work_email', email).maybeSingle(),
       ];
 
       let employeeData: EmployeeRecord | null = null;
@@ -79,6 +97,14 @@ export const useExecAuth = (requiredRole?: 'ceo' | 'board_member' | 'cfo' | 'coo
 
       const derivedRole = deriveRoleFromPosition(employeeData?.position ?? null);
       if (!employeeData || !derivedRole) {
+        const bypassRole = getExecutiveBypassRole(authUser.email);
+        if (bypassRole) {
+          const bypassExec = buildExecutiveBypassUser(authUser, bypassRole);
+          setExecUser(bypassExec);
+          setIsAuthorized(canAccessRole(bypassRole, requiredRole));
+          return true;
+        }
+
         const emailLower = authUser.email?.toLowerCase();
         const fallback = emailLower ? FALLBACK_EXECUTIVES.find((exec) => exec.email.toLowerCase() === emailLower) : undefined;
         if (fallback) {
@@ -91,8 +117,7 @@ export const useExecAuth = (requiredRole?: 'ceo' | 'board_member' | 'cfo' | 'coo
             department: fallback.department,
           };
           setExecUser(fallbackExec);
-          // CEO can access all portals (ceo, cfo, coo, cto, board_member)
-          setIsAuthorized(!requiredRole || fallback.role === requiredRole || fallback.role === 'ceo');
+          setIsAuthorized(canAccessRole(fallback.role, requiredRole));
           return true;
         }
         return false;
@@ -128,11 +153,7 @@ export const useExecAuth = (requiredRole?: 'ceo' | 'board_member' | 'cfo' | 'coo
       }
 
       setExecUser(fallbackExec);
-      if (requiredRole) {
-        setIsAuthorized(derivedRole === requiredRole || derivedRole === 'ceo');
-      } else {
-        setIsAuthorized(true);
-      }
+      setIsAuthorized(canAccessRole(derivedRole, requiredRole));
       return true;
     },
     [requiredRole]
@@ -172,8 +193,13 @@ export const useExecAuth = (requiredRole?: 'ceo' | 'board_member' | 'cfo' | 'coo
 
       setUser(currentUser);
 
-      // Check if user has CEO/exec role via database (exec_users table)
-      // hasFullAccess does exact email match only - no partial matching
+      const bypassRole = getExecutiveBypassRole(currentUser.email);
+      if (bypassRole) {
+        const bypassExec = buildExecutiveBypassUser(currentUser, bypassRole);
+        setExecUser(bypassExec);
+        setIsAuthorized(canAccessRole(bypassRole, requiredRole));
+        return;
+      }
 
       const { data: execData } = await supabase
         .from('exec_users' as any)
@@ -185,14 +211,9 @@ export const useExecAuth = (requiredRole?: 'ceo' | 'board_member' | 'cfo' | 'coo
         const dataObj = execData as Record<string, any>;
         if ('id' in dataObj) {
           const execRow = dataObj as unknown as ExecUser;
-        setExecUser(execRow);
-        if (requiredRole) {
-          // Allow access if role matches OR if user is CEO (CEO can access all portals)
-          setIsAuthorized(execRow.role === requiredRole || execRow.role === 'ceo');
-        } else {
-          setIsAuthorized(true);
+          setExecUser(execRow);
+          setIsAuthorized(canAccessRole(execRow.role, requiredRole));
         }
-      }
       } else {
         const resolved = await resolveExecFromEmployee(currentUser);
         if (!resolved) {

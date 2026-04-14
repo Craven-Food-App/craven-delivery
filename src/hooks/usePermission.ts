@@ -1,5 +1,20 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { hasCFOPortalAccess, hasFullAccess } from '@/utils/torranceAccess';
+
+const hasLocalExecutivePermissionBypass = (
+  email: string | null | undefined,
+  permissionKey: string
+): boolean => {
+  if (hasFullAccess(email)) return true;
+  if (!hasCFOPortalAccess(email)) return false;
+
+  return (
+    permissionKey === 'hub.view' ||
+    permissionKey.startsWith('finance.') ||
+    permissionKey.startsWith('cfo.')
+  );
+};
 
 export function usePermission(permissionKey: string): boolean {
   const [allowed, setAllowed] = useState<boolean>(false);
@@ -17,6 +32,11 @@ export function usePermission(permissionKey: string): boolean {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         if (!cancelled) setAllowed(false);
+        return;
+      }
+
+      if (hasLocalExecutivePermissionBypass(user.email, permissionKey)) {
+        if (!cancelled) setAllowed(true);
         return;
       }
 
