@@ -14,6 +14,8 @@ import {
   IconChevronsRight,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
+import { useFeatureHighlights } from '@/hooks/useFeatureHighlights';
+import { FeatureHighlight } from './FeatureHighlight';
 
 export interface PortalTab {
   id: string;
