@@ -203,8 +203,9 @@ export default function ExecutiveSigningPortal() {
         throw new Error(data.error || 'Failed to submit signatures');
       }
 
+      setCompletionTimestamp(new Date().toLocaleString());
+      setSigningComplete(true);
       message.success('All documents signed successfully!');
-      setTimeout(() => navigate('/'), 2000);
     } catch (err: any) {
       console.error('Submit error:', err);
       const errorMessage = err.message || err.error || 'Failed to submit signatures. Please try again.';
