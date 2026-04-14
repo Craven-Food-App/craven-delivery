@@ -162,34 +162,22 @@ serve(async (req: Request) => {
           continue;
         }
 
+        if (docData.signature_status === 'signed') {
+          savedDocumentIds.push(docSig.documentId);
+          continue;
+        }
+
         // Update audit data with server-side IP
         const auditData = {
           ...docSig.auditData,
           ipAddress: clientIp,
         };
 
-        // Build audit payload (stored in signature_metadata column, no separate file upload needed)
-        const auditPayload = {
-          token: body.token,
-          documentId: docSig.documentId,
-          typed_name: docSig.signatureName,
-          signature_name: docSig.signatureName,
-          signed_at: docSig.signedAt,
-          audit_trail: auditData,
-          officer_name: officerName,
-          officer_email: officerEmail,
-          signature_method: 'typed_electronic',
-          e_sign_compliant: true,
-        };
-
-        // Update document signature status
+        // Update the real executive_documents signing columns only.
+        // This project schema does not include a signature_metadata JSON column.
         const updatePayload: Record<string, unknown> = {
           signature_status: 'signed',
           signed_at: docSig.signedAt,
-          signature_metadata: {
-            ...auditPayload,
-            method: 'typed_electronic',
-          },
         };
 
         if (signedByUserId) {
