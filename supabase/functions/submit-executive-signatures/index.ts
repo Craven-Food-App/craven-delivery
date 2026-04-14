@@ -168,8 +168,8 @@ serve(async (req: Request) => {
           ipAddress: clientIp,
         };
 
-        const filePath = `exec-signatures/${docSig.documentId}_${body.token}.json`;
-        const payload = {
+        // Build audit payload (stored in signature_metadata column, no separate file upload needed)
+        const auditPayload = {
           token: body.token,
           documentId: docSig.documentId,
           typed_name: docSig.signatureName,
@@ -181,19 +181,6 @@ serve(async (req: Request) => {
           signature_method: 'typed_electronic',
           e_sign_compliant: true,
         };
-
-        const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-
-        const { error: uploadError } = await supabase.storage
-          .from('feeder-documents')
-          .upload(filePath, blob, { upsert: true, contentType: 'application/json' });
-
-        if (uploadError) {
-          const reason = uploadError.message || 'Failed to store signature audit payload';
-          console.error('Storage upload error:', uploadError);
-          failedDocuments.push({ documentId: docSig.documentId, reason });
-          continue;
-        }
 
         // Update document signature status
         const updatePayload: Record<string, unknown> = {
