@@ -859,6 +859,7 @@ const PartnerPipeline: React.FC = () => {
         </List>
       </Alert>
 
+      <Modal opened={opened} onClose={close} title="New strategic partner" size="lg">
         <Stack gap="md">
           {renderCreateForm()}
           <Group justify="flex-end">
