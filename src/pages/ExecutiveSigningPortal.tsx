@@ -29,124 +29,136 @@ interface DocumentSignature {
   };
 }
 
+const buildDocumentsFromResponse = (docsData: any): ExecutiveDocument[] => {
+  const allDocuments: ExecutiveDocument[] = [];
+
+  if (docsData?.documentFlow) {
+    for (const stage of docsData.documentFlow) {
+      if (stage.documents) {
+        for (const doc of stage.documents) {
+          allDocuments.push({
+            id: doc.id,
+            title: doc.name,
+            document_type: doc.name,
+            file_url: doc.fileUrl,
+            created_at: new Date().toISOString(),
+            signature_status: doc.signature_status,
+          });
+        }
+      }
+    }
+  }
+
+  return allDocuments;
+};
+
+const buildPersistedSignatures = (
+  docsData: any,
+  allDocuments: ExecutiveDocument[],
+  fallbackName?: string,
+): Record<string, DocumentSignature> => {
+  const persisted: Record<string, DocumentSignature> = {};
+
+  if (docsData?.alreadySigned) {
+    for (const [docId, info] of Object.entries(docsData.alreadySigned as Record<string, any>)) {
+      persisted[docId] = {
+        documentId: docId,
+        signatureName: info?.signature || fallbackName || 'Signed',
+        signedAt: info?.timestamp || new Date().toISOString(),
+        auditData: {
+          timestamp: info?.timestamp || new Date().toISOString(),
+          ipAddress: 'recorded',
+          userAgent: 'recorded',
+          documentVersion: '1.0',
+        },
+      };
+    }
+  }
+
+  for (const doc of allDocuments) {
+    if (doc.signature_status === 'signed' && !persisted[doc.id]) {
+      persisted[doc.id] = {
+        documentId: doc.id,
+        signatureName: fallbackName || 'Signed',
+        signedAt: doc.created_at,
+        auditData: {
+          timestamp: doc.created_at,
+          ipAddress: 'recorded',
+          userAgent: 'recorded',
+          documentVersion: '1.0',
+        },
+      };
+    }
+  }
+
+  return persisted;
+};
+
 export default function ExecutiveSigningPortal() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
 
-  // State management
   const [loading, setLoading] = useState(true);
   const [documents, setDocuments] = useState<ExecutiveDocument[]>([]);
   const [currentDocIndex, setCurrentDocIndex] = useState(0);
   const [documentHtmlCache, setDocumentHtmlCache] = useState<Record<string, string>>({});
   const [userInfo, setUserInfo] = useState<any>(null);
-  
-  // Signature modal
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [documentSignatures, setDocumentSignatures] = useState<Record<string, DocumentSignature>>({});
   const [signingComplete, setSigningComplete] = useState(false);
   const [completionTimestamp, setCompletionTimestamp] = useState<string | null>(null);
   const [preSignedDocIds, setPreSignedDocIds] = useState<Set<string>>(new Set());
-  
+  const [savingDocumentId, setSavingDocumentId] = useState<string | null>(null);
+
   const documentViewerRef = useRef<HTMLDivElement>(null);
 
-  // Initialize session
   useEffect(() => {
     const initSession = async () => {
       if (!token) {
         message.error('No token provided');
+        setLoading(false);
         return;
       }
 
       try {
-        // Fetch documents by token
         const { data: docsData, error: docsError } = await supabase.functions.invoke(
           'get-executive-documents-by-token',
           { body: { token } }
         );
 
         if (docsError) throw docsError;
-        
-        // Extract all documents from documentFlow stages
-        const allDocuments: ExecutiveDocument[] = [];
-        if (docsData?.documentFlow) {
-          for (const stage of docsData.documentFlow) {
-            if (stage.documents) {
-              for (const doc of stage.documents) {
-                allDocuments.push({
-                  id: doc.id,
-                  title: doc.name,
-                  document_type: doc.name,
-                  file_url: doc.fileUrl,
-                  created_at: new Date().toISOString(),
-                  signature_status: doc.signature_status,
-                });
-              }
-            }
-          }
-        }
+
+        const allDocuments = buildDocumentsFromResponse(docsData);
 
         if (allDocuments.length === 0) {
           message.error('No documents found');
+          setLoading(false);
           return;
         }
 
+        const persistedSignatures = buildPersistedSignatures(
+          docsData,
+          allDocuments,
+          docsData?.user?.officer_name || docsData?.user?.name,
+        );
+        const persistedSignedIds = new Set(Object.keys(persistedSignatures));
+
         setDocuments(allDocuments);
         setUserInfo(docsData.user);
+        setDocumentSignatures(persistedSignatures);
+        setPreSignedDocIds(persistedSignedIds);
 
-        // Pre-populate signatures for already-signed documents
-        const preSigned: Record<string, DocumentSignature> = {};
-        if (docsData?.alreadySigned) {
-          for (const [docId, info] of Object.entries(docsData.alreadySigned as Record<string, any>)) {
-            preSigned[docId] = {
-              documentId: docId,
-              signatureName: info.signature || 'Signed',
-              signedAt: info.timestamp || new Date().toISOString(),
-              auditData: {
-                timestamp: info.timestamp || new Date().toISOString(),
-                ipAddress: 'recorded',
-                userAgent: 'recorded',
-                documentVersion: '1.0',
-              },
-            };
-          }
-        }
-        // Also check individual doc signature_status
-        for (const doc of allDocuments) {
-          if (doc.signature_status === 'signed' && !preSigned[doc.id]) {
-            preSigned[doc.id] = {
-              documentId: doc.id,
-              signatureName: docsData.user?.name || 'Signed',
-              signedAt: doc.created_at,
-              auditData: {
-                timestamp: doc.created_at,
-                ipAddress: 'recorded',
-                userAgent: 'recorded',
-                documentVersion: '1.0',
-              },
-            };
-          }
-        }
-        if (Object.keys(preSigned).length > 0) {
-          setDocumentSignatures(preSigned);
-          setPreSignedDocIds(new Set(Object.keys(preSigned)));
-        }
-
-        // Auto-navigate to first unsigned document
-        const firstUnsignedIndex = allDocuments.findIndex(
-          d => d.signature_status !== 'signed' && !preSigned[d.id]
-        );
+        const firstUnsignedIndex = allDocuments.findIndex((doc) => !persistedSignedIds.has(doc.id));
         if (firstUnsignedIndex >= 0) {
           setCurrentDocIndex(firstUnsignedIndex);
         }
 
-        // If all are already signed, show completion
-        if (allDocuments.length > 0 && allDocuments.every(d => d.signature_status === 'signed' || preSigned[d.id])) {
+        if (allDocuments.length > 0 && persistedSignedIds.size === allDocuments.length) {
           setCompletionTimestamp(new Date().toLocaleString());
           setSigningComplete(true);
         }
 
-        // Fetch HTML for all documents
         const htmlCache: Record<string, string> = {};
         for (const doc of allDocuments) {
           try {
@@ -157,11 +169,12 @@ export default function ExecutiveSigningPortal() {
             console.error(`Failed to load HTML for ${doc.id}:`, err);
           }
         }
+
         setDocumentHtmlCache(htmlCache);
-        setLoading(false);
       } catch (err: any) {
         console.error('Session init error:', err);
         message.error(err.message || 'Failed to load documents');
+      } finally {
         setLoading(false);
       }
     };
@@ -169,22 +182,73 @@ export default function ExecutiveSigningPortal() {
     initSession();
   }, [token]);
 
-  // Signature modal handlers
+  const currentDocument = documents[currentDocIndex];
+  const currentDocumentSigned = currentDocument ? documentSignatures[currentDocument.id] : null;
+
+  const isDocumentCompleted = (doc: ExecutiveDocument) =>
+    doc.signature_status === 'signed' || Boolean(documentSignatures[doc.id]);
+
+  const remainingCount = documents.filter((doc) => !isDocumentCompleted(doc)).length;
+  const signedCount = documents.length - remainingCount;
+
+  const getAdjacentUnsignedIndex = (direction: 'next' | 'previous') => {
+    if (documents.length <= 1) return -1;
+
+    const indexes = direction === 'next'
+      ? Array.from({ length: documents.length - currentDocIndex - 1 }, (_, i) => currentDocIndex + i + 1)
+      : Array.from({ length: currentDocIndex }, (_, i) => currentDocIndex - i - 1);
+
+    for (const index of indexes) {
+      const doc = documents[index];
+      if (doc && !isDocumentCompleted(doc)) {
+        return index;
+      }
+    }
+
+    return -1;
+  };
+
+  const nextUnsignedIndex = getAdjacentUnsignedIndex('next');
+  const previousUnsignedIndex = getAdjacentUnsignedIndex('previous');
+
+  const viewerSrcDoc = useMemo(() => {
+    const id = currentDocument?.id;
+    const raw = id ? documentHtmlCache[id] : '';
+    return sanitizeExecutiveDocumentHtml(raw || '<p>Loading...</p>');
+  }, [currentDocument?.id, documentHtmlCache]);
+
   const handleOpenSignatureModal = () => {
+    if (!currentDocument || isDocumentCompleted(currentDocument) || savingDocumentId) return;
     setShowSignatureModal(true);
   };
 
   const handleCloseSignatureModal = () => {
+    if (savingDocumentId) return;
     setShowSignatureModal(false);
   };
 
-  const handleSignDocument = (signatureName: string, auditData: {
-    timestamp: string;
-    ipAddress: string;
-    userAgent: string;
-    documentVersion: string;
-  }) => {
-    if (!currentDocument) return;
+  const goToNextDocument = () => {
+    if (nextUnsignedIndex >= 0) {
+      setCurrentDocIndex(nextUnsignedIndex);
+    }
+  };
+
+  const goToPreviousDocument = () => {
+    if (previousUnsignedIndex >= 0) {
+      setCurrentDocIndex(previousUnsignedIndex);
+    }
+  };
+
+  const handleSignDocument = async (
+    signatureName: string,
+    auditData: {
+      timestamp: string;
+      ipAddress: string;
+      userAgent: string;
+      documentVersion: string;
+    },
+  ) => {
+    if (!currentDocument || !token || savingDocumentId) return;
 
     const signature: DocumentSignature = {
       documentId: currentDocument.id,
@@ -193,76 +257,115 @@ export default function ExecutiveSigningPortal() {
       auditData,
     };
 
-    setDocumentSignatures(prev => ({
-      ...prev,
-      [currentDocument.id]: signature,
-    }));
+    const activeDocId = currentDocument.id;
+    const activeDocIndex = currentDocIndex;
 
-    setShowSignatureModal(false);
-    message.success('Document signed successfully');
-  };
+    try {
+      setSavingDocumentId(activeDocId);
+      message.loading({ content: 'Saving signature...', key: 'executive-signature-save', duration: 0 });
 
-  // Document navigation
-  const currentDocument = documents[currentDocIndex];
-  const currentDocumentSigned = currentDocument ? documentSignatures[currentDocument.id] : null;
+      const { data, error } = await supabase.functions.invoke('submit-executive-signatures', {
+        body: {
+          token,
+          documentSignatures: [signature],
+          typedName: userInfo?.officer_name || userInfo?.name || signatureName,
+        },
+      });
 
-  const viewerSrcDoc = useMemo(() => {
-    const id = currentDocument?.id;
-    const raw = id ? documentHtmlCache[id] : '';
-    return sanitizeExecutiveDocumentHtml(raw || '<p>Loading...</p>');
-  }, [currentDocument?.id, documentHtmlCache]);
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to save signature');
+      }
 
-  const goToNextDocument = () => {
-    if (currentDocIndex < documents.length - 1) {
-      setCurrentDocIndex(currentDocIndex + 1);
+      if (data && !data.ok) {
+        throw new Error(data.error || 'Failed to save signature');
+      }
+
+      setDocumentSignatures((prev) => ({
+        ...prev,
+        [activeDocId]: signature,
+      }));
+
+      setPreSignedDocIds((prev) => {
+        const next = new Set(prev);
+        next.add(activeDocId);
+        return next;
+      });
+
+      setDocuments((prev) =>
+        prev.map((doc) =>
+          doc.id === activeDocId
+            ? { ...doc, signature_status: 'signed' }
+            : doc,
+        ),
+      );
+
+      setShowSignatureModal(false);
+      message.success({ content: 'Document signed and saved.', key: 'executive-signature-save' });
+
+      const nextIndex = documents.findIndex((doc, index) => {
+        if (index === activeDocIndex || doc.id === activeDocId) return false;
+        return doc.signature_status !== 'signed' && !documentSignatures[doc.id];
+      });
+
+      if (nextIndex >= 0) {
+        setCurrentDocIndex(nextIndex);
+      }
+    } catch (err: any) {
+      console.error('Document sign error:', err);
+      message.error({
+        content: err.message || 'Failed to save this signature. Please try again.',
+        key: 'executive-signature-save',
+      });
+    } finally {
+      setSavingDocumentId(null);
     }
   };
 
-  const goToPreviousDocument = () => {
-    if (currentDocIndex > 0) {
-      setCurrentDocIndex(currentDocIndex - 1);
-    }
-  };
-
-  // Submit all signatures
   const handleFinishSigning = async () => {
-    // Check if all documents are signed
-    const unsignedDocuments = documents.filter(doc => !documentSignatures[doc.id]);
+    const unsignedDocuments = documents.filter((doc) => !isDocumentCompleted(doc));
     if (unsignedDocuments.length > 0) {
       message.error(`Please sign all ${unsignedDocuments.length} remaining document(s) before finishing`);
       return;
     }
 
-    // Only submit newly signed documents (exclude pre-signed ones from DB)
-    const newlySignedDocs = Object.values(documentSignatures).filter(
-      sig => !preSignedDocIds.has(sig.documentId)
-    );
-
-    if (newlySignedDocs.length === 0) {
-      // All docs were already signed — just show completion
-      setCompletionTimestamp(new Date().toLocaleString());
-      setSigningComplete(true);
-      message.success('All documents are already signed!');
+    if (!token) {
+      message.error('Missing signing token');
       return;
     }
 
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('submit-executive-signatures', {
-        body: {
-          token,
-          documentSignatures: newlySignedDocs,
-          typedName: userInfo?.officer_name || userInfo?.name || newlySignedDocs[0]?.signatureName || '',
-        }
-      });
 
-      if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || 'Failed to submit signatures');
+      const { data: docsData, error: docsError } = await supabase.functions.invoke(
+        'get-executive-documents-by-token',
+        { body: { token } }
+      );
+
+      if (docsError) {
+        throw docsError;
       }
 
-      if (data && !data.ok) {
-        throw new Error(data.error || 'Failed to submit signatures');
+      const persistedDocuments = buildDocumentsFromResponse(docsData);
+      const persistedSignatures = buildPersistedSignatures(
+        docsData,
+        persistedDocuments,
+        userInfo?.officer_name || userInfo?.name,
+      );
+      const persistedSignedIds = new Set(Object.keys(persistedSignatures));
+
+      setDocuments(persistedDocuments);
+      setDocumentSignatures(persistedSignatures);
+      setPreSignedDocIds(persistedSignedIds);
+
+      if (persistedSignedIds.size !== persistedDocuments.length) {
+        const firstUnsignedIndex = persistedDocuments.findIndex((doc) => !persistedSignedIds.has(doc.id));
+        if (firstUnsignedIndex >= 0) {
+          setCurrentDocIndex(firstUnsignedIndex);
+        }
+
+        message.error(`Only ${persistedSignedIds.size} of ${persistedDocuments.length} documents are saved.`);
+        return;
       }
 
       setCompletionTimestamp(new Date().toLocaleString());
@@ -270,7 +373,7 @@ export default function ExecutiveSigningPortal() {
       message.success('All documents signed successfully!');
     } catch (err: any) {
       console.error('Submit error:', err);
-      const errorMessage = err.message || err.error || 'Failed to submit signatures. Please try again.';
+      const errorMessage = err.message || err.error || 'Failed to verify signatures. Please try again.';
       message.error(errorMessage);
     } finally {
       setLoading(false);
@@ -292,7 +395,7 @@ export default function ExecutiveSigningPortal() {
           <div className="mx-auto w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
             <CheckCircle2 className="w-10 h-10 text-green-600" />
           </div>
-          
+
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-foreground flex items-center justify-center gap-2">
               <PartyPopper className="w-6 h-6 text-primary" />
@@ -321,7 +424,7 @@ export default function ExecutiveSigningPortal() {
                 <span className="font-medium">Completed at:</span> {completionTimestamp}
               </p>
               <p className="text-xs text-muted-foreground">
-                <span className="font-medium">Documents signed:</span> {Object.keys(documentSignatures).length} of {documents.length}
+                <span className="font-medium">Documents signed:</span> {signedCount} of {documents.length}
               </p>
             </div>
           </div>
@@ -345,27 +448,26 @@ export default function ExecutiveSigningPortal() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background">
-      {/* Sidebar - Document list and status */}
       <div className="w-80 flex-shrink-0 border-r bg-card p-4 flex flex-col gap-4 overflow-hidden">
         <div>
           <h2 className="font-bold text-lg mb-2">Documents</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            {documents.filter(d => !documentSignatures[d.id]).length} document(s) remaining to sign
+            {remainingCount} document(s) remaining to sign
           </p>
-          
+
           <div className="space-y-2 mb-6">
             {documents.map((doc, index) => {
-              const isSigned = !!documentSignatures[doc.id];
-              const wasPreSigned = doc.signature_status === 'signed';
+              const isCompleted = isDocumentCompleted(doc);
               const isCurrent = index === currentDocIndex;
+
               return (
                 <div
                   key={doc.id}
                   onClick={() => {
-                    if (!wasPreSigned) setCurrentDocIndex(index);
+                    if (!isCompleted) setCurrentDocIndex(index);
                   }}
                   className={`p-3 rounded-lg border transition-colors ${
-                    wasPreSigned
+                    isCompleted
                       ? 'border-green-200 bg-green-50/50 opacity-60 cursor-default'
                       : isCurrent
                         ? 'border-primary bg-primary/5 cursor-pointer'
@@ -374,14 +476,14 @@ export default function ExecutiveSigningPortal() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${wasPreSigned ? 'line-through text-muted-foreground' : ''}`}>
+                      <p className={`text-sm font-medium truncate ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
                         {doc.title}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {wasPreSigned ? 'Completed' : `Document ${index + 1}`}
+                        {isCompleted ? 'Completed' : `Document ${index + 1}`}
                       </p>
                     </div>
-                    {(isSigned || wasPreSigned) && (
+                    {isCompleted && (
                       <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
                     )}
                   </div>
@@ -394,9 +496,9 @@ export default function ExecutiveSigningPortal() {
         <div className="border-t pt-4">
           <div className="text-sm">
             <p className="text-muted-foreground mb-2">
-              Signed: {Object.keys(documentSignatures).length} / {documents.length}
+              Signed: {signedCount} / {documents.length}
             </p>
-            {Object.keys(documentSignatures).length === documents.length && documents.length > 0 && (
+            {signedCount === documents.length && documents.length > 0 && (
               <div className="bg-green-50 border border-green-200 rounded p-2">
                 <p className="text-sm text-green-700 font-medium">
                   All documents signed
@@ -407,9 +509,7 @@ export default function ExecutiveSigningPortal() {
         </div>
       </div>
 
-      {/* Main Document Viewer */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header - Fixed */}
         <div className="border-b bg-card p-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -425,7 +525,7 @@ export default function ExecutiveSigningPortal() {
               <Button
                 variant="outline"
                 onClick={goToPreviousDocument}
-                disabled={currentDocIndex === 0}
+                disabled={previousUnsignedIndex < 0}
               >
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Previous
@@ -433,7 +533,7 @@ export default function ExecutiveSigningPortal() {
               <Button
                 variant="outline"
                 onClick={goToNextDocument}
-                disabled={currentDocIndex === documents.length - 1}
+                disabled={nextUnsignedIndex < 0}
               >
                 Next
                 <ChevronRight className="w-4 h-4 ml-1" />
@@ -442,13 +542,11 @@ export default function ExecutiveSigningPortal() {
           </div>
         </div>
 
-        {/* Document Viewer */}
         <div className="flex-1 overflow-auto p-6 bg-muted/30">
           <div
             ref={documentViewerRef}
             className="relative mx-auto max-w-[9in] min-h-[800px] rounded-sm border border-border bg-zinc-100 p-4 shadow-xl"
           >
-            {/* Full HTML documents with <style> must render in iframe — DOMPurify-sanitized div strips or breaks head/body */}
             <iframe
               title={currentDocument?.title || 'Executive document'}
               srcDoc={viewerSrcDoc}
@@ -456,7 +554,6 @@ export default function ExecutiveSigningPortal() {
               sandbox="allow-same-origin"
             />
 
-            {/* Signature Status Overlay */}
             {currentDocumentSigned && (
               <div className="absolute bottom-4 right-4 bg-green-50 border-2 border-green-500 rounded-lg p-3 shadow-lg">
                 <div className="flex items-center gap-2">
@@ -475,34 +572,34 @@ export default function ExecutiveSigningPortal() {
             )}
           </div>
 
-          {/* Action Section */}
           <div className="mt-6 max-w-4xl mx-auto">
             {currentDocumentSigned ? (
               <div className="bg-green-50 border border-green-200 rounded p-4 mb-4">
                 <p className="text-sm text-green-800">
                   <CheckCircle2 className="w-4 h-4 inline mr-1" />
-                  This document has been signed. You can review it or proceed to the next document.
+                  This document has been signed and saved.
                 </p>
               </div>
             ) : (
               <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
                 <p className="text-sm text-blue-800">
-                  Please review the document above, then click the button below to sign and acknowledge.
+                  Please review the document above, then click the button below to sign and save it.
                 </p>
               </div>
             )}
-            
+
             <div className="flex gap-3">
               {!currentDocumentSigned && (
                 <Button
                   onClick={handleOpenSignatureModal}
                   className="flex-1"
+                  disabled={Boolean(savingDocumentId)}
                 >
-                  Sign & Acknowledge Document
+                  {savingDocumentId === currentDocument?.id ? 'Saving...' : 'Sign & Save Document'}
                 </Button>
               )}
-              
-              {currentDocIndex < documents.length - 1 && (
+
+              {nextUnsignedIndex >= 0 && (
                 <Button
                   variant="outline"
                   onClick={goToNextDocument}
@@ -512,14 +609,14 @@ export default function ExecutiveSigningPortal() {
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               )}
-              
-              {Object.keys(documentSignatures).length === documents.length && documents.length > 0 && (
+
+              {documents.length > 0 && signedCount === documents.length && (
                 <Button
                   onClick={handleFinishSigning}
                   className="flex-1 bg-green-600 hover:bg-green-700"
-                  disabled={loading}
+                  disabled={loading || Boolean(savingDocumentId)}
                 >
-                  {loading ? 'Submitting...' : 'Finish & Submit All Documents'}
+                  {loading ? 'Verifying...' : 'Finish & Submit All Documents'}
                 </Button>
               )}
             </div>
@@ -527,14 +624,13 @@ export default function ExecutiveSigningPortal() {
         </div>
       </div>
 
-      {/* Electronic Signature Modal */}
       {currentDocument && (
         <ElectronicSignatureAcknowledgment
           isOpen={showSignatureModal}
           onClose={handleCloseSignatureModal}
           onSign={handleSignDocument}
           documentTitle={currentDocument.title}
-          documentVersion={currentDocument.document_type || "1.0"}
+          documentVersion={currentDocument.document_type || '1.0'}
         />
       )}
     </div>
