@@ -55,6 +55,7 @@ interface UnifiedPortalShellProps {
 }
 
 export function UnifiedPortalShell({
+  portalId = 'general',
   portalName,
   portalSubtitle,
   sectionLabel,
@@ -77,6 +78,7 @@ export function UnifiedPortalShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(activeTabMeta?.section || null);
+  const { getFeature, markSeen } = useFeatureHighlights(portalId);
 
   // Close mobile nav on tab change
   const handleTabChange = (tabId: string) => {
