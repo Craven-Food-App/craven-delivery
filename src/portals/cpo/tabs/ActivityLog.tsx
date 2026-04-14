@@ -19,6 +19,7 @@ import {
   Paper,
   ActionIcon,
   Tooltip,
+  Loader,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { DateTimePicker } from '@mantine/dates';
@@ -37,6 +38,7 @@ import {
   IconUser,
   IconChevronRight,
   IconX,
+  IconTrash,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -137,6 +139,17 @@ const ActivityLog: React.FC = () => {
       notifications.show({ title: 'Error', message: err.message, color: 'red' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const deleteActivity = async (id: string) => {
+    try {
+      const { error } = await supabase.from('partnership_activities').delete().eq('id', id);
+      if (error) throw error;
+      notifications.show({ title: 'Deleted', message: 'Activity removed', color: 'orange' });
+      loadData();
+    } catch (err: any) {
+      notifications.show({ title: 'Error', message: err.message, color: 'red' });
     }
   };
 
@@ -254,7 +267,17 @@ const ActivityLog: React.FC = () => {
                           </Text>
                         </Group>
                       </div>
-                      <IconChevronRight size={16} style={{ color: '#ced4da', flexShrink: 0, marginTop: 8 }} />
+                      <Group gap={4} style={{ flexShrink: 0, marginTop: 4 }}>
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); deleteActivity(act.id); }}
+                        >
+                          <IconTrash size={14} />
+                        </ActionIcon>
+                        <IconChevronRight size={16} style={{ color: '#ced4da' }} />
+                      </Group>
                     </Group>
                   </Box>
                 </React.Fragment>
