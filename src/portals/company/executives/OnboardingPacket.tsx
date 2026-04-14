@@ -15,7 +15,7 @@ import {
   Paper,
   SimpleGrid,
 } from '@mantine/core';
-import { IconFileText, IconCheck, IconClock, IconAlertCircle, IconSignature, IconDownload, IconCircleCheck } from '@tabler/icons-react';
+import { IconFileText, IconCheck, IconClock, IconAlertCircle, IconSignature, IconDownload, IconCircleCheck, IconRefresh } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { notifications } from '@mantine/notifications';
@@ -30,6 +30,7 @@ const OnboardingPacket: React.FC = () => {
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
   const [documents, setDocuments] = useState<OnboardingDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [regenerating, setRegenerating] = useState(false);
   const [signingDeadline, setSigningDeadline] = useState<string | null>(null);
   const [executiveId, setExecutiveId] = useState<string | null>(null);
   const [executiveName, setExecutiveName] = useState<string>('');
@@ -115,6 +116,60 @@ const OnboardingPacket: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRegeneratePacket = async () => {
+    if (!appointmentId) return;
+    setRegenerating(true);
+    try {
+      // Call the backfill edge function with force_regenerate
+      const { data, error } = await supabase.functions.invoke('governance-backfill-appointment-documents', {
+        body: {
+          appointment_id: appointmentId,
+          force_regenerate: true,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Reset document statuses to pending so they can be re-signed
+      await supabase
+        .from('executive_documents')
+        .update({
+          signature_status: 'pending',
+          status: 'generated',
+          signed_file_url: null,
+          signed_at: null,
+          signed_by_user: null,
+          signer_roles: null,
+        })
+        .eq('appointment_id', appointmentId);
+
+      // Generate fresh signature tokens
+      await supabase.functions.invoke('generate-executive-signature-token', {
+        body: { appointment_id: appointmentId },
+      });
+
+      notifications.show({
+        title: 'Documents Regenerated',
+        message: 'All documents have been regenerated with the latest templates. You can now re-sign them.',
+        color: 'green',
+      });
+
+      // Reload
+      setLoading(true);
+      await loadOnboarding();
+    } catch (error: any) {
+      console.error('Error regenerating packet:', error);
+      notifications.show({
+        title: 'Regeneration Failed',
+        message: error.message || 'Failed to regenerate documents',
+        color: 'red',
+      });
+    } finally {
+      setRegenerating(false);
     }
   };
 
@@ -292,15 +347,27 @@ const OnboardingPacket: React.FC = () => {
   return (
     <Container size="xl" py="xl">
       <Stack gap="xl">
-        <div>
-          <Title order={2} c="dark" mb="xs">
-            <IconFileText size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 12 }} />
-            Executive Onboarding Packet
-          </Title>
-          <Text c="dimmed">
-            Review and sign your appointment documents to complete your onboarding.
-          </Text>
-        </div>
+        <Group justify="space-between" align="flex-start">
+          <div>
+            <Title order={2} c="dark" mb="xs">
+              <IconFileText size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 12 }} />
+              Executive Onboarding Packet
+            </Title>
+            <Text c="dimmed">
+              Review and sign your appointment documents to complete your onboarding.
+            </Text>
+          </div>
+          <Button
+            variant="outline"
+            color="orange"
+            leftSection={<IconRefresh size={16} />}
+            onClick={handleRegeneratePacket}
+            loading={regenerating}
+            size="sm"
+          >
+            Regenerate Documents
+          </Button>
+        </Group>
 
         <Card padding="lg" radius="md" withBorder>
           <Stack gap="md">
