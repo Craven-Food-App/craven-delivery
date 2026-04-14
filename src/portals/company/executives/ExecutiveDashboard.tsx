@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Title, Text, Stack, Card, Grid, Badge, Group, Button, Paper, Loader, Center } from '@mantine/core';
-import { IconUserCheck, IconFileText, IconUsers, IconChecklist, IconFolder, IconCoins, IconClock } from '@tabler/icons-react';
+import { IconUserCheck, IconFileText, IconUsers, IconChecklist, IconFolder, IconCoins, IconClock, IconRefresh } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
 import { useNavigate } from 'react-router-dom';
@@ -25,6 +25,9 @@ const ExecutiveDashboard: React.FC = () => {
   const [showTour, setShowTour] = useState(false);
   const [execUserId, setExecUserId] = useState<string | null>(null);
   const [execMetadata, setExecMetadata] = useState<Record<string, any> | null>(null);
+  const [canRegenerate, setCanRegenerate] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [appointmentId, setAppointmentId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
