@@ -187,11 +187,8 @@ serve(async (req: Request) => {
           signature_status: 'signed',
           signed_at: docSig.signedAt,
           signature_metadata: {
+            ...auditPayload,
             method: 'typed_electronic',
-            signature_name: docSig.signatureName,
-            audit_trail: auditData,
-            officer_name: officerName,
-            officer_email: officerEmail,
           },
         };
 
