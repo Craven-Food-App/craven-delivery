@@ -678,18 +678,15 @@ const MainHub: React.FC = () => {
         const entriesWithNames = await Promise.all(
           data.map(async (entry: any) => {
             let name = employeeInfo?.full_name || 'Unknown';
-            
-            // If entry has employee data, use it
-            if (entry.employees && entry.employees.first_name) {
-              name = `${entry.employees.first_name} ${entry.employees.last_name}`;
-            } 
-            // If entry has exec_user data, fetch name
-            else if (entry.exec_users) {
+
+            // Prefer executive identity when present
+            if (entry.exec_users?.user_id) {
               const { data: profile, error: profileError } = await supabase
                 .from('user_profiles')
                 .select('full_name, email')
                 .eq('user_id', entry.exec_users.user_id)
                 .maybeSingle();
+
               if (!profileError && profile) {
                 if (profile.full_name) {
                   name = profile.full_name;
@@ -697,6 +694,10 @@ const MainHub: React.FC = () => {
                   name = profile.email;
                 }
               }
+            }
+            // Fall back to employee identity only when no exec identity exists
+            else if (entry.employees && entry.employees.first_name) {
+              name = `${entry.employees.first_name} ${entry.employees.last_name}`;
             }
 
             return { ...entry, display_name: name };

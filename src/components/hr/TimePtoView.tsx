@@ -395,14 +395,8 @@ const TimePtoView: React.FC = () => {
             let department = '';
             let position = '';
 
-            // If entry has employee data, use it
-            if (entry.employees && entry.employees.first_name) {
-              name = `${entry.employees.first_name} ${entry.employees.last_name}`;
-              department = entry.employees.department || '';
-              position = entry.employees.position || '';
-            } 
-            // If entry has exec_user data, fetch name from user_profiles
-            else if (entry.exec_users && entry.exec_users.user_id) {
+            // Prefer executive identity when present
+            if (entry.exec_users && entry.exec_users.user_id) {
               const { data: profile } = await supabase
                 .from('user_profiles')
                 .select('full_name, email')
@@ -413,6 +407,12 @@ const TimePtoView: React.FC = () => {
               } else if (profile?.email) {
                 name = profile.email;
               }
+            }
+            // Fall back to employee identity only when no exec identity exists
+            else if (entry.employees && entry.employees.first_name) {
+              name = `${entry.employees.first_name} ${entry.employees.last_name}`;
+              department = entry.employees.department || '';
+              position = entry.employees.position || '';
             }
 
             // Calculate duration
