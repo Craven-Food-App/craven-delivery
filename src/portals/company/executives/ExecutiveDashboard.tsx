@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Title, Text, Stack, Card, Grid, Badge, Group, Button, Paper, Loader, Center } from '@mantine/core';
-import { IconUserCheck, IconFileText, IconUsers, IconChecklist, IconFolder, IconCoins, IconClock } from '@tabler/icons-react';
+import { IconUserCheck, IconFileText, IconUsers, IconChecklist, IconFolder, IconCoins, IconClock, IconRefresh } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
 import { useNavigate } from 'react-router-dom';
@@ -25,6 +25,9 @@ const ExecutiveDashboard: React.FC = () => {
   const [showTour, setShowTour] = useState(false);
   const [execUserId, setExecUserId] = useState<string | null>(null);
   const [execMetadata, setExecMetadata] = useState<Record<string, any> | null>(null);
+  const [canRegenerate, setCanRegenerate] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [appointmentId, setAppointmentId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,7 +50,7 @@ const ExecutiveDashboard: React.FC = () => {
       if (user) {
         const { data: execUser } = await supabase
           .from('exec_users')
-          .select('id, metadata')
+          .select('id, metadata, role, title')
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -58,6 +61,33 @@ const ExecutiveDashboard: React.FC = () => {
           if (!meta.guided_tour_completed) {
             setShowTour(true);
           }
+
+          // Check regenerate permission: board member, CEO, or secretary
+          const { data: boardMember } = await supabase
+            .from('board_members')
+            .select('id')
+            .eq('user_id', user.id)
+            .limit(1);
+
+          const execRole = (execUser.role || execUser.title || '').toLowerCase();
+          const isCeoOrSecretary = execRole.includes('ceo') ||
+            execRole.includes('chief executive') ||
+            execRole.includes('secretary');
+
+          setCanRegenerate((boardMember && boardMember.length > 0) || isCeoOrSecretary);
+
+          // Get appointment ID for regeneration
+          const { data: appts } = await supabase
+            .from('executive_appointments')
+            .select('id')
+            .eq('executive_id', execUser.id)
+            .not('status', 'in', '("terminated","rejected")')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (appts?.[0]) {
+            setAppointmentId(appts[0].id);
+          }
         }
       }
     } catch (error: any) {
@@ -66,6 +96,53 @@ const ExecutiveDashboard: React.FC = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRegeneratePacket = async () => {
+    if (!appointmentId) {
+      notifications.show({ title: 'Error', message: 'No active appointment found', color: 'red' });
+      return;
+    }
+    setRegenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('governance-backfill-appointment-documents', {
+        body: { appointment_id: appointmentId, force_regenerate: true },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Reset document statuses for re-signing
+      await supabase
+        .from('executive_documents')
+        .update({
+          signature_status: 'pending',
+          status: 'generated',
+          signed_file_url: null,
+          signed_at: null,
+          signed_by_user: null,
+          signer_roles: null,
+        })
+        .eq('appointment_id', appointmentId);
+
+      // Generate fresh signature tokens
+      await supabase.functions.invoke('generate-executive-signature-token', {
+        body: { appointment_id: appointmentId },
+      });
+
+      notifications.show({
+        title: 'Documents Regenerated',
+        message: 'All onboarding documents have been regenerated with the latest templates.',
+        color: 'green',
+      });
+    } catch (error: any) {
+      notifications.show({
+        title: 'Regeneration Failed',
+        message: error.message || 'Failed to regenerate documents',
+        color: 'red',
+      });
+    } finally {
+      setRegenerating(false);
     }
   };
 
@@ -88,19 +165,32 @@ const ExecutiveDashboard: React.FC = () => {
         existingMetadata={execMetadata}
       />
       <Stack gap="xl">
-        <div>
-          <Title order={1} c="dark" mb="xs">
-            Executive Dashboard
-          </Title>
-          <Text c="dimmed" size="lg">
-            View your appointment details and corporate officer directory.
-          </Text>
-          {execUserId && uuidLastFour(execUserId) ? (
-            <Text size="xs" c="dimmed" mt="xs" style={{ fontFamily: 'ui-monospace, Menlo, Monaco, Consolas, monospace' }}>
-              Executive record ID ·•••{uuidLastFour(execUserId)}
+        <Group justify="space-between" align="flex-start">
+          <div>
+            <Title order={1} c="dark" mb="xs">
+              Executive Dashboard
+            </Title>
+            <Text c="dimmed" size="lg">
+              View your appointment details and corporate officer directory.
             </Text>
-          ) : null}
-        </div>
+            {execUserId && uuidLastFour(execUserId) ? (
+              <Text size="xs" c="dimmed" mt="xs" style={{ fontFamily: 'ui-monospace, Menlo, Monaco, Consolas, monospace' }}>
+                Executive record ID ·•••{uuidLastFour(execUserId)}
+              </Text>
+            ) : null}
+          </div>
+          {canRegenerate && (
+            <Button
+              variant="outline"
+              color="orange"
+              leftSection={<IconRefresh size={16} />}
+              onClick={handleRegeneratePacket}
+              loading={regenerating}
+            >
+              Regenerate Onboarding Packet
+            </Button>
+          )}
+        </Group>
 
         <Grid>
           <Grid.Col span={{ base: 12, sm: 4 }}>
