@@ -56,6 +56,8 @@ const SecretaryReviewTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [processing, setProcessing] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState('');
 
   const fetchAppointments = async () => {
     setLoading(true);
