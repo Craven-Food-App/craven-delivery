@@ -40,11 +40,15 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
   onPolygonChange,
   onDriverZoneChange,
 }) => {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const drawRef = useRef<MapboxDraw | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [webglError, setWebglError] = useState(false);
+  const onZoneSelectRef = useRef(onZoneSelect);
+  const onPolygonChangeRef = useRef(onPolygonChange);
+  const onDriverZoneChangeRef = useRef(onDriverZoneChange);
 
   const selectedZone = useMemo(() => zones.find((zone) => zone.id === selectedZoneId) ?? null, [zones, selectedZoneId]);
 
@@ -75,136 +79,152 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
   }, [selectedZone?.geom]);
 
   useEffect(() => {
-    if (webglError) return;
+    onZoneSelectRef.current = onZoneSelect;
+    onPolygonChangeRef.current = onPolygonChange;
+    onDriverZoneChangeRef.current = onDriverZoneChange;
+  }, [onZoneSelect, onPolygonChange, onDriverZoneChange]);
+
+  useEffect(() => {
+    if (webglError || !mapContainerRef.current || mapRef.current) return;
+
+    let isUnmounted = false;
 
     try {
-      if (!mapRef.current) {
-        const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        if (!gl) {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      const isSupported = typeof mapboxgl.supported === 'function'
+        ? mapboxgl.supported({ failIfMajorPerformanceCaveat: false })
+        : Boolean(gl);
+
+      if (!gl || !isSupported) {
+        setWebglError(true);
+        return;
+      }
+
+      mapboxgl.accessToken = MAPBOX_CONFIG.accessToken;
+
+      let mapInstance: mapboxgl.Map;
+      try {
+        mapInstance = new mapboxgl.Map({
+          container: mapContainerRef.current,
+          style: MAPBOX_CONFIG.style,
+          center: MAPBOX_CONFIG.center as [number, number],
+          zoom: MAPBOX_CONFIG.zoom,
+          failIfMajorPerformanceCaveat: false,
+        });
+      } catch (error) {
+        console.warn('Failed to initialize admin zone map', error);
+        setWebglError(true);
+        return;
+      }
+
+      if (isUnmounted) {
+        mapInstance.remove();
+        return;
+      }
+
+      mapRef.current = mapInstance;
+
+      mapRef.current.on('error', (event: any) => {
+        const message = event?.error?.message ?? event?.error?.toString?.() ?? '';
+        if (typeof message === 'string' && message.includes('Failed to initialize WebGL')) {
+          console.warn('Admin zone map WebGL error', event.error);
           setWebglError(true);
-          return;
         }
+      });
 
-        mapboxgl.accessToken = MAPBOX_CONFIG.accessToken;
+      mapRef.current.on('load', () => {
+        if (!mapRef.current || isUnmounted) return;
 
-        let mapInstance: mapboxgl.Map;
-        try {
-          mapInstance = new mapboxgl.Map({
-            container: 'admin-zone-map',
-            style: MAPBOX_CONFIG.style,
-            center: MAPBOX_CONFIG.center as [number, number],
-            zoom: MAPBOX_CONFIG.zoom,
-            failIfMajorPerformanceCaveat: false,
-          });
-        } catch (error) {
-          console.warn('Failed to initialize admin zone map', error);
-          setWebglError(true);
-          return;
-        }
+        drawRef.current = new MapboxDraw({
+          displayControlsDefault: false,
+          controls: {
+            polygon: true,
+            trash: true,
+          },
+          defaultMode: mode === 'create' ? 'draw_polygon' : 'simple_select',
+        });
 
-        mapRef.current = mapInstance;
+        mapRef.current.addControl(drawRef.current, 'top-right');
 
-        mapRef.current.on('error', (event: any) => {
-          const message = event?.error?.message ?? event?.error?.toString?.() ?? '';
-          if (typeof message === 'string' && message.includes('Failed to initialize WebGL')) {
-            console.warn('Admin zone map WebGL error', event.error);
-            setWebglError(true);
+        mapRef.current.addSource('admin-delivery-zones', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        });
+
+        mapRef.current.addLayer({
+          id: 'admin-zones-fill',
+          type: 'fill',
+          source: 'admin-delivery-zones',
+          paint: {
+            'fill-color': [
+              'case',
+              ['==', ['get', 'id'], selectedZoneId ?? ''], '#f97316',
+              ['>', ['get', 'demand'], 0.7], '#ef4444',
+              ['>', ['get', 'demand'], 0.3], '#f59e0b',
+              '#10b981',
+            ],
+            'fill-opacity': 0.45,
+          },
+        });
+
+        mapRef.current.addLayer({
+          id: 'admin-zones-outline',
+          type: 'line',
+          source: 'admin-delivery-zones',
+          paint: {
+            'line-color': [
+              'case',
+              ['==', ['get', 'id'], selectedZoneId ?? ''], '#ea580c',
+              ['==', ['get', 'active'], true], '#2563eb',
+              '#6b7280',
+            ],
+            'line-width': 2,
+          },
+        });
+
+        mapRef.current.on('click', 'admin-zones-fill', (event: any) => {
+          const feature = event.features?.[0];
+          const zoneId = feature?.properties?.id as string | undefined;
+          if (zoneId) {
+            onZoneSelectRef.current(zoneId);
           }
         });
 
-        mapRef.current.on('load', () => {
-          if (!mapRef.current) return;
-
-          drawRef.current = new MapboxDraw({
-            displayControlsDefault: false,
-            controls: {
-              polygon: true,
-              trash: true,
-            },
-            defaultMode: mode === 'create' ? 'draw_polygon' : 'simple_select',
-          });
-
-          mapRef.current.addControl(drawRef.current, 'top-right');
-
-          mapRef.current.addSource('admin-delivery-zones', {
-            type: 'geojson',
-            data: { type: 'FeatureCollection', features: [] },
-          });
-
-          mapRef.current.addLayer({
-            id: 'admin-zones-fill',
-            type: 'fill',
-            source: 'admin-delivery-zones',
-            paint: {
-              'fill-color': [
-                'case',
-                ['==', ['get', 'id'], selectedZoneId ?? ''], '#f97316',
-                ['>', ['get', 'demand'], 0.7], '#ef4444',
-                ['>', ['get', 'demand'], 0.3], '#f59e0b',
-                '#10b981',
-              ],
-              'fill-opacity': 0.45,
-            },
-          });
-
-          mapRef.current.addLayer({
-            id: 'admin-zones-outline',
-            type: 'line',
-            source: 'admin-delivery-zones',
-            paint: {
-              'line-color': [
-                'case',
-                ['==', ['get', 'id'], selectedZoneId ?? ''], '#ea580c',
-                ['==', ['get', 'active'], true], '#2563eb',
-                '#6b7280',
-              ],
-              'line-width': 2,
-            },
-          });
-
-          mapRef.current.on('click', 'admin-zones-fill', (event: any) => {
-            const feature = event.features?.[0];
-            const zoneId = feature?.properties?.id as string | undefined;
-            if (zoneId) {
-              onZoneSelect(zoneId);
-            }
-          });
-
-          mapRef.current.on('mouseenter', 'admin-zones-fill', () => {
-            if (mapRef.current) {
-              mapRef.current.getCanvas().style.cursor = 'pointer';
-            }
-          });
-
-          mapRef.current.on('mouseleave', 'admin-zones-fill', () => {
-            if (mapRef.current) {
-              mapRef.current.getCanvas().style.cursor = '';
-            }
-          });
-
-          const handleDrawUpdate = () => {
-            if (!drawRef.current) return;
-            const all = drawRef.current.getAll();
-            const polygonFeature = all.features?.[0];
-            if (polygonFeature?.geometry?.type === 'Polygon') {
-              onPolygonChange(polygonFeature.geometry as Polygon);
-            }
-          };
-
-          mapRef.current.on('draw.create', handleDrawUpdate);
-          mapRef.current.on('draw.update', handleDrawUpdate);
-          mapRef.current.on('draw.delete', () => onPolygonChange(null));
-
-          setMapReady(true);
+        mapRef.current.on('mouseenter', 'admin-zones-fill', () => {
+          if (mapRef.current) {
+            mapRef.current.getCanvas().style.cursor = 'pointer';
+          }
         });
-      }
+
+        mapRef.current.on('mouseleave', 'admin-zones-fill', () => {
+          if (mapRef.current) {
+            mapRef.current.getCanvas().style.cursor = '';
+          }
+        });
+
+        const handleDrawUpdate = () => {
+          if (!drawRef.current) return;
+          const all = drawRef.current.getAll();
+          const polygonFeature = all.features?.[0];
+          if (polygonFeature?.geometry?.type === 'Polygon') {
+            onPolygonChangeRef.current(polygonFeature.geometry as Polygon);
+          }
+        };
+
+        mapRef.current.on('draw.create', handleDrawUpdate);
+        mapRef.current.on('draw.update', handleDrawUpdate);
+        mapRef.current.on('draw.delete', () => onPolygonChangeRef.current(null));
+
+        setMapReady(true);
+      });
     } catch (error) {
       console.warn('Failed to initialize admin zone map', error);
       setWebglError(true);
     }
 
     return () => {
+      isUnmounted = true;
       if (markerRef.current) {
         markerRef.current.remove();
         markerRef.current = null;
@@ -216,7 +236,7 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
       drawRef.current = null;
       setMapReady(false);
     };
-  }, [mode, onPolygonChange, onZoneSelect, selectedZoneId, webglError]);
+  }, [webglError]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
@@ -315,7 +335,7 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
     if (mode === 'create') {
       drawRef.current.deleteAll();
       drawRef.current.changeMode('draw_polygon');
-      onPolygonChange(null);
+      onPolygonChangeRef.current(null);
     } else if (mode === 'edit' && selectedGeometry) {
       drawRef.current.deleteAll();
       const feature: Feature = {
@@ -327,7 +347,7 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
       try {
         drawRef.current.add(feature as any);
         drawRef.current.changeMode('direct_select', { featureIds: [feature.id as string] });
-        onPolygonChange(selectedGeometry);
+        onPolygonChangeRef.current(selectedGeometry);
       } catch (error) {
         console.error('Failed to load zone geometry into draw control', error);
       }
@@ -369,7 +389,9 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
       mapRef.current.easeTo({ center: [driverLocation[1], driverLocation[0]], duration: 500, zoom: Math.max(mapRef.current.getZoom(), 13) });
     }
 
-    if (onDriverZoneChange) {
+    const handleDriverZoneChange = onDriverZoneChangeRef.current;
+
+    if (handleDriverZoneChange) {
       const point = [driverLocation[1], driverLocation[0]] as [number, number];
       let isInside = false;
       let zoneName: string | null = null;
@@ -383,9 +405,9 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
         }
       });
 
-      onDriverZoneChange({ isInside, zoneName });
+      handleDriverZoneChange({ isInside, zoneName });
     }
-  }, [driverLocation, mapReady, onDriverZoneChange, zones]);
+  }, [driverLocation, mapReady, zones]);
 
   if (webglError) {
     return (
@@ -399,7 +421,7 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
     );
   }
 
-  return <div id="admin-zone-map" className="h-[520px] w-full overflow-hidden rounded-2xl border border-border shadow-sm" />;
+  return <div ref={mapContainerRef} id="admin-zone-map" className="h-[520px] w-full overflow-hidden rounded-2xl border border-border shadow-sm" />;
 };
 
 function isPointInsidePolygon(point: [number, number], polygon: [number, number][]) {

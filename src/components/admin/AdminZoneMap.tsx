@@ -37,11 +37,15 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
   onPolygonChange,
   onDriverZoneChange,
 }) => {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const drawRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const [mapReady, setMapReady] = useState(false);
   const [webglError, setWebglError] = useState(false);
+  const onZoneSelectRef = useRef(onZoneSelect);
+  const onPolygonChangeRef = useRef(onPolygonChange);
+  const onDriverZoneChangeRef = useRef(onDriverZoneChange);
 
   const selectedZone = useMemo(() => zones.find((zone) => zone.id === selectedZoneId) ?? null, [zones, selectedZoneId]);
 
@@ -69,17 +73,32 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
   }, [selectedZone?.geom]);
 
   useEffect(() => {
-    if (webglError) return;
+    onZoneSelectRef.current = onZoneSelect;
+    onPolygonChangeRef.current = onPolygonChange;
+    onDriverZoneChangeRef.current = onDriverZoneChange;
+  }, [onZoneSelect, onPolygonChange, onDriverZoneChange]);
+
+  useEffect(() => {
+    if (webglError || !mapContainerRef.current || mapRef.current) return;
+
+    let isUnmounted = false;
 
     const initMap = async () => {
       try {
         const mapboxgl = (await import('mapbox-gl')).default;
         const MapboxDraw = (await import('@mapbox/mapbox-gl-draw')).default;
+        const container = mapContainerRef.current;
+
+        if (!container || isUnmounted) return;
 
         // Check WebGL support before creating map
         const canvas = document.createElement('canvas');
         const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        if (!gl) {
+        const isSupported = typeof mapboxgl.supported === 'function'
+          ? mapboxgl.supported({ failIfMajorPerformanceCaveat: false })
+          : Boolean(gl);
+
+        if (!gl || !isSupported) {
           setWebglError(true);
           return;
         }
@@ -88,7 +107,7 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
         let mapInstance: any;
         try {
           mapInstance = new mapboxgl.Map({
-            container: 'admin-zone-map',
+            container,
             style: MAPBOX_CONFIG.style,
             center: MAPBOX_CONFIG.center as [number, number],
             zoom: MAPBOX_CONFIG.zoom,
@@ -101,8 +120,16 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
         }
         mapRef.current = mapInstance;
 
+        mapRef.current.on('error', (event: any) => {
+          const message = event?.error?.message ?? event?.error?.toString?.() ?? '';
+          if (typeof message === 'string' && message.includes('Failed to initialize WebGL')) {
+            console.warn('Admin zone map WebGL error', event.error);
+            setWebglError(true);
+          }
+        });
+
         mapRef.current.on('load', () => {
-          if (!mapRef.current) return;
+          if (!mapRef.current || isUnmounted) return;
 
           drawRef.current = new MapboxDraw({
             displayControlsDefault: false,
@@ -151,7 +178,7 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
           mapRef.current.on('click', 'admin-zones-fill', (event: any) => {
             const feature = event.features?.[0];
             const zoneId = feature?.properties?.id as string | undefined;
-            if (zoneId) onZoneSelect(zoneId);
+            if (zoneId) onZoneSelectRef.current(zoneId);
           });
 
           mapRef.current.on('mouseenter', 'admin-zones-fill', () => {
@@ -167,13 +194,13 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
             const all = drawRef.current.getAll();
             const polygonFeature = all.features?.[0];
             if (polygonFeature?.geometry?.type === 'Polygon') {
-              onPolygonChange(polygonFeature.geometry as Polygon);
+              onPolygonChangeRef.current(polygonFeature.geometry as Polygon);
             }
           };
 
           mapRef.current.on('draw.create', handleDrawUpdate);
           mapRef.current.on('draw.update', handleDrawUpdate);
-          mapRef.current.on('draw.delete', () => onPolygonChange(null));
+          mapRef.current.on('draw.delete', () => onPolygonChangeRef.current(null));
 
           setMapReady(true);
         });
@@ -188,6 +215,7 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
     }
 
     return () => {
+      isUnmounted = true;
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -195,7 +223,7 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
       drawRef.current = null;
       setMapReady(false);
     };
-  }, [mode, onPolygonChange, onZoneSelect, selectedZoneId, webglError]);
+  }, [webglError]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
@@ -264,14 +292,14 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
     if (mode === 'create') {
       drawRef.current.deleteAll();
       drawRef.current.changeMode('draw_polygon');
-      onPolygonChange(null);
+      onPolygonChangeRef.current(null);
     } else if (mode === 'edit' && selectedGeometry) {
       drawRef.current.deleteAll();
       const feature: Feature = { id: selectedZoneId ?? 'selected-zone', type: 'Feature', properties: {}, geometry: selectedGeometry };
       try {
         drawRef.current.add(feature as any);
         drawRef.current.changeMode('direct_select', { featureIds: [feature.id as string] });
-        onPolygonChange(selectedGeometry);
+        onPolygonChangeRef.current(selectedGeometry);
       } catch (error) {
         console.error('Failed to load zone geometry into draw control', error);
       }
@@ -308,7 +336,9 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
       } catch {}
     })();
 
-    if (onDriverZoneChange) {
+    const handleDriverZoneChange = onDriverZoneChangeRef.current;
+
+    if (handleDriverZoneChange) {
       const point = [driverLocation[1], driverLocation[0]] as [number, number];
       let isInside = false;
       let zoneName: string | null = null;
@@ -320,9 +350,9 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
           zoneName = zone.name;
         }
       });
-      onDriverZoneChange({ isInside, zoneName });
+      handleDriverZoneChange({ isInside, zoneName });
     }
-  }, [driverLocation, mapReady, onDriverZoneChange, zones]);
+  }, [driverLocation, mapReady, zones]);
 
   if (webglError) {
     return (
@@ -336,7 +366,7 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
     );
   }
 
-  return <div id="admin-zone-map" className="w-full h-[520px] rounded-2xl border border-gray-200 shadow-sm overflow-hidden" />;
+  return <div ref={mapContainerRef} id="admin-zone-map" className="w-full h-[520px] rounded-2xl border border-gray-200 shadow-sm overflow-hidden" />;
 };
 
 function isPointInsidePolygon(point: [number, number], polygon: [number, number][]) {
