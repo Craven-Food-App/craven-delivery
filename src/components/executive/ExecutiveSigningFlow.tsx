@@ -915,22 +915,58 @@ function ExecutiveSigningFlow({ documents, onComplete }: ExecutiveSigningFlowPro
               {signatureStyle === 'upload' && (
                 <div className="space-y-8">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-900 mb-3">Upload Your Signature</label>
+                    <label className="block text-sm font-semibold text-gray-900 mb-3">Upload Your Signature (Transparent PNG recommended)</label>
                     <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
-                      <Upload className="text-gray-400 mb-2" size={48} />
-                      <span className="text-sm text-gray-600">Click to upload signature image</span>
-                      <span className="text-xs text-gray-500 mt-1">PNG, JPG (recommended: white background)</span>
-                      <input type="file" className="hidden" accept="image/*" />
+                      {uploadedSignature ? (
+                        <div className="flex flex-col items-center">
+                          <img src={uploadedSignature} alt="Uploaded signature" className="max-h-28 max-w-[250px] object-contain mb-2" />
+                          <span className="text-xs text-green-600 font-medium">Signature uploaded ✓</span>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="text-gray-400 mb-2" size={48} />
+                          <span className="text-sm text-gray-600">Click to upload signature image</span>
+                          <span className="text-xs text-gray-500 mt-1">PNG with transparent background recommended</span>
+                        </>
+                      )}
+                      <input
+                        ref={signatureFileRef}
+                        type="file"
+                        className="hidden"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileUpload(file, 'signature');
+                        }}
+                      />
                     </label>
                   </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-900 mb-3">Upload Your Initials</label>
                     <label className="flex flex-col items-center justify-center w-64 h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
-                      <Upload className="text-gray-400 mb-2" size={32} />
-                      <span className="text-sm text-gray-600">Click to upload initials</span>
-                      <span className="text-xs text-gray-500 mt-1">PNG, JPG</span>
-                      <input type="file" className="hidden" accept="image/*" />
+                      {uploadedInitials ? (
+                        <div className="flex flex-col items-center">
+                          <img src={uploadedInitials} alt="Uploaded initials" className="max-h-16 max-w-[120px] object-contain mb-2" />
+                          <span className="text-xs text-green-600 font-medium">Initials uploaded ✓</span>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="text-gray-400 mb-2" size={32} />
+                          <span className="text-sm text-gray-600">Click to upload initials</span>
+                          <span className="text-xs text-gray-500 mt-1">PNG with transparent background</span>
+                        </>
+                      )}
+                      <input
+                        ref={initialsFileRef}
+                        type="file"
+                        className="hidden"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileUpload(file, 'initials');
+                        }}
+                      />
                     </label>
                   </div>
                 </div>
