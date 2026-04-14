@@ -46,6 +46,7 @@ export default function ExecutiveSigningPortal() {
   const [documentSignatures, setDocumentSignatures] = useState<Record<string, DocumentSignature>>({});
   const [signingComplete, setSigningComplete] = useState(false);
   const [completionTimestamp, setCompletionTimestamp] = useState<string | null>(null);
+  const [preSignedDocIds, setPreSignedDocIds] = useState<Set<string>>(new Set());
   
   const documentViewerRef = useRef<HTMLDivElement>(null);
 
@@ -128,6 +129,7 @@ export default function ExecutiveSigningPortal() {
         }
         if (Object.keys(preSigned).length > 0) {
           setDocumentSignatures(preSigned);
+          setPreSignedDocIds(new Set(Object.keys(preSigned)));
         }
 
         // Auto-navigate to first unsigned document
@@ -231,19 +233,26 @@ export default function ExecutiveSigningPortal() {
       return;
     }
 
-    if (Object.keys(documentSignatures).length === 0) {
-      message.error('Please sign at least one document');
+    // Only submit newly signed documents (exclude pre-signed ones from DB)
+    const newlySignedDocs = Object.values(documentSignatures).filter(
+      sig => !preSignedDocIds.has(sig.documentId)
+    );
+
+    if (newlySignedDocs.length === 0) {
+      // All docs were already signed — just show completion
+      setCompletionTimestamp(new Date().toLocaleString());
+      setSigningComplete(true);
+      message.success('All documents are already signed!');
       return;
     }
 
     try {
       setLoading(true);
-      // Get IP address (will be captured server-side, but include in payload)
       const { data, error } = await supabase.functions.invoke('submit-executive-signatures', {
         body: {
           token,
-          documentSignatures: Object.values(documentSignatures),
-          typedName: userInfo?.officer_name || userInfo?.name || Object.values(documentSignatures)[0]?.signatureName || '',
+          documentSignatures: newlySignedDocs,
+          typedName: userInfo?.officer_name || userInfo?.name || newlySignedDocs[0]?.signatureName || '',
         }
       });
 
