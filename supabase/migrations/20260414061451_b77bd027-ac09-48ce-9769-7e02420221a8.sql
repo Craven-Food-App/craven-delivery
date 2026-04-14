@@ -1,0 +1,1 @@
+ALTER TABLE executive_documents DROP CONSTRAINT executive_documents_signature_token_key;

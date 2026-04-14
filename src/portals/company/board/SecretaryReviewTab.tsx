@@ -198,13 +198,40 @@ const SecretaryReviewTab: React.FC = () => {
 
       if (error) throw error;
 
+      // Reset all documents back to pending so they can be re-signed
+      const { error: resetError } = await supabase
+        .from('executive_documents')
+        .update({
+          signature_status: 'pending',
+          status: 'generated',
+          signed_file_url: null,
+          signed_at: null,
+          signed_by_user: null,
+          signer_roles: null,
+        })
+        .eq('appointment_id', apptId);
+
+      if (resetError) {
+        console.error('Failed to reset document signatures:', resetError);
+        toast.error('Appointment rejected but failed to reset document signatures. Documents may need manual reset.');
+      }
+
+      // Generate fresh shared signature token for all documents
+      const { error: tokenError } = await supabase.functions.invoke('generate-executive-signature-token', {
+        body: { appointment_id: apptId },
+      });
+
+      if (tokenError) {
+        console.error('Failed to generate new signature tokens:', tokenError);
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from('appointment_audit_log').insert({
           appointment_id: apptId,
           action_type: 'secretary_rejected',
           actor_user_id: user.id,
-          metadata_json: { reason: reviewNotes[apptId] },
+          metadata_json: { reason: reviewNotes[apptId], documents_reset: !resetError },
           timestamp: new Date().toISOString(),
         });
       }
