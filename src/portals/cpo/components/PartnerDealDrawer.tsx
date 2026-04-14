@@ -304,17 +304,88 @@ const PartnerDealDrawer: React.FC<PartnerDealDrawerProps> = ({ opened, onClose, 
                 />
               </Group>
 
+              <Divider label="Point of Contact" labelPosition="center" />
+
+              {/* POC / Contacts section */}
+              <Paper withBorder p="md" radius="md">
+                <Group justify="space-between" mb="sm">
+                  <Title order={6}>Contacts</Title>
+                  <Badge variant="light" color="orange" size="sm">{contacts.length} on file</Badge>
+                </Group>
+                {contacts.length === 0 ? (
+                  <Text size="sm" c="dimmed" ta="center" py="sm">No contacts on file — add a point of contact below.</Text>
+                ) : (
+                  <Stack gap="xs">
+                    {contacts.map((c) => (
+                      <Paper key={c.id} withBorder p="xs" radius="sm" style={{ backgroundColor: c.is_primary ? '#fff8f0' : undefined }}>
+                        <Group justify="space-between" wrap="nowrap">
+                          <div style={{ minWidth: 0 }}>
+                            <Group gap="xs" wrap="nowrap">
+                              <Text fw={600} size="sm">{c.full_name}</Text>
+                              {c.is_primary && <Badge size="xs" variant="filled" color="orange">Primary POC</Badge>}
+                            </Group>
+                            <Text size="xs" c="dimmed">
+                              {[c.title, c.email, c.phone].filter(Boolean).join(' · ') || 'No details'}
+                            </Text>
+                          </div>
+                          <Group gap={4} wrap="nowrap">
+                            {c.email && (
+                              <Button variant="subtle" size="xs" color="gray" compact onClick={() => window.open(`mailto:${c.email}`)}>
+                                ✉
+                              </Button>
+                            )}
+                            {c.phone && (
+                              <Button variant="subtle" size="xs" color="gray" compact onClick={() => window.open(`tel:${c.phone}`)}>
+                                📞
+                              </Button>
+                            )}
+                          </Group>
+                        </Group>
+                      </Paper>
+                    ))}
+                  </Stack>
+                )}
+                <Divider my="sm" />
+                <Text size="xs" fw={600} c="dimmed" mb={4}>Add new contact</Text>
+                <Group gap="xs" align="flex-end" grow>
+                  <TextInput placeholder="Name" size="xs" id="new-contact-name" />
+                  <TextInput placeholder="Title" size="xs" id="new-contact-title" />
+                  <TextInput placeholder="Email" size="xs" id="new-contact-email" />
+                  <TextInput placeholder="Phone" size="xs" id="new-contact-phone" />
+                  <Button size="xs" variant="light" color="orange" onClick={async () => {
+                    const name = (document.getElementById('new-contact-name') as HTMLInputElement)?.value?.trim();
+                    if (!name || !partnershipId) return;
+                    const title = (document.getElementById('new-contact-title') as HTMLInputElement)?.value?.trim();
+                    const email = (document.getElementById('new-contact-email') as HTMLInputElement)?.value?.trim();
+                    const phone = (document.getElementById('new-contact-phone') as HTMLInputElement)?.value?.trim();
+                    const { error } = await supabase.from('partnership_contacts').insert({
+                      partnership_id: partnershipId,
+                      full_name: name,
+                      title: title || null,
+                      email: email || null,
+                      phone: phone || null,
+                      is_primary: contacts.length === 0,
+                    });
+                    if (error) {
+                      notifications.show({ title: 'Error', message: error.message, color: 'red' });
+                    } else {
+                      notifications.show({ title: 'Added', message: 'Contact added.', color: 'green' });
+                      (document.getElementById('new-contact-name') as HTMLInputElement).value = '';
+                      (document.getElementById('new-contact-title') as HTMLInputElement).value = '';
+                      (document.getElementById('new-contact-email') as HTMLInputElement).value = '';
+                      (document.getElementById('new-contact-phone') as HTMLInputElement).value = '';
+                      await load();
+                      onUpdated();
+                    }
+                  }}>Add</Button>
+                </Group>
+              </Paper>
+
               <Divider />
 
               <Group align="flex-start" grow>
                 <Paper withBorder p="md" radius="md" style={{ flex: 1, minWidth: 260 }}>
                   <Title order={6} mb="xs">Relationship intelligence</Title>
-                  <Text size="xs" c="dimmed" mb={4}>Decision maker</Text>
-                  <Text size="sm" mb="sm">
-                    {primary
-                      ? `${primary.full_name}${primary.title ? ` — ${primary.title}` : ''}`
-                      : 'No contact on file'}
-                  </Text>
                   <Textarea
                     label="Notes (leverage, politics, hesitation)"
                     minRows={5}

@@ -55,6 +55,16 @@ import { pushSignedToOnboarding } from '../partnerOnboardingPush';
 /** Stages that can be advanced forward (excludes Lost — use Record closed). */
 const ADVANCE_ORDER = PIPELINE_STAGES.filter((s) => s.value !== 'lost').map((s) => s.value);
 
+interface PartnerContact {
+  id: string;
+  partnership_id: string;
+  full_name: string;
+  title: string | null;
+  email: string | null;
+  phone: string | null;
+  is_primary: boolean;
+}
+
 interface Partnership {
   id: string;
   partner_name: string;
@@ -81,6 +91,7 @@ interface Partnership {
   next_follow_up_at?: string | null;
   disposition_recorded_at?: string | null;
   ok_to_reengage?: boolean | null;
+  _contacts?: PartnerContact[];
 }
 
 function formatRelative(iso: string | null): string {
@@ -156,8 +167,16 @@ const PartnerPipeline: React.FC = () => {
   const [formData, setFormData] = useState(emptyForm);
 
   const loadPartnerships = async () => {
-    const { data } = await supabase.from('partnerships').select('*').order('updated_at', { ascending: false });
-    setPartnerships((data as Partnership[]) || []);
+    const [{ data: pData }, { data: cData }] = await Promise.all([
+      supabase.from('partnerships').select('*').order('updated_at', { ascending: false }),
+      supabase.from('partnership_contacts').select('*').order('is_primary', { ascending: false }),
+    ]);
+    const contacts = (cData || []) as PartnerContact[];
+    const mapped = ((pData || []) as Partnership[]).map(p => ({
+      ...p,
+      _contacts: contacts.filter(c => c.partnership_id === p.id),
+    }));
+    setPartnerships(mapped);
     setLoading(false);
   };
 
@@ -782,7 +801,17 @@ const PartnerPipeline: React.FC = () => {
                             <Text fw={600} size="sm" truncate lh={1.3}>
                               {p.partner_name}
                             </Text>
-                            <Text size="xs" c="dimmed" mt={4} truncate>
+                            {(() => {
+                              const poc = p._contacts?.find(c => c.is_primary) || p._contacts?.[0];
+                              return poc ? (
+                                <Text size="xs" c="dimmed" mt={2} truncate>
+                                  👤 {poc.full_name}{poc.title ? ` · ${poc.title}` : ''}{poc.phone ? ` · ${poc.phone}` : ''}
+                                </Text>
+                              ) : (
+                                <Text size="xs" c="red" mt={2} fs="italic">No POC</Text>
+                              );
+                            })()}
+                            <Text size="xs" c="dimmed" mt={2} truncate>
                               {partnerTypeLabel(p.partner_type)}
                             </Text>
                             {p.deal_value ? (
