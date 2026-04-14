@@ -1,6 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Badge, Button, Card, Tag, Tooltip } from 'antd';
-import { BellOutlined, MessageOutlined, NotificationOutlined, CheckOutlined, CloseOutlined, FileDoneOutlined } from '@ant-design/icons';
+import {
+  BellOutlined,
+  MessageOutlined,
+  NotificationOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  FileDoneOutlined,
+  HolderOutlined,
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -38,6 +46,42 @@ const priorityColor = (priority: Announcement['priority']) => {
   return 'default';
 };
 
+const POSITION_STORAGE_KEY = 'craven-exec-global-notifications-position';
+
+type PanelPosition = { left: number; top: number };
+
+function readStoredPosition(): PanelPosition | null {
+  try {
+    const raw = localStorage.getItem(POSITION_STORAGE_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as PanelPosition;
+    if (typeof p.left === 'number' && typeof p.top === 'number' && Number.isFinite(p.left) && Number.isFinite(p.top)) {
+      return p;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function defaultPanelPosition(): PanelPosition {
+  if (typeof window === 'undefined') return { left: 20, top: 70 };
+  const panelWidth = Math.min(430, window.innerWidth - 40);
+  return { left: Math.max(8, window.innerWidth - panelWidth - 20), top: 70 };
+}
+
+function clampPanelPosition(pos: PanelPosition, containerWidth: number, containerHeight: number): PanelPosition {
+  const margin = 8;
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 800;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 600;
+  const w = Math.min(containerWidth, vw - margin * 2);
+  const h = containerHeight;
+  return {
+    left: Math.min(Math.max(margin, pos.left), Math.max(margin, vw - w - margin)),
+    top: Math.min(Math.max(margin, pos.top), Math.max(margin, vh - h - margin)),
+  };
+}
+
 const ExecutiveGlobalNotifications: React.FC = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
@@ -46,6 +90,18 @@ const ExecutiveGlobalNotifications: React.FC = () => {
   const [taskCount, setTaskCount] = useState(0);
   const [unreadAnnouncements, setUnreadAnnouncements] = useState<Announcement[]>([]);
   const [dismissedAnnouncements, setDismissedAnnouncements] = useState<string[]>([]);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragHandleRef = useRef<HTMLSpanElement>(null);
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originLeft: number;
+    originTop: number;
+  } | null>(null);
+  const [position, setPosition] = useState<PanelPosition>(() => readStoredPosition() ?? defaultPanelPosition());
+  const [dragging, setDragging] = useState(false);
 
   const visibleAnnouncements = useMemo(
     () => unreadAnnouncements.filter((a) => !dismissedAnnouncements.includes(a.id)).slice(0, 2),
@@ -144,16 +200,89 @@ const ExecutiveGlobalNotifications: React.FC = () => {
     };
   }, [fetchExecutiveNotificationState]);
 
+  const reclampPosition = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setPosition((prev) => {
+      const next = clampPanelPosition(prev, rect.width, rect.height);
+      if (next.left !== prev.left || next.top !== prev.top) {
+        try {
+          localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          /* ignore */
+        }
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('resize', reclampPosition);
+    return () => window.removeEventListener('resize', reclampPosition);
+  }, [reclampPosition]);
+
+  const onDragHandlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(true);
+    dragRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      originLeft: position.left,
+      originTop: position.top,
+    };
+    dragHandleRef.current?.setPointerCapture(e.pointerId);
+  };
+
+  const onDragHandlePointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d || e.pointerId !== d.pointerId) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    const el = containerRef.current;
+    const w = el?.offsetWidth ?? Math.min(430, typeof window !== 'undefined' ? window.innerWidth - 40 : 430);
+    const h = el?.offsetHeight ?? 120;
+    setPosition(clampPanelPosition({ left: d.originLeft + dx, top: d.originTop + dy }, w, h));
+  };
+
+  const endDrag = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d || e.pointerId !== d.pointerId) return;
+    try {
+      dragHandleRef.current?.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    dragRef.current = null;
+    setDragging(false);
+    setPosition((prev) => {
+      const el = containerRef.current;
+      const w = el?.offsetWidth ?? Math.min(430, window.innerWidth - 40);
+      const h = el?.offsetHeight ?? 120;
+      const next = clampPanelPosition(prev, w, h);
+      try {
+        localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
   if (!isExecutive || !userId) return null;
 
   const totalCount = messageCount + taskCount + unreadAnnouncements.length;
 
   return (
     <div
+      ref={containerRef}
       style={{
         position: 'fixed',
-        top: 70,
-        right: 20,
+        left: position.left,
+        top: position.top,
         zIndex: 1200,
         width: 'min(430px, calc(100vw - 40px))',
         display: 'flex',
@@ -163,7 +292,29 @@ const ExecutiveGlobalNotifications: React.FC = () => {
     >
       <Card size="small" style={{ border: '1px solid #e5e7eb', boxShadow: '0 6px 18px rgba(0,0,0,0.1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
+            <span
+              ref={dragHandleRef}
+              role="button"
+              tabIndex={0}
+              title="Drag to move"
+              aria-label="Move notifications panel"
+              style={{
+                cursor: dragging ? 'grabbing' : 'grab',
+                touchAction: 'none',
+                userSelect: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                color: '#9ca3af',
+                flexShrink: 0,
+              }}
+              onPointerDown={onDragHandlePointerDown}
+              onPointerMove={onDragHandlePointerMove}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+            >
+              <HolderOutlined style={{ fontSize: 14, pointerEvents: 'none' }} />
+            </span>
             <Badge count={totalCount} size="small" offset={[3, -2]}>
               <BellOutlined style={{ color: '#FF6B35', fontSize: 16 }} />
             </Badge>
