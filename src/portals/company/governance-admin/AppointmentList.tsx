@@ -67,6 +67,7 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from '@mantine/form';
+import AdminComplianceReview from '@/components/executive/compliance/AdminComplianceReview';
 import dayjs from 'dayjs';
 
 interface ExecutiveAppointment {
@@ -2123,6 +2124,10 @@ const AppointmentList: React.FC = () => {
                   )}
                 </Timeline>
               </Stack>
+            </Tabs.Panel>
+
+            <Tabs.Panel value="compliance" pt="md">
+              <AdminComplianceReview appointmentId={selectedAppointment.id} />
             </Tabs.Panel>
           </Tabs>
         )}
