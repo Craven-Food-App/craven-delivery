@@ -167,8 +167,16 @@ const PartnerPipeline: React.FC = () => {
   const [formData, setFormData] = useState(emptyForm);
 
   const loadPartnerships = async () => {
-    const { data } = await supabase.from('partnerships').select('*').order('updated_at', { ascending: false });
-    setPartnerships((data as Partnership[]) || []);
+    const [{ data: pData }, { data: cData }] = await Promise.all([
+      supabase.from('partnerships').select('*').order('updated_at', { ascending: false }),
+      supabase.from('partnership_contacts').select('*').order('is_primary', { ascending: false }),
+    ]);
+    const contacts = (cData || []) as PartnerContact[];
+    const mapped = ((pData || []) as Partnership[]).map(p => ({
+      ...p,
+      _contacts: contacts.filter(c => c.partnership_id === p.id),
+    }));
+    setPartnerships(mapped);
     setLoading(false);
   };
 
