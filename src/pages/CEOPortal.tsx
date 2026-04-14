@@ -165,10 +165,6 @@ const CEOPortal: React.FC = () => {
               </p>
             </div>
             <div className="space-y-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">CFO Evaluation</h4>
-              <CfoEvaluationGatePanel mode="ceo" />
-            </div>
-            <div className="space-y-2">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">CTO Evaluation</h4>
               <CtoEvaluationGatePanel mode="ceo" />
             </div>
