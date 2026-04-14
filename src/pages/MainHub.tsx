@@ -336,6 +336,7 @@ const MainHub: React.FC = () => {
           setPinModalVisible(false);
           message.success(`Welcome, ${profiles?.full_name || position}! PIN verified.`);
           setPinLoading(false);
+          setShowAnnouncementPopup(true);
           return;
         }
       }
@@ -364,6 +365,7 @@ const MainHub: React.FC = () => {
           setPinModalVisible(false);
           message.success("Welcome, CEO Stroman! PIN verified.");
           setPinLoading(false);
+          setShowAnnouncementPopup(true);
           return;
         }
       }
@@ -477,6 +479,7 @@ const MainHub: React.FC = () => {
       setPinModalVisible(false);
       message.success(`Welcome, ${employeeData.full_name}! ${isAdmin ? "Admin access granted." : ""}`);
       setPinLoading(false);
+      setShowAnnouncementPopup(true);
     } catch (error: any) {
       console.error("PIN verification error:", error);
       message.error("Failed to verify PIN. Please try again.");
