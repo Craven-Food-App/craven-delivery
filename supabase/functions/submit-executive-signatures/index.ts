@@ -70,12 +70,14 @@ serve(async (req: Request) => {
     // Use new format if available, otherwise fall back to legacy
     if (body.documentSignatures && body.documentSignatures.length > 0) {
       // New format: typed signatures with audit trail
-      // First, find one document with the token to get executive/appointment info
-      const { data: sampleDoc, error: sampleError } = await supabase
+      // Find one matching document, but don't require the token to be unique across the packet
+      const { data: sampleDocs, error: sampleError } = await supabase
         .from('executive_documents')
         .select('executive_id, appointment_id, officer_name, role')
         .eq('signature_token', body.token)
-        .maybeSingle();
+        .limit(1);
+
+      const sampleDoc = sampleDocs?.[0] ?? null;
 
       if (sampleError || !sampleDoc) {
         return new Response(JSON.stringify({ ok: false, error: 'Invalid or expired token' }), {
@@ -87,6 +89,7 @@ serve(async (req: Request) => {
       // Get officer info from appointment if available
       let officerName = sampleDoc.officer_name || body.typedName || '';
       let officerEmail = null;
+      let signedByUserId: string | null = null;
       
       if (sampleDoc.appointment_id) {
         const { data: appointment } = await supabase
@@ -101,6 +104,19 @@ serve(async (req: Request) => {
         }
       }
 
+      if (sampleDoc.executive_id) {
+        const { data: execUser } = await supabase
+          .from('exec_users')
+          .select('user_id')
+          .eq('id', sampleDoc.executive_id)
+          .maybeSingle();
+
+        signedByUserId = execUser?.user_id || null;
+      }
+
+      const savedDocumentIds: string[] = [];
+      const failedDocuments: Array<{ documentId: string; reason: string }> = [];
+
       // Process each document signature
       for (const docSig of body.documentSignatures) {
         // Verify document exists and is linked to the same executive/appointment
@@ -111,33 +127,38 @@ serve(async (req: Request) => {
           .maybeSingle();
 
         if (docError || !docData) {
+          const reason = docError?.message || 'Document not found';
           console.error(`Document ${docSig.documentId} not found:`, docError);
+          failedDocuments.push({ documentId: docSig.documentId, reason });
           continue;
         }
 
         // Verify document belongs to same executive/appointment
-        // Check executive_id match if both have it
-        if (sampleDoc.executive_id && docData.executive_id) {
-          if (docData.executive_id !== sampleDoc.executive_id) {
-            console.error(`Document ${docSig.documentId} does not belong to the same executive`);
-            continue;
-          }
-        }
-        // Check appointment_id match if both have it
-        if (sampleDoc.appointment_id && docData.appointment_id) {
-          if (docData.appointment_id !== sampleDoc.appointment_id) {
-            console.error(`Document ${docSig.documentId} does not belong to the same appointment`);
-            continue;
-          }
-        }
-        // If sample has executive_id but doc doesn't, or vice versa, skip
-        if ((sampleDoc.executive_id && !docData.executive_id) || (!sampleDoc.executive_id && docData.executive_id)) {
-          console.error(`Document ${docSig.documentId} has mismatched executive_id`);
+        if (sampleDoc.executive_id && docData.executive_id && docData.executive_id !== sampleDoc.executive_id) {
+          const reason = 'Document does not belong to the same executive';
+          console.error(`Document ${docSig.documentId} does not belong to the same executive`);
+          failedDocuments.push({ documentId: docSig.documentId, reason });
           continue;
         }
-        // If sample has appointment_id but doc doesn't, or vice versa, skip
+
+        if (sampleDoc.appointment_id && docData.appointment_id && docData.appointment_id !== sampleDoc.appointment_id) {
+          const reason = 'Document does not belong to the same appointment';
+          console.error(`Document ${docSig.documentId} does not belong to the same appointment`);
+          failedDocuments.push({ documentId: docSig.documentId, reason });
+          continue;
+        }
+
+        if ((sampleDoc.executive_id && !docData.executive_id) || (!sampleDoc.executive_id && docData.executive_id)) {
+          const reason = 'Document has mismatched executive linkage';
+          console.error(`Document ${docSig.documentId} has mismatched executive_id`);
+          failedDocuments.push({ documentId: docSig.documentId, reason });
+          continue;
+        }
+
         if ((sampleDoc.appointment_id && !docData.appointment_id) || (!sampleDoc.appointment_id && docData.appointment_id)) {
+          const reason = 'Document has mismatched appointment linkage';
           console.error(`Document ${docSig.documentId} has mismatched appointment_id`);
+          failedDocuments.push({ documentId: docSig.documentId, reason });
           continue;
         }
 
@@ -168,36 +189,110 @@ serve(async (req: Request) => {
           .upload(filePath, blob, { upsert: true, contentType: 'application/json' });
 
         if (uploadError) {
+          const reason = uploadError.message || 'Failed to store signature audit payload';
           console.error('Storage upload error:', uploadError);
-          // Continue with other documents even if one fails
+          failedDocuments.push({ documentId: docSig.documentId, reason });
           continue;
         }
 
         // Update document signature status
+        const updatePayload: Record<string, unknown> = {
+          signature_status: 'signed',
+          signed_at: docSig.signedAt,
+          signature_metadata: {
+            method: 'typed_electronic',
+            signature_name: docSig.signatureName,
+            audit_trail: auditData,
+            officer_name: officerName,
+            officer_email: officerEmail,
+          },
+        };
+
+        if (signedByUserId) {
+          updatePayload.signed_by_user = signedByUserId;
+        }
+
         const { error: updateError } = await supabase
           .from('executive_documents')
-          .update({
-            signature_status: 'signed',
-            signed_at: docSig.signedAt,
-            signed_by_user: officerEmail || officerName,
-            signature_metadata: {
-              method: 'typed_electronic',
-              signature_name: docSig.signatureName,
-              audit_trail: auditData,
-            },
-          })
+          .update(updatePayload)
           .eq('id', docSig.documentId);
 
         if (updateError) {
+          const reason = updateError.message || 'Failed to update document';
           console.error(`Error updating document ${docSig.documentId}:`, updateError);
-          // Continue with other documents
+          failedDocuments.push({ documentId: docSig.documentId, reason });
+          continue;
         }
+
+        savedDocumentIds.push(docSig.documentId);
+      }
+
+      let appointmentSummary: {
+        id: string;
+        status: string;
+        totalDocuments: number;
+        signedDocuments: number;
+        allSigned: boolean;
+      } | null = null;
+
+      if (sampleDoc.appointment_id) {
+        const { data: appointmentDocs, error: appointmentDocsError } = await supabase
+          .from('executive_documents')
+          .select('signature_status, status')
+          .eq('appointment_id', sampleDoc.appointment_id)
+          .neq('status', 'generated_for_board_only');
+
+        if (!appointmentDocsError && appointmentDocs) {
+          const totalDocuments = appointmentDocs.length;
+          const signedDocuments = appointmentDocs.filter((doc) => doc.signature_status === 'signed').length;
+          const allSigned = totalDocuments > 0 && signedDocuments === totalDocuments;
+          const someSigned = signedDocuments > 0;
+          const nextStatus = allSigned
+            ? 'READY_FOR_SECRETARY_REVIEW'
+            : someSigned
+              ? 'partially_signed'
+              : 'AWAITING_SIGNATURES';
+
+          const { error: appointmentUpdateError } = await supabase
+            .from('executive_appointments')
+            .update({
+              status: nextStatus,
+            })
+            .eq('id', sampleDoc.appointment_id);
+
+          if (appointmentUpdateError) {
+            console.error('Error updating appointment status after signing:', appointmentUpdateError);
+          }
+
+          appointmentSummary = {
+            id: sampleDoc.appointment_id,
+            status: nextStatus,
+            totalDocuments,
+            signedDocuments,
+            allSigned,
+          };
+        }
+      }
+
+      if (failedDocuments.length > 0) {
+        return new Response(JSON.stringify({ 
+          ok: false,
+          error: `Only ${savedDocumentIds.length} of ${body.documentSignatures.length} documents were saved.`,
+          documentsCount: savedDocumentIds.length,
+          totalRequested: body.documentSignatures.length,
+          failedDocuments,
+          appointment: appointmentSummary,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
       }
 
       return new Response(JSON.stringify({ 
         ok: true, 
         message: 'All documents signed successfully',
-        documentsCount: body.documentSignatures.length,
+        documentsCount: savedDocumentIds.length,
+        appointment: appointmentSummary,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
