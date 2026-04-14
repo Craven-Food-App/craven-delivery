@@ -801,7 +801,17 @@ const PartnerPipeline: React.FC = () => {
                             <Text fw={600} size="sm" truncate lh={1.3}>
                               {p.partner_name}
                             </Text>
-                            <Text size="xs" c="dimmed" mt={4} truncate>
+                            {(() => {
+                              const poc = p._contacts?.find(c => c.is_primary) || p._contacts?.[0];
+                              return poc ? (
+                                <Text size="xs" c="dimmed" mt={2} truncate>
+                                  👤 {poc.full_name}{poc.title ? ` · ${poc.title}` : ''}{poc.phone ? ` · ${poc.phone}` : ''}
+                                </Text>
+                              ) : (
+                                <Text size="xs" c="red" mt={2} fs="italic">No POC</Text>
+                              );
+                            })()}
+                            <Text size="xs" c="dimmed" mt={2} truncate>
                               {partnerTypeLabel(p.partner_type)}
                             </Text>
                             {p.deal_value ? (
