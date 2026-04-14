@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Stack, Title, Text, Card, Badge, Group, Button, Textarea,
-  Table, Loader, Alert, Accordion, ActionIcon, Tooltip, Divider
+  Table, Loader, Alert, Accordion, ActionIcon, Tooltip, Divider, Modal
 } from '@mantine/core';
 import {
   IconCheck, IconX, IconEye, IconFileText, IconClock,
@@ -56,6 +56,8 @@ const SecretaryReviewTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [processing, setProcessing] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState('');
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -204,6 +206,25 @@ const SecretaryReviewTab: React.FC = () => {
 
   return (
     <Stack gap="lg">
+      {/* Document Preview Modal */}
+      <Modal
+        opened={!!previewUrl}
+        onClose={() => setPreviewUrl(null)}
+        title={previewTitle}
+        size="xl"
+        centered
+        styles={{ body: { padding: 0, height: '70vh' } }}
+      >
+        {previewUrl && (
+          <iframe
+            src={previewUrl}
+            style={{ width: '100%', height: '100%', border: 'none' }}
+            title={previewTitle}
+            sandbox="allow-same-origin"
+          />
+        )}
+      </Modal>
+
       {/* Stats */}
       <Group gap="md">
         <Badge size="lg" variant="light" color="blue" leftSection={<IconClock size={14} />}>
@@ -228,6 +249,7 @@ const SecretaryReviewTab: React.FC = () => {
               onReject={() => handleReject(appt.id)}
               processing={processing === appt.id}
               isPending
+              onPreviewDoc={(url, title) => { setPreviewUrl(url); setPreviewTitle(title); }}
             />
           ))}
         </Stack>
@@ -247,6 +269,7 @@ const SecretaryReviewTab: React.FC = () => {
               onReject={() => {}}
               processing={false}
               isPending={false}
+              onPreviewDoc={(url, title) => { setPreviewUrl(url); setPreviewTitle(title); }}
             />
           ))}
         </Stack>
@@ -263,10 +286,11 @@ interface CardProps {
   onReject: () => void;
   processing: boolean;
   isPending: boolean;
+  onPreviewDoc: (url: string, title: string) => void;
 }
 
 const AppointmentReviewCard: React.FC<CardProps> = ({
-  appointment, notes, onNotesChange, onApprove, onReject, processing, isPending,
+  appointment, notes, onNotesChange, onApprove, onReject, processing, isPending, onPreviewDoc,
 }) => {
   const signedCount = appointment.documents.filter(d => d.signature_status === 'signed').length;
   const totalDocs = appointment.documents.length;
@@ -366,7 +390,7 @@ const AppointmentReviewCard: React.FC<CardProps> = ({
                                 size="sm"
                                 variant="light"
                                 color="blue"
-                                onClick={() => window.open(doc.signed_file_url!, '_blank')}
+                                onClick={() => onPreviewDoc(doc.signed_file_url!, formatDocType(doc.type) + ' (Signed)')}
                               >
                                 <IconEye size={14} />
                               </ActionIcon>
@@ -378,7 +402,7 @@ const AppointmentReviewCard: React.FC<CardProps> = ({
                                 size="sm"
                                 variant="light"
                                 color="gray"
-                                onClick={() => window.open(doc.file_url!, '_blank')}
+                                onClick={() => onPreviewDoc(doc.file_url!, formatDocType(doc.type))}
                               >
                                 <IconEye size={14} />
                               </ActionIcon>
