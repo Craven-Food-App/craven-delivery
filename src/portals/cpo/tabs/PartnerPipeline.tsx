@@ -578,7 +578,7 @@ const PartnerPipeline: React.FC = () => {
       <Stack gap="sm">
         <Group justify="space-between" align="flex-start" wrap="wrap">
           <Stack gap={6} maw={720}>
-            <Title order={3}>Partner pipeline</Title>
+            
             <Text size="sm" c="dimmed">
               Track strategic partners from first lead through signature — or a documented close. Columns are{' '}
               <strong>deal stages</strong> (left to right). Use the filter to focus on active work or closed deals.
