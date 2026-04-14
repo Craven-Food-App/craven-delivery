@@ -46,7 +46,7 @@ const CEOSignatureManager = lazy(() => import('@/components/ceo/CEOSignatureMana
 const ExecutiveWordProcessor = lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
 const ActiveUsersMonitor = lazy(() => import('@/components/ceo/ActiveUsersMonitor'));
 const InternsManagement = lazy(() => import('@/components/ceo/InternsManagement').then(m => ({ default: m.InternsManagement })));
-const CfoEvaluationGatePanel = lazy(() => import('@/components/cfo/CfoEvaluationGatePanel'));
+
 const CtoEvaluationGatePanel = lazy(() => import('@/components/cto/CtoEvaluationGatePanel'));
 const EmbeddedCComms = lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
