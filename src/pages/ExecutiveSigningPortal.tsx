@@ -341,29 +341,38 @@ export default function ExecutiveSigningPortal() {
         <div>
           <h2 className="font-bold text-lg mb-2">Documents</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            {documents.length} document(s) to sign
+            {documents.filter(d => !documentSignatures[d.id]).length} document(s) remaining to sign
           </p>
           
           <div className="space-y-2 mb-6">
             {documents.map((doc, index) => {
-              const isSigned = documentSignatures[doc.id];
+              const isSigned = !!documentSignatures[doc.id];
+              const wasPreSigned = doc.signature_status === 'signed';
               const isCurrent = index === currentDocIndex;
               return (
                 <div
                   key={doc.id}
-                  onClick={() => setCurrentDocIndex(index)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                    isCurrent ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                  onClick={() => {
+                    if (!wasPreSigned) setCurrentDocIndex(index);
+                  }}
+                  className={`p-3 rounded-lg border transition-colors ${
+                    wasPreSigned
+                      ? 'border-green-200 bg-green-50/50 opacity-60 cursor-default'
+                      : isCurrent
+                        ? 'border-primary bg-primary/5 cursor-pointer'
+                        : 'border-border hover:bg-muted/50 cursor-pointer'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{doc.title}</p>
+                      <p className={`text-sm font-medium truncate ${wasPreSigned ? 'line-through text-muted-foreground' : ''}`}>
+                        {doc.title}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Document {index + 1}
+                        {wasPreSigned ? 'Completed' : `Document ${index + 1}`}
                       </p>
                     </div>
-                    {isSigned && (
+                    {(isSigned || wasPreSigned) && (
                       <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
                     )}
                   </div>
