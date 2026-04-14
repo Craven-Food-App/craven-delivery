@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { FileText, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronRight, CheckCircle2, PartyPopper, Shield } from 'lucide-react';
 import { message } from 'antd';
 import { ElectronicSignatureAcknowledgment } from '@/components/executive/ElectronicSignatureAcknowledgment';
 import { sanitizeExecutiveDocumentHtml } from '@/utils/executiveDocumentHtml';
