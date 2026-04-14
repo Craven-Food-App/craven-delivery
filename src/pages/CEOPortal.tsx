@@ -41,7 +41,7 @@ const StrategicMindMap = lazy(() => import('@/components/ceo/StrategicMindMap').
 const AuditTrail = lazy(() => import('@/components/ceo/AuditTrail').then(m => ({ default: m.AuditTrail })));
 const QuickActions = lazy(() => import('@/components/ceo/QuickActions').then(m => ({ default: m.QuickActions })));
 const EquityDashboard = lazy(() => import('@/components/ceo/EquityDashboard').then(m => ({ default: m.EquityDashboard })));
-const ExecutiveCommunicationsCenter = lazy(() => import('@/components/executive/ExecutiveCommunicationsCenter'));
+
 const CEOSignatureManager = lazy(() => import('@/components/ceo/CEOSignatureManager'));
 const ExecutiveWordProcessor = lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
 const ActiveUsersMonitor = lazy(() => import('@/components/ceo/ActiveUsersMonitor'));
@@ -81,7 +81,7 @@ type TabId =
   | 'audit'
   | 'signature'
   | 'word'
-  | 'communications'
+  | 'c-comms'
   | 'c-comms'
   | 'calendar';
 
@@ -109,7 +109,7 @@ const TAB_DEFINITIONS: TabDefinition[] = [
   { id: 'audit', label: 'Audit Trail', description: 'Executive-grade compliance and accountability evidence.', section: 'Documents', icon: IconFileText },
   { id: 'signature', label: 'Signatures', description: 'Secure signature workflow for approvals and legal docs.', section: 'Documents', icon: IconPencil },
   { id: 'word', label: 'Briefings', description: 'Executive writing workspace for memos and briefs.', section: 'Documents', icon: IconFileText },
-  { id: 'communications', label: 'Secure Comms', description: 'Internal leadership communication channel.', section: 'Documents', icon: IconMail },
+  
   { id: 'c-comms', label: 'C-Suite Comms', description: 'Cross-executive communication workspace.', section: 'Documents', icon: IconMail },
 ];
 
@@ -192,8 +192,6 @@ const CEOPortal: React.FC = () => {
         return <AuditTrail />;
       case 'signature':
         return <CEOSignatureManager />;
-      case 'communications':
-        return <ExecutiveCommunicationsCenter defaultTab="messages" />;
       case 'c-comms':
         return <EmbeddedCComms />;
       case 'word':
