@@ -981,7 +981,10 @@ function ExecutiveSigningFlow({ documents, onComplete }: ExecutiveSigningFlowPro
                 </button>
                 <button
                   onClick={handleAdoptSignature}
-                  disabled={signatureStyle === 'type' && (!tempSignature || !tempInitials)}
+                  disabled={
+                    (signatureStyle === 'type' && (!tempSignature || !tempInitials)) ||
+                    (signatureStyle === 'upload' && (!uploadedSignature || !uploadedInitials))
+                  }
                   className="flex-1 bg-orange-600 text-white py-3 px-6 rounded-lg hover:bg-orange-700 font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed transition"
                 >
                   Continue to Sign Documents
