@@ -12088,6 +12088,7 @@ export type Database = {
           board_resolution_id: string | null
           created_at: string | null
           department: string | null
+          email: string | null
           id: string
           ip_whitelist: Json | null
           is_also_employee: boolean | null
@@ -12096,6 +12097,7 @@ export type Database = {
           mention_handle: string | null
           metadata: Json | null
           mfa_enabled: boolean | null
+          name: string | null
           officer_status: string | null
           photo_url: string | null
           role: string
@@ -12112,6 +12114,7 @@ export type Database = {
           board_resolution_id?: string | null
           created_at?: string | null
           department?: string | null
+          email?: string | null
           id?: string
           ip_whitelist?: Json | null
           is_also_employee?: boolean | null
@@ -12120,6 +12123,7 @@ export type Database = {
           mention_handle?: string | null
           metadata?: Json | null
           mfa_enabled?: boolean | null
+          name?: string | null
           officer_status?: string | null
           photo_url?: string | null
           role: string
@@ -12136,6 +12140,7 @@ export type Database = {
           board_resolution_id?: string | null
           created_at?: string | null
           department?: string | null
+          email?: string | null
           id?: string
           ip_whitelist?: Json | null
           is_also_employee?: boolean | null
@@ -12144,6 +12149,7 @@ export type Database = {
           mention_handle?: string | null
           metadata?: Json | null
           mfa_enabled?: boolean | null
+          name?: string | null
           officer_status?: string | null
           photo_url?: string | null
           role?: string
@@ -30832,8 +30838,32 @@ export type Database = {
         Args: { _object_name: string; _user_id: string }
         Returns: boolean
       }
+      exec_event_visible_to_user: {
+        Args: { p_event_id: string; p_user_id: string }
+        Returns: boolean
+      }
       exec_shared_calendar_is_member: {
         Args: { _calendar_id: string; _user_id: string }
+        Returns: boolean
+      }
+      exec_user_can_insert_event_on_shared_calendar: {
+        Args: { p_calendar_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      exec_user_can_manage_calendar_event: {
+        Args: { p_event_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      exec_user_invited_to_event: {
+        Args: { p_event_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      exec_user_is_shared_calendar_member: {
+        Args: { p_calendar_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      exec_user_owns_shared_calendar: {
+        Args: { p_calendar_id: string; p_user_id: string }
         Returns: boolean
       }
       expire_old_investor_tokens: { Args: never; Returns: undefined }
