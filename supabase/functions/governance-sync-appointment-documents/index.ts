@@ -139,7 +139,7 @@ serve(async (req) => {
       // Check if document already exists
       const { data: existingDoc } = await supabaseAdmin
         .from('executive_documents')
-        .select('id, signature_token')
+        .select('id, signature_token, signature_status, signed_file_url, file_url')
         .eq('appointment_id', appointment_id_to_use)
         .eq('type', type)
         .maybeSingle();
@@ -150,6 +150,10 @@ serve(async (req) => {
         const updateData: any = {
           file_url: docUrl,
         };
+
+        if (type === 'equity_incentive_plan' && (existingDoc.signature_status === 'signed' || !!existingDoc.signed_file_url)) {
+          updateData.signed_file_url = docUrl;
+        }
         
         if (needsToken) {
           updateData.signature_token = crypto.randomUUID();

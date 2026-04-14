@@ -31,6 +31,17 @@ function formatDate(dateString: string): string {
   }
 }
 
+function normalizeEquityIncentivePlanHtml(html: string): string {
+  if (!html) return html;
+
+  return html
+    .replace(/One\s+Hundred\s+Million\s*\(\s*100,000,000\s*\)/gi, 'Seventy Million (70,000,000)')
+    .replace(/100,000,000/g, '70,000,000')
+    .replace(/14,000,000/g, '14,700,000')
+    .replace(/\$0\.0001\b/g, '$0.001')
+    .replace(/0\.0001\s+per\s+share/gi, '0.001 per share');
+}
+
 function stripCompanySignatureLines(html: string): string {
   if (!html) return html;
   html = html.replace(/<p[^>]*>_+\s*<\/p>\s*(<p[^>]*><strong>[^<]*Inc\.[^<]*<\/strong><\/p>)/gi, '$1');
@@ -981,6 +992,10 @@ serve(async (req) => {
       );
       html = html.replace(/\bannual base salary of \$\s*0\b/gi, `annual base salary of ${eighty}`);
       html = html.replace(/\bbase salary of \$\s*0\b/gi, `base salary of ${eighty}`);
+    }
+
+    if (document_type === 'equity_incentive_plan') {
+      html = normalizeEquityIncentivePlanHtml(html);
     }
 
     // Nuclear: cut the entire tail signature area and replace it with a
