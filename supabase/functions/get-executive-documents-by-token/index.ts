@@ -25,11 +25,15 @@ serve(async (req) => {
     );
 
     // First, get one document to find the executive_id or appointment_id
-    const { data: sampleDoc, error: sampleError } = await supabase
+    const { data: sampleDocs, error: sampleError } = await supabase
       .from("executive_documents")
       .select("executive_id, officer_name, role, appointment_id")
       .eq("signature_token", token)
-      .maybeSingle();
+      .limit(1);
+
+    if (sampleError) throw sampleError;
+
+    const sampleDoc = sampleDocs?.[0] || null;
 
     if (sampleError) throw sampleError;
 
