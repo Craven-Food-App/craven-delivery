@@ -38,7 +38,7 @@ serve(async (req) => {
       equity_percent,
       shares_issued,
       vesting_schedule = '4 years, 1 year cliff',
-      strike_price = '0.0001',
+      strike_price = '0.001',
       annual_salary = '120000',
       defer_salary,
       funding_trigger,
@@ -230,8 +230,8 @@ serve(async (req) => {
       cliff_months: cliffMonths,
     };
 
-    // Use provided strike_price or default to 0.0001
-    const strikePrice = parseFloat(strike_price || '0.0001');
+    // Use provided strike_price or default to 0.001
+    const strikePrice = parseFloat(strike_price || '0.001');
     const sharesIssued = parseInt(shares_issued, 10);
     const totalPurchasePrice = strikePrice * sharesIssued;
 

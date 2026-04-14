@@ -151,7 +151,7 @@ const DEFAULT_FORM_VALUES: ArticlesFormValues = {
     {
       className: 'Common Voting',
       authorizedShares: 1000000,
-      parValue: '$0.0001',
+      parValue: '$0.001',
       votingRights: 'One vote per share.',
     },
     {
@@ -1784,7 +1784,7 @@ const ArticlesOfIncorporationGenerator: React.FC = () => {
                                   fieldKey={[field.fieldKey, 'parValue']}
                                   label="Par Value"
                                 >
-                                  <Input placeholder="$0.0001" />
+                                  <Input placeholder="$0.001" />
                                 </Form.Item>
                               </Col>
                               <Col xs={24} md={12}>

@@ -330,7 +330,7 @@ const generateDocumentData = async (exec: Executive, docType: string) => {
   }
 
   const sharesIssued = equityGrant?.shares_total || parseNumeric(exec.shares_issued);
-  const strikePrice = equityGrant?.strike_price || parseFloat(exec.strike_price || '0.0001');
+  const strikePrice = equityGrant?.strike_price || parseFloat(exec.strike_price || '0.001');
   const equityPercent = equityGrant?.shares_percentage || parseFloat(exec.equity_percent || '0');
   const totalPurchasePrice = strikePrice * sharesIssued;
 

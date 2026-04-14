@@ -101,7 +101,7 @@ const EquityManagement: React.FC = () => {
       <InputNumber min={0} value={v} onChange={(val) => setRows(prev => prev.map(p => p.key === r.key ? { ...p, shares_issued: val as number } : p))} />
     )},
     { title: 'Strike', dataIndex: 'strike_price', key: 'strike_price', render: (v: number, r: RowItem) => (
-      <InputNumber min={0} step={0.0001} value={v as number} onChange={(val) => setRows(prev => prev.map(p => p.key === r.key ? { ...p, strike_price: val as number } : p))} />
+      <InputNumber min={0} step={0.001} value={v as number} onChange={(val) => setRows(prev => prev.map(p => p.key === r.key ? { ...p, strike_price: val as number } : p))} />
     )},
     { title: 'Actions', key: 'actions', render: (_: any, r: RowItem) => (
       <Button type="primary" onClick={() => saveRow(r)} loading={savingId === r.key}>Save</Button>

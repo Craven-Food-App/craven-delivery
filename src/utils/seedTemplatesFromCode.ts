@@ -50,7 +50,7 @@ const sampleData: Record<string, any> = {
   vesting_years: '4 years',
   cliff_months: '12 months',
   share_count: '100,000',
-  price_per_share: '$0.0001',
+  price_per_share: '$0.001',
   total_purchase_price: '$10.00',
   share_class: 'Common Stock',
   consideration_type: 'Cash',
@@ -89,7 +89,7 @@ const sampleData: Record<string, any> = {
   recipient_ssn: 'XXX-XX-1234',
   tax_year: '2024',
   taxable_difference: '$90.00',
-  par_value: '$0.0001',
+  par_value: '$0.001',
   signature_company_html: '',
   signature_executive_html: '',
 };

@@ -80,7 +80,7 @@ const sampleData: Record<string, any> = {
   incorporator_name: 'Torrance Stroman',
   board_members: 'Torrance Stroman, Justin Sweet, Jason Parcell, Terri Crawford',
   authorized_shares: '100,000,000',
-  par_value: '$0.0001',
+  par_value: '$0.001',
   shareholders: 'Invero Business Trust (55,000,000 shares - 55%), Founder (18,000,000 shares - 18%), Equity Incentive Pool (14,000,000 shares - 14%)',
   fiscal_year: 'December 31',
   ceo_name: 'Torrance Stroman',

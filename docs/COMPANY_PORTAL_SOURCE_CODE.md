@@ -504,7 +504,7 @@ This is a tabbed dashboard with 14 tabs:
 - `holding_company_shares`: 40,600,000 (Invero, Inc.)
 - `founder_shares`: 10,500,000 (Torrance Stroman)
 - `equity_pool`: 14,700,000
-- `par_value`: 0.0001
+- `par_value`: 0.001
 
 **Executive Equity**: `equity_ledger`
 - Tracks grants to executives (e.g., Justin Sweet: 4.2M shares @ $2.00)
