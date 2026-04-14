@@ -14,6 +14,7 @@ interface ExecutiveDocument {
   document_type: string;
   file_url: string;
   created_at: string;
+  signature_status?: string;
 }
 
 interface DocumentSignature {
