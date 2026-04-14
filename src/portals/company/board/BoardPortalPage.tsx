@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Container, Stack, Title, Text, Tabs, Card, Grid, Badge, Group } from '@mantine/core';
-import { IconUsers, IconFileText, IconCalendar, IconCheckbox } from '@tabler/icons-react';
+import { IconUsers, IconFileText, IconCalendar, IconCheckbox, IconShieldCheck } from '@tabler/icons-react';
 import { useSearchParams } from 'react-router-dom';
 import ResolutionVotingDashboard from '../governance-admin/ResolutionVotingDashboard';
 import BoardMembersDirectory from './BoardMembersDirectory';
 import BoardMeetingsTab from './BoardMeetingsTab';
 import BoardDocumentsTab from './BoardDocumentsTab';
+import SecretaryReviewTab from './SecretaryReviewTab';
 
 /**
  * Board Portal Page
@@ -13,6 +14,7 @@ import BoardDocumentsTab from './BoardDocumentsTab';
  * Comprehensive board member dashboard with:
  * - Board Members Directory
  * - Voting Dashboard
+ * - Secretary Review (audit trail + approve/reject signed packets)
  * - Meeting Schedule
  * - Board Documents
  */
@@ -49,6 +51,9 @@ const BoardPortalPage: React.FC = () => {
             <Tabs.Tab value="voting" leftSection={<IconCheckbox size={16} />}>
               Voting Dashboard
             </Tabs.Tab>
+            <Tabs.Tab value="secretary-review" leftSection={<IconShieldCheck size={16} />}>
+              Secretary Review
+            </Tabs.Tab>
             <Tabs.Tab value="meetings" leftSection={<IconCalendar size={16} />}>
               Meetings
             </Tabs.Tab>
@@ -63,6 +68,10 @@ const BoardPortalPage: React.FC = () => {
 
           <Tabs.Panel value="voting" pt="md">
             <ResolutionVotingDashboard />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="secretary-review" pt="md">
+            <SecretaryReviewTab />
           </Tabs.Panel>
 
           <Tabs.Panel value="meetings" pt="md">

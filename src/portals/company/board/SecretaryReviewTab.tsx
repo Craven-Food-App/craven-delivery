@@ -331,7 +331,7 @@ const AppointmentReviewCard: React.FC<CardProps> = ({
               </Group>
             </Accordion.Control>
             <Accordion.Panel>
-              <Table striped highlightOnHover withTableBorder fontSize="xs">
+              <Table striped highlightOnHover withTableBorder>
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th>Document</Table.Th>
