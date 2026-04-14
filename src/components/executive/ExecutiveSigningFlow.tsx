@@ -315,6 +315,31 @@ function ExecutiveSigningFlow({ documents, onComplete }: ExecutiveSigningFlowPro
   const [fieldPositions, setFieldPositions] = useState<Record<string, { x_percent: number; y_percent: number }>>({});
   const documentContainerRef = useRef<HTMLDivElement>(null);
   const initialsCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [uploadedSignature, setUploadedSignature] = useState<string>('');
+  const [uploadedInitials, setUploadedInitials] = useState<string>('');
+  const signatureFileRef = useRef<HTMLInputElement>(null);
+  const initialsFileRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (file: File, target: 'signature' | 'initials') => {
+    if (!file.type.startsWith('image/')) {
+      message.error('Please upload an image file (PNG, JPG)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      message.error('File must be less than 5MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (target === 'signature') {
+        setUploadedSignature(dataUrl);
+      } else {
+        setUploadedInitials(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Fetch signature fields function
   const fetchSignatureFields = async () => {
@@ -434,8 +459,8 @@ function ExecutiveSigningFlow({ documents, onComplete }: ExecutiveSigningFlowPro
       const canvas = canvasRef.current;
       const initialsCanvas = initialsCanvasRef.current;
       if (canvas && initialsCanvas) {
-        const signatureDataUrl = canvas.toDataURL();
-        const initialsDataUrl = initialsCanvas.toDataURL();
+        const signatureDataUrl = canvas.toDataURL('image/png');
+        const initialsDataUrl = initialsCanvas.toDataURL('image/png');
         setAdoptedSignature(signatureDataUrl);
         setAdoptedInitials(initialsDataUrl);
         
@@ -452,6 +477,29 @@ function ExecutiveSigningFlow({ documents, onComplete }: ExecutiveSigningFlowPro
         
         setCurrentStep('signing');
       }
+    } else if (signatureStyle === 'upload' && uploadedSignature && uploadedInitials) {
+      setAdoptedSignature(uploadedSignature);
+      setAdoptedInitials(uploadedInitials);
+      
+      if (userInfo?.id) {
+        // Upload to storage for persistence
+        const sigBlob = await fetch(uploadedSignature).then(r => r.blob());
+        const sigPath = `executive-signatures/${userInfo.id}/signature.png`;
+        await supabase.storage.from('hr-documents').upload(sigPath, sigBlob, { upsert: true, contentType: 'image/png' });
+        const { data: sigUrlData } = supabase.storage.from('hr-documents').getPublicUrl(sigPath);
+
+        await supabase
+          .from('executive_saved_signatures')
+          .upsert({
+            user_id: userInfo.id,
+            signature_name: 'Default Signature',
+            signature_data_url: uploadedSignature,
+            signature_file_url: sigUrlData?.publicUrl || null,
+            is_default: true,
+          });
+      }
+      
+      setCurrentStep('signing');
     }
   };
 
