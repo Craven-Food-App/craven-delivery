@@ -12210,6 +12210,7 @@ export type Database = {
           certificate_of_incorporation_url: string | null
           certificate_url: string | null
           compensation_structure: string | null
+          compliance_status: string
           confidentiality_ip_url: string | null
           conflict_disclosure_url: string | null
           created_at: string | null
@@ -12256,6 +12257,7 @@ export type Database = {
           certificate_of_incorporation_url?: string | null
           certificate_url?: string | null
           compensation_structure?: string | null
+          compliance_status?: string
           confidentiality_ip_url?: string | null
           conflict_disclosure_url?: string | null
           created_at?: string | null
@@ -12302,6 +12304,7 @@ export type Database = {
           certificate_of_incorporation_url?: string | null
           certificate_url?: string | null
           compensation_structure?: string | null
+          compliance_status?: string
           confidentiality_ip_url?: string | null
           conflict_disclosure_url?: string | null
           created_at?: string | null
@@ -12593,6 +12596,243 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      executive_compliance_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          field_changed: string | null
+          id: string
+          intake_id: string | null
+          ip_address: string | null
+          metadata: Json | null
+          new_value: string | null
+          old_value: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          field_changed?: string | null
+          id?: string
+          intake_id?: string | null
+          ip_address?: string | null
+          metadata?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          field_changed?: string | null
+          id?: string
+          intake_id?: string | null
+          ip_address?: string | null
+          metadata?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_compliance_audit_log_intake_id_fkey"
+            columns: ["intake_id"]
+            isOneToOne: false
+            referencedRelation: "executive_compliance_intake"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executive_compliance_documents: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          document_title: string
+          document_type: string
+          executive_id: string
+          file_url: string | null
+          id: string
+          intake_id: string
+          locked_at: string | null
+          signature_ip: string | null
+          signature_method: string | null
+          signed_at: string | null
+          signed_by_user: string | null
+          signed_file_url: string | null
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          document_title: string
+          document_type: string
+          executive_id: string
+          file_url?: string | null
+          id?: string
+          intake_id: string
+          locked_at?: string | null
+          signature_ip?: string | null
+          signature_method?: string | null
+          signed_at?: string | null
+          signed_by_user?: string | null
+          signed_file_url?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          document_title?: string
+          document_type?: string
+          executive_id?: string
+          file_url?: string | null
+          id?: string
+          intake_id?: string
+          locked_at?: string | null
+          signature_ip?: string | null
+          signature_method?: string | null
+          signed_at?: string | null
+          signed_by_user?: string | null
+          signed_file_url?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_compliance_documents_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "executive_appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_compliance_documents_executive_id_fkey"
+            columns: ["executive_id"]
+            isOneToOne: false
+            referencedRelation: "exec_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_compliance_documents_intake_id_fkey"
+            columns: ["intake_id"]
+            isOneToOne: false
+            referencedRelation: "executive_compliance_intake"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executive_compliance_intake: {
+        Row: {
+          account_number_last4: string | null
+          account_type: string | null
+          additional_withholding: number | null
+          admin_notes: string | null
+          appointment_id: string
+          bank_name: string | null
+          citizenship_status: string | null
+          compliance_status: string
+          created_at: string
+          direct_deposit_complete: boolean
+          eligibility_complete: boolean
+          eligibility_document_type: string | null
+          executive_id: string
+          federal_allowances: number | null
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          routing_number_last4: string | null
+          ssn_last4: string | null
+          state_allowances: number | null
+          submitted_at: string | null
+          tax_complete: boolean
+          tax_filing_status: string | null
+          tax_state: string | null
+          updated_at: string
+          user_id: string
+          work_authorization_expiry: string | null
+        }
+        Insert: {
+          account_number_last4?: string | null
+          account_type?: string | null
+          additional_withholding?: number | null
+          admin_notes?: string | null
+          appointment_id: string
+          bank_name?: string | null
+          citizenship_status?: string | null
+          compliance_status?: string
+          created_at?: string
+          direct_deposit_complete?: boolean
+          eligibility_complete?: boolean
+          eligibility_document_type?: string | null
+          executive_id: string
+          federal_allowances?: number | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          routing_number_last4?: string | null
+          ssn_last4?: string | null
+          state_allowances?: number | null
+          submitted_at?: string | null
+          tax_complete?: boolean
+          tax_filing_status?: string | null
+          tax_state?: string | null
+          updated_at?: string
+          user_id: string
+          work_authorization_expiry?: string | null
+        }
+        Update: {
+          account_number_last4?: string | null
+          account_type?: string | null
+          additional_withholding?: number | null
+          admin_notes?: string | null
+          appointment_id?: string
+          bank_name?: string | null
+          citizenship_status?: string | null
+          compliance_status?: string
+          created_at?: string
+          direct_deposit_complete?: boolean
+          eligibility_complete?: boolean
+          eligibility_document_type?: string | null
+          executive_id?: string
+          federal_allowances?: number | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          routing_number_last4?: string | null
+          ssn_last4?: string | null
+          state_allowances?: number | null
+          submitted_at?: string | null
+          tax_complete?: boolean
+          tax_filing_status?: string | null
+          tax_state?: string | null
+          updated_at?: string
+          user_id?: string
+          work_authorization_expiry?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_compliance_intake_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "executive_appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_compliance_intake_executive_id_fkey"
+            columns: ["executive_id"]
+            isOneToOne: false
+            referencedRelation: "exec_users"
+            referencedColumns: ["id"]
           },
         ]
       }
