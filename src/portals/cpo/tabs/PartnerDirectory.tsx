@@ -178,6 +178,21 @@ const PartnerDirectory: React.FC = () => {
     notifications.show({ title: 'Deleted', message: 'Contact removed', color: 'orange' });
   };
 
+  const deletePartner = async (id: string, name: string) => {
+    if (!window.confirm(`Delete partner "${name}" and all associated contacts? This cannot be undone.`)) return;
+    try {
+      await supabase.from('partnership_contacts').delete().eq('partnership_id', id);
+      const { error } = await supabase.from('partnerships').delete().eq('id', id);
+      if (error) throw error;
+      notifications.show({ title: 'Deleted', message: `${name} removed`, color: 'orange' });
+      closeDetail();
+      setSelectedPartner(null);
+      loadData();
+    } catch (err: any) {
+      notifications.show({ title: 'Error', message: err.message, color: 'red' });
+    }
+  };
+
   if (loading) return <Stack gap="md">{[1, 2, 3].map(i => <Skeleton key={i} height={60} radius="md" />)}</Stack>;
 
   return (
@@ -359,6 +374,16 @@ const PartnerDirectory: React.FC = () => {
                             </ActionIcon>
                           </Tooltip>
                         )}
+                        <Tooltip label="Delete partner" withArrow>
+                          <ActionIcon
+                            variant="subtle"
+                            color="red"
+                            size="sm"
+                            onClick={e => { e.stopPropagation(); deletePartner(p.id, p.partner_name); }}
+                          >
+                            <IconTrash size={14} />
+                          </ActionIcon>
+                        </Tooltip>
                         <IconChevronRight size={14} style={{ color: '#ced4da' }} />
                       </Group>
                     </Table.Td>
@@ -395,6 +420,11 @@ const PartnerDirectory: React.FC = () => {
                         Website
                       </Button>
                     )}
+                    <Tooltip label="Delete partner" withArrow>
+                      <ActionIcon variant="subtle" color="red" onClick={() => deletePartner(selectedPartner.id, selectedPartner.partner_name)} size="lg">
+                        <IconTrash size={18} />
+                      </ActionIcon>
+                    </Tooltip>
                     <ActionIcon variant="subtle" color="gray" onClick={closeDetail} size="lg"><IconX size={18} /></ActionIcon>
                   </Group>
                 </Group>
