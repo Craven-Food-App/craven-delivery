@@ -224,9 +224,6 @@ export default function ExecutiveSigningPortal() {
     }
   };
 
-  // Track which document IDs were pre-signed from the database (not newly signed in this session)
-  const [preSignedDocIds, setPreSignedDocIds] = useState<Set<string>>(new Set());
-
   // Submit all signatures
   const handleFinishSigning = async () => {
     // Check if all documents are signed
