@@ -390,7 +390,7 @@ const AppointmentReviewCard: React.FC<CardProps> = ({
                                 size="sm"
                                 variant="light"
                                 color="blue"
-                                onClick={() => window.open(doc.signed_file_url!, '_blank')}
+                                onClick={() => onPreviewDoc(doc.signed_file_url!, formatDocType(doc.type) + ' (Signed)')}
                               >
                                 <IconEye size={14} />
                               </ActionIcon>
@@ -402,7 +402,7 @@ const AppointmentReviewCard: React.FC<CardProps> = ({
                                 size="sm"
                                 variant="light"
                                 color="gray"
-                                onClick={() => window.open(doc.file_url!, '_blank')}
+                                onClick={() => onPreviewDoc(doc.file_url!, formatDocType(doc.type))}
                               >
                                 <IconEye size={14} />
                               </ActionIcon>
