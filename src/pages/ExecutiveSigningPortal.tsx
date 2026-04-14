@@ -46,6 +46,7 @@ export default function ExecutiveSigningPortal() {
   const [documentSignatures, setDocumentSignatures] = useState<Record<string, DocumentSignature>>({});
   const [signingComplete, setSigningComplete] = useState(false);
   const [completionTimestamp, setCompletionTimestamp] = useState<string | null>(null);
+  const [preSignedDocIds, setPreSignedDocIds] = useState<Set<string>>(new Set());
   
   const documentViewerRef = useRef<HTMLDivElement>(null);
 
