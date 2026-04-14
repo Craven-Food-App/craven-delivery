@@ -25,7 +25,7 @@ export const FALLBACK_EXECUTIVES: FallbackExecutive[] = [
     title: 'Chief Financial Officer',
     department: 'Finance',
     name: 'Justin Sweet',
-    email: 'justin.sweet@cravenusa.com',
+    email: 'jsweet.cfo@cravenusa.com',
   },
   {
     id: 'fallback-terri-crawford',

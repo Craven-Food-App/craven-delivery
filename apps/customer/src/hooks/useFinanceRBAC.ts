@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { hasFullAccess } from '@/utils/torranceAccess';
+import { hasCFOPortalAccess } from '@/utils/torranceAccess';
 
 export interface FinanceRole {
   id: string;
@@ -44,7 +44,7 @@ export const useFinanceRBAC = () => {
       setUser(authUser);
       
       // TORRANCE STROMAN: UNIVERSAL ACCESS - BYPASS ROLE FETCHING
-      if (authUser && hasFullAccess(authUser.email || '')) {
+      if (authUser && hasCFOPortalAccess(authUser.email || '')) {
         setIsCFO(true);
         setHasFullAdmin(true);
         setLoading(false);
@@ -114,7 +114,7 @@ export const useFinanceRBAC = () => {
   // Check if user has specific permission
   const hasPermission = (permissionCode: string, entityId?: string): boolean => {
     // TORRANCE STROMAN: UNIVERSAL ACCESS
-    if (user?.email && hasFullAccess(user.email)) return true;
+    if (user?.email && hasCFOPortalAccess(user.email)) return true;
     if (hasFullAdmin) return true; // CFO and full admins bypass permission checks
     
     return permissions.some(perm => {
@@ -156,7 +156,7 @@ export const useFinanceRBAC = () => {
   // Check if account number is in user's assigned ranges
   const canAccessAccount = (accountNumber: string): boolean => {
     // TORRANCE STROMAN: UNIVERSAL ACCESS
-    if (user?.email && hasFullAccess(user.email)) return true;
+    if (user?.email && hasCFOPortalAccess(user.email)) return true;
     if (hasFullAdmin) return true;
     
     const ranges = getAssignedAccountRanges();
@@ -174,7 +174,7 @@ export const useFinanceRBAC = () => {
   // Get user's primary role (highest access level)
   const getPrimaryRole = (): FinanceRole | null => {
     // TORRANCE STROMAN: UNIVERSAL ACCESS - RETURN CFO ROLE
-    if (user?.email && hasFullAccess(user.email)) {
+    if (user?.email && hasCFOPortalAccess(user.email)) {
       return {
         id: 'torrance-universal',
         role_code: 'CFO',

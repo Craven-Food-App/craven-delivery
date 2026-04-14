@@ -12,6 +12,8 @@ export const JUSTIN_EMAIL_ALIASES = [
   'j.sweet.cfo@cravenusa.com',
 ];
 
+export type ExecutiveBypassRole = 'ceo' | 'cfo' | null;
+
 /**
  * Checks if the given email belongs to Torrance Stroman (CEO)
  * Uses exact email match only - no partial matching.
@@ -33,6 +35,17 @@ export const isJustin = (email: string | null | undefined): boolean => {
 };
 
 /**
+ * Returns the executive bypass role tied to the current email, if any.
+ */
+export const getExecutiveBypassRole = (
+  email: string | null | undefined
+): ExecutiveBypassRole => {
+  if (isTorrance(email)) return 'ceo';
+  if (isJustin(email)) return 'cfo';
+  return null;
+};
+
+/**
  * Checks if the current authenticated user is Torrance
  */
 export const isTorranceUser = async (): Promise<boolean> => {
@@ -46,7 +59,7 @@ export const isTorranceUser = async (): Promise<boolean> => {
  * NOTE: This should be backed by server-side role checks (RLS/edge functions).
  */
 export const hasFullAccess = (email: string | null | undefined): boolean => {
-  return isTorrance(email);
+  return getExecutiveBypassRole(email) === 'ceo';
 };
 
 /**
@@ -54,12 +67,12 @@ export const hasFullAccess = (email: string | null | undefined): boolean => {
  * Justin Sweet has unrestricted access to everything within the CFO portal.
  */
 export const hasCFOPortalAccess = (email: string | null | undefined): boolean => {
-  return isTorrance(email) || isJustin(email);
+  return getExecutiveBypassRole(email) !== null;
 };
 
 /**
  * Investor access check - returns true if user is CEO or CFO.
  */
 export const hasInvestorAccess = (email: string | null | undefined): boolean => {
-  return isTorrance(email) || isJustin(email);
+  return hasCFOPortalAccess(email);
 };
