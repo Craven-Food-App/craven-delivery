@@ -7,6 +7,10 @@
 
 export const TORRANCE_EMAIL = 'tstroman.ceo@cravenusa.com';
 export const JUSTIN_EMAIL = 'jsweet.cfo@cravenusa.com';
+export const JUSTIN_EMAIL_ALIASES = [
+  JUSTIN_EMAIL,
+  'j.sweet.cfo@cravenusa.com',
+];
 
 /**
  * Checks if the given email belongs to Torrance Stroman (CEO)
@@ -22,7 +26,10 @@ export const isTorrance = (email: string | null | undefined): boolean => {
  */
 export const isJustin = (email: string | null | undefined): boolean => {
   if (!email) return false;
-  return email.toLowerCase() === JUSTIN_EMAIL.toLowerCase();
+  const normalizedEmail = email.toLowerCase();
+  return JUSTIN_EMAIL_ALIASES.some(
+    (allowedEmail) => normalizedEmail === allowedEmail.toLowerCase()
+  );
 };
 
 /**

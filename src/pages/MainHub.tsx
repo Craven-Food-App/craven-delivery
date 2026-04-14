@@ -37,7 +37,7 @@ import { usePermission } from '@/hooks/usePermission';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import PinChangeModal from '@/components/hub/PinChangeModal';
 import AnnouncementPopup from '@/components/hub/AnnouncementPopup';
-import { hasFullAccess } from '@/utils/torranceAccess';
+import { hasCFOPortalAccess, hasFullAccess } from '@/utils/torranceAccess';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -1162,9 +1162,10 @@ const MainHub: React.FC = () => {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      const isExecutive = !!execUser;
+      const hasExecutiveFinanceAccess = hasCFOPortalAccess(user.email);
+      const isExecutive = !!execUser || hasExecutiveFinanceAccess;
       const isCEO = execUser?.role === 'ceo';
-      const isCFO = execUser?.role === 'cfo';
+      const isCFO = execUser?.role === 'cfo' || hasExecutiveFinanceAccess;
 
       // Check if user is a department head
       let isDepartmentHead = false;
@@ -1513,7 +1514,7 @@ const MainHub: React.FC = () => {
   const canAdmin = usePermission('admin.view');
   const canMarketing = usePermission('marketing.view');
   const canCEO = usePermission('ceo.view');
-  const canCFO = usePermission('finance.view');
+  const canCFO = usePermission('finance.view') || Boolean(user?.email && hasCFOPortalAccess(user.email));
   const canCOO = usePermission('coo.view');
   const canCTO = usePermission('cto.view');
   const canHR = usePermission('hr.view');
