@@ -35,6 +35,7 @@ export interface PortalKPI {
 }
 
 interface UnifiedPortalShellProps {
+  portalId?: string;
   portalName: string;
   portalSubtitle: string;
   sectionLabel: string;
