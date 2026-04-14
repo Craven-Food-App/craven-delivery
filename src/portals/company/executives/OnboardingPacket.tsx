@@ -21,6 +21,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { notifications } from '@mantine/notifications';
 import { useNavigate } from 'react-router-dom';
 import { PACKET_LABELS, PacketId } from '@/utils/executiveDocumentFlow';
+import FinalActivationStage from '@/components/executive/compliance/FinalActivationStage';
 
 type OnboardingDocument = Database['public']['Tables']['executive_documents']['Row'];
 
@@ -30,6 +31,9 @@ const OnboardingPacket: React.FC = () => {
   const [documents, setDocuments] = useState<OnboardingDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [signingDeadline, setSigningDeadline] = useState<string | null>(null);
+  const [executiveId, setExecutiveId] = useState<string | null>(null);
+  const [executiveName, setExecutiveName] = useState<string>('');
+  const [showFinalActivation, setShowFinalActivation] = useState(false);
 
   useEffect(() => {
     loadOnboarding();
@@ -48,6 +52,8 @@ const OnboardingPacket: React.FC = () => {
         .maybeSingle();
 
       if (!execUser) return;
+      setExecutiveId(execUser.id);
+      setExecutiveName(execUser.full_name || execUser.name || '');
 
       // Find their appointment by matching executive_id directly
       const { data: appointments, error: appointmentError } = await supabase
@@ -96,6 +102,10 @@ const OnboardingPacket: React.FC = () => {
 
         if (docsError) throw docsError;
         setDocuments(docs || []);
+
+        // Check if all core docs are signed → unlock Final Activation
+        const allSigned = docs && docs.length > 0 && docs.every(d => d.signature_status === 'signed');
+        setShowFinalActivation(!!allSigned);
       }
     } catch (error: any) {
       notifications.show({
@@ -402,10 +412,26 @@ const OnboardingPacket: React.FC = () => {
           })}
         </Stack>
 
-        {completedCount === totalCount && totalCount > 0 && (
+        {completedCount === totalCount && totalCount > 0 && !showFinalActivation && (
           <Alert icon={<IconCheck size={16} />} title="All Documents Signed" color="green">
             Congratulations! You have completed signing all required documents. Your appointment will be finalized shortly.
           </Alert>
+        )}
+
+        {showFinalActivation && appointmentId && executiveId && (
+          <Paper shadow="sm" p="lg" withBorder>
+            <Stack gap="md">
+              <Title order={3} c="dark">
+                <IconCircleCheck size={24} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8 }} />
+                Final Activation
+              </Title>
+              <FinalActivationStage
+                appointmentId={appointmentId}
+                executiveId={executiveId}
+                executiveName={executiveName}
+              />
+            </Stack>
+          </Paper>
         )}
 
         <Group justify="center" mt="md">
