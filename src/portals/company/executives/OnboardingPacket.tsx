@@ -347,15 +347,27 @@ const OnboardingPacket: React.FC = () => {
   return (
     <Container size="xl" py="xl">
       <Stack gap="xl">
-        <div>
-          <Title order={2} c="dark" mb="xs">
-            <IconFileText size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 12 }} />
-            Executive Onboarding Packet
-          </Title>
-          <Text c="dimmed">
-            Review and sign your appointment documents to complete your onboarding.
-          </Text>
-        </div>
+        <Group justify="space-between" align="flex-start">
+          <div>
+            <Title order={2} c="dark" mb="xs">
+              <IconFileText size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 12 }} />
+              Executive Onboarding Packet
+            </Title>
+            <Text c="dimmed">
+              Review and sign your appointment documents to complete your onboarding.
+            </Text>
+          </div>
+          <Button
+            variant="outline"
+            color="orange"
+            leftSection={<IconRefresh size={16} />}
+            onClick={handleRegeneratePacket}
+            loading={regenerating}
+            size="sm"
+          >
+            Regenerate Documents
+          </Button>
+        </Group>
 
         <Card padding="lg" radius="md" withBorder>
           <Stack gap="md">
