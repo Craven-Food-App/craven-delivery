@@ -537,6 +537,8 @@ serve(async (req) => {
           : '',
       
       // Stock Certificate specific fields
+      authorized_shares: '70,000,000',
+      equity_pool_shares: '14,700,000',
       certificate_number: `CERT-${appointment.id.substring(0, 8).toUpperCase()}`,
       share_class: 'Common',
       company_state: governingState,
