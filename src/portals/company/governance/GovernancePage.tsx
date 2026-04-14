@@ -1,25 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Tabs, Stack, Title, Text, Box } from '@mantine/core';
-import { IconUserCheck, IconShield, IconFileText, IconCertificate, IconUserMinus, IconHistory } from '@tabler/icons-react';
+import { IconUserCheck, IconShield, IconFileText, IconCertificate, IconUserMinus, IconHistory, IconTemplate } from '@tabler/icons-react';
 import { useSearchParams } from 'react-router-dom';
 import AppointmentsTab from './appointments/AppointmentsTab';
 import OfficersTab from './officers/OfficersTab';
 import ResolutionsTab from './resolutions/ResolutionsTab';
 import CertificatesTab from './certificates/CertificatesTab';
 import ExitWorkflowsTab from './exit-workflows/ExitWorkflowsTab';
-// Using old GovernanceLogList for now - will be moved later
 import GovernanceLogList from '../governance-admin/GovernanceLogList';
+import DocumentTemplates from '../governance-admin/DocumentTemplates';
 
-/**
- * Governance Administration Page
- * 
- * 5 Tabs:
- * 1. Appointments - Executive appointment workflow
- * 2. Officers - Delaware statutory compliance
- * 3. Resolutions - Board resolutions & voting
- * 4. Certificates - Stock certificate management
- * 5. Exit Workflows - Executive departure management
- */
 const GovernancePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<string | null>(
@@ -43,7 +33,6 @@ const GovernancePage: React.FC = () => {
   return (
     <Container size="xl" py="md" style={{ padding: '16px 24px' }}>
       <Stack gap="md">
-        {/* Header */}
         <Box>
           <Title order={1} style={{ fontSize: 24 }}>Governance Administration</Title>
           <Text c="dimmed" size="sm" mt={4}>
@@ -51,7 +40,6 @@ const GovernancePage: React.FC = () => {
           </Text>
         </Box>
 
-        {/* Tabs */}
         <Tabs value={activeTab} onChange={handleTabChange}>
           <Tabs.List>
             <Tabs.Tab value="appointments" leftSection={<IconUserCheck size={16} />}>
@@ -68,6 +56,9 @@ const GovernancePage: React.FC = () => {
             </Tabs.Tab>
             <Tabs.Tab value="exit-workflows" leftSection={<IconUserMinus size={16} />}>
               Exit Workflows
+            </Tabs.Tab>
+            <Tabs.Tab value="templates" leftSection={<IconTemplate size={16} />}>
+              Templates
             </Tabs.Tab>
             <Tabs.Tab value="logs" leftSection={<IconHistory size={16} />}>
               Logs
@@ -92,6 +83,10 @@ const GovernancePage: React.FC = () => {
 
           <Tabs.Panel value="exit-workflows" pt="md">
             <ExitWorkflowsTab />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="templates" pt="md">
+            <DocumentTemplates />
           </Tabs.Panel>
 
           <Tabs.Panel value="logs" pt="md">
