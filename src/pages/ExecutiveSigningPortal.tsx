@@ -14,6 +14,7 @@ interface ExecutiveDocument {
   document_type: string;
   file_url: string;
   created_at: string;
+  signature_status?: string;
 }
 
 interface DocumentSignature {
@@ -76,7 +77,8 @@ export default function ExecutiveSigningPortal() {
                   title: doc.name,
                   document_type: doc.name,
                   file_url: doc.fileUrl,
-                  created_at: new Date().toISOString()
+                  created_at: new Date().toISOString(),
+                  signature_status: doc.signature_status,
                 });
               }
             }
@@ -90,6 +92,57 @@ export default function ExecutiveSigningPortal() {
 
         setDocuments(allDocuments);
         setUserInfo(docsData.user);
+
+        // Pre-populate signatures for already-signed documents
+        const preSigned: Record<string, DocumentSignature> = {};
+        if (docsData?.alreadySigned) {
+          for (const [docId, info] of Object.entries(docsData.alreadySigned as Record<string, any>)) {
+            preSigned[docId] = {
+              documentId: docId,
+              signatureName: info.signature || 'Signed',
+              signedAt: info.timestamp || new Date().toISOString(),
+              auditData: {
+                timestamp: info.timestamp || new Date().toISOString(),
+                ipAddress: 'recorded',
+                userAgent: 'recorded',
+                documentVersion: '1.0',
+              },
+            };
+          }
+        }
+        // Also check individual doc signature_status
+        for (const doc of allDocuments) {
+          if (doc.signature_status === 'signed' && !preSigned[doc.id]) {
+            preSigned[doc.id] = {
+              documentId: doc.id,
+              signatureName: docsData.user?.name || 'Signed',
+              signedAt: doc.created_at,
+              auditData: {
+                timestamp: doc.created_at,
+                ipAddress: 'recorded',
+                userAgent: 'recorded',
+                documentVersion: '1.0',
+              },
+            };
+          }
+        }
+        if (Object.keys(preSigned).length > 0) {
+          setDocumentSignatures(preSigned);
+        }
+
+        // Auto-navigate to first unsigned document
+        const firstUnsignedIndex = allDocuments.findIndex(
+          d => d.signature_status !== 'signed' && !preSigned[d.id]
+        );
+        if (firstUnsignedIndex >= 0) {
+          setCurrentDocIndex(firstUnsignedIndex);
+        }
+
+        // If all are already signed, show completion
+        if (allDocuments.length > 0 && allDocuments.every(d => d.signature_status === 'signed' || preSigned[d.id])) {
+          setCompletionTimestamp(new Date().toLocaleString());
+          setSigningComplete(true);
+        }
 
         // Fetch HTML for all documents
         const htmlCache: Record<string, string> = {};
@@ -288,29 +341,38 @@ export default function ExecutiveSigningPortal() {
         <div>
           <h2 className="font-bold text-lg mb-2">Documents</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            {documents.length} document(s) to sign
+            {documents.filter(d => !documentSignatures[d.id]).length} document(s) remaining to sign
           </p>
           
           <div className="space-y-2 mb-6">
             {documents.map((doc, index) => {
-              const isSigned = documentSignatures[doc.id];
+              const isSigned = !!documentSignatures[doc.id];
+              const wasPreSigned = doc.signature_status === 'signed';
               const isCurrent = index === currentDocIndex;
               return (
                 <div
                   key={doc.id}
-                  onClick={() => setCurrentDocIndex(index)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                    isCurrent ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                  onClick={() => {
+                    if (!wasPreSigned) setCurrentDocIndex(index);
+                  }}
+                  className={`p-3 rounded-lg border transition-colors ${
+                    wasPreSigned
+                      ? 'border-green-200 bg-green-50/50 opacity-60 cursor-default'
+                      : isCurrent
+                        ? 'border-primary bg-primary/5 cursor-pointer'
+                        : 'border-border hover:bg-muted/50 cursor-pointer'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{doc.title}</p>
+                      <p className={`text-sm font-medium truncate ${wasPreSigned ? 'line-through text-muted-foreground' : ''}`}>
+                        {doc.title}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Document {index + 1}
+                        {wasPreSigned ? 'Completed' : `Document ${index + 1}`}
                       </p>
                     </div>
-                    {isSigned && (
+                    {(isSigned || wasPreSigned) && (
                       <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
                     )}
                   </div>
