@@ -25,6 +25,47 @@ import FinalActivationStage from '@/components/executive/compliance/FinalActivat
 
 type OnboardingDocument = Database['public']['Tables']['executive_documents']['Row'];
 
+const DOCUMENT_TYPE_ALIASES: Record<string, string> = {
+  offer_letter: 'appointment_letter',
+  company_bylaws: 'bylaws',
+  fiduciary_ethics_ack: 'fiduciary_ethics',
+  conflict_of_interest: 'conflict_disclosure',
+  stock_issuance: 'stock_subscription',
+  deferred_comp_addendum: 'deferred_compensation',
+  equity_incentive_plan: 'equity_plan',
+};
+
+const getCanonicalDocumentType = (type: string): string => DOCUMENT_TYPE_ALIASES[type] || type;
+
+const getDocumentCreatedTime = (doc: OnboardingDocument): number => {
+  if (!doc.created_at) return 0;
+  const time = new Date(doc.created_at).getTime();
+  return Number.isFinite(time) ? time : 0;
+};
+
+const dedupeDocuments = (docs: OnboardingDocument[]): OnboardingDocument[] => {
+  const latestByType = new Map<string, OnboardingDocument>();
+
+  [...docs]
+    .sort((a, b) => getDocumentCreatedTime(b) - getDocumentCreatedTime(a))
+    .forEach((doc) => {
+      const key = getCanonicalDocumentType(doc.type);
+      if (!latestByType.has(key)) {
+        latestByType.set(key, doc);
+      }
+    });
+
+  return [...latestByType.values()].sort((a, b) => {
+    const stageDiff = (a.signing_stage || 0) - (b.signing_stage || 0);
+    if (stageDiff !== 0) return stageDiff;
+
+    const orderDiff = (a.signing_order || 0) - (b.signing_order || 0);
+    if (orderDiff !== 0) return orderDiff;
+
+    return getDocumentCreatedTime(b) - getDocumentCreatedTime(a);
+  });
+};
+
 const OnboardingPacket: React.FC = () => {
   const navigate = useNavigate();
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
@@ -117,11 +158,13 @@ const OnboardingPacket: React.FC = () => {
         }
 
         if (docsError) throw docsError;
-        setDocuments(docs || []);
+
+        const visibleDocs = dedupeDocuments(docs || []);
+        setDocuments(visibleDocs);
 
         // Check if all core docs are signed → unlock Final Activation
-        const allSigned = docs && docs.length > 0 && docs.every(d => d.signature_status === 'signed');
-        setShowFinalActivation(!!allSigned);
+        const allSigned = visibleDocs.length > 0 && visibleDocs.every(d => d.signature_status === 'signed');
+        setShowFinalActivation(allSigned);
       }
     } catch (error: any) {
       notifications.show({
