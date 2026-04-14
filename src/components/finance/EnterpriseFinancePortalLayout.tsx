@@ -195,12 +195,6 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
         roles: ['CFO', 'CONTROLLER', 'INTERNAL_AUDITOR'],
       },
       {
-        id: 'cfo-evaluation',
-        label: 'CFO Evaluation Gate',
-        icon: <IconShield size={20} />,
-        roles: ['CFO'],
-      },
-      {
         id: 'investor-relations',
         label: 'Investor Relations',
         icon: <IconCurrencyDollar size={20} />,

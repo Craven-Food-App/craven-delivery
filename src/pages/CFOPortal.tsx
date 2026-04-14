@@ -99,7 +99,6 @@ const ModuleLoader = () => (
 
 const TABS: PortalTab[] = [
   // Core Executive
-  { id: 'evaluation', label: 'CFO Evaluation Gate', description: 'Board-defensible CFO evaluation workflow.', section: 'Executive', icon: IconShield },
   { id: 'onboarding', label: 'Onboarding & Governance', description: 'CFO onboarding and governance framework.', section: 'Executive', icon: IconChecklist },
   { id: 'overview', label: 'CFO Command Center', description: 'Executive financial dashboard and KPIs.', section: 'Executive', icon: IconChartBar },
   { id: 'calendar', label: 'Executive Calendar', description: 'Shared leadership schedule (same as Company Portal).', section: 'Executive', icon: IconCalendar },
@@ -207,8 +206,6 @@ function CFOPortalContent() {
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'evaluation':
-        return <Suspense fallback={<ModuleLoader />}><CfoEvaluationGatePanel mode={isTorrance ? 'ceo' : 'cfo'} /></Suspense>;
       case 'onboarding':
         return <Suspense fallback={<ModuleLoader />}><CFOOnboardingGovernance /></Suspense>;
       case 'overview':
