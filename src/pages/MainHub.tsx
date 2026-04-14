@@ -263,9 +263,20 @@ const MainHub: React.FC = () => {
       // Check if PIN is already verified (stored in sessionStorage)
       const verifiedEmployee = sessionStorage.getItem("hub_employee_info");
       if (verifiedEmployee) {
-        setEmployeeInfo(JSON.parse(verifiedEmployee));
-        setLoading(false);
-        return;
+        try {
+          const parsed = JSON.parse(verifiedEmployee);
+          // Only reuse cached info if it belongs to the current auth user
+          if (parsed.email && parsed.email.toLowerCase() === user.email?.toLowerCase()) {
+            setEmployeeInfo(parsed);
+            setLoading(false);
+            return;
+          } else {
+            // Cached info belongs to a different user — clear it
+            sessionStorage.removeItem("hub_employee_info");
+          }
+        } catch {
+          sessionStorage.removeItem("hub_employee_info");
+        }
       }
 
       // ALL users (including admins and executives) must verify PIN
