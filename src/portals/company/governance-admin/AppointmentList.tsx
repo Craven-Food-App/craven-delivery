@@ -1659,6 +1659,9 @@ const AppointmentList: React.FC = () => {
               <Tabs.Tab value="timeline" leftSection={<IconHistory size={16} />}>
                 Timeline
               </Tabs.Tab>
+              <Tabs.Tab value="compliance" leftSection={<IconShield size={16} />}>
+                Compliance
+              </Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="overview" pt="md">
