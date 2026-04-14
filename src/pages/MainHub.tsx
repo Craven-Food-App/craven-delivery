@@ -36,6 +36,7 @@ import cravenLogo from "@/assets/craven-logo.png";
 import { usePermission } from '@/hooks/usePermission';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import PinChangeModal from '@/components/hub/PinChangeModal';
+import AnnouncementPopup from '@/components/hub/AnnouncementPopup';
 import { hasFullAccess } from '@/utils/torranceAccess';
 
 const { Header, Content } = Layout;
@@ -135,6 +136,7 @@ const MainHub: React.FC = () => {
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [pinLoading, setPinLoading] = useState(false);
   const [showPinChangeModal, setShowPinChangeModal] = useState(false);
+  const [showAnnouncementPopup, setShowAnnouncementPopup] = useState(false);
   
   // Time clock state - initialize with default values
   const [clockStatus, setClockStatus] = useState<{
@@ -334,6 +336,7 @@ const MainHub: React.FC = () => {
           setPinModalVisible(false);
           message.success(`Welcome, ${profiles?.full_name || position}! PIN verified.`);
           setPinLoading(false);
+          setShowAnnouncementPopup(true);
           return;
         }
       }
@@ -362,6 +365,7 @@ const MainHub: React.FC = () => {
           setPinModalVisible(false);
           message.success("Welcome, CEO Stroman! PIN verified.");
           setPinLoading(false);
+          setShowAnnouncementPopup(true);
           return;
         }
       }
@@ -475,6 +479,7 @@ const MainHub: React.FC = () => {
       setPinModalVisible(false);
       message.success(`Welcome, ${employeeData.full_name}! ${isAdmin ? "Admin access granted." : ""}`);
       setPinLoading(false);
+      setShowAnnouncementPopup(true);
     } catch (error: any) {
       console.error("PIN verification error:", error);
       message.error("Failed to verify PIN. Please try again.");
@@ -2635,6 +2640,14 @@ const MainHub: React.FC = () => {
             message.warning('You must set a new PIN to access the Hub.');
           }}
         />
+
+        {/* Unseen Announcement Popups - shown once after PIN login */}
+        {user && showAnnouncementPopup && (
+          <AnnouncementPopup
+            userId={user.id}
+            triggerCheck={showAnnouncementPopup}
+          />
+        )}
       </Layout>
     </ConfigProvider>
   );
