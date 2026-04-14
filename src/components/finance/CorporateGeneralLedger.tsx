@@ -472,7 +472,7 @@ export const CorporateGeneralLedger: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 100,
+      width: 140,
       fixed: 'right',
       render: (_: any, record: GLTransaction) => (
         <Space>
@@ -487,6 +487,17 @@ export const CorporateGeneralLedger: React.FC = () => {
               }}
             />
           </Tooltip>
+          {canManage && (
+            <Tooltip title="Delete Entry">
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+                size="small"
+                onClick={() => handleDeleteEntry(record)}
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
     },
