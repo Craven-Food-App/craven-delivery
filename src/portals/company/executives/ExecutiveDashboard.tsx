@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Title, Text, Stack, Card, Grid, Badge, Group, Button, Paper, Loader, Center } from '@mantine/core';
-import { IconUserCheck, IconFileText, IconUsers, IconPencil, IconChecklist, IconFolder, IconCoins, IconClock } from '@tabler/icons-react';
+import { IconUserCheck, IconFileText, IconUsers, IconChecklist, IconFolder, IconCoins, IconClock } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
 import { useNavigate } from 'react-router-dom';
