@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import DOMPurify from 'dompurify';
-import { Modal, Stack, Group, Button, Text, Title, Badge, ScrollArea, Divider } from '@mantine/core';
+import { Modal, Stack, Group, Button, Text, Title, Badge, ScrollArea, Divider, Loader, Center } from '@mantine/core';
 import { IconDownload, IconFileText, IconCheck } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AcknowledgementButton } from './AcknowledgementButton';
+import { enterpriseDocumentCSS } from '@/lib/shared/styles/enterpriseDocument';
 
 interface DocumentViewerProps {
   documentKey: string;
@@ -33,13 +34,11 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   const loadDocument = async () => {
     setLoading(true);
     try {
-      // Load document index to get metadata
       const indexResponse = await fetch(`/lib/${role}/metadata/document_index.json`);
       const indexData = await indexResponse.json();
       const doc = indexData.documents.find((d: any) => d.key === documentKey);
       setDocumentInfo(doc);
 
-      // Load HTML content
       const htmlResponse = await fetch(`/lib/${role}/documents/html/${documentKey}.html`);
       if (htmlResponse.ok) {
         const html = await htmlResponse.text();
@@ -74,7 +73,6 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   };
 
   const handleDownloadPDF = () => {
-    // In a real implementation, this would generate or fetch a PDF
     window.open(`/lib/${role}/documents/pdf_text/${documentKey}.txt`, '_blank');
   };
 
@@ -131,14 +129,18 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
 
         <Divider />
 
-        <ScrollArea h={600}>
-          <div
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }}
-            style={{
-              padding: '1rem',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-            }}
-          />
+        <ScrollArea h={650} style={{ background: '#f5f5f5', borderRadius: 4 }}>
+          <style>{enterpriseDocumentCSS}</style>
+          {loading ? (
+            <Center h={400}>
+              <Loader size="lg" />
+            </Center>
+          ) : (
+            <div
+              className="enterprise-doc"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }}
+            />
+          )}
         </ScrollArea>
 
         <Divider />
@@ -153,4 +155,3 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     </Modal>
   );
 };
-
