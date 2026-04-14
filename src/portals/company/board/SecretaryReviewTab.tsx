@@ -206,6 +206,25 @@ const SecretaryReviewTab: React.FC = () => {
 
   return (
     <Stack gap="lg">
+      {/* Document Preview Modal */}
+      <Modal
+        opened={!!previewUrl}
+        onClose={() => setPreviewUrl(null)}
+        title={previewTitle}
+        size="xl"
+        centered
+        styles={{ body: { padding: 0, height: '70vh' } }}
+      >
+        {previewUrl && (
+          <iframe
+            src={previewUrl}
+            style={{ width: '100%', height: '100%', border: 'none' }}
+            title={previewTitle}
+            sandbox="allow-same-origin"
+          />
+        )}
+      </Modal>
+
       {/* Stats */}
       <Group gap="md">
         <Badge size="lg" variant="light" color="blue" leftSection={<IconClock size={14} />}>
@@ -230,6 +249,7 @@ const SecretaryReviewTab: React.FC = () => {
               onReject={() => handleReject(appt.id)}
               processing={processing === appt.id}
               isPending
+              onPreviewDoc={(url, title) => { setPreviewUrl(url); setPreviewTitle(title); }}
             />
           ))}
         </Stack>
@@ -249,6 +269,7 @@ const SecretaryReviewTab: React.FC = () => {
               onReject={() => {}}
               processing={false}
               isPending={false}
+              onPreviewDoc={(url, title) => { setPreviewUrl(url); setPreviewTitle(title); }}
             />
           ))}
         </Stack>
