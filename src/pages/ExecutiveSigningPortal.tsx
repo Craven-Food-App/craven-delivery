@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { FileText, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronRight, CheckCircle2, PartyPopper, Shield } from 'lucide-react';
 import { message } from 'antd';
 import { ElectronicSignatureAcknowledgment } from '@/components/executive/ElectronicSignatureAcknowledgment';
 import { sanitizeExecutiveDocumentHtml } from '@/utils/executiveDocumentHtml';
@@ -43,6 +43,8 @@ export default function ExecutiveSigningPortal() {
   // Signature modal
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [documentSignatures, setDocumentSignatures] = useState<Record<string, DocumentSignature>>({});
+  const [signingComplete, setSigningComplete] = useState(false);
+  const [completionTimestamp, setCompletionTimestamp] = useState<string | null>(null);
   
   const documentViewerRef = useRef<HTMLDivElement>(null);
 
@@ -201,8 +203,9 @@ export default function ExecutiveSigningPortal() {
         throw new Error(data.error || 'Failed to submit signatures');
       }
 
+      setCompletionTimestamp(new Date().toLocaleString());
+      setSigningComplete(true);
       message.success('All documents signed successfully!');
-      setTimeout(() => navigate('/'), 2000);
     } catch (err: any) {
       console.error('Submit error:', err);
       const errorMessage = err.message || err.error || 'Failed to submit signatures. Please try again.';
@@ -220,6 +223,63 @@ export default function ExecutiveSigningPortal() {
     );
   }
 
+  if (signingComplete) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <Card className="max-w-lg w-full p-8 text-center space-y-6">
+          <div className="mx-auto w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+            <CheckCircle2 className="w-10 h-10 text-green-600" />
+          </div>
+          
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-foreground flex items-center justify-center gap-2">
+              <PartyPopper className="w-6 h-6 text-primary" />
+              All Documents Signed
+            </h1>
+            <p className="text-muted-foreground">
+              Congratulations! You have successfully signed all {documents.length} required document{documents.length !== 1 ? 's' : ''}.
+            </p>
+          </div>
+
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3 text-left">
+            <div className="flex items-start gap-2">
+              <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Legally Binding Signatures</p>
+                <p className="text-xs text-muted-foreground">
+                  Your electronic signatures have been recorded with full audit trail including timestamp, IP address, and document versioning.
+                </p>
+              </div>
+            </div>
+            <div className="border-t pt-3 space-y-1">
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium">Signed by:</span> {userInfo?.officer_name || userInfo?.name || 'Executive'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium">Completed at:</span> {completionTimestamp}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium">Documents signed:</span> {Object.keys(documentSignatures).length} of {documents.length}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Your appointment will now proceed to Corporate Secretary review and final validation.
+            </p>
+            <Button
+              onClick={() => navigate('/')}
+              className="w-full"
+              size="lg"
+            >
+              Return to Dashboard
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background">
