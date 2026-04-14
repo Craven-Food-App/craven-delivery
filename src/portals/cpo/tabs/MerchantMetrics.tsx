@@ -316,7 +316,6 @@ const MerchantMetrics: React.FC = () => {
                 <Table.Th>City</Table.Th>
                 <Table.Th>Status</Table.Th>
                 <Table.Th ta="right">Requests</Table.Th>
-                <Table.Th w={60}></Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -360,13 +359,6 @@ const MerchantMetrics: React.FC = () => {
                   </Table.Td>
                   <Table.Td ta="right">
                     <Text size="sm" fw={500}>{m.request_count || 0}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Tooltip label="Delete merchant" withArrow>
-                      <ActionIcon variant="subtle" color="red" size="sm" onClick={() => deleteMerchant(m)}>
-                        <IconTrash size={14} />
-                      </ActionIcon>
-                    </Tooltip>
                   </Table.Td>
                 </Table.Tr>
               ))}
