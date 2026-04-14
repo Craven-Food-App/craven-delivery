@@ -102,13 +102,27 @@ export function UnifiedPortalShell({
       )}
 
       <div className="mx-auto w-full max-w-[1800px] p-2 sm:p-3 md:p-4">
-        <div className="grid gap-2 sm:gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
-          {/* Desktop Sidebar — unchanged */}
-          <aside className="hidden rounded-lg border border-border bg-card shadow-card lg:flex lg:h-[calc(100vh-2rem)] lg:flex-col lg:overflow-hidden">
-            <div className="border-b border-border p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{sectionLabel}</p>
-              <h1 className="mt-1 text-lg font-semibold text-foreground">{portalName}</h1>
-              <p className="mt-1 text-xs text-muted-foreground">{portalSubtitle}</p>
+        <div className={cn('grid gap-2 sm:gap-3 transition-all duration-200', sidebarCollapsed ? 'lg:grid-cols-[60px_minmax(0,1fr)]' : 'lg:grid-cols-[280px_minmax(0,1fr)]')}>
+          {/* Desktop Sidebar — collapsible */}
+          <aside className="hidden rounded-lg border border-border bg-card shadow-card lg:flex lg:h-[calc(100vh-2rem)] lg:flex-col lg:overflow-hidden transition-all duration-200">
+            <div className="border-b border-border p-4 flex items-center justify-between">
+              {!sidebarCollapsed && (
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{sectionLabel}</p>
+                  <h1 className="mt-1 text-lg font-semibold text-foreground">{portalName}</h1>
+                  <p className="mt-1 text-xs text-muted-foreground">{portalSubtitle}</p>
+                </div>
+              )}
+              <button
+                onClick={() => setSidebarCollapsed(c => !c)}
+                className={cn(
+                  'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors',
+                  sidebarCollapsed && 'mx-auto'
+                )}
+                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {sidebarCollapsed ? <IconChevronsRight size={14} /> : <IconChevronsLeft size={14} />}
+              </button>
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-3">
@@ -117,11 +131,37 @@ export function UnifiedPortalShell({
                 if (sectionTabs.length === 0) return null;
                 return (
                   <div key={section} className="space-y-1">
-                    <p className="px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{section}</p>
+                    {!sidebarCollapsed && (
+                      <p className="px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{section}</p>
+                    )}
+                    {sidebarCollapsed && <div className="my-1 border-t border-border" />}
                     {sectionTabs.map(tab => {
                       const Icon = tab.icon;
                       const isActive = activeTab === tab.id;
                       const badgeValue = getBadgeValue?.(tab.id) ?? 0;
+
+                      if (sidebarCollapsed) {
+                        return (
+                          <button
+                            key={tab.id}
+                            onClick={() => onTabChange(tab.id)}
+                            title={tab.label}
+                            className={cn(
+                              'group relative flex w-full items-center justify-center rounded-md border p-2 transition-colors',
+                              isActive
+                                ? 'border-primary/40 bg-primary/10 text-primary'
+                                : 'border-transparent text-muted-foreground hover:border-border hover:bg-muted/40 hover:text-foreground'
+                            )}
+                          >
+                            <Icon size={16} />
+                            {badgeValue > 0 && (
+                              <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground">
+                                {badgeValue}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      }
 
                       return (
                         <button
