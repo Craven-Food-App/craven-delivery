@@ -576,25 +576,23 @@ const PartnerPipeline: React.FC = () => {
   return (
     <Stack gap="lg">
       <Stack gap="sm">
-        <Group justify="space-between" align="flex-start" wrap="wrap">
-          <Stack gap={6} maw={720}>
-            <Title order={3}>Partner pipeline</Title>
+        <Group justify="space-between" align="center" wrap="wrap">
+          <Group gap="md" align="center">
+            <Title order={3} style={{ whiteSpace: 'nowrap' }}>Partner pipeline</Title>
             <Text size="sm" c="dimmed">
               Track strategic partners from first lead through signature — or a documented close. Columns are{' '}
               <strong>deal stages</strong> (left to right). Use the filter to focus on active work or closed deals.
             </Text>
-          </Stack>
-          <Stack gap={6} align="flex-end">
-            <SegmentedControl
-              value={pipelineFilter}
-              onChange={(v) => setPipelineFilter(v as 'all' | 'active' | 'closed')}
-              data={[
-                { label: 'All', value: 'all' },
-                { label: 'Active', value: 'active' },
-                { label: 'Closed / lost', value: 'closed' },
-              ]}
-            />
-          </Stack>
+          </Group>
+          <SegmentedControl
+            value={pipelineFilter}
+            onChange={(v) => setPipelineFilter(v as 'all' | 'active' | 'closed')}
+            data={[
+              { label: 'All', value: 'all' },
+              { label: 'Active', value: 'active' },
+              { label: 'Closed / lost', value: 'closed' },
+            ]}
+          />
         </Group>
 
       </Stack>
