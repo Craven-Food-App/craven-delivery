@@ -75,7 +75,7 @@ const EnhancedRiskManagement = React.lazy(() => import('@/components/cfo/Enhance
 const EnhancedCapitalStructure = React.lazy(() => import('@/components/cfo/EnhancedCapitalStructure').then(m => ({ default: m.EnhancedCapitalStructure })));
 const EnhancedScenarioPlanning = React.lazy(() => import('@/components/cfo/EnhancedScenarioPlanning').then(m => ({ default: m.EnhancedScenarioPlanning })));
 const CFOOnboardingGovernance = React.lazy(() => import('@/components/cfo/CFOOnboardingGovernance').then(m => ({ default: m.CFOOnboardingGovernance })));
-const CfoEvaluationGatePanel = React.lazy(() => import('@/components/cfo/CfoEvaluationGatePanel'));
+
 const CorporateGeneralLedger = React.lazy(() => import('@/components/finance/CorporateGeneralLedger').then(m => ({ default: m.CorporateGeneralLedger })));
 const CorporateAccountsPayable = React.lazy(() => import('@/components/finance/CorporateAccountsPayable').then(m => ({ default: m.CorporateAccountsPayable })));
 const CorporateAccountsReceivable = React.lazy(() => import('@/components/finance/CorporateAccountsReceivable').then(m => ({ default: m.CorporateAccountsReceivable })));
@@ -99,7 +99,6 @@ const ModuleLoader = () => (
 
 const TABS: PortalTab[] = [
   // Core Executive
-  { id: 'evaluation', label: 'CFO Evaluation Gate', description: 'Board-defensible CFO evaluation workflow.', section: 'Executive', icon: IconShield },
   { id: 'onboarding', label: 'Onboarding & Governance', description: 'CFO onboarding and governance framework.', section: 'Executive', icon: IconChecklist },
   { id: 'overview', label: 'CFO Command Center', description: 'Executive financial dashboard and KPIs.', section: 'Executive', icon: IconChartBar },
   { id: 'calendar', label: 'Executive Calendar', description: 'Shared leadership schedule (same as Company Portal).', section: 'Executive', icon: IconCalendar },
@@ -207,8 +206,6 @@ function CFOPortalContent() {
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'evaluation':
-        return <Suspense fallback={<ModuleLoader />}><CfoEvaluationGatePanel mode={isTorrance ? 'ceo' : 'cfo'} /></Suspense>;
       case 'onboarding':
         return <Suspense fallback={<ModuleLoader />}><CFOOnboardingGovernance /></Suspense>;
       case 'overview':

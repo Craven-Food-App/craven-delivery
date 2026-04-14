@@ -46,7 +46,7 @@ const CEOSignatureManager = lazy(() => import('@/components/ceo/CEOSignatureMana
 const ExecutiveWordProcessor = lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
 const ActiveUsersMonitor = lazy(() => import('@/components/ceo/ActiveUsersMonitor'));
 const InternsManagement = lazy(() => import('@/components/ceo/InternsManagement').then(m => ({ default: m.InternsManagement })));
-const CfoEvaluationGatePanel = lazy(() => import('@/components/cfo/CfoEvaluationGatePanel'));
+
 const CtoEvaluationGatePanel = lazy(() => import('@/components/cto/CtoEvaluationGatePanel'));
 const EmbeddedCComms = lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
@@ -163,10 +163,6 @@ const CEOPortal: React.FC = () => {
               <p className="mt-1 text-xs text-muted-foreground">
                 Initiate and review time-boxed, board-defensible evaluations for C-suite officers.
               </p>
-            </div>
-            <div className="space-y-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">CFO Evaluation</h4>
-              <CfoEvaluationGatePanel mode="ceo" />
             </div>
             <div className="space-y-2">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">CTO Evaluation</h4>

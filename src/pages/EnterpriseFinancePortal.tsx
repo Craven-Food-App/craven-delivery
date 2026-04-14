@@ -28,7 +28,6 @@ import { TaxManagementView } from '@/components/finance/TaxManagementView';
 import { GeneralLedgerView } from '@/components/finance/GeneralLedgerView';
 import { FinanceAuditComponent } from '@/components/finance/audit/FinanceAuditComponent';
 import { DriverCompensationDashboard } from '@/components/finance/driver-compensation/DriverCompensationDashboard';
-import CfoEvaluationGatePanel from '@/components/cfo/CfoEvaluationGatePanel';
 import { useFinanceRBAC } from '@/hooks/useFinanceRBAC';
 import { UnifiedPortalShell, PortalTab, PortalLoadingState, PortalAccessDenied } from '@/components/portal/UnifiedPortalShell';
 
@@ -44,10 +43,9 @@ const TABS: PortalTab[] = [
   { id: 'budget-forecast', label: 'Budget & Forecast', description: 'Budget planning and forecasting.', section: 'Operations', icon: IconChartBar },
   { id: 'fixed-assets', label: 'Fixed Assets', description: 'Asset tracking and depreciation.', section: 'Operations', icon: IconSettings },
   { id: 'tax-management', label: 'Tax Management', description: 'Tax planning and compliance.', section: 'Compliance', icon: IconShield },
-  { id: 'audit', label: 'Audit', description: 'Financial audit and compliance.', section: 'Compliance', icon: IconShield },
-  { id: 'driver-compensation', label: 'Driver Compensation', description: 'Driver pay rules and analytics.', section: 'Compliance', icon: IconCar },
-  { id: 'cfo-evaluation', label: 'CFO Evaluation', description: 'CFO performance evaluation gate.', section: 'Compliance', icon: IconTrendingUp },
-];
+      { id: 'audit', label: 'Audit', description: 'Financial audit and compliance.', section: 'Compliance', icon: IconShield },
+      { id: 'driver-compensation', label: 'Driver Compensation', description: 'Driver pay rules and analytics.', section: 'Compliance', icon: IconCar },
+    ];
 
 const SECTIONS = ['Core', 'Accounting', 'Operations', 'Compliance'];
 
@@ -73,7 +71,6 @@ const EnterpriseFinancePortal: React.FC = () => {
       case 'tax-management': return <TaxManagementView />;
       case 'audit': return <FinanceAuditComponent />;
       case 'driver-compensation': return <DriverCompensationDashboard />;
-      case 'cfo-evaluation': return <CfoEvaluationGatePanel mode="cfo" />;
       default: return <FinanceDashboard />;
     }
   };
