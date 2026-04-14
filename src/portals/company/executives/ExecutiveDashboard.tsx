@@ -50,7 +50,7 @@ const ExecutiveDashboard: React.FC = () => {
       if (user) {
         const { data: execUser } = await supabase
           .from('exec_users')
-          .select('id, metadata')
+          .select('id, metadata, role, title')
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -60,6 +60,33 @@ const ExecutiveDashboard: React.FC = () => {
           setExecMetadata(meta);
           if (!meta.guided_tour_completed) {
             setShowTour(true);
+          }
+
+          // Check regenerate permission: board member, CEO, or secretary
+          const { data: boardMember } = await supabase
+            .from('board_members')
+            .select('id')
+            .eq('user_id', user.id)
+            .limit(1);
+
+          const execRole = (execUser.role || execUser.title || '').toLowerCase();
+          const isCeoOrSecretary = execRole.includes('ceo') ||
+            execRole.includes('chief executive') ||
+            execRole.includes('secretary');
+
+          setCanRegenerate((boardMember && boardMember.length > 0) || isCeoOrSecretary);
+
+          // Get appointment ID for regeneration
+          const { data: appts } = await supabase
+            .from('executive_appointments')
+            .select('id')
+            .eq('executive_id', execUser.id)
+            .not('status', 'in', '("terminated","rejected")')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (appts?.[0]) {
+            setAppointmentId(appts[0].id);
           }
         }
       }
