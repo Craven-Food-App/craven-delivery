@@ -208,14 +208,21 @@ const SecretaryReviewTab: React.FC = () => {
           signed_at: null,
           signed_by_user: null,
           signer_roles: null,
-          signature_token: crypto.randomUUID(),
-          signature_token_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .eq('appointment_id', apptId);
 
       if (resetError) {
         console.error('Failed to reset document signatures:', resetError);
         toast.error('Appointment rejected but failed to reset document signatures. Documents may need manual reset.');
+      }
+
+      // Generate fresh shared signature token for all documents
+      const { error: tokenError } = await supabase.functions.invoke('generate-executive-signature-token', {
+        body: { appointment_id: apptId },
+      });
+
+      if (tokenError) {
+        console.error('Failed to generate new signature tokens:', tokenError);
       }
 
       const { data: { user } } = await supabase.auth.getUser();
