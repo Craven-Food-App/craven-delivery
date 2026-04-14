@@ -50,7 +50,7 @@ export async function buildCommonContext(companyId?: string) {
     state: settingsMap['state_of_incorporation'] || 'Delaware',
     registered_office: settingsMap['registered_office'] || '',
     state_filing_office: settingsMap['state_filing_office'] || 'Delaware Secretary of State',
-    trust_name: trust?.name || 'Invero Business Trust (Irrevocable Trust)',
+    trust_name: trust?.name || 'Invero, Inc.',
     founder_name: settingsMap['founder_name'] || settingsMap['incorporator_name'] || 'Torrance Stroman',
     cap_table_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
     resolution_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
