@@ -82,6 +82,8 @@ const OnboardingPacket: React.FC = () => {
   const [executiveName, setExecutiveName] = useState<string>('');
   const [showFinalActivation, setShowFinalActivation] = useState(false);
   const [canRegenerate, setCanRegenerate] = useState(false);
+  const [appointmentStatus, setAppointmentStatus] = useState<string>('');
+  const [awaitingSecretaryReview, setAwaitingSecretaryReview] = useState(false);
 
   useEffect(() => {
     loadOnboarding();
@@ -132,6 +134,7 @@ const OnboardingPacket: React.FC = () => {
 
       if (myAppointment) {
         setAppointmentId(myAppointment.id);
+        setAppointmentStatus(myAppointment.status || '');
         
         // Calculate signing deadline (30 days from document generation or now)
         const deadline = new Date();
@@ -167,9 +170,24 @@ const OnboardingPacket: React.FC = () => {
         const visibleDocs = dedupeDocuments(docs || []);
         setDocuments(visibleDocs);
 
-        // Check if all core docs are signed → unlock Final Activation
         const allSigned = visibleDocs.length > 0 && visibleDocs.every(d => d.signature_status === 'signed');
-        setShowFinalActivation(allSigned);
+        
+        // Final Activation only unlocks AFTER Secretary approves the signed packet
+        const secretaryApproved = ['SECRETARY_APPROVED', 'ACTIVATING', 'payroll_ready'].includes(myAppointment.status);
+        setShowFinalActivation(allSigned && secretaryApproved);
+        
+        // If all docs signed but secretary hasn't reviewed yet, show waiting state
+        const pendingReview = allSigned && !secretaryApproved;
+        setAwaitingSecretaryReview(pendingReview);
+        
+        // Auto-transition appointment to READY_FOR_SECRETARY_REVIEW if all signed and still in signing status
+        if (allSigned && ['partially_signed', 'signing_in_progress', 'fully_signed'].includes(myAppointment.status)) {
+          await supabase
+            .from('executive_appointments')
+            .update({ status: 'READY_FOR_SECRETARY_REVIEW', updated_at: new Date().toISOString() })
+            .eq('id', myAppointment.id);
+          setAppointmentStatus('READY_FOR_SECRETARY_REVIEW');
+        }
       }
     } catch (error: any) {
       notifications.show({
@@ -544,9 +562,9 @@ const OnboardingPacket: React.FC = () => {
           })}
         </Stack>
 
-        {completedCount === totalCount && totalCount > 0 && !showFinalActivation && (
-          <Alert icon={<IconCheck size={16} />} title="All Documents Signed" color="green">
-            Congratulations! You have completed signing all required documents. Your appointment will be finalized shortly.
+        {awaitingSecretaryReview && (
+          <Alert icon={<IconClock size={16} />} title="Awaiting Secretary Review" color="blue">
+            All documents have been signed. Your packet is now pending review by the Corporate Secretary before final activation steps (tax, eligibility, and direct deposit) become available.
           </Alert>
         )}
 
