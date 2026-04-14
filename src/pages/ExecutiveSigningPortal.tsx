@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { FileText, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { message } from 'antd';
 import { ElectronicSignatureAcknowledgment } from '@/components/executive/ElectronicSignatureAcknowledgment';
-import DOMPurify from 'dompurify';
+import { sanitizeExecutiveDocumentHtml } from '@/utils/executiveDocumentHtml';
 
 interface ExecutiveDocument {
   id: string;
@@ -148,6 +148,12 @@ export default function ExecutiveSigningPortal() {
   // Document navigation
   const currentDocument = documents[currentDocIndex];
   const currentDocumentSigned = currentDocument ? documentSignatures[currentDocument.id] : null;
+
+  const viewerSrcDoc = useMemo(() => {
+    const id = currentDocument?.id;
+    const raw = id ? documentHtmlCache[id] : '';
+    return sanitizeExecutiveDocumentHtml(raw || '<p>Loading...</p>');
+  }, [currentDocument?.id, documentHtmlCache]);
 
   const goToNextDocument = () => {
     if (currentDocIndex < documents.length - 1) {
@@ -306,17 +312,17 @@ export default function ExecutiveSigningPortal() {
         </div>
 
         {/* Document Viewer */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-6 bg-muted/30">
           <div
             ref={documentViewerRef}
-            className="relative bg-white shadow-lg mx-auto max-w-4xl min-h-[800px] border-2 border-border"
+            className="relative mx-auto max-w-[9in] min-h-[800px] rounded-sm border border-border bg-zinc-100 p-4 shadow-xl"
           >
-            {/* Document HTML */}
-            <div 
-              dangerouslySetInnerHTML={{ 
-                __html: DOMPurify.sanitize(documentHtmlCache[currentDocument?.id] || '<p>Loading...</p>')
-              }}
-              className="p-8"
+            {/* Full HTML documents with <style> must render in iframe — DOMPurify-sanitized div strips or breaks head/body */}
+            <iframe
+              title={currentDocument?.title || 'Executive document'}
+              srcDoc={viewerSrcDoc}
+              className="h-[min(85vh,1100px)] w-full border-0 bg-white shadow-inner"
+              sandbox="allow-same-origin"
             />
 
             {/* Signature Status Overlay */}

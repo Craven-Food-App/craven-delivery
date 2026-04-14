@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
-import DOMPurify from 'dompurify';
+import { sanitizeExecutiveDocumentHtml } from '@/utils/executiveDocumentHtml';
 import {
   Stack,
   Card,
@@ -1129,16 +1129,17 @@ const MyDocuments: React.FC = () => {
                   <Loader size="lg" />
                 </Center>
               ) : isHtmlFile(urlToView) && documentHtmlContent ? (
-                <div
+                <iframe
+                  title="Document"
+                  srcDoc={sanitizeExecutiveDocumentHtml(documentHtmlContent)}
                   style={{
                     height: '600px',
+                    width: '100%',
                     border: '1px solid #ddd',
                     borderRadius: '4px',
-                    overflow: 'auto',
-                    padding: '1rem',
-                    backgroundColor: '#fff',
+                    backgroundColor: '#f4f4f5',
                   }}
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(documentHtmlContent) }}
+                  sandbox="allow-same-origin"
                 />
               ) : (
                 <iframe
@@ -1191,17 +1192,17 @@ const MyDocuments: React.FC = () => {
                       <Loader size="md" />
                     </Center>
                   ) : isHtmlFile(selectedDocument.file_url) && documentHtmlContent ? (
-                    <div
+                    <iframe
+                      title="Document preview"
+                      srcDoc={sanitizeExecutiveDocumentHtml(documentHtmlContent)}
                       style={{
                         width: '100%',
                         height: '300px',
                         border: '1px solid #ddd',
                         borderRadius: '4px',
-                        overflow: 'auto',
-                        padding: '1rem',
-                        backgroundColor: '#fff',
+                        backgroundColor: '#f4f4f5',
                       }}
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(documentHtmlContent) }}
+                      sandbox="allow-same-origin"
                     />
                   ) : (
                     <iframe

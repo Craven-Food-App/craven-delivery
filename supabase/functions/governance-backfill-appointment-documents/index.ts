@@ -77,6 +77,8 @@ serve(async (req) => {
     const body = await req.json();
     const appointment_id = body.appointment_id; // Optional: specific appointment, or null for all
     const force_regenerate = body.force_regenerate === true; // If true, regenerate even if documents exist
+    /** When set (without appointment_id), only appointments for this officer. Requires force_regenerate. */
+    const bulk_regenerate_officer = body.bulk_regenerate_officer as string | undefined;
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false },
@@ -84,12 +86,75 @@ serve(async (req) => {
 
     // Fetch appointments
     let query = supabaseAdmin.from('executive_appointments').select('*');
-    
+
     if (appointment_id) {
       query = query.eq('id', appointment_id);
     }
 
-    const { data: appointments, error: fetchError } = await query;
+    let appointments: any[] | null = null;
+    let fetchError: { message: string } | null = null;
+
+    if (appointment_id) {
+      const res = await query;
+      appointments = res.data;
+      fetchError = res.error;
+    } else if (bulk_regenerate_officer === 'torrance_stroman') {
+      if (!force_regenerate) {
+        return new Response(
+          JSON.stringify({
+            error:
+              'bulk_regenerate_officer=torrance_stroman requires force_regenerate: true for safety',
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const { data: execRows } = await supabaseAdmin
+        .from('exec_users')
+        .select('id')
+        .or('email.ilike.%tstroman%,name.ilike.%torrance%stroman%');
+      const execIds = (execRows ?? []).map((r: { id: string }) => r.id).filter(Boolean);
+
+      const { data: byEmailName, error: errA } = await supabaseAdmin
+        .from('executive_appointments')
+        .select('*')
+        .or(
+          'proposed_officer_email.ilike.%tstroman%,proposed_officer_name.ilike.%torrance%stroman%',
+        );
+
+      if (errA) {
+        fetchError = errA;
+      } else {
+        const seen = new Set<string>();
+        const merged: any[] = [];
+        for (const row of byEmailName ?? []) {
+          seen.add(row.id);
+          merged.push(row);
+        }
+        if (execIds.length > 0) {
+          const { data: byExec, error: errB } = await supabaseAdmin
+            .from('executive_appointments')
+            .select('*')
+            .in('executive_id', execIds);
+          if (errB) {
+            fetchError = errB;
+          } else {
+            for (const row of byExec ?? []) {
+              if (!seen.has(row.id)) {
+                seen.add(row.id);
+                merged.push(row);
+              }
+            }
+          }
+        }
+        if (!fetchError) {
+          appointments = merged;
+        }
+      }
+    } else {
+      const res = await query;
+      appointments = res.data;
+      fetchError = res.error;
+    }
 
     if (fetchError) {
       return new Response(

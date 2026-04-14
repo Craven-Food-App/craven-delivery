@@ -47,7 +47,8 @@ const BusinessAuthGuard: React.FC<BusinessAuthGuardProps> = ({ children }) => {
               typeof window !== 'undefined' ? window.location.search : location.search,
             );
           });
-        } else if (event === 'SIGNED_IN' && session?.user) {
+        } else if (session?.user) {
+          // INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, etc.
           setIsAuthenticated(true);
         }
       }

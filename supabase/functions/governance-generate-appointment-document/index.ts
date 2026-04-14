@@ -365,6 +365,45 @@ serve(async (req) => {
         compensationStructure = compensationRaw as CompensationStructure;
       }
     }
+
+    /** Canonical CEO annual base when DB row has no salary (documents showed $0). */
+    const TORRANCE_DEFAULT_BASE_SALARY = 80000;
+    const emailLower = String(officerEmail || "").toLowerCase().trim();
+    const nameLower = String(officerName || "").toLowerCase().trim();
+    const isTorranceStroman =
+      emailLower === "tstroman.ceo@cravenusa.com" ||
+      (emailLower.includes("tstroman") && emailLower.includes("cravenusa.com")) ||
+      (nameLower.includes("torrance") && nameLower.includes("stroman"));
+
+    const parseMoney = (v: unknown): number => {
+      if (v == null) return NaN;
+      if (typeof v === "number") return Number.isFinite(v) ? v : NaN;
+      const s = String(v).replace(/[$,]/g, "").trim();
+      const n = parseFloat(s);
+      return Number.isFinite(n) ? n : NaN;
+    };
+
+    let rawSalary =
+      compensationStructure.base_salary ??
+      (compensationStructure as any).annual_base_salary ??
+      (compensationStructure as any).annual_salary ??
+      (compensationStructure as any).salary;
+    let effectiveBaseSalary = parseMoney(rawSalary);
+    if (
+      isTorranceStroman &&
+      (!Number.isFinite(effectiveBaseSalary) || effectiveBaseSalary === 0)
+    ) {
+      effectiveBaseSalary = TORRANCE_DEFAULT_BASE_SALARY;
+      compensationStructure = {
+        ...compensationStructure,
+        base_salary: TORRANCE_DEFAULT_BASE_SALARY,
+      };
+    } else if (Number.isFinite(effectiveBaseSalary)) {
+      compensationStructure = {
+        ...compensationStructure,
+        base_salary: effectiveBaseSalary,
+      };
+    }
     
     const equityDetailsRaw = appointment.equity_details ?? (appointment as any).equity_details;
     let equityDetails: EquityDetails = {};
@@ -436,21 +475,37 @@ serve(async (req) => {
       ceoName: 'Torrance Stroman',
       CEO_NAME: 'Torrance Stroman',
       'officer.fullName': officerName,
-      effective_date: appointment.effective_date,
-      date: appointment.effective_date,
-      appointment_date: appointment.effective_date,
-      board_meeting_date: (appointment as any).board_meeting_date || appointment.effective_date,
+      effective_date: appointment.effective_date ? formatDate(appointment.effective_date as string) : '',
+      date: appointment.effective_date ? formatDate(appointment.effective_date as string) : '',
+      appointment_date: appointment.effective_date ? formatDate(appointment.effective_date as string) : '',
+      board_meeting_date: (appointment as any).board_meeting_date
+        ? formatDate((appointment as any).board_meeting_date as string)
+        : appointment.effective_date
+          ? formatDate(appointment.effective_date as string)
+          : '',
       
       // Appointment details
       appointment_type: appointment.appointment_type || 'initial',
       reporting_to: (appointment as any).reporting_to || 'Board of Directors',
       department: (appointment as any).department || '',
       
-      // Compensation - format numbers properly
-      annual_salary: compensationStructure.base_salary ? formatCurrency(compensationStructure.base_salary) : '$0',
-      annual_base_salary: compensationStructure.base_salary ? formatCurrency(compensationStructure.base_salary) : '$0',
-      base_salary: compensationStructure.base_salary ? formatCurrency(compensationStructure.base_salary) : '$0',
-      salary: compensationStructure.base_salary ? formatCurrency(compensationStructure.base_salary) : '$0',
+      // Compensation - format numbers properly (avoid `base_salary ?` — 0 is falsy and showed $0)
+      annual_salary:
+        Number.isFinite(effectiveBaseSalary) && effectiveBaseSalary > 0
+          ? formatCurrency(effectiveBaseSalary)
+          : '$0',
+      annual_base_salary:
+        Number.isFinite(effectiveBaseSalary) && effectiveBaseSalary > 0
+          ? formatCurrency(effectiveBaseSalary)
+          : '$0',
+      base_salary:
+        Number.isFinite(effectiveBaseSalary) && effectiveBaseSalary > 0
+          ? formatCurrency(effectiveBaseSalary)
+          : '$0',
+      salary:
+        Number.isFinite(effectiveBaseSalary) && effectiveBaseSalary > 0
+          ? formatCurrency(effectiveBaseSalary)
+          : '$0',
       annual_bonus_percentage: compensationStructure.annual_bonus_percentage ? String(compensationStructure.annual_bonus_percentage) : '0',
       bonus_percentage: compensationStructure.annual_bonus_percentage ? String(compensationStructure.annual_bonus_percentage) : '0',
       performance_bonus: compensationStructure.performance_bonus || '',
@@ -471,17 +526,21 @@ serve(async (req) => {
       // Authority and terms
       authority_granted: (appointment as any).authority_granted || 'Standard executive authority',
       term_length_months: (appointment as any).term_length_months ? String((appointment as any).term_length_months) : 'N/A',
-      term_end: (appointment as any).term_end || null,
+      term_end: (appointment as any).term_end ? formatDate(String((appointment as any).term_end)) : '',
       
       // Resolution details
       resolution_number: resolution?.resolution_number || 'TBD',
-      resolution_date: resolution?.meeting_date || appointment.effective_date,
+      resolution_date: resolution?.meeting_date
+        ? formatDate(String(resolution.meeting_date))
+        : appointment.effective_date
+          ? formatDate(appointment.effective_date as string)
+          : '',
       
       // Stock Certificate specific fields
       certificate_number: `CERT-${appointment.id.substring(0, 8).toUpperCase()}`,
       share_class: 'Common',
       company_state: governingState,
-      issue_date: appointment.effective_date,
+      issue_date: appointment.effective_date ? formatDate(appointment.effective_date as string) : '',
       // URL only - for stock certificate img src (so we don't put HTML in src/alt)
       signature_url: torranceSignatureUrl || TORRANCE_SIG_URL,
       // Full img tag for templates that embed it inline; also used as printed name fallback
@@ -897,7 +956,9 @@ serve(async (req) => {
         } else if (key.includes('trigger') && key.includes('condition')) {
           defaultValue = 'the Company achieves a liquidity event (including but not limited to a merger, acquisition, sale of substantially all assets, or initial public offering), or the Executive\'s employment is terminated by the Company without cause, or the Executive\'s employment is terminated due to death or disability';
         } else if (key.includes('salary') || key.includes('Salary')) {
-          defaultValue = '$0';
+          defaultValue = isTorranceStroman
+            ? formatCurrency(TORRANCE_DEFAULT_BASE_SALARY)
+            : '$0';
         } else if (key.includes('share') || key.includes('Share') || key.includes('equity') || key.includes('Equity')) {
           defaultValue = '0';
         } else if (key.includes('percentage') || key.includes('Percentage') || key.includes('percent') || key.includes('Percent')) {
@@ -907,6 +968,17 @@ serve(async (req) => {
         // Replace all instances of this placeholder using simple string replacement
         html = html.split(placeholder).join(defaultValue);
       });
+    }
+
+    // Legacy templates sometimes embed literal $0 for salary; fix when CEO is Torrance
+    if (isTorranceStroman) {
+      const eighty = formatCurrency(TORRANCE_DEFAULT_BASE_SALARY);
+      html = html.replace(
+        /(<strong[^>]*>\s*Base Salary\s*:\s*<\/strong>\s*)\$\s*0\b/gi,
+        `$1${eighty}`,
+      );
+      html = html.replace(/\bannual base salary of \$\s*0\b/gi, `annual base salary of ${eighty}`);
+      html = html.replace(/\bbase salary of \$\s*0\b/gi, `base salary of ${eighty}`);
     }
 
     // Nuclear: cut the entire tail signature area and replace it with a

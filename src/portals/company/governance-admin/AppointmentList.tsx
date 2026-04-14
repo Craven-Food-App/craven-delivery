@@ -134,6 +134,8 @@ const AppointmentList: React.FC = () => {
   const [documentStatuses, setDocumentStatuses] = useState<Record<string, any>>({});
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [boardResolution, setBoardResolution] = useState<any>(null);
+  const [torranceBulkModalOpen, setTorranceBulkModalOpen] = useState(false);
+  const [torranceBulkLoading, setTorranceBulkLoading] = useState(false);
 
   useEffect(() => {
     fetchAppointments();
@@ -156,6 +158,48 @@ const AppointmentList: React.FC = () => {
       }
     }
     return String(value);
+  };
+
+  const parseBaseSalaryFromCompensation = (raw: ExecutiveAppointment['compensation_structure']): number | undefined => {
+    if (raw == null) return undefined;
+    try {
+      const o = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!o || typeof o !== 'object' || Array.isArray(o)) return undefined;
+      const rec = o as Record<string, unknown>;
+      const v = rec.base_salary ?? rec.annual_base_salary ?? rec.annual_salary ?? rec.salary;
+      if (v == null || v === '') return undefined;
+      const n = typeof v === 'number' ? v : parseFloat(String(v).replace(/[$,]/g, ''));
+      return Number.isFinite(n) ? n : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const mergeCompensationStructureForSave = (
+    compensationText: string,
+    baseSalary: number | undefined,
+  ): string | null => {
+    const trimmed = compensationText?.trim() ?? '';
+    let obj: Record<string, unknown> = {};
+    if (trimmed) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          obj = { ...(parsed as Record<string, unknown>) };
+        } else {
+          obj = { description: trimmed };
+        }
+      } catch {
+        obj = { description: trimmed };
+      }
+    }
+    if (baseSalary != null && Number.isFinite(baseSalary) && baseSalary >= 0) {
+      obj.base_salary = baseSalary;
+    } else {
+      delete obj.base_salary;
+    }
+    if (Object.keys(obj).length === 0) return null;
+    return JSON.stringify(obj);
   };
 
   const formatEquityDisplay = (value: unknown): string => {
@@ -687,6 +731,7 @@ const AppointmentList: React.FC = () => {
       term_length_months: undefined as number | undefined,
       authority_granted: '',
       compensation_structure: '',
+      compensation_base_salary: undefined as number | undefined,
       equity_included: false,
       equity_details: '',
       notes: '',
@@ -713,6 +758,7 @@ const AppointmentList: React.FC = () => {
       term_length_months: appointment.term_length_months || undefined,
       authority_granted: appointment.authority_granted || '',
       compensation_structure: serializeDisplayValue(appointment.compensation_structure),
+      compensation_base_salary: parseBaseSalaryFromCompensation(appointment.compensation_structure),
       equity_included: appointment.equity_included || false,
       equity_details: serializeDisplayValue(appointment.equity_details),
       notes: appointment.notes || '',
@@ -741,7 +787,10 @@ const AppointmentList: React.FC = () => {
         board_meeting_date: values.board_meeting_date ? dayjs(values.board_meeting_date).toISOString() : null,
         term_length_months: values.term_length_months ?? null,
         authority_granted: values.authority_granted || null,
-        compensation_structure: values.compensation_structure || null,
+        compensation_structure: mergeCompensationStructureForSave(
+          values.compensation_structure,
+          values.compensation_base_salary,
+        ),
         equity_included: values.equity_included ?? false,
         equity_details: values.equity_details || null,
         notes: values.notes || null,
@@ -863,6 +912,60 @@ const AppointmentList: React.FC = () => {
     }
   };
 
+  const handleBulkRegenerateTorranceDocuments = async () => {
+    setTorranceBulkLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('governance-backfill-appointment-documents', {
+        body: {
+          bulk_regenerate_officer: 'torrance_stroman',
+          force_regenerate: true,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data) {
+        const { documents_generated, errors_count, all_errors, processed, results } = data;
+        if (errors_count > 0) {
+          const errorMessages = all_errors?.join('\n') || 'Unknown error';
+          notifications.show({
+            title: 'Some document generations failed',
+            message: `Processed ${processed ?? 0} appointment(s). Errors:\n${errorMessages}`,
+            color: 'orange',
+            autoClose: 20000,
+          });
+        } else if (documents_generated > 0) {
+          notifications.show({
+            title: 'Torrance documents regenerated',
+            message: `Generated ${documents_generated} document(s) across ${processed ?? 0} appointment(s). Refresh the list to see updates.`,
+            color: 'green',
+          });
+        } else {
+          notifications.show({
+            title: 'No matching appointments',
+            message:
+              'No executive appointments matched Torrance Stroman (tstroman email or name). If documents exist under another officer record, regenerate from that row.',
+            color: 'yellow',
+            autoClose: 15000,
+          });
+        }
+      }
+
+      setTorranceBulkModalOpen(false);
+      fetchAppointments();
+      setTimeout(() => fetchAppointments(), 3000);
+    } catch (error: any) {
+      console.error('Error bulk-regenerating Torrance documents:', error);
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to regenerate documents',
+        color: 'red',
+      });
+    } finally {
+      setTorranceBulkLoading(false);
+    }
+  };
+
   const getDocumentStatus = (appointment: ExecutiveAppointment) => {
     // Core required documents (always counted)
     const coreDocs = [
@@ -947,6 +1050,18 @@ const AppointmentList: React.FC = () => {
             </Group>
           </div>
           <Group gap="xs">
+            <Tooltip label="Force-regenerate all executive documents for Torrance Stroman (matches tstroman email, name, or exec_users row).">
+              <Button
+                variant="outline"
+                color="gray"
+                style={{ borderColor: 'rgba(255,255,255,0.35)', color: 'white' }}
+                leftSection={<IconRefresh size={18} />}
+                onClick={() => setTorranceBulkModalOpen(true)}
+                size="md"
+              >
+                Regenerate Torrance docs
+              </Button>
+            </Tooltip>
             <Button
               variant="light"
               color="orange"
@@ -969,6 +1084,40 @@ const AppointmentList: React.FC = () => {
           </Group>
         </Group>
       </Paper>
+
+      <Modal
+        opened={torranceBulkModalOpen}
+        onClose={() => {
+          if (!torranceBulkLoading) setTorranceBulkModalOpen(false);
+        }}
+        title="Regenerate Torrance Stroman documents"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            This finds every executive appointment linked to Torrance (CEO email containing{' '}
+            <Text span fw={600} component="span">tstroman</Text>, name matching Torrance Stroman, or{' '}
+            <Text span fw={600} component="span">exec_users</Text> for that officer) and force-regenerates
+            all Fortune 500 documents for each, overwriting stored HTML in Supabase Storage. It may take a minute.
+          </Text>
+          <Alert color="yellow" title="When to use">
+            Use after fixing salary or template logic so executive documents show correct compensation instead of $0.
+          </Alert>
+          <Group justify="flex-end" gap="sm">
+            <Button variant="default" onClick={() => setTorranceBulkModalOpen(false)} disabled={torranceBulkLoading}>
+              Cancel
+            </Button>
+            <Button
+              color="orange"
+              loading={torranceBulkLoading}
+              leftSection={<IconRefresh size={18} />}
+              onClick={handleBulkRegenerateTorranceDocuments}
+            >
+              Regenerate all
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
         {/* Instructions Section */}
         <Card padding="md" radius="md" withBorder style={{ backgroundColor: '#f8f9fa' }}>
@@ -2233,9 +2382,30 @@ const AppointmentList: React.FC = () => {
                   rows={3}
                   {...editForm.getInputProps('authority_granted')}
                 />
+                <Grid>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <NumberInput
+                      label="Annual base salary (USD)"
+                      description="Saved as base_salary in compensation; drives offer letters and executive documents."
+                      placeholder="e.g. 80000"
+                      min={0}
+                      thousandSeparator=","
+                      prefix="$"
+                      allowDecimal={false}
+                      value={editForm.values.compensation_base_salary ?? ''}
+                      onChange={(v) =>
+                        editForm.setFieldValue(
+                          'compensation_base_salary',
+                          v === '' || v === undefined ? undefined : Number(v),
+                        )
+                      }
+                    />
+                  </Grid.Col>
+                </Grid>
                 <Textarea
-                  label="Compensation Structure (text or JSON)"
-                  rows={3}
+                  label="Additional compensation (JSON or notes)"
+                  description="Optional: bonus %, benefits, free text. Annual salary above is merged into this as base_salary on save."
+                  rows={4}
                   {...editForm.getInputProps('compensation_structure')}
                 />
 

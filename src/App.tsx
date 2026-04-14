@@ -859,8 +859,8 @@ const App = () => {
           <Route path="/investor-demo/customer" element={<Suspense fallback={<SuspenseLoader message="Loading Customer Demo" />}><InvestorDemoCustomer /></Suspense>} />
           <Route path="/investor-demo/merchant" element={<Suspense fallback={<SuspenseLoader message="Loading Merchant Demo" />}><InvestorDemoMerchant /></Suspense>} />
           <Route path="/investor-demo/driver" element={<Suspense fallback={<SuspenseLoader message="Loading Driver Demo" />}><InvestorDemoDriver /></Suspense>} />
-          {/* Executive signature route */}
-          <Route path="/executive/sign" element={<BusinessAuthGuard><ExecutiveSigningPortal /></BusinessAuthGuard>} />
+          {/* Executive signature route — token-gated in edge functions; no BusinessAuthGuard so signing links and in-app navigation are not redirected to hub login */}
+          <Route path="/executive/sign" element={<ExecutiveSigningPortal />} />
           <Route path="/executive/profile" element={<BusinessAuthGuard><ExecutiveProfile /></BusinessAuthGuard>} />
           <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
           <Route path="/executive-portal/documents" element={<BusinessAuthGuard><ExecutiveDocumentPortal /></BusinessAuthGuard>} />
