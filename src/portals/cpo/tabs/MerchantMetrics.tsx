@@ -27,10 +27,8 @@ import {
   IconCheck,
   IconAlertTriangle,
   IconExternalLink,
-  IconTrash,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
-import { notifications } from '@mantine/notifications';
 
 interface MerchantRow {
   id: string;
@@ -107,19 +105,6 @@ const MerchantMetrics: React.FC = () => {
       console.error('Error fetching merchants:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const deleteMerchant = async (merchant: MerchantRow) => {
-    if (!window.confirm(`Remove "${merchant.name}" from the directory? This cannot be undone.`)) return;
-    try {
-      const table = merchant.source === 'signed_up' ? 'restaurants' : 'restaurants_master';
-      const { error } = await supabase.from(table).delete().eq('id', merchant.id);
-      if (error) throw error;
-      notifications.show({ title: 'Removed', message: `${merchant.name} deleted`, color: 'orange' });
-      fetchMerchants();
-    } catch (err: any) {
-      notifications.show({ title: 'Error', message: err.message, color: 'red' });
     }
   };
 
@@ -331,7 +316,6 @@ const MerchantMetrics: React.FC = () => {
                 <Table.Th>City</Table.Th>
                 <Table.Th>Status</Table.Th>
                 <Table.Th ta="right">Requests</Table.Th>
-                <Table.Th w={60}></Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -375,13 +359,6 @@ const MerchantMetrics: React.FC = () => {
                   </Table.Td>
                   <Table.Td ta="right">
                     <Text size="sm" fw={500}>{m.request_count || 0}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Tooltip label="Delete merchant" withArrow>
-                      <ActionIcon variant="subtle" color="red" size="sm" onClick={() => deleteMerchant(m)}>
-                        <IconTrash size={14} />
-                      </ActionIcon>
-                    </Tooltip>
                   </Table.Td>
                 </Table.Tr>
               ))}
