@@ -110,48 +110,67 @@ serve(async (req) => {
     
     console.log('[EXEC LOOKUP] Final executiveId:', executiveId || 'NULL');
 
-    // Document mapping - All 14 required documents per Fortune 500 Executive Appointment Workflow
+    // Document mapping - keep executive_documents aligned with the canonical staged packet types
     const documentFields = [
-      { field: 'pre_incorporation_consent_url', type: 'pre_incorporation_consent' },
-      { field: 'certificate_of_incorporation_url', type: 'certificate_of_incorporation' },
-      { field: 'bylaws_url', type: 'company_bylaws' },
-      { field: 'bylaws_acknowledgment_url', type: 'bylaws_acknowledgment' },
-      { field: 'board_resolution_url', type: 'board_resolution' },
-      { field: 'appointment_letter_url', type: 'appointment_letter' },
-      { field: 'employment_agreement_url', type: 'employment_agreement' },
-      { field: 'confidentiality_ip_url', type: 'confidentiality_ip' },
-      { field: 'fiduciary_ethics_url', type: 'fiduciary_duty_ethics' },
-      { field: 'conflict_disclosure_url', type: 'conflict_of_interest' },
-      { field: 'stock_subscription_url', type: 'stock_subscription' },
-      { field: 'equity_plan_url', type: 'equity_incentive_plan' },
-      { field: 'option_rsu_award_url', type: 'option_rsu_award' },
-      { field: 'deferred_compensation_url', type: 'deferred_compensation' },
-      { field: 'officer_indemnification_url', type: 'officer_indemnification' },
+      { field: 'pre_incorporation_consent_url', type: 'pre_incorporation_consent', packet_id: 'P1_PREINC', signing_stage: 1, signing_order: 1 },
+      { field: 'certificate_url', type: 'certificate', packet_id: 'P1_PREINC', signing_stage: 1, signing_order: 2 },
+      { field: 'certificate_of_incorporation_url', type: 'certificate_of_incorporation', packet_id: 'P1_PREINC', signing_stage: 1, signing_order: 3 },
+      { field: 'board_resolution_url', type: 'board_resolution', packet_id: 'P2_BOARD', signing_stage: 2, signing_order: 1 },
+      { field: 'bylaws_url', type: 'bylaws', legacyTypes: ['company_bylaws'], packet_id: 'P2_BOARD', signing_stage: 2, signing_order: 3 },
+      { field: 'bylaws_acknowledgment_url', type: 'bylaws_acknowledgment', packet_id: 'P2_BOARD', signing_stage: 2, signing_order: 4 },
+      { field: 'appointment_letter_url', type: 'appointment_letter', packet_id: 'P3_OFFICER_CORE', signing_stage: 3, signing_order: 1 },
+      { field: 'confidentiality_ip_url', type: 'confidentiality_ip', packet_id: 'P3_OFFICER_CORE', signing_stage: 3, signing_order: 2 },
+      { field: 'employment_agreement_url', type: 'employment_agreement', packet_id: 'P3_OFFICER_CORE', signing_stage: 3, signing_order: 3 },
+      { field: 'fiduciary_ethics_url', type: 'fiduciary_ethics', legacyTypes: ['fiduciary_duty_ethics', 'fiduciary_ethics_ack'], packet_id: 'P3_OFFICER_CORE', signing_stage: 3, signing_order: 4 },
+      { field: 'conflict_disclosure_url', type: 'conflict_disclosure', legacyTypes: ['conflict_of_interest'], packet_id: 'P3_OFFICER_CORE', signing_stage: 3, signing_order: 5 },
+      { field: 'officer_indemnification_url', type: 'officer_indemnification', packet_id: 'P3_OFFICER_CORE', signing_stage: 3, signing_order: 6 },
+      { field: 'deferred_compensation_url', type: 'deferred_compensation', legacyTypes: ['deferred_comp_addendum'], packet_id: 'P4_EQUITY', signing_stage: 4, signing_order: 1 },
+      { field: 'stock_subscription_url', type: 'stock_subscription', legacyTypes: ['stock_issuance'], packet_id: 'P4_EQUITY', signing_stage: 4, signing_order: 2 },
+      { field: 'equity_plan_url', type: 'equity_plan', legacyTypes: ['equity_incentive_plan'], packet_id: 'P4_EQUITY', signing_stage: 4, signing_order: 5 },
+      { field: 'option_rsu_award_url', type: 'option_rsu_award', packet_id: 'P4_EQUITY', signing_stage: 4, signing_order: 6 },
     ];
 
     const syncedDocs: any[] = [];
     const errors: any[] = [];
 
-    for (const { field, type } of documentFields) {
+    for (const { field, type, packet_id, signing_stage, signing_order, legacyTypes = [] } of documentFields) {
       const docUrl = appointment[field];
       if (!docUrl) continue;
 
-      // Check if document already exists
-      const { data: existingDoc } = await supabaseAdmin
+      const lookupTypes = [type, ...legacyTypes];
+
+      // Prefer the canonical staged record when it already exists, otherwise normalize a legacy/orphan row.
+      const { data: existingDocs, error: existingDocsError } = await supabaseAdmin
         .from('executive_documents')
-        .select('id, signature_token, signature_status, signed_file_url, file_url')
+        .select('id, type, signature_token, signature_status, signed_file_url, file_url, packet_id, signing_stage, signing_order, created_at')
         .eq('appointment_id', appointment_id_to_use)
-        .eq('type', type)
-        .maybeSingle();
+        .in('type', lookupTypes)
+        .order('created_at', { ascending: false });
+
+      if (existingDocsError) {
+        errors.push({ type, error: existingDocsError.message });
+        continue;
+      }
+
+      const existingDoc =
+        existingDocs?.find((doc: any) => doc.type === type && doc.packet_id === packet_id) ||
+        existingDocs?.find((doc: any) => doc.type === type) ||
+        existingDocs?.find((doc: any) => doc.packet_id === packet_id) ||
+        existingDocs?.[0];
 
       if (existingDoc) {
         // Update existing document and generate token if missing
         const needsToken = !existingDoc.signature_token;
         const updateData: any = {
+          type,
           file_url: docUrl,
+          executive_id: executiveId,
+          packet_id: packet_id ?? null,
+          signing_stage: signing_stage ?? null,
+          signing_order: signing_order ?? null,
         };
 
-        if (type === 'equity_incentive_plan' && (existingDoc.signature_status === 'signed' || !!existingDoc.signed_file_url)) {
+        if (type === 'equity_plan' && (existingDoc.signature_status === 'signed' || !!existingDoc.signed_file_url)) {
           updateData.signed_file_url = docUrl;
         }
         
@@ -171,7 +190,7 @@ serve(async (req) => {
           syncedDocs.push({ type, action: 'updated', token_generated: needsToken });
         }
       } else {
-        // Create new document with signature token
+        // Create new document with signature token and canonical packet metadata
         const signatureToken = crypto.randomUUID();
         const tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
         
@@ -188,6 +207,9 @@ serve(async (req) => {
             status: 'generated',
             signature_token: signatureToken,
             signature_token_expires_at: tokenExpiresAt.toISOString(),
+            packet_id: packet_id ?? null,
+            signing_stage: signing_stage ?? null,
+            signing_order: signing_order ?? null,
           });
 
         if (insertError) {
