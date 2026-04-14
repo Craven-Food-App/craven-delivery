@@ -72,6 +72,7 @@ export function UnifiedPortalShell({
   const navigate = useNavigate();
   const activeTabMeta = tabs.find(t => t.id === activeTab) || tabs[0];
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(activeTabMeta?.section || null);
 
   // Close mobile nav on tab change
