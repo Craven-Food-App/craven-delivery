@@ -198,13 +198,33 @@ const SecretaryReviewTab: React.FC = () => {
 
       if (error) throw error;
 
+      // Reset all documents back to pending so they can be re-signed
+      const { error: resetError } = await supabase
+        .from('executive_documents')
+        .update({
+          signature_status: 'pending',
+          status: 'generated',
+          signed_file_url: null,
+          signed_at: null,
+          signed_by_user: null,
+          signer_roles: null,
+          signature_token: crypto.randomUUID(),
+          signature_token_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .eq('appointment_id', apptId);
+
+      if (resetError) {
+        console.error('Failed to reset document signatures:', resetError);
+        toast.error('Appointment rejected but failed to reset document signatures. Documents may need manual reset.');
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from('appointment_audit_log').insert({
           appointment_id: apptId,
           action_type: 'secretary_rejected',
           actor_user_id: user.id,
-          metadata_json: { reason: reviewNotes[apptId] },
+          metadata_json: { reason: reviewNotes[apptId], documents_reset: !resetError },
           timestamp: new Date().toISOString(),
         });
       }
