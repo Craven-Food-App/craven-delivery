@@ -46,7 +46,7 @@ const OnboardingPacket: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Find user's executive record
+      // Check if user has regeneration privileges (board member, CEO, or secretary)
       const { data: execUser } = await supabase
         .from('exec_users')
         .select('*')
@@ -56,6 +56,20 @@ const OnboardingPacket: React.FC = () => {
       if (!execUser) return;
       setExecutiveId(execUser.id);
       setExecutiveName(execUser.full_name || execUser.name || '');
+
+      // Check board membership and roles for regenerate permission
+      const { data: boardMember } = await supabase
+        .from('board_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const execRole = (execUser.role || execUser.title || '').toLowerCase();
+      const isCeoOrSecretary = execRole.includes('ceo') || 
+        execRole.includes('chief executive') || 
+        execRole.includes('secretary');
+      
+      setCanRegenerate(!!boardMember || isCeoOrSecretary);
 
       // Find their appointment by matching executive_id directly
       const { data: appointments, error: appointmentError } = await supabase
