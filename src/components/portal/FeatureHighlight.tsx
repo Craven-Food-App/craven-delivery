@@ -84,7 +84,7 @@ export function FeatureHighlight({
       {showTooltip && (
         <div
           className={cn(
-            'absolute z-[100] animate-scale-in',
+            'absolute z-[9999] animate-scale-in',
             tooltipPositionClasses[position]
           )}
         >
