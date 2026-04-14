@@ -24,7 +24,7 @@ equity_percent:
 shares_issued:
 equity_type: (default "Common Stock")
 vesting_schedule: (default "4 years, 1-year cliff; 25% after 12 months, remainder monthly over 36 months")
-strike_price: (default "$0.0001 per share")
+strike_price: (default "$0.001 per share")
 annual_salary: (default "90000")
 governing_law: (default "Ohio")
 
@@ -168,7 +168,7 @@ Documents Generated:
 
 equity_type = "Common Stock"
 vesting_schedule = "4 years, 1-year cliff"
-strike_price = "$0.0001 per share"
+strike_price = "$0.001 per share"
 governing_law = "Ohio"
 funding_trigger = "500000"
 annual_salary = "90000"

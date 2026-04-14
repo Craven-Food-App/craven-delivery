@@ -37,7 +37,7 @@
 - **Torrance Stroman** (Founder) - 10,500,000 shares (15%) @ $0.00
 - **Justin Sweet** (Executive/CFO) - 4,200,000 shares (6%) @ $2.00
 - **Equity Pool** - 14,700,000 shares (21%) reserved
-- **Total Authorized** - 70,000,000 shares @ $0.0001 par value
+- **Total Authorized** - 70,000,000 shares @ $0.001 par value
 
 ---
 
@@ -126,7 +126,7 @@
 - founder_percentage: 15.00
 - equity_pool: 14700000
 - pool_percentage: 21.00
-- par_value: 0.0001
+- par_value: 0.001
 ```
 
 ### `equity_ledger` (Executive equity ONLY)

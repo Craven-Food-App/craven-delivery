@@ -2,7 +2,7 @@
 
 ## Par Value vs Strike Price
 
-### Par Value: $0.0001 per share
+### Par Value: $0.001 per share
 - **Legal nominal value** of each share
 - Required by Delaware corporate law
 - **NEVER CHANGES** regardless of equity grants
@@ -42,7 +42,7 @@ As company valuation grows, strike price for new grants may increase to:
 
 ## Technical Implementation
 
-- Par value remains $0.0001 in `cap_tables.par_value`
+- Par value remains $0.001 in `cap_tables.par_value`
 - Strike price stored in `employee_equity.strike_price` and `equity_ledger.price_per_share`
 - Each grant can have different strike price
 - Strike price does NOT affect cap table calculations (percentages, total shares, etc.)
