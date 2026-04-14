@@ -97,37 +97,30 @@ export const CompanyMetrics: React.FC = () => {
 
       setRevenueData(processedRevenueData);
 
-      // Generate department performance data
-      const departmentPerformance: DepartmentPerformance[] = [
-        {
-          department: 'Operations',
-          revenue: 125000,
-          employees: 8,
-          efficiency: 92,
-          growth: 15.2
-        },
-        {
-          department: 'Technology',
-          revenue: 89000,
-          employees: 5,
-          efficiency: 88,
-          growth: 22.1
-        },
-        {
-          department: 'Finance',
-          revenue: 67000,
-          employees: 3,
-          efficiency: 95,
-          growth: 8.7
-        },
-        {
-          department: 'Marketing',
-          revenue: 45000,
-          employees: 4,
-          efficiency: 78,
-          growth: 18.9
+      // Fetch real department performance from employees
+      const { data: employeesData } = await supabase
+        .from('employees')
+        .select('department, employment_status, salary');
+
+      const deptMap: Record<string, { employees: number; totalSalary: number }> = {};
+      (employeesData || []).forEach((emp: any) => {
+        const dept = emp.department || 'Unassigned';
+        if (!deptMap[dept]) deptMap[dept] = { employees: 0, totalSalary: 0 };
+        if (emp.employment_status === 'active') {
+          deptMap[dept].employees += 1;
+          deptMap[dept].totalSalary += emp.salary || 0;
         }
-      ];
+      });
+
+      const departmentPerformance: DepartmentPerformance[] = Object.entries(deptMap)
+        .filter(([_, v]) => v.employees > 0)
+        .map(([department, data]) => ({
+          department,
+          revenue: 0, // Revenue is tracked at order level, not department
+          employees: data.employees,
+          efficiency: 0,
+          growth: 0,
+        }));
 
       setDepartmentData(departmentPerformance);
 
@@ -345,18 +338,15 @@ export const CompanyMetrics: React.FC = () => {
               }}
             >
               <Statistic
-                title={<Text type="secondary">Target Achievement</Text>}
-                value={85}
-                prefix={<TargetOutlined style={{ color: '#f59e0b' }} />}
-                suffix="%"
+                title={<Text type="secondary">Avg Order Value</Text>}
+                value={avgOrderValue}
+                prefix={<DollarOutlined style={{ color: '#f59e0b' }} />}
+                precision={2}
                 valueStyle={{ color: '#d97706', fontSize: '28px' }}
               />
-              <Progress 
-                percent={85} 
-                showInfo={false} 
-                strokeColor="#f59e0b"
-                style={{ marginTop: '8px' }}
-              />
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                {totalOrders > 0 ? `From ${totalOrders} orders` : 'No orders yet'}
+              </Text>
             </Card>
           </Col>
         </Row>
@@ -401,40 +391,34 @@ export const CompanyMetrics: React.FC = () => {
           />
         </Card>
 
-        {/* Performance Insights */}
+        {/* Department Summary */}
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={12}>
             <Card 
               title={
                 <Space>
                   <TrophyOutlined style={{ color: '#52c41a' }} />
-                  <Text strong>Top Performers</Text>
+                  <Text strong>Departments by Headcount</Text>
                 </Space>
               }
               style={{ borderRadius: '12px' }}
             >
               <Space direction="vertical" style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Space>
-                    <Avatar style={{ backgroundColor: '#52c41a' }}>1</Avatar>
-                    <Text strong>Technology Department</Text>
-                  </Space>
-                  <Tag color="green">+22.1%</Tag>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Space>
-                    <Avatar style={{ backgroundColor: '#1890ff' }}>2</Avatar>
-                    <Text strong>Marketing Department</Text>
-                  </Space>
-                  <Tag color="green">+18.9%</Tag>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Space>
-                    <Avatar style={{ backgroundColor: '#faad14' }}>3</Avatar>
-                    <Text strong>Operations Department</Text>
-                  </Space>
-                  <Tag color="green">+15.2%</Tag>
-                </div>
+                {departmentData
+                  .sort((a, b) => b.employees - a.employees)
+                  .slice(0, 5)
+                  .map((dept, idx) => (
+                    <div key={dept.department} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Space>
+                        <Avatar style={{ backgroundColor: idx === 0 ? '#52c41a' : idx === 1 ? '#1890ff' : '#faad14' }}>{idx + 1}</Avatar>
+                        <Text strong>{dept.department}</Text>
+                      </Space>
+                      <Tag color="blue">{dept.employees} employees</Tag>
+                    </div>
+                  ))}
+                {departmentData.length === 0 && (
+                  <Text type="secondary">No department data available</Text>
+                )}
               </Space>
             </Card>
           </Col>
@@ -443,31 +427,31 @@ export const CompanyMetrics: React.FC = () => {
               title={
                 <Space>
                   <CalendarOutlined style={{ color: '#1890ff' }} />
-                  <Text strong>Key Insights</Text>
+                  <Text strong>Revenue Summary</Text>
                 </Space>
               }
               style={{ borderRadius: '12px' }}
             >
               <Space direction="vertical" style={{ width: '100%' }}>
                 <div style={{ padding: '12px', background: '#f0f9ff', borderRadius: '8px' }}>
-                  <Text strong style={{ color: '#1890ff' }}>Revenue Growth</Text>
+                  <Text strong style={{ color: '#1890ff' }}>Total Revenue</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: '12px' }}>
-                    Consistent 15%+ growth across all departments
+                    ${totalRevenue.toLocaleString()} across {totalOrders} orders
                   </Text>
                 </div>
                 <div style={{ padding: '12px', background: '#f0fdf4', borderRadius: '8px' }}>
-                  <Text strong style={{ color: '#52c41a' }}>Efficiency</Text>
+                  <Text strong style={{ color: '#52c41a' }}>Average Order Value</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: '12px' }}>
-                    Finance department leads with 95% efficiency
+                    ${avgOrderValue.toFixed(2)} per order
                   </Text>
                 </div>
                 <div style={{ padding: '12px', background: '#fef3c7', borderRadius: '8px' }}>
-                  <Text strong style={{ color: '#f59e0b' }}>Opportunity</Text>
+                  <Text strong style={{ color: '#f59e0b' }}>Growth</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: '12px' }}>
-                    Marketing efficiency can improve to 85%+
+                    {totalGrowth >= 0 ? '+' : ''}{totalGrowth.toFixed(1)}% over selected period
                   </Text>
                 </div>
               </Space>
