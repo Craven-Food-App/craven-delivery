@@ -594,10 +594,6 @@ const PartnerPipeline: React.FC = () => {
                 { label: 'Closed / lost', value: 'closed' },
               ]}
             />
-            <Text size="xs" c="dimmed" maw={320} ta="right">
-              <strong>All</strong> shows every stage. <strong>Active</strong> hides Lost. <strong>Closed</strong> shows lost deals
-              only (dispositions, follow-ups).
-            </Text>
           </Stack>
         </Group>
 
