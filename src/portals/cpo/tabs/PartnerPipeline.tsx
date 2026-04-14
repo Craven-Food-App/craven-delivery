@@ -55,6 +55,16 @@ import { pushSignedToOnboarding } from '../partnerOnboardingPush';
 /** Stages that can be advanced forward (excludes Lost — use Record closed). */
 const ADVANCE_ORDER = PIPELINE_STAGES.filter((s) => s.value !== 'lost').map((s) => s.value);
 
+interface PartnerContact {
+  id: string;
+  partnership_id: string;
+  full_name: string;
+  title: string | null;
+  email: string | null;
+  phone: string | null;
+  is_primary: boolean;
+}
+
 interface Partnership {
   id: string;
   partner_name: string;
@@ -81,6 +91,7 @@ interface Partnership {
   next_follow_up_at?: string | null;
   disposition_recorded_at?: string | null;
   ok_to_reengage?: boolean | null;
+  _contacts?: PartnerContact[];
 }
 
 function formatRelative(iso: string | null): string {
