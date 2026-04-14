@@ -59,9 +59,8 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      let ackTable = `${role}_acknowledgments`;
       const { data } = await supabase
-        .from(ackTable)
+        .from(`${role}_acknowledgments` as any)
         .select('*')
         .eq('user_id', user.id)
         .eq('document_key', documentKey)
