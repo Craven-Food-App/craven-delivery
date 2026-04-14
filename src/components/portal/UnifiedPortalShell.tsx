@@ -10,6 +10,8 @@ import {
   IconMenu2,
   IconX,
   IconChevronDown,
+  IconChevronsLeft,
+  IconChevronsRight,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 
