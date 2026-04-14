@@ -133,14 +133,7 @@ serve(async (req: Request) => {
           continue;
         }
 
-        // Verify document belongs to same executive/appointment
-        if (sampleDoc.executive_id && docData.executive_id && docData.executive_id !== sampleDoc.executive_id) {
-          const reason = 'Document does not belong to the same executive';
-          console.error(`Document ${docSig.documentId} does not belong to the same executive`);
-          failedDocuments.push({ documentId: docSig.documentId, reason });
-          continue;
-        }
-
+        // Verify document belongs to same appointment (primary linkage)
         if (sampleDoc.appointment_id && docData.appointment_id && docData.appointment_id !== sampleDoc.appointment_id) {
           const reason = 'Document does not belong to the same appointment';
           console.error(`Document ${docSig.documentId} does not belong to the same appointment`);
@@ -148,16 +141,10 @@ serve(async (req: Request) => {
           continue;
         }
 
-        if ((sampleDoc.executive_id && !docData.executive_id) || (!sampleDoc.executive_id && docData.executive_id)) {
-          const reason = 'Document has mismatched executive linkage';
-          console.error(`Document ${docSig.documentId} has mismatched executive_id`);
-          failedDocuments.push({ documentId: docSig.documentId, reason });
-          continue;
-        }
-
-        if ((sampleDoc.appointment_id && !docData.appointment_id) || (!sampleDoc.appointment_id && docData.appointment_id)) {
-          const reason = 'Document has mismatched appointment linkage';
-          console.error(`Document ${docSig.documentId} has mismatched appointment_id`);
+        // Only check executive_id if both are non-null and different
+        if (sampleDoc.executive_id && docData.executive_id && docData.executive_id !== sampleDoc.executive_id) {
+          const reason = 'Document does not belong to the same executive';
+          console.error(`Document ${docSig.documentId} does not belong to the same executive`);
           failedDocuments.push({ documentId: docSig.documentId, reason });
           continue;
         }
