@@ -329,11 +329,16 @@ const MessagesTab: React.FC = () => {
   const [composeFiles, setComposeFiles] = useState<File[]>([]);
   const [replyFiles, setReplyFiles] = useState<File[]>([]);
   const [composeMode, setComposeMode] = useState<'none' | 'new'>('none');
+  const [userNameCache, setUserNameCache] = useState<Map<string, string>>(new Map());
   const feedEndRef = useRef<HTMLDivElement | null>(null);
 
   const labelForUserId = useCallback(
-    (userId: string) => recipients.find((r) => r.user_id === userId)?.label || 'Unknown',
-    [recipients],
+    (userId: string) => {
+      const cached = userNameCache.get(userId);
+      if (cached) return cached;
+      return recipients.find((r) => r.user_id === userId)?.label || 'Unknown';
+    },
+    [recipients, userNameCache],
   );
 
   const composeForm = useForm({
