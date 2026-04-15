@@ -807,7 +807,7 @@ const MessagesTab: React.FC = () => {
         {/* Sidebar — conversation list (hidden on mobile when viewing a thread) */}
         {(!isMobile || !mobileShowThread) && (
         <Box
-          w={300}
+          w={isMobile ? '100%' : 300}
           style={{
             flexShrink: 0,
             borderRight: '1px solid var(--mantine-color-gray-3)',
