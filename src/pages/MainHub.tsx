@@ -2153,7 +2153,7 @@ const MainHub: React.FC = () => {
                   background: "#ffffff",
                   border: "1px solid #e5e7eb",
                   borderRadius: 4,
-                  padding: 16,
+                  padding: isMobile ? 10 : 16,
                 }}
               >
                 {hubSections.map((section, index) => {
