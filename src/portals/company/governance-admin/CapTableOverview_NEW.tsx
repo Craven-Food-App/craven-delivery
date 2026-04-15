@@ -69,6 +69,16 @@ const CapTableOverview: React.FC = () => {
       setLoading(true);
       setError(null);
 
+      // 0. Check current user access level
+      const { data: { user } } = await supabase.auth.getUser();
+      const userEmail = user?.email || '';
+      const userId = user?.id || '';
+      setCurrentUserId(userId);
+      
+      // CEO & CFO see full cap table; everyone else sees only their own shares
+      const isFullAccess = hasCFOPortalAccess(userEmail);
+      setHasFullCapTableAccess(isFullAccess);
+
       // 1. Get cap table summary
       const { data: capData, error: capError } = await supabase
         .from('cap_tables')
@@ -81,7 +91,7 @@ const CapTableOverview: React.FC = () => {
 
       setCapTable(capData);
 
-      // 2. Get ALL executives from equity_ledger
+      // 2. Get executives from equity_ledger
       const { data: ledgerData, error: ledgerError } = await supabase
         .from('equity_ledger')
         .select('recipient_user_id, shares_amount, price_per_share')
@@ -112,16 +122,17 @@ const CapTableOverview: React.FC = () => {
             shares: grant.shares_amount,
             percentage: percentage,
             strike_price: grant.price_per_share || 0,
+            user_id: grant.recipient_user_id,
           });
         }
       }
 
-      setExecutives(executiveEquity);
-      
-      console.log('✅ Cap table loaded:', {
-        capTable: capData,
-        executives: executiveEquity,
-      });
+      // 5. Filter: non-CEO/CFO only see their own row
+      if (isFullAccess) {
+        setExecutives(executiveEquity);
+      } else {
+        setExecutives(executiveEquity.filter(e => e.user_id === userId));
+      }
 
     } catch (err: any) {
       console.error('❌ Cap table load error:', err);
