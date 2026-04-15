@@ -27,9 +27,37 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
   const initializedRef = React.useRef(false);
   const lastCountRef = React.useRef(0);
 
+  const audioCtxRef = React.useRef<AudioContext | null>(null);
+
+  const getAudioContext = React.useCallback(() => {
+    try {
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume();
+      }
+      return audioCtxRef.current;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Prime audio on first user interaction
+  React.useEffect(() => {
+    const prime = () => { getAudioContext(); };
+    window.addEventListener('click', prime, { once: true });
+    window.addEventListener('keydown', prime, { once: true });
+    return () => {
+      window.removeEventListener('click', prime);
+      window.removeEventListener('keydown', prime);
+    };
+  }, [getAudioContext]);
+
   const playNotificationSound = React.useCallback(() => {
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const ctx = getAudioContext();
+      if (!ctx) return;
       const playTone = (freq: number, startTime: number, duration: number) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -48,7 +76,7 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
     } catch {
       // Browser blocked autoplay audio or context unavailable.
     }
-  }, []);
+  }, [getAudioContext]);
 
   const refreshNotifications = React.useCallback(async (currentUserId: string) => {
     const [messagesRes, tasksRes, announcementsRes] = await Promise.all([
