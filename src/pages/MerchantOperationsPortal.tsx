@@ -14,6 +14,8 @@ import {
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { UnifiedPortalShell, PortalTab } from '@/components/portal/UnifiedPortalShell';
+import ReadOnlyOperationsWrapper from '@/components/access/ReadOnlyOperationsWrapper';
+import { supabase } from '@/integrations/supabase/client';
 
 const TABS: PortalTab[] = [
   { id: 'onboarding', label: 'Onboarding', description: 'Restaurant onboarding pipeline and setup.', section: 'Pipeline', icon: IconSchool },
@@ -26,8 +28,29 @@ const SECTIONS = ['Pipeline', 'Logistics'];
 
 const MerchantOperationsPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState('onboarding');
+  const [isReadOnlyCfo, setIsReadOnlyCfo] = useState(false);
   useActivityTracking('merchant-operations');
   useAutoLogout('merchant-operations');
+
+  React.useEffect(() => {
+    const detectReadOnlyMode = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const userEmail = (user.email || '').toLowerCase();
+      const isJustinSweet = userEmail === 'jsweet.cfo@cravenusa.com';
+
+      const { data: execUser } = await (supabase as any)
+        .from('exec_users')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const isCfoExec = execUser?.role?.toLowerCase() === 'cfo';
+      setIsReadOnlyCfo(isCfoExec || isJustinSweet);
+    };
+    detectReadOnlyMode();
+  }, []);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -51,7 +74,13 @@ const MerchantOperationsPortal: React.FC = () => {
         onTabChange={setActiveTab}
         lastUpdated={new Date()}
       >
-        {renderContent()}
+        <ReadOnlyOperationsWrapper
+          enabled={isReadOnlyCfo}
+          title="CFO read-only mode"
+          description="Merchant Operations is available for visibility only. Edit, delete, and configuration actions are disabled."
+        >
+          {renderContent()}
+        </ReadOnlyOperationsWrapper>
       </UnifiedPortalShell>
     </MerchantOpsAccessGuard>
   );

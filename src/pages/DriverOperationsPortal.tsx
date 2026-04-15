@@ -28,6 +28,8 @@ import {
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { UnifiedPortalShell, PortalTab } from '@/components/portal/UnifiedPortalShell';
+import ReadOnlyOperationsWrapper from '@/components/access/ReadOnlyOperationsWrapper';
+import { supabase } from '@/integrations/supabase/client';
 
 const TABS: PortalTab[] = [
   { id: 'applications', label: 'Applications', description: 'Review and process driver applications.', section: 'Pipeline', icon: IconUsers },
@@ -47,8 +49,29 @@ const SECTIONS = ['Pipeline', 'Compliance', 'Training', 'Performance', 'Operatio
 
 const DriverOperationsPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState('applications');
+  const [isReadOnlyCfo, setIsReadOnlyCfo] = useState(false);
   useActivityTracking('driver-operations');
   useAutoLogout('driver-operations');
+
+  useEffect(() => {
+    const detectReadOnlyMode = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const userEmail = (user.email || '').toLowerCase();
+      const isJustinSweet = userEmail === 'jsweet.cfo@cravenusa.com';
+
+      const { data: execUser } = await (supabase as any)
+        .from('exec_users')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const isCfoExec = execUser?.role?.toLowerCase() === 'cfo';
+      setIsReadOnlyCfo(isCfoExec || isJustinSweet);
+    };
+    detectReadOnlyMode();
+  }, []);
 
   const renderContent = useCallback(() => {
     switch (activeTab) {
@@ -79,7 +102,13 @@ const DriverOperationsPortal: React.FC = () => {
         onTabChange={setActiveTab}
         lastUpdated={new Date()}
       >
-        {renderContent()}
+        <ReadOnlyOperationsWrapper
+          enabled={isReadOnlyCfo}
+          title="CFO read-only mode"
+          description="Driver Operations is available for visibility only. Edit, delete, and configuration actions are disabled."
+        >
+          {renderContent()}
+        </ReadOnlyOperationsWrapper>
       </UnifiedPortalShell>
     </AdminAccessGuard>
   );

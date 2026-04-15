@@ -8,7 +8,7 @@ interface AdminAccessGuardProps {
 }
 
 const AdminAccessGuard: React.FC<AdminAccessGuardProps> = ({ children, fallback }) => {
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -22,6 +22,9 @@ const AdminAccessGuard: React.FC<AdminAccessGuardProps> = ({ children, fallback 
 
       setUser(user);
 
+      const userEmail = (user.email || '').toLowerCase();
+      const isJustinSweet = userEmail === 'jsweet.cfo@cravenusa.com';
+
       const { data, error } = await (supabase as any)
         .from('user_roles')
         .select('role')
@@ -29,13 +32,26 @@ const AdminAccessGuard: React.FC<AdminAccessGuardProps> = ({ children, fallback 
         .eq('role', 'admin')
         .maybeSingle();
 
-      setIsAdmin(!error && data?.role === 'admin');
+      const isAdmin = !error && data?.role === 'admin';
+      if (isAdmin) {
+        setHasAccess(true);
+        return;
+      }
+
+      const { data: execUser } = await (supabase as any)
+        .from('exec_users')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const isCfoExec = execUser?.role?.toLowerCase() === 'cfo';
+      setHasAccess(isCfoExec || isJustinSweet);
     };
 
     checkAdminAccess();
   }, []);
 
-  if (isAdmin === null) {
+  if (hasAccess === null) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -43,11 +59,11 @@ const AdminAccessGuard: React.FC<AdminAccessGuardProps> = ({ children, fallback 
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user || !hasAccess) {
     return fallback || (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
-        <p className="text-muted-foreground">You need admin privileges to access this area.</p>
+        <p className="text-muted-foreground">You need admin privileges (or CFO read-only authorization) to access this area.</p>
       </div>
     );
   }

@@ -39,7 +39,9 @@ const MerchantOpsAccessGuard: React.FC<MerchantOpsAccessGuardProps> = ({ childre
         .eq('user_id', user.id)
         .maybeSingle();
 
-      const isExecWithAccess = ['cpo', 'ceo'].includes(execUser?.role?.toLowerCase());
+      const userEmail = (user.email || '').toLowerCase();
+      const isJustinSweet = userEmail === 'jsweet.cfo@cravenusa.com';
+      const isExecWithAccess = ['cpo', 'ceo', 'cfo'].includes(execUser?.role?.toLowerCase()) || isJustinSweet;
       setHasAccess(isExecWithAccess);
     };
 
