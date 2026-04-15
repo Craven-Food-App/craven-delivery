@@ -672,22 +672,19 @@ const CapTableEquityPageEnhanced: React.FC = () => {
 
         {/* Ownership Distribution - Chart + Table */}
         <Grid>
-          <Grid.Col span={{ base: 12, lg: 5 }}>
+          <Grid.Col span={{ base: 12, lg: 7 }}>
             <Card padding="xl" radius="md" withBorder>
               <Title order={3} mb="md">Ownership Distribution</Title>
               {pieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={430}>
                   <PieChart>
                     <Pie
                       data={pieData}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, value }) => {
-                        // Use the actual value (percentage) instead of percent (which is a ratio)
-                        return `${name}: ${formatFixed(value, 1)}%`;
-                      }}
-                      outerRadius={100}
+                      label={false}
+                      outerRadius={155}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -701,7 +698,14 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                         'Ownership'
                       ]}
                     />
-                    <Legend />
+                    <Legend
+                      verticalAlign="bottom"
+                      wrapperStyle={{ paddingTop: 16 }}
+                      formatter={(value, entry: any) => {
+                        const pct = toNumber(entry?.payload?.value);
+                        return `${value} (${formatFixed(pct, 1)}%)`;
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -710,7 +714,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
             </Card>
           </Grid.Col>
 
-          <Grid.Col span={{ base: 12, lg: 7 }}>
+          <Grid.Col span={{ base: 12, lg: 5 }}>
             <Card padding="xl" radius="md" withBorder>
               <Title order={3} mb="md">Share Distribution</Title>
               <Table highlightOnHover verticalSpacing="md">
