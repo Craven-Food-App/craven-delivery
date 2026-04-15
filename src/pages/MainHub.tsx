@@ -2053,7 +2053,7 @@ const MainHub: React.FC = () => {
                   background: "#ffffff",
                   border: "1px solid #e5e7eb",
                   borderRadius: 4,
-                  padding: 12,
+                  padding: isMobile ? 8 : 12,
                 }}
               >
                 <div
@@ -2068,6 +2068,7 @@ const MainHub: React.FC = () => {
                 >
                   Departments
                 </div>
+                <div style={isMobile ? { display: 'flex', flexWrap: 'wrap', gap: 6 } : {}}>
                 {[
                   { id: "all", label: "All Portals" },
                   { id: "executive", label: "Executive" },
@@ -2088,7 +2089,19 @@ const MainHub: React.FC = () => {
                     <div
                       key={dept.id}
                       onClick={() => setSelectedDepartment(dept.id)}
-                      style={{
+                      style={isMobile ? {
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "5px 10px",
+                        borderRadius: 16,
+                        cursor: "pointer",
+                        backgroundColor: active ? "#1d4ed8" : "#f3f4f6",
+                        color: active ? "#ffffff" : "#374151",
+                        fontSize: 12,
+                        fontWeight: 500,
+                        whiteSpace: "nowrap",
+                      } : {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
@@ -2102,12 +2115,12 @@ const MainHub: React.FC = () => {
                         fontWeight: 500,
                       }}
                       onMouseEnter={(e) => {
-                        if (!active) {
+                        if (!active && !isMobile) {
                           e.currentTarget.style.backgroundColor = "#f3f4f6";
                         }
                       }}
                       onMouseLeave={(e) => {
-                        if (!active) {
+                        if (!active && !isMobile) {
                           e.currentTarget.style.backgroundColor = "transparent";
                         }
                       }}
@@ -2116,7 +2129,7 @@ const MainHub: React.FC = () => {
                       <span
                         style={{
                           fontSize: 10,
-                          color: "#9ca3af",
+                          color: active && isMobile ? "rgba(255,255,255,0.7)" : "#9ca3af",
                         }}
                       >
                         {count}
@@ -2124,6 +2137,7 @@ const MainHub: React.FC = () => {
                     </div>
                   );
                 })}
+                </div>
               </div>
             </div>
 
