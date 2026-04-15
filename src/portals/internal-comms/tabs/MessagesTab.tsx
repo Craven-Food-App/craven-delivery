@@ -1019,15 +1019,15 @@ const MessagesTab: React.FC = () => {
                 </Stack>
               </Box>
 
-              <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)', background: 'var(--mantine-color-gray-0)' }}>
-                <Stack gap="sm">
-                  <Group align="flex-end" wrap="nowrap" gap="sm">
+              <Box p={isMobile ? 'xs' : 'md'} style={{ borderTop: '1px solid var(--mantine-color-gray-3)', background: 'var(--mantine-color-gray-0)' }}>
+                <Stack gap="xs">
+                  <Group align="flex-end" wrap="nowrap" gap="xs">
                     <Textarea
                       style={{ flex: 1 }}
-                      placeholder="Reply to this conversation…"
-                      minRows={2}
+                      placeholder="Reply…"
+                      minRows={1}
                       autosize
-                      maxRows={6}
+                      maxRows={4}
                       value={replyBody}
                       onChange={(e) => setReplyBody(e.currentTarget.value)}
                       onKeyDown={(e) => {
@@ -1037,30 +1037,42 @@ const MessagesTab: React.FC = () => {
                         }
                       }}
                     />
-                    <Stack gap={6} style={{ flexShrink: 0 }}>
-                      <FileInput
-                        placeholder="Attach"
-                        multiple
-                        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt,.zip"
-                        value={replyFiles.length ? replyFiles : null}
-                        onChange={(files) => setReplyFiles(files || [])}
-                        leftSection={<IconPaperclip size={16} />}
-                        size="sm"
-                        w={140}
-                      />
-                      <Button
+                    <Group gap={4} style={{ flexShrink: 0 }}>
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="lg"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.multiple = true;
+                          input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt,.zip';
+                          input.onchange = (e: any) => {
+                            const files = Array.from(e.target.files || []) as File[];
+                            if (files.length) setReplyFiles((prev) => [...prev, ...files]);
+                          };
+                          input.click();
+                        }}
+                      >
+                        <IconPaperclip size={18} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="filled"
                         color="orange"
-                        leftSection={<IconSend size={16} />}
+                        size="lg"
+                        radius="xl"
                         onClick={() => void sendReply()}
                         disabled={!replyBody.trim() && replyFiles.length === 0}
                       >
-                        Send
-                      </Button>
-                    </Stack>
+                        <IconSend size={16} />
+                      </ActionIcon>
+                    </Group>
                   </Group>
-                  <Text size="xs" c="dimmed">
-                    Tip: Ctrl+Enter to send
-                  </Text>
+                  {!isMobile && (
+                    <Text size="xs" c="dimmed">
+                      Tip: Ctrl+Enter to send
+                    </Text>
+                  )}
                   {replyFiles.length > 0 ? (
                     <Group gap="xs">
                       {replyFiles.map((f, i) => (
