@@ -1817,8 +1817,9 @@ const MainHub: React.FC = () => {
               {/* Separator */}
               <div
                 style={{
-                  width: 1,
-                  alignSelf: "stretch",
+                  width: isMobile ? '100%' : 1,
+                  height: isMobile ? 1 : undefined,
+                  alignSelf: isMobile ? undefined : "stretch",
                   background: "#e5e7eb",
                 }}
               />
