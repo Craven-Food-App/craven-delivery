@@ -901,8 +901,10 @@ const MessagesTab: React.FC = () => {
             )}
           </Box>
         </Box>
+        )}
 
-        {/* Main pane */}
+        {/* Main pane (hidden on mobile when showing conversation list) */}
+        {(!isMobile || mobileShowThread) && (
         <Box style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           {composeMode === 'new' ? (
             <>
