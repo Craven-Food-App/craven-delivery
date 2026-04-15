@@ -156,7 +156,8 @@ serve(async (req) => {
       }
     }
 
-    console.log('Step 2: Ensuring Justin Sweet 5M grant exists...');
+    const JUSTIN_CANONICAL_SHARES = 4200000;
+    console.log('Step 2: Ensuring Justin Sweet 4.2M grant exists...');
     const justin = nathanUser?.users?.find(u => u.email === 'jsweet.cfo@cravenusa.com');
     
     if (justin) {
@@ -165,28 +166,27 @@ serve(async (req) => {
         .select('shares_amount')
         .eq('recipient_user_id', justin.id)
         .eq('transaction_type', 'grant')
-        .gte('shares_amount', 4500000)
-        .lte('shares_amount', 5500000);
+        .eq('shares_amount', JUSTIN_CANONICAL_SHARES);
 
       if (!justinGrants || justinGrants.length === 0) {
-        console.log('Justin Sweet 5M grant NOT found, creating it...');
+        console.log('Justin Sweet 4.2M grant NOT found, creating it...');
 
         const { data: vestingSchedule } = await supabaseAdmin
           .from('vesting_schedules')
           .insert({
             recipient_user_id: justin.id,
-            total_shares: 5000000,
+            total_shares: JUSTIN_CANONICAL_SHARES,
             vesting_type: 'immediate',
             cliff_months: 0,
             vesting_period_months: 0,
             vesting_schedule: [{
               date: new Date().toISOString().split('T')[0],
-              shares: 5000000,
+              shares: JUSTIN_CANONICAL_SHARES,
               vested: true,
             }],
             start_date: new Date().toISOString().split('T')[0],
             end_date: new Date().toISOString().split('T')[0],
-            vested_shares: 5000000,
+            vested_shares: JUSTIN_CANONICAL_SHARES,
             unvested_shares: 0,
           })
           .select()
@@ -197,13 +197,13 @@ serve(async (req) => {
           .insert({
             transaction_type: 'grant',
             recipient_user_id: justin.id,
-            shares_amount: 5000000,
+            shares_amount: JUSTIN_CANONICAL_SHARES,
             share_class: 'Common',
             price_per_share: 0.001,
             transaction_date: new Date().toISOString().split('T')[0],
             effective_date: new Date().toISOString().split('T')[0],
             grant_id: vestingSchedule?.id,
-            notes: 'Equity grant: 5,000,000 shares to Justin Sweet (CFO), immediate vesting',
+            notes: 'Equity grant: 4,200,000 shares to Justin Sweet (CFO), immediate vesting',
           });
 
         await supabaseAdmin
@@ -212,9 +212,9 @@ serve(async (req) => {
             action: 'equity_granted',
             entity_type: 'user',
             entity_id: justin.id,
-            description: 'Granted 5,000,000 shares to Justin Sweet (CFO)',
+            description: 'Granted 4,200,000 shares to Justin Sweet (CFO)',
             data: {
-              shares_granted: 5000000,
+              shares_granted: JUSTIN_CANONICAL_SHARES,
               share_class: 'Common',
               vesting_type: 'immediate',
               target_name: 'Justin Sweet',
@@ -223,9 +223,9 @@ serve(async (req) => {
           });
 
         results.justin_grant_created = true;
-        console.log('✓ Created Justin Sweet 5M grant');
+        console.log('✓ Created Justin Sweet 4.2M grant');
       } else {
-        console.log('Justin Sweet 5M grant already exists');
+        console.log('Justin Sweet 4.2M grant already exists');
         results.justin_grant_exists = true;
       }
     } else {
