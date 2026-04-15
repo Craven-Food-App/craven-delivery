@@ -1905,8 +1905,9 @@ const MainHub: React.FC = () => {
               {/* Separator */}
               <div
                 style={{
-                  width: 1,
-                  alignSelf: "stretch",
+                  width: isMobile ? '100%' : 1,
+                  height: isMobile ? 1 : undefined,
+                  alignSelf: isMobile ? undefined : "stretch",
                   background: "#e5e7eb",
                 }}
               />
@@ -1915,11 +1916,12 @@ const MainHub: React.FC = () => {
               <div
                 style={{
                   display: "flex",
-                  alignItems: "center",
-                  gap: 16,
+                  alignItems: isMobile ? "flex-start" : "center",
+                  gap: isMobile ? 10 : 16,
                   flex: "1 1 auto",
-                  justifyContent: "flex-end",
+                  justifyContent: isMobile ? "space-between" : "flex-end",
                   flexWrap: "wrap",
+                  width: isMobile ? '100%' : undefined,
                 }}
               >
                 <div
