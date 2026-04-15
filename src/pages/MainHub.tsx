@@ -1768,7 +1768,7 @@ const MainHub: React.FC = () => {
         {/* Main Content */}
         <Content
           style={{
-            padding: "20px 24px",
+            padding: isMobile ? "12px 8px" : "20px 24px",
             maxWidth: 1800,
             margin: "0 auto",
             width: "100%",
@@ -1779,14 +1779,15 @@ const MainHub: React.FC = () => {
             <div
               data-testid="time-clock-card"
               style={{
-                marginBottom: 20,
+                marginBottom: isMobile ? 12 : 20,
                 background: "#ffffff",
                 border: "1px solid #e5e7eb",
                 borderRadius: 4,
-                padding: "16px 20px",
+                padding: isMobile ? "12px" : "16px 20px",
                 display: "flex",
-                alignItems: "center",
-                gap: 20,
+                flexDirection: isMobile ? "column" : "row",
+                alignItems: isMobile ? "flex-start" : "center",
+                gap: isMobile ? 12 : 20,
                 flexWrap: "wrap",
               }}
             >
