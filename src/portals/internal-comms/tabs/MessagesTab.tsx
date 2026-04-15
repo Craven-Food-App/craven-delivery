@@ -603,6 +603,12 @@ const MessagesTab: React.FC = () => {
         await uploadFiles(replyFiles, msgData.id, currentUser.id);
       }
 
+      // Reset parent read_by so other participants see the unread dot
+      await supabase
+        .from('internal_messages')
+        .update({ read_by: [currentUser.id] })
+        .eq('id', selectedMessage.id);
+
       setReplyBody('');
       setReplyFiles([]);
       await refreshThread(selectedMessage.id);
