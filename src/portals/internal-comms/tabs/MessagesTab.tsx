@@ -326,7 +326,19 @@ const AttachmentList: React.FC<{ attachments: Attachment[] }> = ({ attachments }
   );
 };
 
+const useIsMobileComms = () => {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isMobile;
+};
+
 const MessagesTab: React.FC = () => {
+  const isMobile = useIsMobileComms();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
