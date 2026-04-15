@@ -967,6 +967,11 @@ const MessagesTab: React.FC = () => {
               <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
                 <Group justify="space-between" wrap="nowrap" align="flex-start">
                   <Group gap="sm" wrap="nowrap">
+                    {isMobile && (
+                      <ActionIcon variant="subtle" color="gray" onClick={goBackToList} style={{ flexShrink: 0 }}>
+                        <IconArrowLeft size={18} />
+                      </ActionIcon>
+                    )}
                     <Avatar size="md" radius="sm" color="orange">
                       {threadSidebarLabel(selectedMessage, currentUser?.id, labelForUserId).charAt(0).toUpperCase()}
                     </Avatar>
