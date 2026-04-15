@@ -126,6 +126,14 @@ interface EmployeeInfo {
 
 const MainHub: React.FC = () => {
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   const [form] = Form.useForm();
   const [user, setUser] = useState<any>(null);
   const [employeeInfo, setEmployeeInfo] = useState<EmployeeInfo | null>(null);
@@ -1641,13 +1649,13 @@ const MainHub: React.FC = () => {
         <Header
           style={{
             background: "#ffffff",
-            padding: "0 24px",
+            padding: isMobile ? "0 12px" : "0 24px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             borderBottom: "1px solid #e5e7eb",
-            height: 60,
-            minHeight: 60,
+            height: isMobile ? 52 : 60,
+            minHeight: isMobile ? 52 : 60,
           }}
         >
           <div
@@ -1662,76 +1670,41 @@ const MainHub: React.FC = () => {
               style={{
                 fontFamily:
                   "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-                fontSize: 20,
+                fontSize: isMobile ? 18 : 20,
                 fontWeight: 700,
                 color: "#FF6B35",
-                marginRight: 16,
+                marginRight: isMobile ? 8 : 16,
                 whiteSpace: "nowrap",
               }}
             >
               Crave'n
             </div>
-            <div
-              style={{
-                borderLeft: "1px solid #e5e7eb",
-                height: 24,
-                marginRight: 16,
-              }}
-            />
-            <div
-              style={{
-                fontSize: 14,
-                color: "#6b7280",
-                marginRight: 16,
-                whiteSpace: "nowrap",
-              }}
-            >
-              Portal Access
-            </div>
-            <div
-              style={{
-                borderLeft: "1px solid #e5e7eb",
-                height: 24,
-                marginRight: 16,
-              }}
-            />
-            <div
-              style={{
-                minWidth: 0,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#1f2937",
-                  whiteSpace: "nowrap",
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                }}
-              >
-                {employeeInfo?.full_name || user?.email || "Corporate User"}
+            {!isMobile && (
+              <>
+                <div style={{ borderLeft: "1px solid #e5e7eb", height: 24, marginRight: 16 }} />
+                <div style={{ fontSize: 14, color: "#6b7280", marginRight: 16, whiteSpace: "nowrap" }}>
+                  Portal Access
+                </div>
+              </>
+            )}
+            <div style={{ borderLeft: "1px solid #e5e7eb", height: 24, marginRight: isMobile ? 8 : 16 }} />
+            {!isMobile && (
+              <div style={{ minWidth: 0, overflow: "hidden" }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#1f2937", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                  {employeeInfo?.full_name || user?.email || "Corporate User"}
+                </div>
+                <div style={{ fontSize: 11, color: "#6b7280", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                  {employeeInfo?.position || "Crave'N HQ"}
+                </div>
               </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "#6b7280",
-                  whiteSpace: "nowrap",
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                }}
-              >
-                {employeeInfo?.position || "Crave'n HQ"}
-              </div>
-            </div>
+            )}
           </div>
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 12,
-              marginLeft: 16,
+              gap: isMobile ? 8 : 12,
+              marginLeft: isMobile ? 8 : 16,
             }}
           >
             <Tooltip title="Internal Communications">
@@ -1795,7 +1768,7 @@ const MainHub: React.FC = () => {
         {/* Main Content */}
         <Content
           style={{
-            padding: "20px 24px",
+            padding: isMobile ? "12px 8px" : "20px 24px",
             maxWidth: 1800,
             margin: "0 auto",
             width: "100%",
@@ -1806,14 +1779,15 @@ const MainHub: React.FC = () => {
             <div
               data-testid="time-clock-card"
               style={{
-                marginBottom: 20,
+                marginBottom: isMobile ? 12 : 20,
                 background: "#ffffff",
                 border: "1px solid #e5e7eb",
                 borderRadius: 4,
-                padding: "16px 20px",
+                padding: isMobile ? "12px" : "16px 20px",
                 display: "flex",
-                alignItems: "center",
-                gap: 20,
+                flexDirection: isMobile ? "column" : "row",
+                alignItems: isMobile ? "flex-start" : "center",
+                gap: isMobile ? 12 : 20,
                 flexWrap: "wrap",
               }}
             >
@@ -1843,8 +1817,9 @@ const MainHub: React.FC = () => {
               {/* Separator */}
               <div
                 style={{
-                  width: 1,
-                  alignSelf: "stretch",
+                  width: isMobile ? '100%' : 1,
+                  height: isMobile ? 1 : undefined,
+                  alignSelf: isMobile ? undefined : "stretch",
                   background: "#e5e7eb",
                 }}
               />
@@ -1930,8 +1905,9 @@ const MainHub: React.FC = () => {
               {/* Separator */}
               <div
                 style={{
-                  width: 1,
-                  alignSelf: "stretch",
+                  width: isMobile ? '100%' : 1,
+                  height: isMobile ? 1 : undefined,
+                  alignSelf: isMobile ? undefined : "stretch",
                   background: "#e5e7eb",
                 }}
               />
@@ -1940,11 +1916,12 @@ const MainHub: React.FC = () => {
               <div
                 style={{
                   display: "flex",
-                  alignItems: "center",
-                  gap: 16,
+                  alignItems: isMobile ? "flex-start" : "center",
+                  gap: isMobile ? 10 : 16,
                   flex: "1 1 auto",
-                  justifyContent: "flex-end",
+                  justifyContent: isMobile ? "space-between" : "flex-end",
                   flexWrap: "wrap",
+                  width: isMobile ? '100%' : undefined,
                 }}
               >
                 <div
@@ -2058,16 +2035,16 @@ const MainHub: React.FC = () => {
           <div
             style={{
               display: "flex",
-              gap: 16,
+              flexDirection: isMobile ? "column" : "row",
+              gap: isMobile ? 12 : 16,
               alignItems: "flex-start",
-              flexWrap: "wrap",
             }}
           >
             {/* Left Sidebar - Departments */}
             <div
               style={{
-                flex: "0 0 200px",
-                maxWidth: 240,
+                flex: isMobile ? "none" : "0 0 200px",
+                maxWidth: isMobile ? "100%" : 240,
                 width: "100%",
               }}
             >
@@ -2076,7 +2053,7 @@ const MainHub: React.FC = () => {
                   background: "#ffffff",
                   border: "1px solid #e5e7eb",
                   borderRadius: 4,
-                  padding: 12,
+                  padding: isMobile ? 8 : 12,
                 }}
               >
                 <div
@@ -2091,6 +2068,7 @@ const MainHub: React.FC = () => {
                 >
                   Departments
                 </div>
+                <div style={isMobile ? { display: 'flex', flexWrap: 'wrap', gap: 6 } : {}}>
                 {[
                   { id: "all", label: "All Portals" },
                   { id: "executive", label: "Executive" },
@@ -2111,7 +2089,19 @@ const MainHub: React.FC = () => {
                     <div
                       key={dept.id}
                       onClick={() => setSelectedDepartment(dept.id)}
-                      style={{
+                      style={isMobile ? {
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "5px 10px",
+                        borderRadius: 16,
+                        cursor: "pointer",
+                        backgroundColor: active ? "#1d4ed8" : "#f3f4f6",
+                        color: active ? "#ffffff" : "#374151",
+                        fontSize: 12,
+                        fontWeight: 500,
+                        whiteSpace: "nowrap",
+                      } : {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
@@ -2125,12 +2115,12 @@ const MainHub: React.FC = () => {
                         fontWeight: 500,
                       }}
                       onMouseEnter={(e) => {
-                        if (!active) {
+                        if (!active && !isMobile) {
                           e.currentTarget.style.backgroundColor = "#f3f4f6";
                         }
                       }}
                       onMouseLeave={(e) => {
-                        if (!active) {
+                        if (!active && !isMobile) {
                           e.currentTarget.style.backgroundColor = "transparent";
                         }
                       }}
@@ -2139,7 +2129,7 @@ const MainHub: React.FC = () => {
                       <span
                         style={{
                           fontSize: 10,
-                          color: "#9ca3af",
+                          color: active && isMobile ? "rgba(255,255,255,0.7)" : "#9ca3af",
                         }}
                       >
                         {count}
@@ -2147,6 +2137,7 @@ const MainHub: React.FC = () => {
                     </div>
                   );
                 })}
+                </div>
               </div>
             </div>
 
@@ -2162,7 +2153,7 @@ const MainHub: React.FC = () => {
                   background: "#ffffff",
                   border: "1px solid #e5e7eb",
                   borderRadius: 4,
-                  padding: 16,
+                  padding: isMobile ? 10 : 16,
                 }}
               >
                 {hubSections.map((section, index) => {
