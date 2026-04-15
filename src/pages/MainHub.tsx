@@ -2035,16 +2035,16 @@ const MainHub: React.FC = () => {
           <div
             style={{
               display: "flex",
-              gap: 16,
+              flexDirection: isMobile ? "column" : "row",
+              gap: isMobile ? 12 : 16,
               alignItems: "flex-start",
-              flexWrap: "wrap",
             }}
           >
             {/* Left Sidebar - Departments */}
             <div
               style={{
-                flex: "0 0 200px",
-                maxWidth: 240,
+                flex: isMobile ? "none" : "0 0 200px",
+                maxWidth: isMobile ? "100%" : 240,
                 width: "100%",
               }}
             >
