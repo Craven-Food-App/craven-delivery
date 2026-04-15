@@ -180,80 +180,95 @@ const CapTableOverview: React.FC = () => {
           <div>
             <Title order={2}>
               <IconChartPie size={32} style={{ marginRight: 12, verticalAlign: 'middle' }} />
-              Capitalization Table
+              {hasFullCapTableAccess ? 'Capitalization Table' : 'My Equity'}
             </Title>
             <Text c="dimmed" size="sm" mt={4}>
-              Crave'n Inc. - {capTable.total_authorized.toLocaleString()} Authorized Shares at ${capTable.par_value} par value
+              {hasFullCapTableAccess
+                ? `Crave'n Inc. - ${capTable.total_authorized.toLocaleString()} Authorized Shares at $${capTable.par_value} par value`
+                : 'Your personal equity position at Crave\'n Inc.'}
             </Text>
           </div>
+          {!hasFullCapTableAccess && (
+            <Badge leftSection={<IconLock size={12} />} color="gray" variant="light" size="lg">
+              Restricted View
+            </Badge>
+          )}
         </Group>
 
-        {/* Overview Cards */}
-        <Grid>
-          <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
-            <Card padding="xl" radius="md" withBorder style={{ height: '100%', borderColor: '#3b82f6', borderWidth: 2 }}>
-              <Stack gap="md">
-                <Title order={4} c="dimmed">Total Authorized</Title>
-                <Text size="2xl" fw={700} c="blue">
-                  <NumberFormatter value={capTable.total_authorized} thousandSeparator />
-                </Text>
-                <Text size="xs" c="dimmed">Delaware authorized shares</Text>
-              </Stack>
-            </Card>
-          </Grid.Col>
+        {/* Overview Cards — CEO/CFO only */}
+        {hasFullCapTableAccess && (
+          <Grid>
+            <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+              <Card padding="xl" radius="md" withBorder style={{ height: '100%', borderColor: '#3b82f6', borderWidth: 2 }}>
+                <Stack gap="md">
+                  <Title order={4} c="dimmed">Total Authorized</Title>
+                  <Text size="2xl" fw={700} c="blue">
+                    <NumberFormatter value={capTable.total_authorized} thousandSeparator />
+                  </Text>
+                  <Text size="xs" c="dimmed">Delaware authorized shares</Text>
+                </Stack>
+              </Card>
+            </Grid.Col>
 
-          <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
-            <Card padding="xl" radius="md" withBorder style={{ height: '100%', borderColor: '#10b981', borderWidth: 2 }}>
-              <Stack gap="md">
-                <Group justify="space-between">
-                  <Title order={4} c="dimmed">Total Issued</Title>
-                  <Badge color="green" size="lg">{((capTable.total_issued / capTable.total_authorized) * 100).toFixed(1)}%</Badge>
-                </Group>
-                <Text size="2xl" fw={700} c="green">
-                  <NumberFormatter value={capTable.total_issued} thousandSeparator />
-                </Text>
-                <Progress value={(capTable.total_issued / capTable.total_authorized) * 100} color="green" size="lg" radius="xl" />
-              </Stack>
-            </Card>
-          </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+              <Card padding="xl" radius="md" withBorder style={{ height: '100%', borderColor: '#10b981', borderWidth: 2 }}>
+                <Stack gap="md">
+                  <Group justify="space-between">
+                    <Title order={4} c="dimmed">Total Issued</Title>
+                    <Badge color="green" size="lg">{((capTable.total_issued / capTable.total_authorized) * 100).toFixed(1)}%</Badge>
+                  </Group>
+                  <Text size="2xl" fw={700} c="green">
+                    <NumberFormatter value={capTable.total_issued} thousandSeparator />
+                  </Text>
+                  <Progress value={(capTable.total_issued / capTable.total_authorized) * 100} color="green" size="lg" radius="xl" />
+                </Stack>
+              </Card>
+            </Grid.Col>
 
-          <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
-            <Card padding="xl" radius="md" withBorder style={{ height: '100%', borderColor: '#eab308', borderWidth: 2 }}>
-              <Stack gap="md">
-                <Group justify="space-between">
-                  <Title order={4} c="dimmed">Unissued</Title>
-                  <Badge color="yellow" size="lg">{((capTable.total_unissued / capTable.total_authorized) * 100).toFixed(1)}%</Badge>
-                </Group>
-                <Text size="2xl" fw={700} style={{ color: '#eab308' }}>
-                  <NumberFormatter value={capTable.total_unissued} thousandSeparator />
-                </Text>
-                <Progress value={(capTable.total_unissued / capTable.total_authorized) * 100} color="yellow" size="lg" radius="xl" />
-              </Stack>
-            </Card>
-          </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+              <Card padding="xl" radius="md" withBorder style={{ height: '100%', borderColor: '#eab308', borderWidth: 2 }}>
+                <Stack gap="md">
+                  <Group justify="space-between">
+                    <Title order={4} c="dimmed">Unissued</Title>
+                    <Badge color="yellow" size="lg">{((capTable.total_unissued / capTable.total_authorized) * 100).toFixed(1)}%</Badge>
+                  </Group>
+                  <Text size="2xl" fw={700} style={{ color: '#eab308' }}>
+                    <NumberFormatter value={capTable.total_unissued} thousandSeparator />
+                  </Text>
+                  <Progress value={(capTable.total_unissued / capTable.total_authorized) * 100} color="yellow" size="lg" radius="xl" />
+                </Stack>
+              </Card>
+            </Grid.Col>
 
-          <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
-            <Card padding="xl" radius="md" withBorder style={{ height: '100%', borderColor: '#f97316', borderWidth: 2 }}>
-              <Stack gap="md">
-                <Group justify="space-between">
-                  <Title order={4} c="dimmed">Equity Pool</Title>
-                  <Badge color="orange" size="lg">Reserved</Badge>
-                </Group>
-                <Text size="2xl" fw={700} c="orange">
-                  <NumberFormatter value={capTable.equity_pool} thousandSeparator />
-                </Text>
-                <Text size="xs" c="dimmed">{capTable.pool_percentage.toFixed(1)}% reserved</Text>
-              </Stack>
-            </Card>
-          </Grid.Col>
-        </Grid>
+            <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+              <Card padding="xl" radius="md" withBorder style={{ height: '100%', borderColor: '#f97316', borderWidth: 2 }}>
+                <Stack gap="md">
+                  <Group justify="space-between">
+                    <Title order={4} c="dimmed">Equity Pool</Title>
+                    <Badge color="orange" size="lg">Reserved</Badge>
+                  </Group>
+                  <Text size="2xl" fw={700} c="orange">
+                    <NumberFormatter value={capTable.equity_pool} thousandSeparator />
+                  </Text>
+                  <Text size="xs" c="dimmed">{capTable.pool_percentage.toFixed(1)}% reserved</Text>
+                </Stack>
+              </Card>
+            </Grid.Col>
+          </Grid>
+        )}
 
         {/* Share Distribution Table */}
         <Card padding="xl" radius="md" withBorder>
           <Group justify="space-between" mb="xl">
             <div>
-              <Title order={3} mb={4}>Share Distribution</Title>
-              <Text c="dimmed" size="sm">Complete breakdown of equity ownership</Text>
+              <Title order={3} mb={4}>
+                {hasFullCapTableAccess ? 'Share Distribution' : 'Your Shares'}
+              </Title>
+              <Text c="dimmed" size="sm">
+                {hasFullCapTableAccess
+                  ? 'Complete breakdown of equity ownership'
+                  : 'Your personal equity allocation'}
+              </Text>
             </div>
           </Group>
 
@@ -268,63 +283,63 @@ const CapTableOverview: React.FC = () => {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {/* Holding Company */}
-              <Table.Tr>
-                <Table.Td>
-                  <div>
-                    <Text fw={600} size="sm">Invero, Inc.</Text>
-                    <Text size="xs" c="dimmed">Holding Company</Text>
-                  </div>
-                </Table.Td>
-                <Table.Td>
-                  <Text fw={700} size="sm">
-                    <NumberFormatter value={capTable.holding_company_shares} thousandSeparator />
-                  </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Badge color="blue" size="lg" variant="light">
-                    {capTable.holding_company_percentage.toFixed(1)}%
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Badge color="gray" size="sm" variant="outline">
-                    $0.00
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Progress value={capTable.holding_company_percentage} color="blue" size="sm" radius="xl" style={{ minWidth: 100 }} />
-                </Table.Td>
-              </Table.Tr>
+              {/* Holding Company — CEO/CFO only */}
+              {hasFullCapTableAccess && (
+                <Table.Tr>
+                  <Table.Td>
+                    <div>
+                      <Text fw={600} size="sm">Invero, Inc.</Text>
+                      <Text size="xs" c="dimmed">Holding Company</Text>
+                    </div>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text fw={700} size="sm">
+                      <NumberFormatter value={capTable.holding_company_shares} thousandSeparator />
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge color="blue" size="lg" variant="light">
+                      {capTable.holding_company_percentage.toFixed(1)}%
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge color="gray" size="sm" variant="outline">$0.00</Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Progress value={capTable.holding_company_percentage} color="blue" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                  </Table.Td>
+                </Table.Tr>
+              )}
 
-              {/* Founder */}
-              <Table.Tr>
-                <Table.Td>
-                  <div>
-                    <Text fw={600} size="sm">Torrance Stroman</Text>
-                    <Text size="xs" c="dimmed">Founder & CEO</Text>
-                  </div>
-                </Table.Td>
-                <Table.Td>
-                  <Text fw={700} size="sm">
-                    <NumberFormatter value={capTable.founder_shares} thousandSeparator />
-                  </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Badge color="green" size="lg" variant="light">
-                    {capTable.founder_percentage.toFixed(1)}%
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Badge color="gray" size="sm" variant="outline">
-                    $0.00
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Progress value={capTable.founder_percentage} color="green" size="sm" radius="xl" style={{ minWidth: 100 }} />
-                </Table.Td>
-              </Table.Tr>
+              {/* Founder — CEO/CFO only */}
+              {hasFullCapTableAccess && (
+                <Table.Tr>
+                  <Table.Td>
+                    <div>
+                      <Text fw={600} size="sm">Torrance Stroman</Text>
+                      <Text size="xs" c="dimmed">Founder & CEO</Text>
+                    </div>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text fw={700} size="sm">
+                      <NumberFormatter value={capTable.founder_shares} thousandSeparator />
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge color="green" size="lg" variant="light">
+                      {capTable.founder_percentage.toFixed(1)}%
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge color="gray" size="sm" variant="outline">$0.00</Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Progress value={capTable.founder_percentage} color="green" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                  </Table.Td>
+                </Table.Tr>
+              )}
 
-              {/* Executives */}
+              {/* Executives (filtered by access) */}
               {executives.map((exec, index) => (
                 <Table.Tr key={`exec-${index}`}>
                   <Table.Td>
@@ -358,33 +373,44 @@ const CapTableOverview: React.FC = () => {
                 </Table.Tr>
               ))}
 
-              {/* Pool */}
-              <Table.Tr style={{ backgroundColor: '#fef3c7' }}>
-                <Table.Td>
-                  <div>
-                    <Text fw={600} size="sm" c="dimmed">Pool (Reserved)</Text>
-                    <Text size="xs" c="dimmed">Available for grants</Text>
-                  </div>
-                </Table.Td>
-                <Table.Td>
-                  <Text fw={700} size="sm" c="dimmed">
-                    <NumberFormatter value={capTable.equity_pool} thousandSeparator />
-                  </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Badge color="orange" size="lg" variant="light">
-                    {capTable.pool_percentage.toFixed(1)}%
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Badge color="gray" size="sm" variant="outline">
-                    N/A
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Progress value={capTable.pool_percentage} color="orange" size="sm" radius="xl" style={{ minWidth: 100 }} />
-                </Table.Td>
-              </Table.Tr>
+              {/* Pool — CEO/CFO only */}
+              {hasFullCapTableAccess && (
+                <Table.Tr style={{ backgroundColor: '#fef3c7' }}>
+                  <Table.Td>
+                    <div>
+                      <Text fw={600} size="sm" c="dimmed">Pool (Reserved)</Text>
+                      <Text size="xs" c="dimmed">Available for grants</Text>
+                    </div>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text fw={700} size="sm" c="dimmed">
+                      <NumberFormatter value={capTable.equity_pool} thousandSeparator />
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge color="orange" size="lg" variant="light">
+                      {capTable.pool_percentage.toFixed(1)}%
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge color="gray" size="sm" variant="outline">N/A</Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Progress value={capTable.pool_percentage} color="orange" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                  </Table.Td>
+                </Table.Tr>
+              )}
+
+              {/* No data for restricted view */}
+              {!hasFullCapTableAccess && executives.length === 0 && (
+                <Table.Tr>
+                  <Table.Td colSpan={5}>
+                    <Text ta="center" c="dimmed" py="xl">
+                      No equity grants found for your account.
+                    </Text>
+                  </Table.Td>
+                </Table.Tr>
+              )}
             </Table.Tbody>
           </Table>
         </Card>
