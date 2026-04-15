@@ -562,6 +562,12 @@ const MessagesTab: React.FC = () => {
     setComposeMode('none');
     setSelectedMessage(msg);
     if (currentUser && !msg.read_by.includes(currentUser.id)) {
+      // Immediately update local state so the dot disappears
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msg.id ? { ...m, read_by: [...m.read_by, currentUser.id] } : m
+        )
+      );
       await supabase
         .from('internal_messages')
         .update({
@@ -602,6 +608,12 @@ const MessagesTab: React.FC = () => {
       if (replyFiles.length > 0) {
         await uploadFiles(replyFiles, msgData.id, currentUser.id);
       }
+
+      // Reset parent read_by so other participants see the unread dot
+      await supabase
+        .from('internal_messages')
+        .update({ read_by: [currentUser.id] })
+        .eq('id', selectedMessage.id);
 
       setReplyBody('');
       setReplyFiles([]);
