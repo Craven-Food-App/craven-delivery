@@ -38,6 +38,7 @@ import {
   IconHash,
   IconEye,
   IconExternalLink,
+  IconArrowLeft,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -326,7 +327,19 @@ const AttachmentList: React.FC<{ attachments: Attachment[] }> = ({ attachments }
   );
 };
 
+const useIsMobileComms = () => {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isMobile;
+};
+
 const MessagesTab: React.FC = () => {
+  const isMobile = useIsMobileComms();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -757,35 +770,48 @@ const MessagesTab: React.FC = () => {
     );
   };
 
+  // On mobile, show either the list or the thread/compose, not both
+  const mobileShowThread = isMobile && (selectedMessage !== null || composeMode === 'new');
+
+  const goBackToList = () => {
+    setSelectedMessage(null);
+    setThreadMessages([]);
+    setComposeMode('none');
+  };
+
   return (
-    <Stack gap="sm" style={{ minHeight: 520 }}>
-      <Group gap="sm" wrap="nowrap" align="flex-start">
-        <IconMessages size={26} color="var(--mantine-color-orange-6)" style={{ flexShrink: 0, marginTop: 2 }} />
-        <Stack gap={2}>
-          <Title order={5}>Team messages</Title>
-          <Text size="xs" c="dimmed" maw={520}>
-            Slack-style direct messages between executives: pick a conversation on the left, scroll the thread, and reply at the bottom.
-          </Text>
-        </Stack>
-      </Group>
+    <Stack gap="sm" style={{ minHeight: isMobile ? 'calc(100vh - 200px)' : 520 }}>
+      {!isMobile && (
+        <Group gap="sm" wrap="nowrap" align="flex-start">
+          <IconMessages size={26} color="var(--mantine-color-orange-6)" style={{ flexShrink: 0, marginTop: 2 }} />
+          <Stack gap={2}>
+            <Title order={5}>Team messages</Title>
+            <Text size="xs" c="dimmed" maw={520}>
+              Slack-style direct messages between executives: pick a conversation on the left, scroll the thread, and reply at the bottom.
+            </Text>
+          </Stack>
+        </Group>
+      )}
 
       <Box
         style={{
           display: 'flex',
           flexWrap: 'nowrap',
-          border: '1px solid var(--mantine-color-gray-3)',
-          borderRadius: 8,
+          border: isMobile ? 'none' : '1px solid var(--mantine-color-gray-3)',
+          borderRadius: isMobile ? 0 : 8,
           overflow: 'hidden',
-          minHeight: 460,
+          minHeight: isMobile ? 'calc(100vh - 240px)' : 460,
           background: 'var(--mantine-color-body)',
+          flexDirection: isMobile ? 'column' : 'row',
         }}
       >
-        {/* Sidebar — conversation list */}
+        {/* Sidebar — conversation list (hidden on mobile when viewing a thread) */}
+        {(!isMobile || !mobileShowThread) && (
         <Box
-          w={300}
+          w={isMobile ? '100%' : 300}
           style={{
             flexShrink: 0,
-            borderRight: '1px solid var(--mantine-color-gray-3)',
+            borderRight: isMobile ? 'none' : '1px solid var(--mantine-color-gray-3)',
             background: 'var(--mantine-color-gray-0)',
             display: 'flex',
             flexDirection: 'column',
@@ -876,15 +902,24 @@ const MessagesTab: React.FC = () => {
             )}
           </Box>
         </Box>
+        )}
 
-        {/* Main pane */}
+        {/* Main pane (hidden on mobile when showing conversation list) */}
+        {(!isMobile || mobileShowThread) && (
         <Box style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           {composeMode === 'new' ? (
             <>
               <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
                 <Group justify="space-between">
-                  <Text fw={700}>New message</Text>
-                  <Button variant="subtle" size="xs" color="gray" onClick={() => setComposeMode('none')}>
+                  <Group gap="xs">
+                    {isMobile && (
+                      <ActionIcon variant="subtle" color="gray" onClick={goBackToList}>
+                        <IconArrowLeft size={18} />
+                      </ActionIcon>
+                    )}
+                    <Text fw={700}>New message</Text>
+                  </Group>
+                  <Button variant="subtle" size="xs" color="gray" onClick={goBackToList}>
                     Cancel
                   </Button>
                 </Group>
@@ -932,6 +967,11 @@ const MessagesTab: React.FC = () => {
               <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
                 <Group justify="space-between" wrap="nowrap" align="flex-start">
                   <Group gap="sm" wrap="nowrap">
+                    {isMobile && (
+                      <ActionIcon variant="subtle" color="gray" onClick={goBackToList} style={{ flexShrink: 0 }}>
+                        <IconArrowLeft size={18} />
+                      </ActionIcon>
+                    )}
                     <Avatar size="md" radius="sm" color="orange">
                       {threadSidebarLabel(selectedMessage, currentUser?.id, labelForUserId).charAt(0).toUpperCase()}
                     </Avatar>
@@ -979,15 +1019,15 @@ const MessagesTab: React.FC = () => {
                 </Stack>
               </Box>
 
-              <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)', background: 'var(--mantine-color-gray-0)' }}>
-                <Stack gap="sm">
-                  <Group align="flex-end" wrap="nowrap" gap="sm">
+              <Box p={isMobile ? 'xs' : 'md'} style={{ borderTop: '1px solid var(--mantine-color-gray-3)', background: 'var(--mantine-color-gray-0)' }}>
+                <Stack gap="xs">
+                  <Group align="flex-end" wrap="nowrap" gap="xs">
                     <Textarea
                       style={{ flex: 1 }}
-                      placeholder="Reply to this conversation…"
-                      minRows={2}
+                      placeholder="Reply…"
+                      minRows={1}
                       autosize
-                      maxRows={6}
+                      maxRows={4}
                       value={replyBody}
                       onChange={(e) => setReplyBody(e.currentTarget.value)}
                       onKeyDown={(e) => {
@@ -997,30 +1037,42 @@ const MessagesTab: React.FC = () => {
                         }
                       }}
                     />
-                    <Stack gap={6} style={{ flexShrink: 0 }}>
-                      <FileInput
-                        placeholder="Attach"
-                        multiple
-                        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt,.zip"
-                        value={replyFiles.length ? replyFiles : null}
-                        onChange={(files) => setReplyFiles(files || [])}
-                        leftSection={<IconPaperclip size={16} />}
-                        size="sm"
-                        w={140}
-                      />
-                      <Button
+                    <Group gap={4} style={{ flexShrink: 0 }}>
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="lg"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.multiple = true;
+                          input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt,.zip';
+                          input.onchange = (e: any) => {
+                            const files = Array.from(e.target.files || []) as File[];
+                            if (files.length) setReplyFiles((prev) => [...prev, ...files]);
+                          };
+                          input.click();
+                        }}
+                      >
+                        <IconPaperclip size={18} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="filled"
                         color="orange"
-                        leftSection={<IconSend size={16} />}
+                        size="lg"
+                        radius="xl"
                         onClick={() => void sendReply()}
                         disabled={!replyBody.trim() && replyFiles.length === 0}
                       >
-                        Send
-                      </Button>
-                    </Stack>
+                        <IconSend size={16} />
+                      </ActionIcon>
+                    </Group>
                   </Group>
-                  <Text size="xs" c="dimmed">
-                    Tip: Ctrl+Enter to send
-                  </Text>
+                  {!isMobile && (
+                    <Text size="xs" c="dimmed">
+                      Tip: Ctrl+Enter to send
+                    </Text>
+                  )}
                   {replyFiles.length > 0 ? (
                     <Group gap="xs">
                       {replyFiles.map((f, i) => (
@@ -1063,6 +1115,7 @@ const MessagesTab: React.FC = () => {
             </Center>
           )}
         </Box>
+        )}
       </Box>
     </Stack>
   );
