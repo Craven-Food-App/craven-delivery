@@ -329,11 +329,16 @@ const MessagesTab: React.FC = () => {
   const [composeFiles, setComposeFiles] = useState<File[]>([]);
   const [replyFiles, setReplyFiles] = useState<File[]>([]);
   const [composeMode, setComposeMode] = useState<'none' | 'new'>('none');
+  const [userNameCache, setUserNameCache] = useState<Map<string, string>>(new Map());
   const feedEndRef = useRef<HTMLDivElement | null>(null);
 
   const labelForUserId = useCallback(
-    (userId: string) => recipients.find((r) => r.user_id === userId)?.label || 'Unknown',
-    [recipients],
+    (userId: string) => {
+      const cached = userNameCache.get(userId);
+      if (cached) return cached;
+      return recipients.find((r) => r.user_id === userId)?.label || 'Unknown';
+    },
+    [recipients, userNameCache],
   );
 
   const composeForm = useForm({
@@ -395,9 +400,20 @@ const MessagesTab: React.FC = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const senderIds = [...new Set(data.map((m: any) => m.sender_id))];
+        // Collect ALL user IDs (senders + recipients) so sidebar labels resolve correctly
+        const allUserIds = new Set<string>();
+        data.forEach((m: any) => {
+          allUserIds.add(m.sender_id);
+          (m.recipient_ids || []).forEach((id: string) => allUserIds.add(id));
+        });
         const msgIds = data.map((m: any) => m.id);
-        const [nameMap, attachMap] = await Promise.all([getNameMap(senderIds), fetchAttachments(msgIds)]);
+        const [nameMap, attachMap] = await Promise.all([getNameMap([...allUserIds]), fetchAttachments(msgIds)]);
+        // Update the shared name cache so labelForUserId can resolve all participants
+        setUserNameCache((prev) => {
+          const merged = new Map(prev);
+          nameMap.forEach((v, k) => merged.set(k, v));
+          return merged;
+        });
         setMessages(
           data.map((m: any) => ({
             ...m,
