@@ -811,7 +811,7 @@ const MessagesTab: React.FC = () => {
           w={isMobile ? '100%' : 300}
           style={{
             flexShrink: 0,
-            borderRight: '1px solid var(--mantine-color-gray-3)',
+            borderRight: isMobile ? 'none' : '1px solid var(--mantine-color-gray-3)',
             background: 'var(--mantine-color-gray-0)',
             display: 'flex',
             flexDirection: 'column',
