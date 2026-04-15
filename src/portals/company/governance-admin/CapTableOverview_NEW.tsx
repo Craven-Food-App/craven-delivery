@@ -15,8 +15,9 @@ import {
   Alert,
   NumberFormatter,
 } from '@mantine/core';
-import { IconChartPie, IconAlertCircle } from '@tabler/icons-react';
+import { IconChartPie, IconAlertCircle, IconLock } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { hasCFOPortalAccess } from '@/utils/torranceAccess';
 
 // ============================================================================
 // TYPES
@@ -41,6 +42,7 @@ interface ExecutiveEquity {
   shares: number;
   percentage: number;
   strike_price: number;
+  user_id?: string;
 }
 
 // ============================================================================
@@ -52,6 +54,8 @@ const CapTableOverview: React.FC = () => {
   const [executives, setExecutives] = useState<ExecutiveEquity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasFullCapTableAccess, setHasFullCapTableAccess] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadCapTable();
