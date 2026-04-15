@@ -396,7 +396,7 @@ const MessagesTab: React.FC = () => {
     return map;
   }, []);
 
-  const fetchMessages = useCallback(async () => {
+  const fetchMessages = useCallback(async (viewerUserId?: string) => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -409,24 +409,27 @@ const MessagesTab: React.FC = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // Collect ALL user IDs (senders + recipients) so sidebar labels resolve correctly
         const allUserIds = new Set<string>();
         data.forEach((m: any) => {
           allUserIds.add(m.sender_id);
           (m.recipient_ids || []).forEach((id: string) => allUserIds.add(id));
         });
+
         const msgIds = data.map((m: any) => m.id);
         const [nameMap, attachMap] = await Promise.all([getNameMap([...allUserIds]), fetchAttachments(msgIds)]);
-        // Update the shared name cache so labelForUserId can resolve all participants
+        const activeViewerId = viewerUserId ?? currentUserRef.current?.id ?? currentUser?.id;
+
         setUserNameCache((prev) => {
           const merged = new Map(prev);
           nameMap.forEach((v, k) => merged.set(k, v));
           return merged;
         });
+
         setMessages(
           data.map((m: any) => ({
             ...m,
             sender_name: nameMap.get(m.sender_id) || 'Unknown',
+            thread_label: threadSidebarLabelFromMap(m, activeViewerId, nameMap),
             attachments: attachMap.get(m.id) || [],
           })),
         );
@@ -438,7 +441,7 @@ const MessagesTab: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [getNameMap, fetchAttachments]);
+  }, [currentUser?.id, getNameMap, fetchAttachments]);
 
   const refreshThread = useCallback(
     async (parentId: string) => {
@@ -452,6 +455,13 @@ const MessagesTab: React.FC = () => {
         const senderIds = [...new Set(data.map((m: any) => m.sender_id))];
         const msgIds = data.map((m: any) => m.id);
         const [nameMap, attachMap] = await Promise.all([getNameMap(senderIds), fetchAttachments(msgIds)]);
+
+        setUserNameCache((prev) => {
+          const merged = new Map(prev);
+          nameMap.forEach((v, k) => merged.set(k, v));
+          return merged;
+        });
+
         setThreadMessages(
           data.map((m: any) => ({
             ...m,
@@ -486,7 +496,7 @@ const MessagesTab: React.FC = () => {
         );
       }
 
-      await fetchMessages();
+      await fetchMessages(user?.id);
     };
     init();
 
@@ -500,7 +510,7 @@ const MessagesTab: React.FC = () => {
           playNotificationSound();
         }
 
-        fetchMessages();
+        fetchMessages(currentUserRef.current?.id);
 
         const openThread = selectedMessageRef.current;
         if (openThread) {
@@ -510,14 +520,14 @@ const MessagesTab: React.FC = () => {
         }
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'internal_messages' }, () => {
-        fetchMessages();
+        fetchMessages(currentUserRef.current?.id);
         const openThread = selectedMessageRef.current;
         if (openThread) {
           refreshThread(openThread.id);
         }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'internal_messages' }, () => {
-        fetchMessages();
+        fetchMessages(currentUserRef.current?.id);
       })
       .subscribe();
 
