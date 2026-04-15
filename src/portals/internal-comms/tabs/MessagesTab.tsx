@@ -562,6 +562,12 @@ const MessagesTab: React.FC = () => {
     setComposeMode('none');
     setSelectedMessage(msg);
     if (currentUser && !msg.read_by.includes(currentUser.id)) {
+      // Immediately update local state so the dot disappears
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msg.id ? { ...m, read_by: [...m.read_by, currentUser.id] } : m
+        )
+      );
       await supabase
         .from('internal_messages')
         .update({
