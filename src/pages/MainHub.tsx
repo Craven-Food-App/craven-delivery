@@ -126,6 +126,14 @@ interface EmployeeInfo {
 
 const MainHub: React.FC = () => {
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   const [form] = Form.useForm();
   const [user, setUser] = useState<any>(null);
   const [employeeInfo, setEmployeeInfo] = useState<EmployeeInfo | null>(null);
