@@ -122,6 +122,7 @@ interface Message {
   read_by: string[];
   created_at: string;
   sender_name?: string;
+  thread_label?: string;
   attachments?: Attachment[];
 }
 
@@ -157,6 +158,14 @@ function threadSidebarLabel(
   const [a, b, ...rest] = others;
   const left = `${labelFor(a)}, ${labelFor(b)}`;
   return rest.length ? `${left} +${rest.length}` : left;
+}
+
+function threadSidebarLabelFromMap(
+  msg: Message,
+  currentUserId: string | undefined,
+  nameMap: Map<string, string>,
+) {
+  return threadSidebarLabel(msg, currentUserId, (id) => nameMap.get(id) || 'Unknown');
 }
 
 const AttachmentList: React.FC<{ attachments: Attachment[] }> = ({ attachments }) => {
