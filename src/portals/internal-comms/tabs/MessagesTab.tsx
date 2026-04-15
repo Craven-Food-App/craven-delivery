@@ -1090,6 +1090,7 @@ const MessagesTab: React.FC = () => {
             </Center>
           )}
         </Box>
+        )}
       </Box>
     </Stack>
   );
