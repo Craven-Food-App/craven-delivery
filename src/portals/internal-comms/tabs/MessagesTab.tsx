@@ -49,9 +49,40 @@ import {
   attachmentLooksLikePdf,
 } from '@/lib/internalCommsStorage';
 
+// Pre-initialize AudioContext on first user gesture so realtime callbacks can play sounds
+let sharedAudioCtx: AudioContext | null = null;
+
+const ensureAudioContext = (): AudioContext | null => {
+  try {
+    if (!sharedAudioCtx || sharedAudioCtx.state === 'closed') {
+      sharedAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    if (sharedAudioCtx.state === 'suspended') {
+      sharedAudioCtx.resume();
+    }
+    return sharedAudioCtx;
+  } catch {
+    return null;
+  }
+};
+
+// Prime audio context on any user interaction so it's unlocked for later
+if (typeof window !== 'undefined') {
+  const primeAudio = () => {
+    ensureAudioContext();
+    window.removeEventListener('click', primeAudio);
+    window.removeEventListener('keydown', primeAudio);
+    window.removeEventListener('touchstart', primeAudio);
+  };
+  window.addEventListener('click', primeAudio, { once: true });
+  window.addEventListener('keydown', primeAudio, { once: true });
+  window.addEventListener('touchstart', primeAudio, { once: true });
+}
+
 const playNotificationSound = () => {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
     const playTone = (freq: number, startTime: number, duration: number) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
