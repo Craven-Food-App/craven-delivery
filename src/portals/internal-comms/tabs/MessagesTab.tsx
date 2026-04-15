@@ -38,6 +38,7 @@ import {
   IconHash,
   IconEye,
   IconExternalLink,
+  IconArrowLeft,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import {
