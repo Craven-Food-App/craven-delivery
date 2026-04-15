@@ -769,30 +769,43 @@ const MessagesTab: React.FC = () => {
     );
   };
 
+  // On mobile, show either the list or the thread/compose, not both
+  const mobileShowThread = isMobile && (selectedMessage !== null || composeMode === 'new');
+
+  const goBackToList = () => {
+    setSelectedMessage(null);
+    setThreadMessages([]);
+    setComposeMode('none');
+  };
+
   return (
-    <Stack gap="sm" style={{ minHeight: 520 }}>
-      <Group gap="sm" wrap="nowrap" align="flex-start">
-        <IconMessages size={26} color="var(--mantine-color-orange-6)" style={{ flexShrink: 0, marginTop: 2 }} />
-        <Stack gap={2}>
-          <Title order={5}>Team messages</Title>
-          <Text size="xs" c="dimmed" maw={520}>
-            Slack-style direct messages between executives: pick a conversation on the left, scroll the thread, and reply at the bottom.
-          </Text>
-        </Stack>
-      </Group>
+    <Stack gap="sm" style={{ minHeight: isMobile ? 'calc(100vh - 200px)' : 520 }}>
+      {!isMobile && (
+        <Group gap="sm" wrap="nowrap" align="flex-start">
+          <IconMessages size={26} color="var(--mantine-color-orange-6)" style={{ flexShrink: 0, marginTop: 2 }} />
+          <Stack gap={2}>
+            <Title order={5}>Team messages</Title>
+            <Text size="xs" c="dimmed" maw={520}>
+              Slack-style direct messages between executives: pick a conversation on the left, scroll the thread, and reply at the bottom.
+            </Text>
+          </Stack>
+        </Group>
+      )}
 
       <Box
         style={{
           display: 'flex',
           flexWrap: 'nowrap',
-          border: '1px solid var(--mantine-color-gray-3)',
-          borderRadius: 8,
+          border: isMobile ? 'none' : '1px solid var(--mantine-color-gray-3)',
+          borderRadius: isMobile ? 0 : 8,
           overflow: 'hidden',
-          minHeight: 460,
+          minHeight: isMobile ? 'calc(100vh - 240px)' : 460,
           background: 'var(--mantine-color-body)',
+          flexDirection: isMobile ? 'column' : 'row',
         }}
       >
-        {/* Sidebar — conversation list */}
+        {/* Sidebar — conversation list (hidden on mobile when viewing a thread) */}
+        {(!isMobile || !mobileShowThread) && (
         <Box
           w={300}
           style={{
