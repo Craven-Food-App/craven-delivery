@@ -911,8 +911,15 @@ const MessagesTab: React.FC = () => {
             <>
               <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
                 <Group justify="space-between">
-                  <Text fw={700}>New message</Text>
-                  <Button variant="subtle" size="xs" color="gray" onClick={() => setComposeMode('none')}>
+                  <Group gap="xs">
+                    {isMobile && (
+                      <ActionIcon variant="subtle" color="gray" onClick={goBackToList}>
+                        <IconArrowLeft size={18} />
+                      </ActionIcon>
+                    )}
+                    <Text fw={700}>New message</Text>
+                  </Group>
+                  <Button variant="subtle" size="xs" color="gray" onClick={goBackToList}>
                     Cancel
                   </Button>
                 </Group>
