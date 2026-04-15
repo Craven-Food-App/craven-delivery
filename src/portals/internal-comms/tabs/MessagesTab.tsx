@@ -789,9 +789,25 @@ const MessagesTab: React.FC = () => {
                     }}
                   >
                     <Group wrap="nowrap" gap="sm" align="flex-start">
-                      <Avatar size="sm" radius="sm" color="orange" style={{ flexShrink: 0 }}>
-                        {threadSidebarLabel(msg, currentUser?.id, labelForUserId).charAt(0).toUpperCase()}
-                      </Avatar>
+                      <Box pos="relative" style={{ flexShrink: 0 }}>
+                        <Avatar size="sm" radius="sm" color="orange">
+                          {threadSidebarLabel(msg, currentUser?.id, labelForUserId).charAt(0).toUpperCase()}
+                        </Avatar>
+                        {isUnread(msg) && (
+                          <Box
+                            style={{
+                              position: 'absolute',
+                              top: -2,
+                              right: -2,
+                              width: 10,
+                              height: 10,
+                              borderRadius: '50%',
+                              background: 'var(--mantine-color-orange-6)',
+                              border: '2px solid var(--mantine-color-gray-0)',
+                            }}
+                          />
+                        )}
+                      </Box>
                       <Box style={{ flex: 1, minWidth: 0 }}>
                         <Group gap={6} wrap="nowrap" justify="space-between">
                           <Text size="sm" fw={isUnread(msg) ? 700 : 500} truncate style={{ flex: 1 }}>
