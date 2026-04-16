@@ -13,6 +13,7 @@ import {
   Paper,
   Text,
   Loader,
+  Modal,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { IconCoins, IconUser, IconCalendar, IconChartBar, IconCheck } from '@tabler/icons-react';
@@ -34,7 +35,12 @@ interface EquityGrantFormData {
   resolution_id: string;
 }
 
-const EquityGrantWizard: React.FC = () => {
+interface EquityGrantWizardProps {
+  opened?: boolean;
+  onClose?: () => void;
+}
+
+const EquityGrantWizard: React.FC<EquityGrantWizardProps> = ({ opened = true, onClose }) => {
   const [formData, setFormData] = useState<EquityGrantFormData>({
     recipient_user_id: '',
     recipient_email: '',
@@ -205,6 +211,7 @@ const EquityGrantWizard: React.FC = () => {
 
       // Dispatch event to refresh equity grants list
       window.dispatchEvent(new CustomEvent('equityGrantCreated'));
+      onClose?.();
 
       // Reset form
       setFormData({
@@ -459,20 +466,24 @@ const EquityGrantWizard: React.FC = () => {
     onComplete: handleComplete,
   });
 
+  if (!opened) return null;
+
   return (
-    <WizardLayout
-      title="Create Equity Grant"
-      subtitle="Step-by-step process to grant equity to an individual"
-      steps={steps}
-      activeStep={wizard.activeStep}
-      completedSteps={wizard.completedSteps}
-      onStepChange={wizard.handleStepChange}
-      onNext={wizard.handleNext}
-      onBack={wizard.handleBack}
-      onComplete={handleComplete}
-      loading={wizard.loading}
-      error={wizard.error}
-    />
+    <Modal opened={opened} onClose={() => onClose?.()} size="xl" title="Create Equity Grant" centered>
+      <WizardLayout
+        title="Create Equity Grant"
+        subtitle="Step-by-step process to grant equity to an individual"
+        steps={steps}
+        activeStep={wizard.activeStep}
+        completedSteps={wizard.completedSteps}
+        onStepChange={wizard.handleStepChange}
+        onNext={wizard.handleNext}
+        onBack={wizard.handleBack}
+        onComplete={handleComplete}
+        loading={wizard.loading}
+        error={wizard.error}
+      />
+    </Modal>
   );
 };
 
