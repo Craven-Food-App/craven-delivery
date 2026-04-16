@@ -31,6 +31,7 @@ import {
 import { IconCoins, IconRefresh, IconAlertCircle, IconSearch, IconFilter, IconDownload, IconDotsVertical, IconEye, IconEdit, IconTrash, IconCheck, IconX, IconHistory, IconArchive } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
+import { recalculateCapTable } from '@/utils/recalculateCapTable';
 
 interface EquityGrant {
   id: string;
