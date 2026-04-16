@@ -34,7 +34,12 @@ interface EquityGrantFormData {
   resolution_id: string;
 }
 
-const EquityGrantWizard: React.FC = () => {
+interface EquityGrantWizardProps {
+  opened?: boolean;
+  onClose?: () => void;
+}
+
+const EquityGrantWizard: React.FC<EquityGrantWizardProps> = ({ opened = true, onClose }) => {
   const [formData, setFormData] = useState<EquityGrantFormData>({
     recipient_user_id: '',
     recipient_email: '',
