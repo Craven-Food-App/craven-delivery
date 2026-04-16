@@ -26,7 +26,7 @@ interface PortalSection {
 const companySections: PortalSection[] = [
   {
     id: 'cap-table',
-    name: 'Cap Table & Equity',
+    name: 'Cap & Equity Tables',
     description: 'Shareholder equity, grants, and ownership tracking',
     icon: IconChartPie,
     path: '/company/cap-table',

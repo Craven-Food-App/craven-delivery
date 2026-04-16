@@ -527,7 +527,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
           <div>
             <Title order={1}>
               <IconChartPie size={36} style={{ marginRight: 12, verticalAlign: 'middle' }} />
-              Cap Table & Equity
+              Cap & Equity Tables
             </Title>
             <Text c="dimmed" size="sm" mt={4}>
               Crave'n Inc. - {capTable.total_authorized.toLocaleString()} Authorized Shares at ${capTable.par_value} par value
