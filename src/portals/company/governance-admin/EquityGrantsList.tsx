@@ -31,6 +31,7 @@ import {
 import { IconCoins, IconRefresh, IconAlertCircle, IconSearch, IconFilter, IconDownload, IconDotsVertical, IconEye, IconEdit, IconTrash, IconCheck, IconX, IconHistory, IconArchive } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
+import { recalculateCapTable } from '@/utils/recalculateCapTable';
 
 interface EquityGrant {
   id: string;
@@ -924,8 +925,12 @@ const EquityGrantsList: React.FC = () => {
       setSelectedGrant(null);
       setRevokeReason('');
 
-      // Reload grants
+      // Reload grants and recalculate cap table
       await loadGrants();
+      const capResult = await recalculateCapTable();
+      if (!capResult.success) {
+        console.warn('Cap table recalculation warning:', capResult.error);
+      }
     } catch (error: any) {
       console.error('Error revoking grant:', error);
       console.error('Full error object:', JSON.stringify(error, null, 2));
@@ -1795,6 +1800,17 @@ const EquityGrantsList: React.FC = () => {
                         message: 'Grant and vesting schedule updated successfully',
                         color: 'green',
                       });
+
+                      // Recalculate cap table after edit
+                      const capResult = await recalculateCapTable();
+                      if (!capResult.success) {
+                        console.warn('Cap table recalculation warning:', capResult.error);
+                        notifications.show({
+                          title: 'Warning',
+                          message: 'Grant updated but cap table recalculation failed: ' + (capResult.error || ''),
+                          color: 'yellow',
+                        });
+                      }
 
                       setEditModalOpen(false);
                       setSelectedGrant(null);

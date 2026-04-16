@@ -16,7 +16,7 @@ const AdminAccessGuard: React.FC<AdminAccessGuardProps> = ({ children, fallback 
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        setIsAdmin(false);
+        setHasAccess(false);
         return;
       }
 
