@@ -15,6 +15,7 @@ interface GlobalSettingsProps {
 }
 
 export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
+  const COMMISSION_CAP_PERCENT = 15;
   const [restaurantCommission, setRestaurantCommission] = useState<number>(
     settings?.restaurant_commission_percent || 15
   );
@@ -41,6 +42,10 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
   const saveSettings = async () => {
     try {
       setLoading(true);
+      if (restaurantCommission > COMMISSION_CAP_PERCENT) {
+        toast.error(`Restaurant commission cannot exceed ${COMMISSION_CAP_PERCENT}% policy cap.`);
+        return;
+      }
       const { data: userData } = await supabase.auth.getUser();
 
       await supabase
@@ -48,21 +53,46 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
         .update({ is_active: false })
         .eq('is_active', true);
 
-      const { error } = await supabase
+      const basePayload = {
+        restaurant_commission_percent: restaurantCommission,
+        customer_service_fee_percent: serviceFeePct,
+        delivery_fee_base_cents: Math.round(deliveryFeeBase * 100),
+        delivery_fee_per_mile_cents: Math.round(deliveryFeePerMile * 100),
+        peak_hour_multiplier: peakMultiplier,
+        is_active: true,
+        updated_by: userData?.user?.id || null,
+      };
+
+      const { error: saveWithStripeError } = await supabase
         .from('commission_settings')
         .insert({
-          restaurant_commission_percent: restaurantCommission,
-          customer_service_fee_percent: serviceFeePct,
-          delivery_fee_base_cents: Math.round(deliveryFeeBase * 100),
-          delivery_fee_per_mile_cents: Math.round(deliveryFeePerMile * 100),
-          peak_hour_multiplier: peakMultiplier,
+          ...basePayload,
           stripe_fee_percent: stripeFeePercent,
           stripe_fee_fixed_cents: Math.round(stripeFeeFixed * 100),
-          is_active: true,
-          updated_by: userData?.user?.id || null,
         });
 
-      if (error) throw error;
+      if (saveWithStripeError) {
+        const msg = saveWithStripeError.message || '';
+        const missingStripeColumn =
+          msg.includes('stripe_fee_percent') ||
+          msg.includes('stripe_fee_fixed_cents');
+
+        if (!missingStripeColumn) {
+          throw saveWithStripeError;
+        }
+
+        const { error: saveWithoutStripeError } = await supabase
+          .from('commission_settings')
+          .insert(basePayload);
+
+        if (saveWithoutStripeError) {
+          throw saveWithoutStripeError;
+        }
+
+        toast.success('Global settings updated. Stripe fee fields were skipped because your DB schema is older.');
+        onRefresh();
+        return;
+      }
 
       toast.success('Global settings updated successfully!');
       onRefresh();
@@ -97,6 +127,10 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <strong>Governance guardrail:</strong> default restaurant commission is capped at {COMMISSION_CAP_PERCENT}%.
+            Higher rates should be configured through approved legal override workflows only.
+          </div>
           <div>
             <Label className="mb-2 block">Restaurant Commission (%)</Label>
             <div className="flex items-center gap-4">
@@ -104,14 +138,14 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
                 value={[restaurantCommission]}
                 onValueChange={(v) => setRestaurantCommission(v[0])}
                 min={5}
-                max={25}
+                max={COMMISSION_CAP_PERCENT}
                 step={0.5}
                 className="flex-1"
               />
               <Input
                 type="number"
                 min={5}
-                max={25}
+                max={COMMISSION_CAP_PERCENT}
                 step={0.5}
                 value={restaurantCommission}
                 onChange={(e) => setRestaurantCommission(Number(e.target.value))}

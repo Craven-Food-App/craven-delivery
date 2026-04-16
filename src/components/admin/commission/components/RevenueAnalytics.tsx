@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -8,6 +8,7 @@ import {
   Target,
   BarChart3
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   BarChart,
   Bar,
@@ -28,47 +29,117 @@ interface RevenueAnalyticsProps {
 }
 
 export function RevenueAnalytics({ tiers, overrides }: RevenueAnalyticsProps) {
+  const [loading, setLoading] = useState(true);
+  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+        sixMonthsAgo.setDate(1);
+        sixMonthsAgo.setHours(0, 0, 0, 0);
+
+        const [restaurantsRes, ordersRes] = await Promise.all([
+          supabase
+            .from('restaurants')
+            .select('id, commission_tier, tier_reset_cycle, is_active')
+            .eq('is_active', true),
+          supabase
+            .from('orders')
+            .select('id, created_at, order_status, food_subtotal_cents, subtotal_cents, merchant_commission_cents')
+            .eq('order_status', 'delivered')
+            .gte('created_at', sixMonthsAgo.toISOString()),
+        ]);
+
+        if (!cancelled) {
+          setRestaurants(restaurantsRes.data || []);
+          setOrders(ordersRes.data || []);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const analytics = useMemo(() => {
-    // Mock data - in real implementation, fetch from restaurant_performance_metrics
-    const tierDistribution = tiers.map(tier => ({
+    const tierDistribution = (tiers || []).map((tier: any) => ({
       name: tier.tier_name,
-      count: Math.floor(Math.random() * 50) + 10,
-      revenue: Math.floor(Math.random() * 100000) + 50000,
-      color: tier.color,
+      count: restaurants.filter((r) => r.commission_tier === tier.tier_name).length,
+      revenue: 0,
+      color: tier.color || '#94a3b8',
     }));
 
-    const monthlyRevenue = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      const monthName = date.toLocaleDateString('en-US', { month: 'short' });
-      
-      monthlyRevenue.push({
-        month: monthName,
-        commission: Math.floor(Math.random() * 50000) + 100000,
-        serviceFees: Math.floor(Math.random() * 30000) + 50000,
-        deliveryFees: Math.floor(Math.random() * 20000) + 30000,
+    const lastSixMonths = Array.from({ length: 6 }).map((_, idx) => {
+      const d = new Date();
+      d.setMonth(d.getMonth() - (5 - idx));
+      d.setDate(1);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    });
+
+    const monthlyRevenue = lastSixMonths.map((monthStart) => {
+      const monthEnd = new Date(monthStart);
+      monthEnd.setMonth(monthEnd.getMonth() + 1);
+      const monthOrders = orders.filter((o) => {
+        const created = new Date(o.created_at);
+        return created >= monthStart && created < monthEnd;
       });
-    }
+      const commission = monthOrders.reduce((sum, o) => {
+        if (typeof o.merchant_commission_cents === 'number' && o.merchant_commission_cents > 0) {
+          return sum + o.merchant_commission_cents;
+        }
+        const subtotal = o.food_subtotal_cents ?? o.subtotal_cents ?? 0;
+        return sum + Math.round(subtotal * 0.15);
+      }, 0);
+      return {
+        month: monthStart.toLocaleDateString('en-US', { month: 'short' }),
+        commission,
+        serviceFees: 0,
+        deliveryFees: 0,
+      };
+    });
 
-    const totalRevenue = monthlyRevenue[monthlyRevenue.length - 1].commission +
-                        monthlyRevenue[monthlyRevenue.length - 1].serviceFees +
-                        monthlyRevenue[monthlyRevenue.length - 1].deliveryFees;
+    const thisMonth = monthlyRevenue[monthlyRevenue.length - 1] || { commission: 0, serviceFees: 0, deliveryFees: 0 };
+    const totalRevenue = thisMonth.commission + thisMonth.serviceFees + thisMonth.deliveryFees;
 
-    const avgCommissionRate = 13.5; // Mock average
+    const totalSubtotals = orders.reduce((sum, o) => sum + (o.food_subtotal_cents ?? o.subtotal_cents ?? 0), 0);
+    const totalCommissions = orders.reduce((sum, o) => {
+      if (typeof o.merchant_commission_cents === 'number' && o.merchant_commission_cents > 0) {
+        return sum + o.merchant_commission_cents;
+      }
+      const subtotal = o.food_subtotal_cents ?? o.subtotal_cents ?? 0;
+      return sum + Math.round(subtotal * 0.15);
+    }, 0);
+    const avgCommissionRate = totalSubtotals > 0 ? (totalCommissions / totalSubtotals) * 100 : 0;
 
     return {
       tierDistribution,
       monthlyRevenue,
       totalRevenue,
       avgCommissionRate,
-      totalRestaurants: tierDistribution.reduce((sum, t) => sum + t.count, 0),
+      totalRestaurants: restaurants.length,
       customOverrides: overrides.length,
+      quarterlyMerchants: restaurants.filter((r) => r.tier_reset_cycle === 'quarterly').length,
     };
-  }, [tiers, overrides]);
+  }, [tiers, overrides, restaurants, orders]);
 
   return (
     <div className="space-y-6">
+      <Card className="border-blue-200 bg-blue-50">
+        <CardContent className="pt-6">
+          <p className="text-sm text-blue-900">
+            <strong>Enterprise data mode:</strong> analytics below are driven by live `restaurants` and delivered
+            `orders` data. Service and delivery fee series remain zero until fee snapshots are added to this pipeline.
+          </p>
+        </CardContent>
+      </Card>
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -81,7 +152,7 @@ export function RevenueAnalytics({ tiers, overrides }: RevenueAnalyticsProps) {
               ${(analytics.totalRevenue / 1000).toFixed(0)}k
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              <TrendingUp className="inline h-3 w-3 text-green-600" /> +12% vs last month
+              {loading ? 'Syncing…' : 'Latest month delivered-order commission'}
             </p>
           </CardContent>
         </Card>
@@ -93,10 +164,10 @@ export function RevenueAnalytics({ tiers, overrides }: RevenueAnalyticsProps) {
               <Target className="h-5 w-5 text-blue-500" />
             </div>
             <p className="text-3xl font-bold text-blue-600">
-              {analytics.avgCommissionRate}%
+              {analytics.avgCommissionRate.toFixed(2)}%
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Across all restaurants
+              Effective realized rate from delivered orders
             </p>
           </CardContent>
         </Card>
@@ -111,7 +182,7 @@ export function RevenueAnalytics({ tiers, overrides }: RevenueAnalyticsProps) {
               {analytics.totalRestaurants}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              With commission rates
+              {analytics.quarterlyMerchants} quarterly cycle / {analytics.totalRestaurants - analytics.quarterlyMerchants} monthly cycle
             </p>
           </CardContent>
         </Card>
@@ -245,11 +316,11 @@ export function RevenueAnalytics({ tiers, overrides }: RevenueAnalyticsProps) {
             <div className="space-y-2">
               <h4 className="font-semibold text-green-900">Key Insights:</h4>
               <ul className="text-sm text-green-800 space-y-1">
-                <li>• Most restaurants are in Bronze/Silver tiers - opportunity to help them grow</li>
-                <li>• Gold+ tier restaurants generate 60% of total commission revenue</li>
-                <li>• Consider creating incentive programs to help Bronze tier reach Silver</li>
-                <li>• {analytics.customOverrides} restaurants have custom rates - review annually</li>
-                <li>• Average commission rate is competitive vs. DoorDash (15-30%) and UberEats (15-30%)</li>
+                <li>• Monthly report is based on delivered-order commission snapshots, not random test values.</li>
+                <li>• {analytics.customOverrides} active overrides require legal and annual commercial review.</li>
+                <li>• Quarterly-cycle merchants are now visible in top-level KPI for incentive-program governance.</li>
+                <li>• Average effective commission rate currently trends at {analytics.avgCommissionRate.toFixed(2)}%.</li>
+                <li>• Keep top-line standard rate within the 15% policy cap for enterprise consistency.</li>
               </ul>
             </div>
           </div>

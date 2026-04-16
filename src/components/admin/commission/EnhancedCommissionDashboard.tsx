@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, DollarSign, TrendingUp, Settings, History, Target, BarChart3, CalendarClock } from 'lucide-react';
+import { RefreshCw, DollarSign, TrendingUp, Settings, History, Target, BarChart3, CalendarClock, ShieldCheck, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { GlobalSettings } from './components/GlobalSettings';
@@ -18,6 +18,11 @@ export function EnhancedCommissionDashboard() {
   const [globalSettings, setGlobalSettings] = useState<any>(null);
   const [tiers, setTiers] = useState<any[]>([]);
   const [overrides, setOverrides] = useState<any[]>([]);
+  const [merchantCycleStats, setMerchantCycleStats] = useState({
+    activeMerchants: 0,
+    quarterlyMerchants: 0,
+    foundingMerchants: 0,
+  });
 
   useEffect(() => {
     fetchData();
@@ -57,6 +62,18 @@ export function EnhancedCommissionDashboard() {
         .order('created_at', { ascending: false });
 
       setOverrides(overridesData || []);
+
+      const { data: merchantCyclesData } = await supabase
+        .from('restaurants')
+        .select('id, tier_reset_cycle, is_founding_merchant')
+        .eq('is_active', true);
+
+      if (merchantCyclesData) {
+        const activeMerchants = merchantCyclesData.length;
+        const quarterlyMerchants = merchantCyclesData.filter((r) => r.tier_reset_cycle === 'quarterly').length;
+        const foundingMerchants = merchantCyclesData.filter((r) => r.is_founding_merchant).length;
+        setMerchantCycleStats({ activeMerchants, quarterlyMerchants, foundingMerchants });
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load commission data');
@@ -91,13 +108,51 @@ export function EnhancedCommissionDashboard() {
             Commission & Fee Management
           </h2>
           <p className="text-muted-foreground mt-1">
-            Enterprise pricing control system - Better than DoorDash
+            Enterprise pricing governance workspace for commission policy, tier architecture, overrides, and audit controls.
           </p>
         </div>
         <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
           <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
           {refreshing ? 'Refreshing...' : 'Refresh'}
         </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-muted-foreground">Default Commission Policy</p>
+            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+          </div>
+          <p className="text-2xl font-semibold">{globalSettings?.restaurant_commission_percent ?? '—'}%</p>
+          <p className="text-xs text-muted-foreground mt-1">Governed cap: 15% for standard merchants</p>
+        </div>
+
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-muted-foreground">Active Merchants</p>
+            <Building2 className="h-4 w-4 text-blue-600" />
+          </div>
+          <p className="text-2xl font-semibold">{merchantCycleStats.activeMerchants}</p>
+          <p className="text-xs text-muted-foreground mt-1">Merchants currently live in policy scope</p>
+        </div>
+
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-muted-foreground">Quarterly Cycle Merchants</p>
+            <CalendarClock className="h-4 w-4 text-amber-600" />
+          </div>
+          <p className="text-2xl font-semibold">{merchantCycleStats.quarterlyMerchants}</p>
+          <p className="text-xs text-muted-foreground mt-1">Incentive-program cycle configuration</p>
+        </div>
+
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-muted-foreground">Active Custom Overrides</p>
+            <DollarSign className="h-4 w-4 text-purple-600" />
+          </div>
+          <p className="text-2xl font-semibold">{overrides.length}</p>
+          <p className="text-xs text-muted-foreground mt-1">Contractual exceptions requiring periodic review</p>
+        </div>
       </div>
 
       {/* Main Tabs */}
