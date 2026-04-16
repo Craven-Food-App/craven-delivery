@@ -925,8 +925,12 @@ const EquityGrantsList: React.FC = () => {
       setSelectedGrant(null);
       setRevokeReason('');
 
-      // Reload grants
+      // Reload grants and recalculate cap table
       await loadGrants();
+      const capResult = await recalculateCapTable();
+      if (!capResult.success) {
+        console.warn('Cap table recalculation warning:', capResult.error);
+      }
     } catch (error: any) {
       console.error('Error revoking grant:', error);
       console.error('Full error object:', JSON.stringify(error, null, 2));
