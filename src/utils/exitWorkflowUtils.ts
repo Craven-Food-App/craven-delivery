@@ -249,7 +249,7 @@ export async function createBoardResolutionForRemoval(
     }
 
     console.log('✅ [BOARD RESOLUTION] Resolution verified:', verifyResolution.resolution_number);
-
+    
     // Step 7: Log the creation
     try {
       await logExitWorkflowAction(
@@ -261,22 +261,22 @@ export async function createBoardResolutionForRemoval(
         undefined,
         undefined,
         {
-          resolution_id: resolution.id,
-          resolution_number: resolution.resolution_number,
+          resolution_id: verifyResolution.id,
+          resolution_number: verifyResolution.resolution_number,
           resolution_type: 'removal',
         }
       );
     } catch (logError) {
       console.warn('⚠️ [BOARD RESOLUTION] Failed to log action (non-critical):', logError);
     }
-
+    
     console.log('🎉 [BOARD RESOLUTION] SUCCESS - Resolution created and linked:', {
-      resolution_id: resolution.id,
-      resolution_number: resolution.resolution_number,
+      resolution_id: verifyResolution.id,
+      resolution_number: verifyResolution.resolution_number,
       workflow_id: workflowId,
     });
-
-    return resolution.id;
+    
+    return verifyResolution.id;
   } catch (error: any) {
     console.error('💥 [BOARD RESOLUTION] CRITICAL ERROR:', error);
     console.error('Error stack:', error.stack);

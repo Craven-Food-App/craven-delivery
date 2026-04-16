@@ -190,13 +190,16 @@ const ExitWorkflowWizard: React.FC = () => {
       await createWorkflowSteps(workflow.id, steps);
 
       // If executive, create Board resolution
-      if (isExecutive) {
+      if (isExecutive && selectedEmployee) {
         try {
           const resolutionId = await createBoardResolutionForRemoval(
-            selectedEmployee,
-            formData.termination_type,
-            formData.termination_reason,
-            dayjs(formData.effective_date).format('YYYY-MM-DD')
+            workflow.id,
+            selectedEmployee.id,
+            `${selectedEmployee.first_name} ${selectedEmployee.last_name}`,
+            selectedEmployee.position,
+            formData.termination_type as any,
+            formData.grounds_for_cause,
+            formData.termination_reason
           );
 
           if (resolutionId) {
