@@ -65,6 +65,67 @@ function injectTorranceSignatureEverywhere(html: string, sigUrl: string): string
   return html.replace(/Torrance\s+A\.?\s*Stroman|Torrance\s+Stroman/gi, img);
 }
 
+function isActiveExecutive(exec: any): boolean {
+  const officerStatus = String(exec?.officer_status || '').toLowerCase().trim();
+  const employmentStatus = String(exec?.employment_status || '').toLowerCase().trim();
+  const terminatedStates = new Set(['terminated', 'exited', 'removed', 'inactive']);
+  if (terminatedStates.has(officerStatus)) return false;
+  if (terminatedStates.has(employmentStatus)) return false;
+  if (exec?.termination_date && employmentStatus && employmentStatus !== 'active') return false;
+  return true;
+}
+
+function buildBylawsOfficerRoster(activeExecs: any[]): {
+  ceoName: string;
+  cfoName: string;
+  ctoName: string;
+  cxoName: string;
+  secretaryName: string;
+  secretaryTitle: string;
+} {
+  const pickByRole = (roleKey: string, fallbackTitleIncludes: string[] = []) =>
+    activeExecs.find((e) => {
+      const role = String(e?.role || '').toLowerCase().trim();
+      const title = String(e?.title || '').toLowerCase().trim();
+      if (role === roleKey) return true;
+      return fallbackTitleIncludes.some((token) => title.includes(token));
+    });
+
+  const ceo = pickByRole('ceo', ['chief executive officer']);
+  const cfo = pickByRole('cfo', ['chief financial officer']);
+  const cto = pickByRole('cto', ['chief technology officer']);
+  const cxo = pickByRole('cxo', ['chief experience officer']);
+
+  // Secretary can be explicit, otherwise default to CEO.
+  const secretary = pickByRole('secretary', ['secretary']) || ceo;
+
+  return {
+    ceoName: ceo?.name || 'To be appointed by the Board',
+    cfoName: cfo?.name || 'To be appointed by the Board',
+    ctoName: cto?.name || 'To be appointed by the Board',
+    cxoName: cxo?.name || 'To be appointed by the Board',
+    secretaryName: secretary?.name || 'To be appointed by the Board',
+    secretaryTitle: secretary?.title || 'Secretary',
+  };
+}
+
+function applyDynamicBylawsRoster(html: string, roster: ReturnType<typeof buildBylawsOfficerRoster>): string {
+  if (!html) return html;
+  const replaceRoleLine = (source: string, roleLabel: string, value: string) =>
+    source.replace(
+      new RegExp(`<li><strong>${roleLabel}:<\\/strong>[\\s\\S]*?<\\/li>`, 'gi'),
+      `<li><strong>${roleLabel}:</strong> ${value}</li>`,
+    );
+
+  let out = html;
+  out = replaceRoleLine(out, 'Chief Executive Officer', roster.ceoName);
+  out = replaceRoleLine(out, 'Chief Financial Officer', roster.cfoName);
+  out = replaceRoleLine(out, 'Chief Technology Officer', roster.ctoName);
+  out = replaceRoleLine(out, 'Chief Experience Officer', roster.cxoName);
+  out = replaceRoleLine(out, 'Secretary', `${roster.secretaryName} (${roster.secretaryTitle})`);
+  return out;
+}
+
 /** Stock certificate only: ensure signature areas show only the image (sized to fit) and plain name. */
 function fixStockCertificateSignatures(html: string, signatureUrl: string): string {
   if (!html || !signatureUrl) return html;
@@ -430,6 +491,41 @@ serve(async (req) => {
       }
     }
 
+    // Build active executive roster for bylaws generation.
+    // This prevents stale/historical officers from being rendered in the current bylaws.
+    let bylawsRoster: ReturnType<typeof buildBylawsOfficerRoster> | null = null;
+    if (document_type === 'bylaws') {
+      const { data: execUsers } = await supabaseAdmin
+        .from('exec_users')
+        .select('id, name, title, role, officer_status, linked_employee_id');
+
+      const linkedEmployeeIds = (execUsers || [])
+        .map((e: any) => e.linked_employee_id)
+        .filter((id: string | null) => !!id);
+
+      let employeesById = new Map<string, any>();
+      if (linkedEmployeeIds.length > 0) {
+        const { data: employees } = await supabaseAdmin
+          .from('employees')
+          .select('id, employment_status, termination_date')
+          .in('id', linkedEmployeeIds);
+        employeesById = new Map((employees || []).map((emp: any) => [emp.id, emp]));
+      }
+
+      const activeExecs = (execUsers || [])
+        .map((e: any) => {
+          const emp = e.linked_employee_id ? employeesById.get(e.linked_employee_id) : null;
+          return {
+            ...e,
+            employment_status: emp?.employment_status ?? null,
+            termination_date: emp?.termination_date ?? null,
+          };
+        })
+        .filter((e: any) => isActiveExecutive(e));
+
+      bylawsRoster = buildBylawsOfficerRoster(activeExecs);
+    }
+
     // Map appointment data to template placeholders - supporting multiple formats
     const templateData: Record<string, any> = {
       // Name variations (all formats) - from exec_users/user_profiles when using new schema
@@ -585,6 +681,15 @@ serve(async (req) => {
       // Additional notes
       notes: appointment.notes || '',
     };
+
+    if (bylawsRoster) {
+      templateData.ceo_name = bylawsRoster.ceoName;
+      templateData.cfo_name = bylawsRoster.cfoName;
+      templateData.cto_name = bylawsRoster.ctoName;
+      templateData.cxo_name = bylawsRoster.cxoName;
+      templateData.secretary_name = bylawsRoster.secretaryName;
+      templateData.secretary_title = bylawsRoster.secretaryTitle;
+    }
 
     // FORMATION-SPECIFIC FIELD MAPPING (ONLY for pre_incorporation_consent)
     if (document_type === 'pre_incorporation_consent') {
@@ -848,6 +953,10 @@ serve(async (req) => {
 
     // Render HTML (replace placeholders)
     let html = htmlContent;
+
+    if (document_type === 'bylaws' && bylawsRoster) {
+      html = applyDynamicBylawsRoster(html, bylawsRoster);
+    }
     
     // Add CSS to hide signature tags but preserve them in PDF
     const signatureTagCSS = `
