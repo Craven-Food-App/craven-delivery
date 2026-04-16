@@ -1952,6 +1952,7 @@ const AppointmentList: React.FC = () => {
                       color: 'cyan',
                       documents: [
                         { key: 'board_resolution', label: 'Board Resolution', url: selectedAppointment.board_resolution_url, type: 'board_resolution' },
+                        { key: 'bylaws', label: 'Bylaws', url: selectedAppointment.bylaws_url, type: 'bylaws' },
                         { key: 'bylaws_acknowledgment', label: 'Bylaws Acknowledgment', url: selectedAppointment.bylaws_acknowledgment_url, type: 'bylaws_acknowledgment' },
                         { key: 'fiduciary_ethics', label: 'Fiduciary Duty & Ethics', url: selectedAppointment.fiduciary_ethics_url, type: 'fiduciary_ethics' },
                         { key: 'conflict_disclosure', label: 'Conflict of Interest Disclosure', url: selectedAppointment.conflict_disclosure_url, type: 'conflict_disclosure' },
@@ -1984,7 +1985,6 @@ const AppointmentList: React.FC = () => {
                       documents: [
                         { key: 'pre_incorporation_consent', label: 'Pre-Incorporation Consent', url: selectedAppointment.pre_incorporation_consent_url, type: 'pre_incorporation_consent' },
                         { key: 'certificate_of_incorporation', label: 'Certificate of Incorporation', url: selectedAppointment.certificate_of_incorporation_url, type: 'certificate_of_incorporation' },
-                        { key: 'bylaws', label: 'Bylaws', url: selectedAppointment.bylaws_url, type: 'bylaws' },
                       ],
                     }] : []),
                   ];

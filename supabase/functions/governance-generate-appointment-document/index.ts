@@ -69,16 +69,11 @@ function isActiveExecutive(exec: any): boolean {
   const officerStatus = String(exec?.officer_status || '').toLowerCase().trim();
   const employmentStatus = String(exec?.employment_status || '').toLowerCase().trim();
   const terminatedStates = new Set(['terminated', 'exited', 'removed', 'inactive', 'revoked']);
-  const activeStates = new Set(['active', 'appointed', 'approved', 'current']);
   if (terminatedStates.has(officerStatus)) return false;
   if (terminatedStates.has(employmentStatus)) return false;
   if (exec?.termination_date && employmentStatus && employmentStatus !== 'active') return false;
-
-  // Be stricter: only include executives clearly marked active/current.
-  // This prevents stale records from being listed in bylaws.
-  if (officerStatus) return activeStates.has(officerStatus);
-  if (employmentStatus) return employmentStatus === 'active';
-  return false;
+  // Default to active unless explicitly terminated/removed.
+  return true;
 }
 
 function buildBylawsOfficerRoster(activeExecs: any[]): {
@@ -868,8 +863,8 @@ serve(async (req) => {
       'board_resolution': 'board_resolution',
       'pre_incorporation_consent': 'initial_director_consent',
       'certificate_of_incorporation': 'certificate_of_incorporation',
-      // Canonical key in migrations/template manager is `bylaws_complete`.
-      'bylaws': 'bylaws_complete',
+      // Use the actual Craven Bylaws template key from Template Manager.
+      'bylaws': 'craven_bylaws',
       
       // Governance documents
       'bylaws_acknowledgment': 'bylaws_acknowledgment',
