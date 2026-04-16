@@ -68,11 +68,17 @@ function injectTorranceSignatureEverywhere(html: string, sigUrl: string): string
 function isActiveExecutive(exec: any): boolean {
   const officerStatus = String(exec?.officer_status || '').toLowerCase().trim();
   const employmentStatus = String(exec?.employment_status || '').toLowerCase().trim();
-  const terminatedStates = new Set(['terminated', 'exited', 'removed', 'inactive']);
+  const terminatedStates = new Set(['terminated', 'exited', 'removed', 'inactive', 'revoked']);
+  const activeStates = new Set(['active', 'appointed', 'approved', 'current']);
   if (terminatedStates.has(officerStatus)) return false;
   if (terminatedStates.has(employmentStatus)) return false;
   if (exec?.termination_date && employmentStatus && employmentStatus !== 'active') return false;
-  return true;
+
+  // Be stricter: only include executives clearly marked active/current.
+  // This prevents stale records from being listed in bylaws.
+  if (officerStatus) return activeStates.has(officerStatus);
+  if (employmentStatus) return employmentStatus === 'active';
+  return false;
 }
 
 function buildBylawsOfficerRoster(activeExecs: any[]): {
@@ -80,6 +86,7 @@ function buildBylawsOfficerRoster(activeExecs: any[]): {
   cfoName: string;
   ctoName: string;
   cxoName: string;
+  cpoName: string;
   secretaryName: string;
   secretaryTitle: string;
 } {
@@ -95,17 +102,20 @@ function buildBylawsOfficerRoster(activeExecs: any[]): {
   const cfo = pickByRole('cfo', ['chief financial officer']);
   const cto = pickByRole('cto', ['chief technology officer']);
   const cxo = pickByRole('cxo', ['chief experience officer']);
+  const cpo = pickByRole('cpo', ['chief partnership officer', 'chief partnerships officer']);
 
   // Secretary can be explicit, otherwise default to CEO.
   const secretary = pickByRole('secretary', ['secretary']) || ceo;
+  const secretaryName = secretary?.name || ceo?.name || 'To be appointed by the Board';
 
   return {
     ceoName: ceo?.name || 'To be appointed by the Board',
     cfoName: cfo?.name || 'To be appointed by the Board',
     ctoName: cto?.name || 'To be appointed by the Board',
     cxoName: cxo?.name || 'To be appointed by the Board',
-    secretaryName: secretary?.name || 'To be appointed by the Board',
-    secretaryTitle: secretary?.title || 'Secretary',
+    cpoName: cpo?.name || 'To be appointed by the Board',
+    secretaryName,
+    secretaryTitle: 'Secretary',
   };
 }
 
@@ -122,6 +132,16 @@ function applyDynamicBylawsRoster(html: string, roster: ReturnType<typeof buildB
   out = replaceRoleLine(out, 'Chief Financial Officer', roster.cfoName);
   out = replaceRoleLine(out, 'Chief Technology Officer', roster.ctoName);
   out = replaceRoleLine(out, 'Chief Experience Officer', roster.cxoName);
+  out = replaceRoleLine(out, 'Chief Partnership Officer', roster.cpoName);
+
+  // If template does not yet include CPO line, insert it before Secretary.
+  if (!/Chief Partnership Officer:/i.test(out)) {
+    out = out.replace(
+      /<li><strong>Secretary:<\/strong>[\s\S]*?<\/li>/i,
+      `<li><strong>Chief Partnership Officer:</strong> ${roster.cpoName}</li>\n$&`,
+    );
+  }
+
   out = replaceRoleLine(out, 'Secretary', `${roster.secretaryName} (${roster.secretaryTitle})`);
   return out;
 }
@@ -687,6 +707,7 @@ serve(async (req) => {
       templateData.cfo_name = bylawsRoster.cfoName;
       templateData.cto_name = bylawsRoster.ctoName;
       templateData.cxo_name = bylawsRoster.cxoName;
+      templateData.cpo_name = bylawsRoster.cpoName;
       templateData.secretary_name = bylawsRoster.secretaryName;
       templateData.secretary_title = bylawsRoster.secretaryTitle;
     }
