@@ -18,6 +18,7 @@ import {
 } from '@mantine/core';
 import { IconCheckbox, IconCheck, IconX, IconMinus, IconAlertCircle } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import dayjs from 'dayjs';
 import { notifications } from '@mantine/notifications';
 
 const SUPABASE_FUNCTIONS_URL =
@@ -148,9 +149,34 @@ const ResolutionVotingDashboard: React.FC = () => {
       });
       
       const uniqueResolutions = Array.from(resolutionMap.values());
+
+      // Merge duplicate "Removal of Justin Sweet" resolutions into a single entry
+      const mergedBySubject = Object.values(
+        uniqueResolutions.reduce((acc: Record<string, any>, r: any) => {
+          const title = (r.title || '').toLowerCase();
+          const isJustinRemoval =
+            r.type === 'EXECUTIVE_REMOVAL' &&
+            title.includes('removal of justin sweet');
+
+          const key = isJustinRemoval ? 'JUSTIN_SWEET_EXECUTIVE_REMOVAL' : r.resolution_number;
+          const existing = acc[key];
+
+          if (!existing) {
+            acc[key] = r;
+          } else {
+            const existingDate = dayjs(existing.created_at || existing.effective_date);
+            const candidateDate = dayjs(r.created_at || r.effective_date);
+            if (candidateDate.isAfter(existingDate)) {
+              acc[key] = r;
+            }
+          }
+
+          return acc;
+        }, {})
+      );
       
-      console.log(`📋 [VOTING] Total unique resolutions: ${uniqueResolutions.length}`);
-      console.log(`📋 [VOTING] Resolutions:`, uniqueResolutions.map(r => ({
+      console.log(`📋 [VOTING] Total unique resolutions: ${mergedBySubject.length}`);
+      console.log(`📋 [VOTING] Resolutions:`, mergedBySubject.map(r => ({
         number: r.resolution_number,
         title: r.title,
         status: r.status,
@@ -160,7 +186,7 @@ const ResolutionVotingDashboard: React.FC = () => {
       
       // Show ALL resolutions - don't filter by status
       // Users should see all resolutions to understand what's been voted on
-      const votableResolutions = uniqueResolutions;
+      const votableResolutions = mergedBySubject;
       
       console.log(`🗳️ [VOTING] Showing all ${votableResolutions.length} resolutions`);
 

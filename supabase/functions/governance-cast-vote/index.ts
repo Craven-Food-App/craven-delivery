@@ -65,21 +65,26 @@ serve(async (req) => {
     });
 
     // Get board member for this user
-    // The board_members table uses 'status' column with value 'Active', not 'is_active'
-    let { data: boardMember, error: boardError } = await supabaseAdmin
+    // IMPORTANT: avoid PostgREST single()/maybeSingle() here, because they throw when 0 or >1 rows.
+    let boardMember: { id: string } | null = null;
+    const { data: boardRows, error: boardError } = await supabaseAdmin
       .from('board_members')
-      .select('id')
+      .select('id, created_at')
       .eq('user_id', user.id)
       .eq('status', 'Active')
-      .maybeSingle(); // Use maybeSingle() instead of single() to avoid error on not found
+      .order('created_at', { ascending: false });
 
-    // If no board member record exists, check if user has board member role and create one
     if (boardError) {
       console.error('Error checking board member:', boardError);
       return new Response(
         JSON.stringify({ error: `Failed to check board member status: ${boardError.message}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    if (boardRows && boardRows.length > 0) {
+      // Use the most recently created active board member row
+      boardMember = { id: boardRows[0].id };
     }
 
     if (!boardMember) {

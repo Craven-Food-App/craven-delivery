@@ -39,12 +39,15 @@ export async function parsePDFResume(file: File): Promise<ParsedResume> {
   console.log('[ResumeParser] Starting PDF parse for:', file.name);
   
   try {
-    // Dynamic import of pdfjs-dist with proper error handling
+    // Dynamic import of pdfjs-dist with proper error handling.
+    // Use CDN-based module URL and @vite-ignore so Vite doesn't need to resolve the package entry.
     let pdfjsLib: any;
     try {
-      console.log('[ResumeParser] Attempting to import pdfjs-dist...');
-      pdfjsLib = await import(/* @vite-ignore */ 'pdfjs-dist');
-      console.log('[ResumeParser] pdfjs-dist imported successfully, version:', pdfjsLib.version);
+      console.log('[ResumeParser] Attempting to import pdfjs-dist from CDN...');
+      const pdfModuleUrl = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.530/build/pdf.min.mjs';
+      // @ts-ignore - dynamic import URL
+      pdfjsLib = await import(/* @vite-ignore */ pdfModuleUrl);
+      console.log('[ResumeParser] pdfjs-dist imported successfully, version:', (pdfjsLib as any).version || 'unknown');
     } catch (importError: any) {
       console.error('[ResumeParser] Failed to import pdfjs-dist:', importError);
       throw new Error(`Failed to load PDF parser: ${importError.message}`);

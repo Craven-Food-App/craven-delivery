@@ -123,7 +123,32 @@ const ExitWorkflowsTab: React.FC = () => {
         })
       );
 
-      setWorkflows(workflowsWithExecutives);
+      // Merge multiple workflows for the same person (e.g. Justin Sweet) into a single entry
+      const mergedByEmployee = Object.values(
+        workflowsWithExecutives.reduce((acc: Record<string, ExitWorkflow>, wf: any) => {
+          const key = wf.employee?.id || wf.employee_id;
+          if (!key) {
+            // Fallback key so unlinked rows still appear
+            acc[wf.id] = wf;
+            return acc;
+          }
+
+          const existing = acc[key];
+          if (!existing) {
+            acc[key] = wf;
+          } else {
+            // Keep the most recent effective / created date as the canonical row
+            const existingDate = dayjs(existing.effective_date || existing.created_at);
+            const candidateDate = dayjs(wf.effective_date || wf.created_at);
+            if (candidateDate.isAfter(existingDate)) {
+              acc[key] = wf;
+            }
+          }
+          return acc;
+        }, {})
+      ) as ExitWorkflow[];
+
+      setWorkflows(mergedByEmployee);
     } catch (err) {
       console.error('Error loading exit workflows:', err);
     } finally {
