@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, DollarSign, TrendingUp, Settings, History, Target, BarChart3 } from 'lucide-react';
+import { RefreshCw, DollarSign, TrendingUp, Settings, History, Target, BarChart3, CalendarClock } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { GlobalSettings } from './components/GlobalSettings';
@@ -10,6 +10,7 @@ import { RestaurantOverrides } from './components/RestaurantOverrides';
 import { RevenueAnalytics } from './components/RevenueAnalytics';
 import { ImpactSimulator } from './components/ImpactSimulator';
 import { ChangeHistory } from './components/ChangeHistory';
+import { MerchantCycleSettings } from './components/MerchantCycleSettings';
 
 export function EnhancedCommissionDashboard() {
   const [loading, setLoading] = useState(true);
@@ -101,7 +102,7 @@ export function EnhancedCommissionDashboard() {
 
       {/* Main Tabs */}
       <Tabs defaultValue="global" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1 h-auto">
           <TabsTrigger value="global">
             <Settings className="h-4 w-4 mr-2" />
             Global Settings
@@ -109,6 +110,10 @@ export function EnhancedCommissionDashboard() {
           <TabsTrigger value="tiers">
             <Target className="h-4 w-4 mr-2" />
             Tier System
+          </TabsTrigger>
+          <TabsTrigger value="cycles">
+            <CalendarClock className="h-4 w-4 mr-2" />
+            Merchant cycles
           </TabsTrigger>
           <TabsTrigger value="overrides">
             <DollarSign className="h-4 w-4 mr-2" />
@@ -140,6 +145,10 @@ export function EnhancedCommissionDashboard() {
             tiers={tiers}
             onRefresh={() => fetchData(true)}
           />
+        </TabsContent>
+
+        <TabsContent value="cycles" className="mt-6">
+          <MerchantCycleSettings />
         </TabsContent>
 
         <TabsContent value="overrides" className="mt-6">

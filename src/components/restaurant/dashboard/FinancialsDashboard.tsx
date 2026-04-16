@@ -129,6 +129,7 @@ export default function FinancialsDashboard({ restaurantId: restaurantIdProp }: 
   const [loading, setLoading] = useState(true);
   const [payoutData, setPayoutData] = useState<PayoutData | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [tierSnapshot, setTierSnapshot] = useState<Record<string, unknown> | null>(null);
 
   const resolveRestaurant = useCallback(async () => {
     if (restaurantIdProp) {
@@ -149,6 +150,28 @@ export default function FinancialsDashboard({ restaurantId: restaurantIdProp }: 
   useEffect(() => {
     resolveRestaurant();
   }, [resolveRestaurant]);
+
+  useEffect(() => {
+    if (!restaurantId) {
+      setTierSnapshot(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.rpc("get_merchant_commission_tier_snapshot", {
+        p_restaurant_id: restaurantId,
+      });
+      if (cancelled) return;
+      if (error || !data) {
+        setTierSnapshot(null);
+        return;
+      }
+      setTierSnapshot(data as Record<string, unknown>);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [restaurantId]);
 
   useEffect(() => {
     if (!restaurantId) return;
@@ -437,6 +460,92 @@ export default function FinancialsDashboard({ restaurantId: restaurantIdProp }: 
         </div>
 
         <div style={{ padding: "24px 28px" }}>
+          {tierSnapshot && !loading && (
+            <div
+              style={{
+                marginBottom: 20,
+                padding: "14px 18px",
+                borderRadius: 10,
+                border: "1px solid #fed7aa",
+                background: "linear-gradient(135deg, #fffbeb 0%, #fff7ed 100%)",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "#9a3412",
+                  marginBottom: 10,
+                }}
+              >
+                Commission tier (current cycle)
+              </p>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                  gap: 12,
+                  fontSize: 12.5,
+                  color: "#374151",
+                }}
+              >
+                <div>
+                  <span style={{ color: "#9ca3af" }}>Cycle</span>
+                  <div style={{ fontWeight: 600 }}>
+                    {(tierSnapshot.tier_reset_cycle as string) === "quarterly" ? "Quarterly" : "Monthly"}
+                    {tierSnapshot.is_founding_merchant ? " · Founding merchant" : ""}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ color: "#9ca3af" }}>Period</span>
+                  <div style={{ fontWeight: 600 }}>
+                    {tierSnapshot.period_start && tierSnapshot.period_end
+                      ? `${new Date(tierSnapshot.period_start as string).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })} – ${new Date(tierSnapshot.period_end as string).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}`
+                      : "—"}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ color: "#9ca3af" }}>Volume this period</span>
+                  <div style={{ fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace" }}>
+                    {formatCurrency(Number(tierSnapshot.volume_dollars ?? 0))}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ color: "#9ca3af" }}>Current rate</span>
+                  <div style={{ fontWeight: 700, color: "#ea580c" }}>
+                    {tierSnapshot.is_override
+                      ? "(Override)"
+                      : (tierSnapshot.tier_name as string) || "—"}{" "}
+                    · {Number(tierSnapshot.commission_percent ?? 0)}%
+                  </div>
+                </div>
+                {tierSnapshot.next_tier && typeof tierSnapshot.next_tier === "object" ? (
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <span style={{ color: "#9ca3af" }}>Next tier</span>
+                    <div style={{ fontWeight: 600 }}>
+                      {Number((tierSnapshot.next_tier as { commission_percent?: number }).commission_percent ?? 0)}% at{" "}
+                      {formatCurrency(
+                        Number((tierSnapshot.next_tier as { threshold_dollars?: number }).threshold_dollars ?? 0)
+                      )}{" "}
+                      (
+                      {(tierSnapshot.next_tier as { tier_name?: string }).tier_name ?? "next"}
+                      )
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )}
           {loading ? (
             <div className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>

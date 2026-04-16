@@ -39,56 +39,70 @@ serve(async (req) => {
       throw new Error('Restaurant not found or unauthorized')
     }
 
-    // Get commission settings
-    const { data: commissionSettings } = await supabaseClient
-      .from('commission_settings')
-      .select('*')
-      .eq('is_active', true)
-      .single()
+    const { data: resolvedBps } = await supabaseClient.rpc('resolve_merchant_commission_bps', {
+      p_restaurant_id: restaurantId,
+    })
+    const commissionBps =
+      typeof resolvedBps === 'number' && Number.isFinite(resolvedBps) ? resolvedBps : 1500
+    const commissionRate = commissionBps / 100
 
-    const commissionRate = commissionSettings?.restaurant_commission_percent || 10
-
-    // Get completed orders in date range
     const { data: orders } = await supabaseClient
       .from('orders')
-      .select('*')
+      .select(
+        'id, order_number, total_cents, food_subtotal_cents, subtotal_cents, merchant_commission_cents, merchant_payout_cents, created_at, order_status'
+      )
       .eq('restaurant_id', restaurantId)
-      .eq('status', 'completed')
+      .eq('order_status', 'delivered')
       .gte('created_at', startDate)
       .lte('created_at', endDate)
 
     if (!orders || orders.length === 0) {
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           totalRevenue: 0,
           totalCommission: 0,
           netPayout: 0,
-          orderCount: 0
+          orderCount: 0,
+          commissionRate,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Calculate totals
-    const totalRevenue = orders.reduce((sum, order) => sum + (order.total_cents || 0), 0)
-    const totalCommission = Math.round(totalRevenue * (commissionRate / 100))
-    const netPayout = totalRevenue - totalCommission
+    let totalRevenue = 0
+    let totalCommission = 0
+    let netPayout = 0
+    for (const order of orders) {
+      const food =
+        (order.food_subtotal_cents ?? order.subtotal_cents ?? order.total_cents ?? 0) as number
+      totalRevenue += food
+      const mc = order.merchant_commission_cents
+      const mp = order.merchant_payout_cents
+      if (typeof mc === 'number' && mc > 0) {
+        totalCommission += mc
+        netPayout += typeof mp === 'number' && mp > 0 ? mp : food - mc
+      } else {
+        const c = Math.round((food * commissionBps) / 10000)
+        totalCommission += c
+        netPayout += food - c
+      }
+    }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         totalRevenue,
         totalCommission,
         netPayout,
         orderCount: orders.length,
         commissionRate,
-        orders: orders.map(o => ({
+        orders: orders.map((o) => ({
           id: o.id,
           orderNumber: o.order_number,
           total: o.total_cents,
-          createdAt: o.created_at
-        }))
+          createdAt: o.created_at,
+        })),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

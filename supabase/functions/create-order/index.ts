@@ -329,6 +329,14 @@ serve(async (req) => {
       .eq('is_active', true)
       .maybeSingle();
 
+    const { data: resolvedMerchantBps } = await supabaseAdmin.rpc('resolve_merchant_commission_bps', {
+      p_restaurant_id: restaurant_id,
+    });
+    const merchantCommissionBps =
+      typeof resolvedMerchantBps === 'number' && Number.isFinite(resolvedMerchantBps)
+        ? resolvedMerchantBps
+        : Number(payoutSettings?.merchant_commission_bps ?? 1500);
+
     const snapshotBasePayCents = Number(payoutSettings?.driver_base_pay_cents ?? 250);
     const snapshotShareBps = Number(payoutSettings?.driver_delivery_fee_share_bps ?? 7000);
     const initialDeliveryFeesTotalCents = delivery_method === 'delivery' ? finalDeliveryFee : 0;
@@ -395,7 +403,7 @@ serve(async (req) => {
       'calculate_merchant_payout_cents',
       {
         p_food_subtotal_cents: finalSubtotal,
-        p_merchant_commission_bps: Number(payoutSettings?.merchant_commission_bps ?? 1500)
+        p_merchant_commission_bps: merchantCommissionBps,
       }
     );
 

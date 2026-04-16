@@ -25993,6 +25993,8 @@ export type Database = {
           email: string | null
           estimated_delivery_time: number | null
           expected_monthly_orders: number | null
+          founding_merchant_approved_at: string | null
+          founding_merchant_slot_number: number | null
           go_live_scheduled_at: string | null
           has_physical_location: boolean | null
           header_image_url: string | null
@@ -26002,6 +26004,7 @@ export type Database = {
           instagram_handle: string | null
           insurance_certificate_url: string | null
           is_active: boolean | null
+          is_founding_merchant: boolean
           is_promoted: boolean
           latitude: number | null
           logo_url: string | null
@@ -26046,6 +26049,7 @@ export type Database = {
           stripe_payouts_enabled: boolean | null
           tablet_password: string | null
           tablet_shipped_at: string | null
+          tier_reset_cycle: string
           total_reviews: number
           updated_at: string | null
           verification_notes: Json | null
@@ -26071,6 +26075,8 @@ export type Database = {
           email?: string | null
           estimated_delivery_time?: number | null
           expected_monthly_orders?: number | null
+          founding_merchant_approved_at?: string | null
+          founding_merchant_slot_number?: number | null
           go_live_scheduled_at?: string | null
           has_physical_location?: boolean | null
           header_image_url?: string | null
@@ -26080,6 +26086,7 @@ export type Database = {
           instagram_handle?: string | null
           insurance_certificate_url?: string | null
           is_active?: boolean | null
+          is_founding_merchant?: boolean
           is_promoted?: boolean
           latitude?: number | null
           logo_url?: string | null
@@ -26124,6 +26131,7 @@ export type Database = {
           stripe_payouts_enabled?: boolean | null
           tablet_password?: string | null
           tablet_shipped_at?: string | null
+          tier_reset_cycle?: string
           total_reviews?: number
           updated_at?: string | null
           verification_notes?: Json | null
@@ -26149,6 +26157,8 @@ export type Database = {
           email?: string | null
           estimated_delivery_time?: number | null
           expected_monthly_orders?: number | null
+          founding_merchant_approved_at?: string | null
+          founding_merchant_slot_number?: number | null
           go_live_scheduled_at?: string | null
           has_physical_location?: boolean | null
           header_image_url?: string | null
@@ -26158,6 +26168,7 @@ export type Database = {
           instagram_handle?: string | null
           insurance_certificate_url?: string | null
           is_active?: boolean | null
+          is_founding_merchant?: boolean
           is_promoted?: boolean
           latitude?: number | null
           logo_url?: string | null
@@ -26202,6 +26213,7 @@ export type Database = {
           stripe_payouts_enabled?: boolean | null
           tablet_password?: string | null
           tablet_shipped_at?: string | null
+          tier_reset_cycle?: string
           total_reviews?: number
           updated_at?: string | null
           verification_notes?: Json | null
@@ -31420,6 +31432,10 @@ export type Database = {
         Args: { p_restaurant_id: string }
         Returns: Json
       }
+      get_merchant_commission_tier_snapshot: {
+        Args: { p_restaurant_id: string }
+        Returns: Json
+      }
       get_merchant_id_prefix_by_email: {
         Args: { p_email: string }
         Returns: string
@@ -31807,6 +31823,10 @@ export type Database = {
       request_restaurant: {
         Args: { p_restaurant_master_id: string }
         Returns: Json
+      }
+      resolve_merchant_commission_bps: {
+        Args: { p_restaurant_id: string }
+        Returns: number
       }
       reserve_inventory: {
         Args: { p_items: Json; p_restaurant_id: string }

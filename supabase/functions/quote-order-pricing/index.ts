@@ -97,7 +97,14 @@ serve(async (req) => {
 
     const driver_base_pay_cents = Number(payoutSettings?.driver_base_pay_cents ?? 250);
     const driver_share_bps = Number(payoutSettings?.driver_delivery_fee_share_bps ?? 7000);
-    const merchant_commission_bps = Number(payoutSettings?.merchant_commission_bps ?? 1500);
+
+    const { data: resolvedMerchantBps } = await supabase.rpc('resolve_merchant_commission_bps', {
+      p_restaurant_id: restaurant_id,
+    });
+    const merchant_commission_bps =
+      typeof resolvedMerchantBps === 'number' && Number.isFinite(resolvedMerchantBps)
+        ? resolvedMerchantBps
+        : Number(payoutSettings?.merchant_commission_bps ?? 1500);
 
     // Calculate driver payout
     const { data: driverPayout } = await supabase.rpc(

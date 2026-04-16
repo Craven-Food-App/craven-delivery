@@ -70,7 +70,8 @@ export function TierManagement({ tiers, onRefresh }: TierManagementProps) {
             <h3 className="text-xl font-bold">Performance-Based Tier System</h3>
           </div>
           <p className="text-sm text-muted-foreground">
-            Restaurants automatically upgrade to better tiers based on monthly order volume. Lower commission = higher volume incentive!
+            Restaurants move between tiers based on eligible food volume in the active cycle: monthly (calendar
+            month) by default, or quarterly (calendar quarter) when set on the merchant. Top rate is 15%.
           </p>
         </CardContent>
       </Card>
@@ -111,7 +112,7 @@ export function TierManagement({ tiers, onRefresh }: TierManagementProps) {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="h-4 w-4" />
-                  <span className="font-medium">Monthly Volume:</span>
+                  <span className="font-medium">Volume band (USD):</span>
                 </div>
                 <div className="text-sm">
                   ${(tier.min_monthly_volume / 1000).toFixed(0)}k
@@ -152,9 +153,9 @@ export function TierManagement({ tiers, onRefresh }: TierManagementProps) {
             <div className="space-y-2">
               <h4 className="font-semibold text-blue-900">How Tier Auto-Upgrade Works:</h4>
               <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                <li>Tiers are calculated based on last 30 days order volume</li>
-                <li>System automatically upgrades restaurants when they hit thresholds</li>
-                <li>Commission rate updates take effect at start of next billing cycle</li>
+                <li>Monthly merchants: tier uses month-to-date delivered food subtotal</li>
+                <li>Quarterly merchants: tier uses quarter-to-date delivered food subtotal (calendar quarters)</li>
+                <li>Commission rate for new orders follows the resolved tier (see Merchant cycles tab)</li>
                 <li>Higher tiers get premium benefits + lower commission rates</li>
                 <li>Restaurants can see their current tier and next tier goal in merchant portal</li>
               </ul>
@@ -185,7 +186,7 @@ export function TierManagement({ tiers, onRefresh }: TierManagementProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="minVolume">Minimum Monthly Volume ($)</Label>
+                <Label htmlFor="minVolume">Minimum volume ($)</Label>
                 <Input
                   id="minVolume"
                   type="number"
@@ -197,7 +198,7 @@ export function TierManagement({ tiers, onRefresh }: TierManagementProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxVolume">Maximum Monthly Volume ($)</Label>
+                <Label htmlFor="maxVolume">Maximum volume ($)</Label>
                 <Input
                   id="maxVolume"
                   type="number"
