@@ -13,6 +13,7 @@ import {
   Paper,
   Text,
   Loader,
+  Modal,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { IconCoins, IconUser, IconCalendar, IconChartBar, IconCheck } from '@tabler/icons-react';
@@ -210,6 +211,7 @@ const EquityGrantWizard: React.FC<EquityGrantWizardProps> = ({ opened = true, on
 
       // Dispatch event to refresh equity grants list
       window.dispatchEvent(new CustomEvent('equityGrantCreated'));
+      onClose?.();
 
       // Reset form
       setFormData({
