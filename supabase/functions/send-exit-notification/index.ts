@@ -4,6 +4,69 @@ import { Resend } from "https://esm.sh/resend@4.0.0";
 
 import { getCorsHeaders } from '../_shared/cors.ts';
 
+async function archiveExitDocument(
+  supabase: any,
+  options: {
+    workflowId?: string;
+    recipientEmail?: string;
+    recipientName?: string;
+    docType: string;
+    html: string;
+    actorId?: string | null;
+  }
+) {
+  const workflowId = options.workflowId || 'unknown-workflow';
+  const recipientEmail = options.recipientEmail || '';
+  const recipientName = options.recipientName || 'Unknown';
+  const now = new Date();
+  const safeEmail = (recipientEmail || 'unknown').replace(/[^a-zA-Z0-9._-]/g, '_');
+  const fileName = `${workflowId}_${options.docType}_${safeEmail}_${now.getTime()}.html`;
+  const storagePath = `exit-workflows/${workflowId}/${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('documents')
+    .upload(storagePath, new TextEncoder().encode(options.html), {
+      contentType: 'text/html; charset=utf-8',
+      upsert: true,
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data: publicUrlData } = supabase.storage.from('documents').getPublicUrl(storagePath);
+  const publicUrl = publicUrlData?.publicUrl || null;
+
+  let executiveId: string | null = null;
+  let role = 'employee';
+
+  if (recipientEmail) {
+    const { data: employee } = await supabase
+      .from('employees')
+      .select('user_id')
+      .eq('email', recipientEmail)
+      .maybeSingle();
+
+    if (employee?.user_id) {
+      const { data: exec } = await supabase
+        .from('exec_users')
+        .select('id, role')
+        .eq('user_id', employee.user_id)
+        .maybeSingle();
+      executiveId = exec?.id || null;
+      role = exec?.role || role;
+    }
+  }
+
+  await supabase.from('executive_documents').insert({
+    type: options.docType,
+    officer_name: recipientName,
+    role,
+    status: 'generated',
+    file_url: publicUrl,
+    executive_id: executiveId,
+    created_by: options.actorId || null,
+  });
+}
+
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req.headers.get('origin'));
 
@@ -15,6 +78,17 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const authHeader = req.headers.get('Authorization');
+    let actorId: string | null = null;
+
+    if (authHeader) {
+      const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+      const authed = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: authData } = await authed.auth.getUser();
+      actorId = authData?.user?.id || null;
+    }
 
     const body = await req.json();
     const { type } = body;
@@ -166,6 +240,19 @@ serve(async (req) => {
           subject: `Termination Notice - Effective ${effectiveDateFormatted}`,
           html: emailHtml,
         });
+
+        try {
+          await archiveExitDocument(supabase, {
+            workflowId: workflow_id,
+            recipientEmail: recipient_email,
+            recipientName: recipient_name,
+            docType: 'termination_letter',
+            html: emailHtml,
+            actorId,
+          });
+        } catch (archiveError) {
+          console.warn('Failed to archive termination letter:', archiveError);
+        }
 
         console.log('Termination notice sent:', {
           recipient_email,
@@ -334,6 +421,19 @@ serve(async (req) => {
           subject: 'Exit Workflow Completed',
           html: emailHtml,
         });
+
+        try {
+          await archiveExitDocument(supabase, {
+            workflowId: workflow_id,
+            recipientEmail: recipient_email,
+            recipientName: recipient_name,
+            docType: 'exit_completion_letter',
+            html: emailHtml,
+            actorId,
+          });
+        } catch (archiveError) {
+          console.warn('Failed to archive exit completion letter:', archiveError);
+        }
 
         console.log('Completion notice sent:', {
           recipient_email,

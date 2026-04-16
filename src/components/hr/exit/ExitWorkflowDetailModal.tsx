@@ -14,6 +14,7 @@ import { AssetReturnStep } from './AssetReturnStep';
 import { FinalSettlementStep } from './FinalSettlementStep';
 import { logExitWorkflowAction, createBoardResolutionForRemoval } from '@/utils/exitWorkflowUtils';
 import { sendTerminationNotice } from '@/utils/exitWorkflowNotifications';
+import { sendCompletionNotification, sendInternalNotification } from '@/utils/exitWorkflowNotifications';
 import dayjs from 'dayjs';
 
 const { Title, Text, Paragraph } = Typography;
@@ -59,8 +60,11 @@ export const ExitWorkflowDetailModal: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [sendingNotice, setSendingNotice] = useState(false);
+  const [sendingNotifications, setSendingNotifications] = useState(false);
   const [completingWorkflow, setCompletingWorkflow] = useState(false);
   const [creatingResolution, setCreatingResolution] = useState(false);
+  const [creatingEquityResolution, setCreatingEquityResolution] = useState(false);
+  const [syncingEquityDecision, setSyncingEquityDecision] = useState(false);
   const [refreshingStatus, setRefreshingStatus] = useState(false);
   const [workflowData, setWorkflowData] = useState<ExitWorkflow>(workflow);
 
@@ -90,11 +94,149 @@ export const ExitWorkflowDetailModal: React.FC<Props> = ({
     }
   };
 
+  const dispatchCompletionNotifications = async (actorId: string) => {
+    const { data: employee, error: employeeError } = await supabase
+      .from('employees')
+      .select('user_id, email, first_name, last_name, position')
+      .eq('id', workflowData.employee_id)
+      .single();
+
+    if (employeeError) throw employeeError;
+
+    const employeeName = `${employee?.first_name || ''} ${employee?.last_name || ''}`.trim() || 'Executive';
+    if (!employee?.email) {
+      throw new Error('Cannot send notifications: employee email is missing.');
+    }
+
+    const internalRoles = [
+      'hr',
+      'admin',
+      'governance_admin',
+      'ceo',
+      'cfo',
+      'coo',
+      'cto',
+      'cxo',
+      'CRAVEN_CEO',
+      'CRAVEN_CFO',
+      'CRAVEN_COO',
+      'CRAVEN_CTO',
+      'CRAVEN_CXO',
+    ];
+
+    const { data: roleRows } = await supabase
+      .from('user_roles')
+      .select('user_id, role')
+      .in('role', internalRoles);
+
+    const roleMapByUserId = new Map<string, string>();
+    (roleRows || []).forEach((row: any) => {
+      if (!row?.user_id) return;
+      if (!roleMapByUserId.has(row.user_id)) {
+        roleMapByUserId.set(row.user_id, String(row.role || '').toLowerCase());
+      }
+    });
+
+    const internalUserIds = Array.from(roleMapByUserId.keys());
+    let internalRecipients: any[] = [];
+    if (internalUserIds.length > 0) {
+      const { data: profileRows } = await supabase
+        .from('user_profiles')
+        .select('user_id, full_name, email')
+        .in('user_id', internalUserIds);
+
+      internalRecipients = (profileRows || [])
+        .filter((profile: any) => !!profile?.email)
+        .map((profile: any) => ({
+          email: profile.email,
+          name: profile.full_name || 'Team Member',
+          role: roleMapByUserId.get(profile.user_id) || 'hr',
+        }));
+    }
+
+    if (internalRecipients.length === 0) {
+      const { data: actorProfile } = await supabase
+        .from('user_profiles')
+        .select('full_name, email')
+        .eq('user_id', actorId)
+        .maybeSingle();
+      if (actorProfile?.email) {
+        internalRecipients = [{
+          email: actorProfile.email,
+          name: actorProfile.full_name || 'Workflow Operator',
+          role: 'hr',
+        }];
+      }
+    }
+
+    const completionSent = await sendCompletionNotification(
+      workflowData.id,
+      employee.email,
+      employeeName
+    );
+    if (!completionSent) {
+      throw new Error('Failed to send employee completion notice');
+    }
+
+    const internalMessage = [
+      `Exit workflow completed for ${employeeName}.`,
+      `Workflow ID: ${workflowData.id}`,
+      `Position: ${employee?.position || workflowData.employee?.position || 'N/A'}`,
+      `Effective date: ${workflowData.effective_date}`,
+      `Termination type: ${workflowData.termination_type || 'without_cause'}`,
+      '',
+      'This confirms that final settlement, equity handling, and workflow completion were finalized.',
+    ].join('\n');
+
+    const internalSent = internalRecipients.length > 0
+      ? await sendInternalNotification(workflowData.id, internalRecipients, internalMessage)
+      : true;
+    if (!internalSent) {
+      throw new Error('Failed to send internal completion notifications');
+    }
+
+    await supabase
+      .from('exit_workflow_steps')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        completed_by: actorId,
+        notes: `Notifications sent: completion notice to ${employee.email}; internal closeout to ${internalRecipients.length} recipient(s).`,
+      })
+      .eq('workflow_id', workflowData.id)
+      .eq('step_name', 'send_notifications');
+
+    return { employeeEmail: employee.email, internalRecipientCount: internalRecipients.length };
+  };
+
+  const handleSendNotificationsNow = async () => {
+    setSendingNotifications(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const result = await dispatchCompletionNotifications(user.id);
+      message.success(`Notifications sent: ${result.employeeEmail} + ${result.internalRecipientCount} internal recipient(s).`);
+      await fetchWorkflowSteps();
+      onUpdate();
+    } catch (error: any) {
+      console.error('Error sending completion notifications:', error);
+      message.error(error.message || 'Failed to send notifications');
+    } finally {
+      setSendingNotifications(false);
+    }
+  };
+
   const handleCompleteWorkflow = async () => {
     setCompletingWorkflow(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
+
+      const notificationStep = steps.find((step) => step.step_name === 'send_notifications');
+      if (!notificationStep || notificationStep.status !== 'completed') {
+        await dispatchCompletionNotifications(user.id);
+      }
 
       // Mark complete_workflow step as completed
       await supabase
@@ -289,6 +431,157 @@ export const ExitWorkflowDetailModal: React.FC<Props> = ({
     }
   };
 
+  const handleEscalateEquityToBoard = async () => {
+    setCreatingEquityResolution(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const employeeName = `${workflowData.employee?.first_name || ''} ${workflowData.employee?.last_name || ''}`.trim() || 'Executive';
+      const resolutionNumber = `EQ-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+
+      const { data: inserted, error: insertError } = await supabase
+        .from('governance_board_resolutions')
+        .insert({
+          resolution_number: resolutionNumber,
+          title: `Equity Revocation Approval - ${employeeName}`,
+          description: `Board approval required to revoke/remove equity for ${employeeName} as part of exit workflow ${workflowData.id}.`,
+          type: 'equity_grant',
+          status: 'DRAFT',
+          effective_date: workflowData.effective_date || null,
+          created_by: user.id,
+        })
+        .select('id')
+        .single();
+
+      if (insertError) throw insertError;
+
+      await supabase
+        .from('exit_workflow_steps')
+        .update({
+          status: 'in_progress',
+          notes: `Escalated to board resolution ${resolutionNumber}`,
+        })
+        .eq('workflow_id', workflowData.id)
+        .eq('step_name', 'handle_equity');
+
+      await supabase.from('governance_logs').insert({
+        action: 'EQUITY_REVOCATION_ESCALATED_TO_BOARD',
+        actor_id: user.id,
+        entity_type: 'EXIT_WORKFLOW',
+        entity_id: workflowData.id,
+        description: `Equity revocation escalated to board for ${employeeName}`,
+        data: {
+          workflow_id: workflowData.id,
+          governance_resolution_id: inserted?.id || null,
+          resolution_number: resolutionNumber,
+        },
+      });
+
+      message.success(`Equity escalation sent to board (${resolutionNumber})`);
+      fetchWorkflowSteps();
+      onUpdate();
+    } catch (error: any) {
+      console.error('Error escalating equity to board:', error);
+      message.error(error.message || 'Failed to escalate equity revocation to board');
+    } finally {
+      setCreatingEquityResolution(false);
+    }
+  };
+
+  const handleSyncEquityDecision = async () => {
+    setSyncingEquityDecision(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: employeeData, error: employeeError } = await supabase
+        .from('employees')
+        .select('user_id, email, first_name, last_name')
+        .eq('id', workflowData.employee_id)
+        .maybeSingle();
+
+      if (employeeError) throw employeeError;
+
+      const employeeUserId = employeeData?.user_id || null;
+      const employeeEmail = employeeData?.email || null;
+      const employeeName = `${employeeData?.first_name || ''} ${employeeData?.last_name || ''}`.trim() || 'Executive';
+      const normalizedWorkflowResolutionStatus = String(workflowData.board_resolution?.status || '').toUpperCase();
+
+      const adoptedBoardStatuses = new Set(['ADOPTED', 'APPROVED', 'BOARD_ADOPTED']);
+      const boardApproved = adoptedBoardStatuses.has(normalizedWorkflowResolutionStatus);
+
+      let equityRevoked = false;
+      let revocationSource = '';
+
+      const ledgerQuery = supabase
+        .from('equity_ledger')
+        .select('id, transaction_type, transaction_date, created_at')
+        .eq('transaction_type', 'cancellation')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (employeeUserId) {
+        const { data: cancellationRows, error: ledgerError } = await ledgerQuery.eq('recipient_user_id', employeeUserId);
+        if (ledgerError) throw ledgerError;
+        if ((cancellationRows || []).length > 0) {
+          equityRevoked = true;
+          const latest = cancellationRows?.[0];
+          revocationSource = `equity_ledger cancellation ${latest?.id || ''}`.trim();
+        }
+      }
+
+      // Fallback: if board governance already adopted, allow formal sync completion
+      // even if no cancellation row was found in this quick lookup.
+      if (!equityRevoked && boardApproved) {
+        equityRevoked = true;
+        revocationSource = `board resolution ${workflowData.board_resolution?.resolution_number || workflowData.board_resolution_id || 'ADOPTED'}`;
+      }
+
+      if (!equityRevoked) {
+        message.warning('No adopted board decision or equity cancellation found yet. Governance and equity records may still be pending.');
+        return;
+      }
+
+      const completionNote = `Equity step synced from governance: ${revocationSource}.`;
+
+      const { error: stepUpdateError } = await supabase
+        .from('exit_workflow_steps')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          completed_by: user.id,
+          notes: completionNote,
+        })
+        .eq('workflow_id', workflowData.id)
+        .eq('step_name', 'handle_equity');
+
+      if (stepUpdateError) throw stepUpdateError;
+
+      await supabase.from('governance_logs').insert({
+        action: 'EQUITY_STEP_SYNCED_FROM_GOVERNANCE',
+        actor_id: user.id,
+        entity_type: 'EXIT_WORKFLOW',
+        entity_id: workflowData.id,
+        description: `Equity workflow step synced as completed for ${employeeName}`,
+        data: {
+          workflow_id: workflowData.id,
+          employee_id: workflowData.employee_id,
+          source: revocationSource,
+        },
+      });
+
+      message.success('Equity step synced successfully. Exit workflow is now in sync with governance.');
+      await fetchWorkflowSteps();
+      onUpdate();
+    } catch (error: any) {
+      console.error('Error syncing equity decision:', error);
+      message.error(error.message || 'Failed to sync equity decision');
+    } finally {
+      setSyncingEquityDecision(false);
+    }
+  };
+
   const getStepStatus = (stepName: string) => {
     const step = steps.find(s => s.step_name === stepName);
     if (!step) return 'wait';
@@ -317,6 +610,20 @@ export const ExitWorkflowDetailModal: React.FC<Props> = ({
       default:
         return null;
     }
+  };
+
+  const getStepDisplayName = (stepName: string) => {
+    const labels: Record<string, string> = {
+      send_notice: 'Send Notice',
+      revoke_access: 'Revoke Access',
+      collect_assets: 'Collect Assets',
+      calculate_settlement: 'Final Settlement',
+      handle_equity: 'Handle Equity',
+      send_notifications: 'Send Notifications (Employee + Internal)',
+      complete_workflow: 'Complete Workflow',
+      board_approval: 'Board Approval',
+    };
+    return labels[stepName] || stepName.replace(/_/g, ' ').toUpperCase();
   };
 
   const workflowSteps = [
@@ -351,12 +658,27 @@ export const ExitWorkflowDetailModal: React.FC<Props> = ({
       status: getStepStatus('calculate_settlement'),
     },
     {
+      title: 'Send Notifications',
+      key: 'send_notifications',
+      icon: getStepIcon('send_notifications'),
+      status: getStepStatus('send_notifications'),
+    },
+    {
       title: 'Complete',
       key: 'complete',
       icon: getStepIcon('complete_workflow'),
       status: getStepStatus('complete_workflow'),
     },
   ].filter(Boolean);
+
+  const readyToComplete = steps.length > 0 &&
+    steps
+      .filter((step) => step.step_name !== 'complete_workflow')
+      .every((step) => step.status === 'completed' || step.status === 'skipped');
+  const equityStep = steps.find((step) => step.step_name === 'handle_equity');
+  const notificationStep = steps.find((step) => step.step_name === 'send_notifications');
+  const equityNeedsBoardAction = !!equityStep && equityStep.status !== 'completed' && workflowData.status !== 'completed';
+  const notificationsPending = !!notificationStep && notificationStep.status !== 'completed' && workflowData.status !== 'completed';
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -433,7 +755,9 @@ export const ExitWorkflowDetailModal: React.FC<Props> = ({
                 </>
               )}
               <Descriptions.Item label="Termination Reason" span={2}>
-                {workflow.termination_reason || '-'}
+                {workflow.termination_reason ? (
+                  <div style={{ whiteSpace: 'pre-wrap' }}>{workflow.termination_reason}</div>
+                ) : '-'}
               </Descriptions.Item>
             </Descriptions>
           </Card>
@@ -529,7 +853,58 @@ export const ExitWorkflowDetailModal: React.FC<Props> = ({
             />
           </Card>
 
-          {workflowData.status === 'final_settlement' && (
+          {equityNeedsBoardAction && (
+            <Card style={{ marginTop: 16 }}>
+              <Alert
+                message="Equity Action Required"
+                description="Equity revocation/removal is pending governance sync. Escalate if needed, then sync once governance adopts or equity cancellation is recorded."
+                type="warning"
+                showIcon
+                style={{ marginBottom: 16 }}
+                action={
+                  <Space>
+                    <Button
+                      type="primary"
+                      onClick={handleEscalateEquityToBoard}
+                      loading={creatingEquityResolution}
+                    >
+                      Escalate to Board Resolution
+                    </Button>
+                    <Button
+                      type="default"
+                      onClick={handleSyncEquityDecision}
+                      loading={syncingEquityDecision}
+                    >
+                      Sync Board Decision
+                    </Button>
+                  </Space>
+                }
+              />
+            </Card>
+          )}
+
+          {notificationsPending && (
+            <Card style={{ marginTop: 16 }}>
+              <Alert
+                message="Notifications Pending"
+                description="This step sends (1) employee exit completion notice and (2) internal HR/governance closeout notification."
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+                action={
+                  <Button
+                    type="primary"
+                    onClick={handleSendNotificationsNow}
+                    loading={sendingNotifications}
+                  >
+                    Send Notifications Now
+                  </Button>
+                }
+              />
+            </Card>
+          )}
+
+          {readyToComplete && (
             <Card style={{ marginTop: 16 }}>
               <Alert
                 message="Ready to Complete"
@@ -593,7 +968,7 @@ export const ExitWorkflowDetailModal: React.FC<Props> = ({
                   key={step.id}
                   color={step.status === 'completed' ? 'green' : step.status === 'failed' ? 'red' : 'gray'}
                 >
-                  <Text strong>{step.step_name.replace('_', ' ').toUpperCase()}</Text>
+                  <Text strong>{getStepDisplayName(step.step_name)}</Text>
                   {step.completed_at && (
                     <>
                       <br />

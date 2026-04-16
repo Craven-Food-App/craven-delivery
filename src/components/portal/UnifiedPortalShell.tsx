@@ -98,17 +98,17 @@ export function UnifiedPortalShell({
         />
       )}
 
-      <div className="mx-auto w-full max-w-[1800px] p-2 sm:p-3 md:p-4">
-        <div className="grid gap-2 sm:gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
+      <div className="mx-auto w-full max-w-[1800px] p-1 sm:p-2">
+        <div className="grid gap-1.5 sm:gap-2 lg:grid-cols-[280px_minmax(0,1fr)]">
           {/* Desktop Sidebar — unchanged */}
           <aside className="hidden rounded-lg border border-border bg-card shadow-card lg:flex lg:h-[calc(100vh-2rem)] lg:flex-col lg:overflow-hidden">
-            <div className="border-b border-border p-4">
+            <div className="border-b border-border p-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{sectionLabel}</p>
               <h1 className="mt-1 text-lg font-semibold text-foreground">{portalName}</h1>
               <p className="mt-1 text-xs text-muted-foreground">{portalSubtitle}</p>
             </div>
 
-            <div className="flex-1 space-y-3 overflow-y-auto p-3">
+            <div className="flex-1 space-y-2 overflow-y-auto p-2">
               {sections.map(section => {
                 const sectionTabs = tabs.filter(tab => tab.section === section);
                 if (sectionTabs.length === 0) return null;
@@ -249,10 +249,10 @@ export function UnifiedPortalShell({
           </aside>
 
           {/* Main content */}
-          <main className="min-w-0 space-y-2 sm:space-y-3">
+          <main className="min-w-0 space-y-1.5 sm:space-y-2">
             {/* Header */}
-            <header className="rounded-lg border border-border bg-card p-2 shadow-card sm:p-3">
-              <div className="flex flex-col gap-2 sm:gap-3">
+            <header className="rounded-lg border border-border bg-card p-2 shadow-card">
+              <div className="flex flex-col gap-1.5 sm:gap-2">
                 <div className="flex items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
                   {/* Mobile menu button */}
                   <button
@@ -341,7 +341,7 @@ export function UnifiedPortalShell({
 
             {/* KPI Strip */}
             {kpis && kpis.length > 0 && (
-              <section className="rounded-lg border border-border bg-card p-1.5 shadow-card sm:p-2 md:p-3">
+              <section className="rounded-lg border border-border bg-card p-1.5 shadow-card sm:p-2">
                 <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 px-1 sm:mb-2">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{kpiLabel}</p>
                   <p className="text-[10px] tabular-nums text-muted-foreground sm:text-[11px]">{new Date().toLocaleDateString()}</p>
@@ -375,11 +375,7 @@ export function UnifiedPortalShell({
 
             {/* Module Workspace */}
             <section className="rounded-lg border border-border bg-card shadow-card">
-              <div className="border-b border-border px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Module Workspace</p>
-                <h3 className="text-xs font-semibold text-foreground sm:text-sm">{activeTabMeta?.label}</h3>
-              </div>
-              <div className="overflow-x-auto p-1.5 sm:p-2 md:p-3">
+              <div className="overflow-x-auto p-1.5 sm:p-2">
                 <Suspense
                   fallback={
                     <div className="flex min-h-[160px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20 sm:min-h-[220px]">

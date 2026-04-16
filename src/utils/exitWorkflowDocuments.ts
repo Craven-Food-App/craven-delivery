@@ -75,7 +75,7 @@ export async function generateTerminationLetter(
 
     <p>This letter serves as formal notice that your employment with Crave'n Inc. will be terminated ${terminationType}, effective ${effectiveDate}.</p>
 
-    ${workflow.termination_reason ? `<p><strong>Reason for Termination:</strong></p><p>${workflow.termination_reason}</p>` : ''}
+    ${workflow.termination_reason ? `<p><strong>Reason for Termination:</strong></p><p style="white-space: pre-wrap;">${workflow.termination_reason}</p>` : ''}
 
     ${workflow.grounds_for_cause && workflow.grounds_for_cause.length > 0 ? `
     <p><strong>Grounds for Termination:</strong></p>

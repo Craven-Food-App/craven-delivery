@@ -33,6 +33,8 @@ const OfficersTab: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [execOptions, setExecOptions] = useState<ExecOption[]>([]);
+  const inactiveOfficerStatuses = new Set(['TERMINATED', 'EXITED', 'REMOVED', 'INACTIVE']);
+  const inactiveEmploymentStatuses = new Set(['TERMINATED', 'EXITED', 'INACTIVE']);
 
   // Form state
   const [formPosition, setFormPosition] = useState('');
@@ -48,7 +50,10 @@ const OfficersTab: React.FC = () => {
 
   const loadExecOptions = async () => {
     try {
-      const { data } = await supabase.from('exec_users').select('id, user_id, title');
+      const { data } = await supabase
+        .from('exec_users')
+        .select('id, user_id, title, officer_status')
+        .not('officer_status', 'in', '("TERMINATED","EXITED","REMOVED","INACTIVE")');
       if (!data) return;
 
       const userIds = data.map(e => e.user_id).filter(Boolean);
@@ -90,7 +95,57 @@ const OfficersTab: React.FC = () => {
           return { ...officer, executive_name: fullName, executive_email: email, executive_title: exec?.title || exec?.role || '' };
         })
       );
-      setOfficers(transformed);
+
+      const executiveUserIds = transformed
+        .map((officer: any) => officer.exec_users?.user_id)
+        .filter(Boolean);
+
+      const { data: execRows } = executiveUserIds.length > 0
+        ? await supabase
+            .from('exec_users')
+            .select('user_id, officer_status, linked_employee_id')
+            .in('user_id', executiveUserIds)
+        : { data: [] as any[] };
+
+      const linkedEmployeeIds = (execRows || []).map((exec: any) => exec.linked_employee_id).filter(Boolean);
+      const { data: employeeRows } = (linkedEmployeeIds.length > 0 || executiveUserIds.length > 0)
+        ? await supabase
+            .from('employees')
+            .select('id, user_id, employment_status, termination_date')
+            .or(
+              [
+                linkedEmployeeIds.length > 0 ? `id.in.(${linkedEmployeeIds.join(',')})` : null,
+                executiveUserIds.length > 0 ? `user_id.in.(${executiveUserIds.join(',')})` : null,
+              ].filter(Boolean).join(',')
+            )
+        : { data: [] as any[] };
+
+      const employeesById = new Map((employeeRows || []).map((employee: any) => [employee.id, employee]));
+      const employeesByUserId = new Map((employeeRows || []).map((employee: any) => [employee.user_id, employee]));
+      const execByUserId = new Map((execRows || []).map((exec: any) => [exec.user_id, exec]));
+
+      const normalizedOfficers = transformed.map((officer: any) => {
+        const exec = execByUserId.get(officer.exec_users?.user_id);
+        const employee =
+          (exec?.linked_employee_id && employeesById.get(exec.linked_employee_id)) ||
+          employeesByUserId.get(officer.exec_users?.user_id);
+
+        const officerStatus = String(exec?.officer_status || '').toUpperCase();
+        const employmentStatus = String(employee?.employment_status || '').toUpperCase();
+        const forceInactive =
+          inactiveOfficerStatuses.has(officerStatus) ||
+          inactiveEmploymentStatuses.has(employmentStatus) ||
+          (!!employee?.termination_date && employmentStatus !== 'ACTIVE');
+
+        if (!forceInactive) return officer;
+
+        return {
+          ...officer,
+          status: 'terminated',
+        };
+      });
+
+      setOfficers(normalizedOfficers);
     } catch (err) { console.error('Error loading officers:', err); }
     finally { setLoading(false); }
   };

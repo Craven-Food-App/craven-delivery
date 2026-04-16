@@ -35,8 +35,8 @@ import EmployeeRelationsView from '@/components/hr/EmployeeRelationsView';
 import SystemAdminView from '@/components/hr/SystemAdminView';
 import EquityManagement from '@/components/hr/EquityManagement';
 import InternCandidateManagement from '@/components/hr/InternCandidateManagement';
-import BusinessEmailSystem from '@/components/executive/BusinessEmailSystem';
 import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
+import EmbeddedCComms from '@/portals/internal-comms/EmbeddedCComms';
 import { ExitWorkflowManager } from '@/components/hr/ExitWorkflowManager';
 import TalentLensDashboard from '@/components/hr/talent-lens/TalentLensDashboard';
 import { UnifiedPortalShell, PortalTab, PortalKPI, PortalLoadingState, PortalAccessDenied } from '@/components/portal/UnifiedPortalShell';
@@ -58,7 +58,7 @@ const TABS: PortalTab[] = [
   { id: 'documents', label: 'Document Generator', description: 'Generate HR documents and letters.', section: 'Documents', icon: IconFileText },
   { id: 'documents_dashboard', label: 'Document Dashboard', description: 'Document library and management.', section: 'Documents', icon: IconFileSearch },
   { id: 'word_processor', label: 'Word Processor', description: 'Executive document workspace.', section: 'Documents', icon: IconFileText },
-  { id: 'communications', label: 'Communications', description: 'Executive email and messaging.', section: 'Documents', icon: IconMail },
+  { id: 'c-comms', label: 'C-Suite Comms', description: 'Cross-executive communication workspace.', section: 'Documents', icon: IconMail },
   // Analytics & Compliance
   { id: 'analytics', label: 'Analytics', description: 'HR analytics and workforce insights.', section: 'Analytics', icon: IconChartBar },
   { id: 'compliance', label: 'Compliance', description: 'Employment law and regulatory compliance.', section: 'Analytics', icon: IconShield },
@@ -84,7 +84,7 @@ const HRPortal: React.FC = () => {
       case 'documents': return <DocumentGeneratorView />;
       case 'documents_dashboard': return <DocumentDashboard />;
       case 'word_processor': return <ExecutiveWordProcessor storageKey="hr" />;
-      case 'communications': return <BusinessEmailSystem />;
+      case 'c-comms': return <EmbeddedCComms />;
       case 'personnel': return <PersonnelManagementView />;
       case 'exit_workflows': return <ExitWorkflowManager />;
       case 'intern_candidates': return <InternCandidateManagement />;

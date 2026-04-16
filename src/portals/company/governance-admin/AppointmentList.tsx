@@ -234,6 +234,9 @@ const AppointmentList: React.FC = () => {
   const fetchAppointments = async () => {
     setLoading(true);
     try {
+      const inactiveOfficerStatuses = new Set(['TERMINATED', 'EXITED', 'REMOVED']);
+      const inactiveEmploymentStatuses = new Set(['TERMINATED', 'EXITED']);
+
       // Query with new schema (executive_id, position) and join to get executive info
       const { data, error } = await supabase
         .from('executive_appointments')
@@ -242,12 +245,78 @@ const AppointmentList: React.FC = () => {
           exec_users:executive_id (
             id,
             user_id,
-            title
+            title,
+            officer_status,
+            linked_employee_id
           )
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+
+      const execRows = (data || [])
+        .map((apt: any) => apt.exec_users)
+        .filter(Boolean);
+
+      const linkedEmployeeIds = Array.from(
+        new Set(
+          execRows
+            .map((exec: any) => exec.linked_employee_id)
+            .filter(Boolean)
+        )
+      );
+      const execUserIds = Array.from(
+        new Set(
+          execRows
+            .map((exec: any) => exec.user_id)
+            .filter(Boolean)
+        )
+      );
+
+      type EmployeeLite = {
+        id: string;
+        user_id: string | null;
+        employment_status: string | null;
+        termination_date: string | null;
+      };
+
+      const employeesById = new Map<string, EmployeeLite>();
+      const employeesByUserId = new Map<string, EmployeeLite>();
+
+      if (linkedEmployeeIds.length > 0 || execUserIds.length > 0) {
+        const employeeQuery = supabase
+          .from('employees')
+          .select('id, user_id, employment_status, termination_date');
+
+        const filters: string[] = [];
+        if (linkedEmployeeIds.length > 0) {
+          filters.push(`id.in.(${linkedEmployeeIds.join(',')})`);
+        }
+        if (execUserIds.length > 0) {
+          filters.push(`user_id.in.(${execUserIds.join(',')})`);
+        }
+
+        const { data: employeeRows, error: employeeError } = await employeeQuery.or(filters.join(','));
+        if (employeeError) {
+          console.warn('Could not prefetch employee termination status for appointments:', employeeError);
+        } else {
+          (employeeRows || []).forEach((employee: any) => {
+            const normalized: EmployeeLite = {
+              id: employee.id,
+              user_id: employee.user_id,
+              employment_status: employee.employment_status ?? null,
+              termination_date: employee.termination_date ?? null,
+            };
+
+            if (normalized.id) {
+              employeesById.set(normalized.id, normalized);
+            }
+            if (normalized.user_id) {
+              employeesByUserId.set(normalized.user_id, normalized);
+            }
+          });
+        }
+      }
 
       // Transform data to match the interface (for backward compatibility)
       // Map new schema (executive_id, position) to old interface fields (proposed_officer_name, proposed_title)
@@ -281,7 +350,32 @@ const AppointmentList: React.FC = () => {
         })
       );
 
-      setAppointments(transformed);
+      const filteredAppointments = transformed.filter((apt: any) => {
+        const exec = apt.exec_users;
+        const officerStatus = String(exec?.officer_status || '').toUpperCase();
+        if (inactiveOfficerStatuses.has(officerStatus)) {
+          return false;
+        }
+
+        const employee =
+          (exec?.linked_employee_id ? employeesById.get(exec.linked_employee_id) : undefined) ||
+          (exec?.user_id ? employeesByUserId.get(exec.user_id) : undefined);
+
+        if (!employee) return true;
+
+        const employmentStatus = String(employee.employment_status || '').toUpperCase();
+        const hasTerminationDate = !!employee.termination_date;
+        if (inactiveEmploymentStatuses.has(employmentStatus)) {
+          return false;
+        }
+        if (hasTerminationDate && employmentStatus !== 'ACTIVE') {
+          return false;
+        }
+
+        return true;
+      });
+
+      setAppointments(filteredAppointments);
     } catch (error: any) {
       console.error('Error fetching appointments:', error);
       notifications.show({

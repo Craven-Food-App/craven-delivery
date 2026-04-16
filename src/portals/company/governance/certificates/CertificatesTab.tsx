@@ -46,6 +46,7 @@ interface PendingCertificate {
 
 const CertificatesTab: React.FC = () => {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [archivedCertificates, setArchivedCertificates] = useState<Certificate[]>([]);
   const [pendingCertificates, setPendingCertificates] = useState<PendingCertificate[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -70,6 +71,59 @@ const CertificatesTab: React.FC = () => {
         .order('issue_date', { ascending: false });
 
       if (error) throw error;
+
+      const recipientUserIds = Array.from(new Set((data || []).map((cert: any) => cert.recipient_user_id).filter(Boolean)));
+      const inactiveOfficerStatuses = new Set(['TERMINATED', 'EXITED', 'REMOVED', 'INACTIVE']);
+      const inactiveEmploymentStatuses = new Set(['TERMINATED', 'EXITED', 'INACTIVE']);
+
+      const { data: execRows } = recipientUserIds.length > 0
+        ? await supabase
+            .from('exec_users')
+            .select('user_id, officer_status, linked_employee_id')
+            .in('user_id', recipientUserIds)
+        : { data: [] as any[] };
+
+      const linkedEmployeeIds = (execRows || []).map((exec: any) => exec.linked_employee_id).filter(Boolean);
+      const { data: employeeRows } = (linkedEmployeeIds.length > 0 || recipientUserIds.length > 0)
+        ? await supabase
+            .from('employees')
+            .select('id, user_id, employment_status, termination_date')
+            .or(
+              [
+                linkedEmployeeIds.length > 0 ? `id.in.(${linkedEmployeeIds.join(',')})` : null,
+                recipientUserIds.length > 0 ? `user_id.in.(${recipientUserIds.join(',')})` : null,
+              ].filter(Boolean).join(',')
+            )
+        : { data: [] as any[] };
+
+      const execByUserId = new Map((execRows || []).map((exec: any) => [exec.user_id, exec]));
+      const employeeById = new Map((employeeRows || []).map((employee: any) => [employee.id, employee]));
+      const employeeByUserId = new Map((employeeRows || []).map((employee: any) => [employee.user_id, employee]));
+
+      const inactiveUserIds = new Set<string>();
+      recipientUserIds.forEach((userId: string) => {
+        const exec = execByUserId.get(userId);
+        const employee =
+          (exec?.linked_employee_id && employeeById.get(exec.linked_employee_id)) ||
+          employeeByUserId.get(userId);
+        const officerStatus = String(exec?.officer_status || '').toUpperCase();
+        const employmentStatus = String(employee?.employment_status || '').toUpperCase();
+        const isInactive =
+          inactiveOfficerStatuses.has(officerStatus) ||
+          inactiveEmploymentStatuses.has(employmentStatus) ||
+          (!!employee?.termination_date && employmentStatus !== 'ACTIVE');
+        if (isInactive) {
+          inactiveUserIds.add(userId);
+        }
+      });
+
+      const { data: cancellations } = await supabase
+        .from('equity_ledger')
+        .select('recipient_user_id, shares_amount, transaction_type')
+        .eq('transaction_type', 'cancellation');
+      const revokedKeys = new Set(
+        (cancellations || []).map((row: any) => `${row.recipient_user_id}_${Number(row.shares_amount)}`)
+      );
 
       // Enrich with user info
       const enrichedCertificates = await Promise.all(
@@ -142,7 +196,21 @@ const CertificatesTab: React.FC = () => {
         })
       );
 
-      setCertificates(enrichedCertificates);
+      const activeIssued: Certificate[] = [];
+      const archivedIssued: Certificate[] = [];
+      enrichedCertificates.forEach((cert: any) => {
+        const revoked = revokedKeys.has(`${cert.recipient_user_id}_${Number(cert.shares_amount)}`);
+        const inactiveRecipient = inactiveUserIds.has(cert.recipient_user_id);
+        const archivedByStatus = String(cert.status || '').toLowerCase() === 'cancelled';
+        if (revoked || inactiveRecipient || archivedByStatus) {
+          archivedIssued.push(cert);
+        } else {
+          activeIssued.push(cert);
+        }
+      });
+
+      setCertificates(activeIssued);
+      setArchivedCertificates(archivedIssued);
     } catch (error: any) {
       notifications.show({
         title: 'Error',
@@ -181,6 +249,58 @@ const CertificatesTab: React.FC = () => {
 
       console.log('📋 [PENDING] Found equity grants:', equityGrants?.length || 0);
 
+      // Build revocation and inactive recipient sets so pending only shows active recipients.
+      const { data: cancellations } = await supabase
+        .from('equity_ledger')
+        .select('recipient_user_id, shares_amount, transaction_type')
+        .eq('transaction_type', 'cancellation');
+      const revokedKeys = new Set(
+        (cancellations || []).map((row: any) => `${row.recipient_user_id}_${Number(row.shares_amount)}`)
+      );
+
+      const grantRecipientUserIds = Array.from(new Set((equityGrants || []).map((grant: any) => grant.recipient_user_id).filter(Boolean)));
+      const inactiveOfficerStatuses = new Set(['TERMINATED', 'EXITED', 'REMOVED', 'INACTIVE']);
+      const inactiveEmploymentStatuses = new Set(['TERMINATED', 'EXITED', 'INACTIVE']);
+      const { data: execRows } = grantRecipientUserIds.length > 0
+        ? await supabase
+            .from('exec_users')
+            .select('user_id, officer_status, linked_employee_id')
+            .in('user_id', grantRecipientUserIds)
+        : { data: [] as any[] };
+
+      const linkedEmployeeIds = (execRows || []).map((exec: any) => exec.linked_employee_id).filter(Boolean);
+      const { data: employeeRows } = (linkedEmployeeIds.length > 0 || grantRecipientUserIds.length > 0)
+        ? await supabase
+            .from('employees')
+            .select('id, user_id, employment_status, termination_date')
+            .or(
+              [
+                linkedEmployeeIds.length > 0 ? `id.in.(${linkedEmployeeIds.join(',')})` : null,
+                grantRecipientUserIds.length > 0 ? `user_id.in.(${grantRecipientUserIds.join(',')})` : null,
+              ].filter(Boolean).join(',')
+            )
+        : { data: [] as any[] };
+
+      const execByUserId = new Map((execRows || []).map((exec: any) => [exec.user_id, exec]));
+      const employeeById = new Map((employeeRows || []).map((employee: any) => [employee.id, employee]));
+      const employeeByUserId = new Map((employeeRows || []).map((employee: any) => [employee.user_id, employee]));
+      const inactiveUserIds = new Set<string>();
+      grantRecipientUserIds.forEach((userId: string) => {
+        const exec = execByUserId.get(userId);
+        const employee =
+          (exec?.linked_employee_id && employeeById.get(exec.linked_employee_id)) ||
+          employeeByUserId.get(userId);
+        const officerStatus = String(exec?.officer_status || '').toUpperCase();
+        const employmentStatus = String(employee?.employment_status || '').toUpperCase();
+        const isInactive =
+          inactiveOfficerStatuses.has(officerStatus) ||
+          inactiveEmploymentStatuses.has(employmentStatus) ||
+          (!!employee?.termination_date && employmentStatus !== 'ACTIVE');
+        if (isInactive) {
+          inactiveUserIds.add(userId);
+        }
+      });
+
       // Get all existing certificates
       const { data: existingCerts } = await supabase
         .from('share_certificates')
@@ -188,6 +308,11 @@ const CertificatesTab: React.FC = () => {
 
       // Find grants without certificates OR with certificates that don't have document_url
       for (const grant of equityGrants || []) {
+        const grantKey = `${grant.recipient_user_id}_${Number(grant.shares_amount)}`;
+        if (revokedKeys.has(grantKey) || inactiveUserIds.has(grant.recipient_user_id)) {
+          continue;
+        }
+
         // Check if certificate exists for this grant AND has a document_url
         const hasCompleteCertificate = existingCerts?.some(
           cert => cert.recipient_user_id === grant.recipient_user_id && 
@@ -511,6 +636,9 @@ const CertificatesTab: React.FC = () => {
           <Tabs.Tab value="issued">
             Issued Certificates ({certificates.length})
           </Tabs.Tab>
+          <Tabs.Tab value="archived">
+            Archived ({archivedCertificates.length})
+          </Tabs.Tab>
           <Tabs.Tab value="pending">
             Pending ({pendingCertificates.length})
           </Tabs.Tab>
@@ -653,6 +781,60 @@ const CertificatesTab: React.FC = () => {
             {filteredCertificates.length === 0 && (
               <Alert icon={<IconAlertCircle size={16} />} title="No Certificates" color="blue" mt="md">
                 {searchTerm ? 'No certificates match your search.' : 'No share certificates have been issued yet.'}
+              </Alert>
+            )}
+          </Card>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="archived" pt="xl">
+          <Card padding="lg" radius="md" withBorder>
+            <Group mb="md" justify="space-between">
+              <TextInput
+                placeholder="Search archived by certificate number, name, or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ flex: 1 }}
+              />
+            </Group>
+
+            <Table>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Certificate #</Table.Th>
+                  <Table.Th>Recipient</Table.Th>
+                  <Table.Th>Shares</Table.Th>
+                  <Table.Th>Share Class</Table.Th>
+                  <Table.Th>Issue Date</Table.Th>
+                  <Table.Th>Status</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {archivedCertificates
+                  .filter(
+                    (cert) =>
+                      cert.certificate_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      cert.recipient_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      cert.recipient_email?.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((cert) => (
+                    <Table.Tr key={cert.id}>
+                      <Table.Td><Text fw={500}>{cert.certificate_number}</Text></Table.Td>
+                      <Table.Td>
+                        <Text>{cert.recipient_name}</Text>
+                        {cert.recipient_email && <Text size="xs" c="dimmed">{cert.recipient_email}</Text>}
+                      </Table.Td>
+                      <Table.Td><NumberFormatter value={cert.shares_amount} thousandSeparator /></Table.Td>
+                      <Table.Td><Badge variant="light">{cert.share_class}</Badge></Table.Td>
+                      <Table.Td>{new Date(cert.issue_date).toLocaleDateString()}</Table.Td>
+                      <Table.Td><Badge color="gray">Archived</Badge></Table.Td>
+                    </Table.Tr>
+                  ))}
+              </Table.Tbody>
+            </Table>
+
+            {archivedCertificates.length === 0 && (
+              <Alert icon={<IconAlertCircle size={16} />} title="No Archived Certificates" color="gray" mt="md">
+                No archived certificates found.
               </Alert>
             )}
           </Card>

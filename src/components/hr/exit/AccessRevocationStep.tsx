@@ -113,18 +113,28 @@ export const AccessRevocationStep: React.FC<Props> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { error } = await supabase
-        .from('exit_access_revocations')
-        .update({
-          revoked: true,
-          revoked_at: new Date().toISOString(),
-          revoked_by: user.id,
-          email_forward_to: values.email_forward_to,
-          notes: values.notes,
-        })
-        .eq('id', selectedSystem?.id);
+      if (!selectedSystem) {
+        throw new Error('No access system selected');
+      }
 
-      if (error) throw error;
+      // Perform hard revocation in backend:
+      // - disable/delete auth login
+      // - remove user roles
+      // - clear hub credentials (ceo_access_credentials)
+      // - mark this system as revoked in exit_access_revocations
+      const { data: revocationResult, error: revokeError } = await supabase.functions.invoke('revoke-user-access', {
+        body: {
+          workflow_id: workflowId,
+          employee_id: employeeId,
+          system_name: selectedSystem.system_name,
+          email_forward_to: values.email_forward_to || null,
+          notes: values.notes || null,
+          permanent_delete: !!values.permanent_delete,
+        },
+      });
+
+      if (revokeError) throw revokeError;
+      if (revocationResult?.error) throw new Error(revocationResult.error);
 
       // Update workflow step status
       await supabase
@@ -155,13 +165,22 @@ export const AccessRevocationStep: React.FC<Props> = ({
           .eq('id', workflowId);
       }
 
-      message.success('Access revoked successfully');
+      if (Array.isArray(revocationResult?.changes) && revocationResult.changes.length > 0) {
+        message.success(`Access revoked: ${revocationResult.changes.join(', ')}`);
+      } else {
+        message.success('Access revoked successfully');
+      }
       setIsRevokeModalVisible(false);
       form.resetFields();
       fetchAccessSystems();
       onUpdate();
     } catch (error: any) {
-      message.error(error.message || 'Failed to revoke access');
+      const details =
+        error?.context?.error ||
+        error?.context?.message ||
+        error?.message ||
+        'Failed to revoke access';
+      message.error(details);
       console.error(error);
     }
   };
@@ -276,6 +295,15 @@ export const AccessRevocationStep: React.FC<Props> = ({
             label="Notes"
           >
             <TextArea rows={3} placeholder="Add any notes about this access revocation..." />
+          </Form.Item>
+
+          <Form.Item
+            name="permanent_delete"
+            valuePropName="checked"
+          >
+            <Checkbox>
+              Permanently delete login account (irreversible)
+            </Checkbox>
           </Form.Item>
         </Form>
       </Modal>

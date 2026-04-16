@@ -11,6 +11,7 @@ import ExecutiveDashboard from './executives/ExecutiveDashboard';
 import LeadershipPublicPage from './leadership-public/LeadershipPublicPage';
 import SOPWrapper from './sop/SOPWrapper';
 import ExecutiveCalendarPage from './ExecutiveCalendarPage';
+import CompanyFileSystemPage from './files/CompanyFileSystemPage';
 
 /**
  * Company Portal Routes
@@ -40,6 +41,7 @@ const CompanyPortalRoutes: React.FC = () => {
         <Route path="governance-admin/appointments" element={<Navigate to="/company/governance?tab=appointments" replace />} />
         <Route path="board" element={<BoardPortalPage />} />
         <Route path="team" element={<TeamPage />} />
+        <Route path="files" element={<CompanyFileSystemPage />} />
         <Route path="executives" element={<ExecutiveDashboard />} />
         <Route path="calendar" element={<ExecutiveCalendarPage />} />
         <Route path="leadership" element={<LeadershipPublicPage />} />

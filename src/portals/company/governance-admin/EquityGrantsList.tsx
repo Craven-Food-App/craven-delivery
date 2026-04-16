@@ -931,6 +931,7 @@ const EquityGrantsList: React.FC = () => {
       if (!capResult.success) {
         console.warn('Cap table recalculation warning:', capResult.error);
       }
+      window.dispatchEvent(new CustomEvent('equityGrantChanged'));
     } catch (error: any) {
       console.error('Error revoking grant:', error);
       console.error('Full error object:', JSON.stringify(error, null, 2));
@@ -1822,6 +1823,7 @@ const EquityGrantsList: React.FC = () => {
                       setEditingGrantDate('');
                       setCurrentVestingSchedule(null);
                       loadGrants();
+                      window.dispatchEvent(new CustomEvent('equityGrantChanged'));
                     } catch (error: any) {
                       console.error('Error updating grant:', error);
                       notifications.show({

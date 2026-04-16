@@ -16,6 +16,7 @@ import {
   IconBuildingSkyscraper,
   IconChartPie,
   IconCalendar,
+  IconFolders,
 } from '@tabler/icons-react';
 import { fetchUserRoles, canManageGovernance, canVoteOnResolutions } from '@/lib/roles';
 import { supabase } from '@/integrations/supabase/client';
@@ -98,6 +99,12 @@ const CompanySidebar: React.FC = () => {
       label: 'Calendar',
       icon: IconCalendar,
       path: '/company/calendar',
+      roles: ['all'],
+    },
+    {
+      label: 'Files',
+      icon: IconFolders,
+      path: '/company/files',
       roles: ['all'],
     },
     {

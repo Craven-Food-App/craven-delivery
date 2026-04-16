@@ -13,9 +13,14 @@ import {
   Tabs,
   Modal,
   Timeline,
+  Divider,
+  TextInput,
+  Select,
+  Textarea,
 } from '@mantine/core';
 import { IconUserMinus, IconCheck, IconX, IconClock, IconEye, IconInfoCircle } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { sendTerminationNotice } from '@/utils/exitWorkflowNotifications';
 import dayjs from 'dayjs';
 
 interface ExitWorkflow {
@@ -69,6 +74,18 @@ const ExitWorkflowsTab: React.FC = () => {
   const [selectedWorkflow, setSelectedWorkflow] = useState<ExitWorkflow | null>(null);
   const [steps, setSteps] = useState<ExitWorkflowStep[]>([]);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [resendingNotice, setResendingNotice] = useState(false);
+  const [editingExit, setEditingExit] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editForm, setEditForm] = useState({
+    termination_type: 'without_cause',
+    effective_date: '',
+    last_day: '',
+    termination_reason: '',
+    equity_vesting_status: '',
+    equity_notes: '',
+    employee_email: '',
+  });
 
   useEffect(() => {
     loadWorkflows();
@@ -89,6 +106,11 @@ const ExitWorkflowsTab: React.FC = () => {
             last_name,
             email,
             position
+          ),
+          board_resolution:board_resolutions!board_resolution_id(
+            id,
+            resolution_number,
+            status
           )
         `)
         .order('created_at', { ascending: false });
@@ -177,8 +199,134 @@ const ExitWorkflowsTab: React.FC = () => {
 
   const handleViewDetails = async (workflow: ExitWorkflow) => {
     setSelectedWorkflow(workflow);
+    setEditForm({
+      termination_type: workflow.termination_type || 'without_cause',
+      effective_date: workflow.effective_date || '',
+      last_day: workflow.last_day || '',
+      termination_reason: workflow.termination_reason || '',
+      equity_vesting_status: workflow.equity_vesting_status || '',
+      equity_notes: workflow.equity_notes || '',
+      employee_email: workflow.employee?.email || '',
+    });
+    setEditingExit(false);
     setDetailModalOpen(true);
     await loadWorkflowSteps(workflow.id);
+  };
+
+  const handleResendExitNotice = async () => {
+    if (!selectedWorkflow) return;
+
+    const employeeEmail = selectedWorkflow.employee?.email;
+    const employeeName = selectedWorkflow.employee?.full_name ||
+      `${selectedWorkflow.employee?.first_name || ''} ${selectedWorkflow.employee?.last_name || ''}`.trim();
+
+    if (!employeeEmail) {
+      return alert('No employee email is set for this workflow. Please update employee email first.');
+    }
+
+    if (!employeeName) {
+      return alert('No employee name is available for this workflow.');
+    }
+
+    setResendingNotice(true);
+    try {
+      const sent = await sendTerminationNotice(
+        selectedWorkflow.id,
+        employeeEmail,
+        employeeName,
+        selectedWorkflow.effective_date,
+        (selectedWorkflow.termination_type || 'without_cause') as 'for_cause' | 'without_cause' | 'resignation',
+        selectedWorkflow.termination_reason || undefined
+      );
+
+      if (!sent) {
+        throw new Error('Email service did not confirm success');
+      }
+
+      await loadWorkflows();
+      await loadWorkflowSteps(selectedWorkflow.id);
+      alert(`Exit notice resent to ${employeeEmail}`);
+    } catch (error) {
+      console.error('Failed to resend exit notice:', error);
+      alert('Failed to resend exit notice. Check console for details.');
+    } finally {
+      setResendingNotice(false);
+    }
+  };
+
+  const handleSaveExitEdits = async () => {
+    if (!selectedWorkflow) return;
+
+    if (!editForm.effective_date) {
+      return alert('Effective date is required.');
+    }
+
+    if (!editForm.termination_reason.trim()) {
+      return alert('Termination reason is required.');
+    }
+
+    setSavingEdit(true);
+    try {
+      const { error: workflowError } = await supabase
+        .from('exit_workflows')
+        .update({
+          termination_type: editForm.termination_type,
+          effective_date: editForm.effective_date,
+          last_day: editForm.last_day || null,
+          termination_reason: editForm.termination_reason,
+          equity_vesting_status: editForm.equity_vesting_status || null,
+          equity_notes: editForm.equity_notes.trim() || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', selectedWorkflow.id);
+
+      if (workflowError) throw workflowError;
+
+      if (selectedWorkflow.employee_id && editForm.employee_email.trim()) {
+        const { error: employeeError } = await supabase
+          .from('employees')
+          .update({
+            email: editForm.employee_email.trim(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', selectedWorkflow.employee_id);
+
+        if (employeeError) throw employeeError;
+      }
+
+      const { data: refreshedWorkflow, error: refreshedWorkflowError } = await supabase
+        .from('exit_workflows')
+        .select(`
+          *,
+          employee:employees(
+            id,
+            first_name,
+            last_name,
+            email,
+            position
+          ),
+          board_resolution:board_resolutions!board_resolution_id(
+            id,
+            resolution_number,
+            status
+          )
+        `)
+        .eq('id', selectedWorkflow.id)
+        .single();
+
+      if (refreshedWorkflowError) throw refreshedWorkflowError;
+
+      setSelectedWorkflow(refreshedWorkflow as ExitWorkflow);
+      await loadWorkflows();
+      await loadWorkflowSteps(selectedWorkflow.id);
+      setEditingExit(false);
+      alert('Exit workflow updated successfully.');
+    } catch (error) {
+      console.error('Failed to update exit workflow:', error);
+      alert('Failed to update exit workflow. Check console for details.');
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -476,37 +624,156 @@ const ExitWorkflowsTab: React.FC = () => {
           setDetailModalOpen(false);
           setSelectedWorkflow(null);
           setSteps([]);
+          setEditingExit(false);
         }}
         title="Exit Workflow Details"
-        size="lg"
+        size="xl"
       >
         {selectedWorkflow && (
           <Stack gap="md">
-            <div>
-              <Text size="sm" c="dimmed">Person</Text>
-              <Text fw={500}>
-                {selectedWorkflow.employee?.full_name || 
-                 `${selectedWorkflow.employee?.first_name || ''} ${selectedWorkflow.employee?.last_name || ''}`.trim() ||
-                 selectedWorkflow.executive?.title ||
-                 'Unknown'}
-              </Text>
-            </div>
-            <div>
-              <Text size="sm" c="dimmed">Workflow Type</Text>
-              <Text>{getWorkflowTypeLabel(selectedWorkflow.workflow_type)}</Text>
-            </div>
-            <div>
-              <Text size="sm" c="dimmed">Status</Text>
-              {getStatusBadge(selectedWorkflow.status)}
-            </div>
-            <div>
-              <Text size="sm" c="dimmed">Effective Date</Text>
-              <Text>{dayjs(selectedWorkflow.effective_date).format('MMMM D, YYYY')}</Text>
-            </div>
+            <Group justify="space-between" align="flex-start">
+              <div>
+                <Text size="sm" c="dimmed">Person</Text>
+                <Text fw={700} size="lg">
+                  {selectedWorkflow.employee?.full_name ||
+                   `${selectedWorkflow.employee?.first_name || ''} ${selectedWorkflow.employee?.last_name || ''}`.trim() ||
+                   selectedWorkflow.executive?.title ||
+                   'Unknown'}
+                </Text>
+                {!!selectedWorkflow.employee?.position && (
+                  <Text size="sm" c="dimmed">{selectedWorkflow.employee.position}</Text>
+                )}
+              </div>
+              <Group>
+                <Button
+                  variant="light"
+                  color="gray"
+                  onClick={() => setEditingExit((prev) => !prev)}
+                >
+                  {editingExit ? 'Cancel Edit' : 'Edit Exit'}
+                </Button>
+                <Button
+                  variant="filled"
+                  color="blue"
+                  loading={resendingNotice}
+                  onClick={handleResendExitNotice}
+                  disabled={!selectedWorkflow.employee?.email}
+                >
+                  Resend Exit Notice
+                </Button>
+              </Group>
+            </Group>
+
+            {editingExit && (
+              <Card withBorder>
+                <Stack gap="sm">
+                  <Text fw={600}>Edit Exit Workflow</Text>
+                  <Select
+                    label="Termination Type"
+                    data={[
+                      { value: 'for_cause', label: 'For Cause' },
+                      { value: 'without_cause', label: 'Without Cause' },
+                      { value: 'resignation', label: 'Resignation' },
+                    ]}
+                    value={editForm.termination_type}
+                    onChange={(value) => setEditForm((prev) => ({ ...prev, termination_type: value || 'without_cause' }))}
+                  />
+                  <TextInput
+                    label="Employee Email (notice recipient)"
+                    type="email"
+                    value={editForm.employee_email}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, employee_email: event.currentTarget.value }))}
+                  />
+                  <Group grow>
+                    <TextInput
+                      label="Effective Date"
+                      type="date"
+                      value={editForm.effective_date}
+                      onChange={(event) => setEditForm((prev) => ({ ...prev, effective_date: event.currentTarget.value }))}
+                    />
+                    <TextInput
+                      label="Last Day"
+                      type="date"
+                      value={editForm.last_day}
+                      onChange={(event) => setEditForm((prev) => ({ ...prev, last_day: event.currentTarget.value }))}
+                    />
+                  </Group>
+                  <TextInput
+                    label="Equity Vesting Status"
+                    placeholder="e.g. forfeited, accelerated, prorated"
+                    value={editForm.equity_vesting_status}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, equity_vesting_status: event.currentTarget.value }))}
+                  />
+                  <Textarea
+                    label="Termination Reason"
+                    minRows={3}
+                    value={editForm.termination_reason}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, termination_reason: event.currentTarget.value }))}
+                  />
+                  <Textarea
+                    label="Equity Notes"
+                    minRows={2}
+                    value={editForm.equity_notes}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, equity_notes: event.currentTarget.value }))}
+                  />
+                  <Group justify="flex-end">
+                    <Button variant="default" onClick={() => setEditingExit(false)}>
+                      Cancel
+                    </Button>
+                    <Button loading={savingEdit} onClick={handleSaveExitEdits}>
+                      Save Exit Changes
+                    </Button>
+                  </Group>
+                </Stack>
+              </Card>
+            )}
+
+            <Card withBorder>
+              <Stack gap="xs">
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">Workflow Type</Text>
+                  <Text fw={500}>{getWorkflowTypeLabel(selectedWorkflow.workflow_type)}</Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">Status</Text>
+                  {getStatusBadge(selectedWorkflow.status)}
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">Employee Email</Text>
+                  <Text fw={500}>{selectedWorkflow.employee?.email || 'Not set'}</Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">Effective Date</Text>
+                  <Text fw={500}>{dayjs(selectedWorkflow.effective_date).format('MMMM D, YYYY')}</Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">Notice Date</Text>
+                  <Text fw={500}>
+                    {selectedWorkflow.notice_date ? dayjs(selectedWorkflow.notice_date).format('MMMM D, YYYY') : 'Not sent'}
+                  </Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">Last Day</Text>
+                  <Text fw={500}>
+                    {selectedWorkflow.last_day ? dayjs(selectedWorkflow.last_day).format('MMMM D, YYYY') : 'Not set'}
+                  </Text>
+                </Group>
+                {selectedWorkflow.board_resolution_id && (
+                  <Group justify="space-between">
+                    <Text size="sm" c="dimmed">Board Resolution</Text>
+                    <Text fw={500}>
+                      {selectedWorkflow.board_resolution?.resolution_number || selectedWorkflow.board_resolution_id}
+                      {selectedWorkflow.board_resolution?.status ? ` (${selectedWorkflow.board_resolution.status})` : ''}
+                    </Text>
+                  </Group>
+                )}
+              </Stack>
+            </Card>
+
             {selectedWorkflow.termination_reason && (
               <div>
                 <Text size="sm" c="dimmed">Termination Reason</Text>
-                <Text>{selectedWorkflow.termination_reason}</Text>
+                <Text style={{ whiteSpace: 'pre-wrap' }}>{selectedWorkflow.termination_reason}</Text>
               </div>
             )}
             {selectedWorkflow.equity_vesting_status && (
@@ -526,8 +793,9 @@ const ExitWorkflowsTab: React.FC = () => {
             
             {steps.length > 0 && (
               <div>
+                <Divider my="xs" />
                 <Text size="sm" c="dimmed" mb="sm">Workflow Steps</Text>
-                <Timeline active={steps.length} bulletSize={24} lineWidth={2}>
+                <Timeline active={steps.filter((step) => step.status === 'completed').length} bulletSize={24} lineWidth={2}>
                   {steps.map((step) => (
                     <Timeline.Item
                       key={step.id}

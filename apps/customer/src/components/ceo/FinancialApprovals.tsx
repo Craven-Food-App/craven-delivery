@@ -23,6 +23,7 @@ import {
 import {
   IconCheck,
   IconX,
+  IconTrash,
   IconCurrencyDollar,
   IconPlus,
   IconFileText,
@@ -132,7 +133,7 @@ export const FinancialApprovals: React.FC = () => {
       const { error } = await supabase
         .from('ceo_financial_approvals')
         .update({
-          status: 'denied',
+          status: 'rejected',
           reviewed_by: user?.id,
           reviewed_at: new Date().toISOString(),
           review_notes: reviewNotes
@@ -170,6 +171,38 @@ export const FinancialApprovals: React.FC = () => {
     }
   };
 
+  const handleDelete = async (approval: Approval) => {
+    try {
+      const { error } = await supabase
+        .from('ceo_financial_approvals')
+        .delete()
+        .eq('id', approval.id);
+
+      if (error) throw error;
+
+      notifications.show({
+        title: 'Request Deleted',
+        message: 'Financial request has been deleted',
+        color: 'green',
+        icon: <IconCheck size={18} />,
+      });
+
+      if (selectedApproval?.id === approval.id) {
+        setModalVisible(false);
+        setSelectedApproval(null);
+      }
+      setReviewNotes('');
+      fetchApprovals();
+    } catch (error: any) {
+      console.error('Error deleting approval:', error);
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to delete request',
+        color: 'red',
+      });
+    }
+  };
+
   const pendingApprovals = approvals.filter(a => a.status === 'pending');
   const totalPendingAmount = pendingApprovals.reduce((sum, a) => sum + a.amount, 0);
   const paginatedApprovals = approvals.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -179,6 +212,7 @@ export const FinancialApprovals: React.FC = () => {
       pending: 'yellow',
       approved: 'green',
       denied: 'red',
+      rejected: 'red',
       'on-hold': 'orange',
     };
     return colors[status] || 'gray';
@@ -393,6 +427,15 @@ export const FinancialApprovals: React.FC = () => {
                               >
                                 Review
                               </Button>
+                              <ActionIcon
+                                size="lg"
+                                variant="light"
+                                color="red"
+                                onClick={() => handleDelete(approval)}
+                                aria-label="Delete request"
+                              >
+                                <IconTrash size={16} />
+                              </ActionIcon>
                             </Group>
                           ) : (
                             <Text size="xs" c="gray.5" style={{ textAlign: 'right' }}>
@@ -569,6 +612,15 @@ export const FinancialApprovals: React.FC = () => {
                 radius="md"
               >
                 Deny
+              </Button>
+              <Button
+                color="red"
+                variant="subtle"
+                leftSection={<IconTrash size={16} />}
+                onClick={() => handleDelete(selectedApproval)}
+                radius="md"
+              >
+                Delete
               </Button>
               <Button
                 color="green"

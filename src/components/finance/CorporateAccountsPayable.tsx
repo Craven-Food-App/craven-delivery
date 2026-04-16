@@ -86,7 +86,11 @@ interface APMetrics {
   cashFlowImpact: number;
 }
 
-export const CorporateAccountsPayable: React.FC = () => {
+interface CorporateAccountsPayableProps {
+  onHeaderActionsChange?: (actions: React.ReactNode | null) => void;
+}
+
+export const CorporateAccountsPayable: React.FC<CorporateAccountsPayableProps> = ({ onHeaderActionsChange }) => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
@@ -122,6 +126,23 @@ export const CorporateAccountsPayable: React.FC = () => {
   const [approvingInvoice, setApprovingInvoice] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [emailReceivedCount, setEmailReceivedCount] = useState(0);
+
+  const openCreateInvoiceModal = () => {
+    if (!canManage) {
+      message.warning('You need Finance Department access to create invoices');
+      return;
+    }
+    setEditingInvoice(null);
+    invoiceForm.resetFields();
+    invoiceForm.setFieldsValue({
+      invoice_date: dayjs(),
+      due_date: dayjs().add(30, 'days'),
+      payment_terms: 'Net 30',
+      amount: 0,
+      tax_amount: 0,
+    });
+    setInvoiceModalVisible(true);
+  };
 
   useEffect(() => {
     fetchInvoices();
@@ -712,6 +733,38 @@ export const CorporateAccountsPayable: React.FC = () => {
     message.success('Accounts Payable data exported successfully');
   };
 
+  useEffect(() => {
+    if (!onHeaderActionsChange) return;
+    onHeaderActionsChange(
+      <Space>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={openCreateInvoiceModal}
+          style={{ background: '#52c41a', borderColor: '#52c41a' }}
+          disabled={!canManage}
+        >
+          New Invoice
+        </Button>
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={fetchInvoices}
+        >
+          Refresh
+        </Button>
+        <Button
+          type="primary"
+          icon={<ExportOutlined />}
+          onClick={handleExport}
+          style={{ background: '#1890ff', borderColor: '#1890ff' }}
+        >
+          Export CSV
+        </Button>
+      </Space>
+    );
+    return () => onHeaderActionsChange(null);
+  }, [onHeaderActionsChange, canManage, filteredInvoices.length]);
+
   const columns: ColumnsType<Invoice> = [
     {
       title: 'Invoice #',
@@ -966,73 +1019,7 @@ export const CorporateAccountsPayable: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px', background: '#f5f5f5', minHeight: '100vh' }}>
-      {/* Header Section */}
-      <Card
-        style={{
-          marginBottom: 24,
-          background: 'linear-gradient(135deg, #001529 0%, #002140 100%)',
-          border: 'none',
-          borderRadius: 8,
-        }}
-        bodyStyle={{ padding: '32px' }}
-      >
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={2} style={{ color: '#fff', margin: 0, fontWeight: 600 }}>
-              <DollarOutlined style={{ marginRight: 12, fontSize: 28 }} />
-              Accounts Payable
-            </Title>
-            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, display: 'block', marginTop: 8 }}>
-              Vendor invoice management and payment processing | Enterprise-grade AP workflow
-            </Text>
-          </Col>
-          <Col>
-            <Space>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => {
-                  if (!canManage) {
-                    message.warning('You need Finance Department access to create invoices');
-                    return;
-                  }
-                  setEditingInvoice(null);
-                  invoiceForm.resetFields();
-                  invoiceForm.setFieldsValue({
-                    invoice_date: dayjs(),
-                    due_date: dayjs().add(30, 'days'),
-                    payment_terms: 'Net 30',
-                    amount: 0,
-                    tax_amount: 0,
-                  });
-                  setInvoiceModalVisible(true);
-                }}
-                style={{ background: '#52c41a', borderColor: '#52c41a' }}
-                disabled={!canManage}
-              >
-                New Invoice
-              </Button>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={fetchInvoices}
-                style={{ background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.3)', color: '#fff' }}
-              >
-                Refresh
-              </Button>
-              <Button
-                type="primary"
-                icon={<ExportOutlined />}
-                onClick={handleExport}
-                style={{ background: '#1890ff', borderColor: '#1890ff' }}
-              >
-                Export CSV
-              </Button>
-            </Space>
-          </Col>
-        </Row>
-      </Card>
-
+    <div style={{ padding: '12px', background: '#f5f5f5', minHeight: '100vh' }}>
       {/* Access Notice */}
       {!canManage && (
         <Alert
@@ -1040,7 +1027,7 @@ export const CorporateAccountsPayable: React.FC = () => {
           description="You are viewing Accounts Payable in read-only mode. To create invoices, process payments, or edit records, you need Finance Department access (CFO or Finance Employee with permissions)."
           type="info"
           closable
-          style={{ marginBottom: 24 }}
+          style={{ marginBottom: 12 }}
         />
       )}
 
@@ -1053,7 +1040,7 @@ export const CorporateAccountsPayable: React.FC = () => {
           icon={<FileTextOutlined />}
           showIcon
           closable
-          style={{ marginBottom: 24 }}
+          style={{ marginBottom: 12 }}
           action={
             <Button size="small" type="primary" onClick={() => {
               setSearchText('Received via email');
@@ -1074,7 +1061,7 @@ export const CorporateAccountsPayable: React.FC = () => {
           icon={<WarningOutlined />}
           showIcon
           closable
-          style={{ marginBottom: 24 }}
+          style={{ marginBottom: 12 }}
           action={
             <Button size="small" danger onClick={() => setActiveTab('overdue')}>
               View Overdue
@@ -1084,13 +1071,12 @@ export const CorporateAccountsPayable: React.FC = () => {
       )}
 
       {/* KPI Metrics */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+      <Row gutter={[12, 12]} style={{ marginBottom: 12 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
               title="Total Outstanding"
               value={metrics.totalOutstanding}
-              prefix={<DollarOutlined />}
               precision={2}
               valueStyle={{ color: '#1890ff', fontSize: 24, fontWeight: 700 }}
               formatter={(value) => `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -1102,7 +1088,6 @@ export const CorporateAccountsPayable: React.FC = () => {
             <Statistic
               title="Overdue Amount"
               value={metrics.totalOverdue}
-              prefix={<ExclamationCircleOutlined />}
               precision={2}
               valueStyle={{ color: '#ff4d4f', fontSize: 24, fontWeight: 700 }}
               formatter={(value) => `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -1114,9 +1099,8 @@ export const CorporateAccountsPayable: React.FC = () => {
             <Statistic
               title="Pending Invoices"
               value={metrics.invoicesCount}
-              prefix={<FileTextOutlined />}
               valueStyle={{ color: '#722ed1', fontSize: 24, fontWeight: 700 }}
-              suffix={`${metrics.overdueCount} overdue`}
+              suffix={metrics.overdueCount > 0 ? `${metrics.overdueCount} overdue` : 'overdue'}
             />
           </Card>
         </Col>
@@ -1125,7 +1109,6 @@ export const CorporateAccountsPayable: React.FC = () => {
             <Statistic
               title="Cash Flow Impact"
               value={metrics.cashFlowImpact}
-              prefix={<DollarOutlined />}
               precision={2}
               valueStyle={{ color: '#fa541c', fontSize: 24, fontWeight: 700 }}
               formatter={(value) => `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -1135,8 +1118,8 @@ export const CorporateAccountsPayable: React.FC = () => {
       </Row>
 
       {/* Filters Section */}
-      <Card style={{ marginBottom: 24 }} title={<Text strong>Filters & Search</Text>}>
-        <Row gutter={[16, 16]}>
+      <Card style={{ marginBottom: 12 }} title={<Text strong>Filters & Search</Text>}>
+        <Row gutter={[12, 12]}>
           <Col xs={24} sm={12} md={8}>
             <Input
               placeholder="Search by invoice #, vendor name..."

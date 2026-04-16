@@ -110,7 +110,7 @@ const getIconForSection = (id: string): React.ReactNode => {
     // Period Close
     'close': <IconChecklist size={20} />,
     // Communications
-    'communications': <IconMail size={20} />,
+    'c-comms': <IconMessageCircle size={20} />,
     'messages': <IconMessageCircle size={20} />,
     'wordprocessor': <IconFileText size={20} />,
     'manual': <IconBook size={20} />,
@@ -128,7 +128,7 @@ const navGroups = [
   { id: 'compliance', label: 'Compliance & Controls', items: ['tax', 'controls', 'approvals', 'audit', 'risk'] },
   { id: 'reporting', label: 'Reporting & Investor', items: ['reports', 'board', 'investor', 'capital'] },
   { id: 'close', label: 'Period Close', items: ['close'] },
-  { id: 'communications', label: 'Communications', items: ['communications', 'wordprocessor', 'manual'] },
+  { id: 'c-comms', label: 'C-Suite Comms', items: ['c-comms', 'wordprocessor', 'manual'] },
 ];
 
 export const CFOPortalLayout: React.FC<CFOPortalLayoutProps> = ({

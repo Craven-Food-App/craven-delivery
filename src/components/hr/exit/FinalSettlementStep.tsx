@@ -120,7 +120,7 @@ export const FinalSettlementStep: React.FC<Props> = ({
       // Send termination notice email
       const { data: employee } = await supabase
         .from('employees')
-        .select('email, first_name, last_name')
+        .select('user_id, email, first_name, last_name')
         .eq('id', employeeId)
         .single();
 
@@ -139,6 +139,48 @@ export const FinalSettlementStep: React.FC<Props> = ({
           terminationType || 'without_cause',
           workflowData?.data?.termination_reason
         );
+      }
+
+      // Trigger governance equity revocation for this exiting employee.
+      // This is a real governance action (not a synthetic step completion).
+      let equityRevocationCompleted = false;
+      let equityRevocationDetail = 'No equity revocation attempted';
+      if (employee?.user_id || employee?.email) {
+        try {
+          const { data: revokeData, error: revokeError } = await supabase.functions.invoke('governance-revoke-equity', {
+            body: {
+              recipient_user_id: employee.user_id || undefined,
+              recipient_email: employee.email || undefined,
+              reason: `Exit workflow ${workflowId}: equity revoked as part of termination`,
+            },
+          });
+
+          const revokeMessage =
+            (revokeData as any)?.message ||
+            (revokeData as any)?.error ||
+            '';
+
+          if (revokeError) {
+            equityRevocationCompleted = false;
+            equityRevocationDetail = revokeMessage || revokeError.message || 'Governance equity revocation failed';
+          } else if ((revokeData as any)?.success) {
+            equityRevocationCompleted = true;
+            equityRevocationDetail = revokeMessage || 'Equity revoked through governance';
+          } else if ((revokeData as any)?.already_revoked) {
+            equityRevocationCompleted = true;
+            equityRevocationDetail = revokeMessage || 'Equity already revoked previously';
+          } else {
+            equityRevocationCompleted = false;
+            equityRevocationDetail = revokeMessage || 'Governance revocation returned without success';
+          }
+        } catch (revokeInvokeError: any) {
+          equityRevocationCompleted = false;
+          equityRevocationDetail =
+            revokeInvokeError?.message || 'Could not invoke governance equity revocation';
+        }
+      } else {
+        equityRevocationCompleted = false;
+        equityRevocationDetail = 'Missing employee user_id/email for equity revocation';
       }
 
       // Update workflow status to final_settlement
@@ -167,7 +209,59 @@ export const FinalSettlementStep: React.FC<Props> = ({
         .eq('workflow_id', workflowId)
         .eq('step_name', 'calculate_settlement');
 
-      message.success('Final settlement processed and documents generated');
+      // Equity step is only completed when governance revocation is actually done.
+      await supabase
+        .from('exit_workflow_steps')
+        .update(
+          equityRevocationCompleted
+            ? {
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+                completed_by: user.id,
+                notes: equityRevocationDetail,
+              }
+            : {
+                status: 'in_progress',
+                completed_at: null,
+                completed_by: null,
+                notes: `Governance action required: ${equityRevocationDetail}`,
+              }
+        )
+        .eq('workflow_id', workflowId)
+        .eq('step_name', 'handle_equity');
+
+      await supabase
+        .from('exit_workflow_steps')
+        .update({
+          status: 'in_progress',
+          completed_at: null,
+          completed_by: null,
+          notes: 'Pending completion dispatch: employee completion notice + internal HR/governance closeout',
+        })
+        .eq('workflow_id', workflowId)
+        .eq('step_name', 'send_notifications')
+        .neq('status', 'completed');
+
+      if (!equityRevocationCompleted) {
+        await supabase.from('governance_logs').insert({
+          action: 'EQUITY_REVOCATION_REQUIRED',
+          actor_id: user.id,
+          entity_type: 'EXIT_WORKFLOW',
+          entity_id: workflowId,
+          description: `Equity revocation requires governance follow-up for ${employee?.first_name || ''} ${employee?.last_name || ''}`.trim(),
+          data: {
+            employee_id: employeeId,
+            employee_email: employee?.email || null,
+            reason: equityRevocationDetail,
+          },
+        });
+      }
+
+      message.success(
+        equityRevocationCompleted
+          ? 'Final settlement processed, notifications sent, and equity revocation completed'
+          : 'Final settlement processed. Equity revocation has been escalated to governance and remains pending'
+      );
       fetchWorkflow();
       onUpdate();
     } catch (error: any) {

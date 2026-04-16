@@ -20,7 +20,6 @@ import { UnifiedPortalShell, PortalTab, PortalKPI, PortalLoadingState, PortalAcc
 import { ExecutiveCalendarTabContent } from '@/components/calendar/ExecutiveCalendarTabContent';
 
 // Lazy load heavy components
-const BusinessEmailSystem = lazy(() => import('@/components/executive/BusinessEmailSystem'));
 const ExecutiveWordProcessor = lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
 const PurchaseOrderManagement = lazy(() => import('@/components/coo/PurchaseOrderManagement').then(m => ({ default: m.PurchaseOrderManagement })));
 const EmbeddedCComms = lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
@@ -137,7 +136,6 @@ const TABS: PortalTab[] = [
   { id: 'purchase-orders', label: 'Purchase Orders', description: 'Create and manage purchase orders.', section: 'Operations', icon: IconShoppingCart },
   { id: 'compliance', label: 'Compliance', description: 'Regulatory compliance and auditing.', section: 'Operations', icon: IconFileCheck },
   { id: 'analytics', label: 'Operations Analytics', description: 'Operational performance metrics.', section: 'Strategy', icon: IconChartBar },
-  { id: 'communications', label: 'Executive Communications', description: 'Secure executive email system.', section: 'Documents', icon: IconMail },
   { id: 'word', label: 'Word Processor', description: 'Executive document workspace.', section: 'Documents', icon: IconFileText },
   { id: 'c-comms', label: 'C-Suite Comms', description: 'Cross-executive communication.', section: 'Documents', icon: IconMail },
 ];
@@ -183,7 +181,6 @@ export default function COOPortal() {
       case 'purchase-orders': return <Suspense fallback={<div className="flex items-center justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-primary" /></div>}><PurchaseOrderManagement /></Suspense>;
       case 'compliance': return <ComplianceDashboard />;
       case 'analytics': return <OperationsAnalytics />;
-      case 'communications': return <Suspense fallback={null}><BusinessEmailSystem /></Suspense>;
       case 'word': return <Suspense fallback={null}><ExecutiveWordProcessor storageKey="coo" /></Suspense>;
       case 'c-comms': return <Suspense fallback={null}><EmbeddedCComms /></Suspense>;
       default: return <FleetDashboard />;

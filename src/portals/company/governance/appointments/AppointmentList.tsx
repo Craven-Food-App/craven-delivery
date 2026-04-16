@@ -32,6 +32,7 @@ const AppointmentList: React.FC<AppointmentListProps> = ({
   showHistory = false,
 }) => {
   const [executiveNames, setExecutiveNames] = React.useState<Record<string, string>>({});
+  const [inactiveExecutiveIds, setInactiveExecutiveIds] = React.useState<Set<string>>(new Set());
 
   React.useEffect(() => {
     if (appointments.length === 0) return;
@@ -40,7 +41,7 @@ const AppointmentList: React.FC<AppointmentListProps> = ({
       const executiveIds = [...new Set(appointments.map(a => a.executive_id))];
       const { data } = await supabase
         .from('exec_users')
-        .select('id, name')
+        .select('id, name, officer_status, linked_employee_id, user_id')
         .in('id', executiveIds);
 
       if (data) {
@@ -49,6 +50,43 @@ const AppointmentList: React.FC<AppointmentListProps> = ({
           names[exec.id] = exec.name;
         });
         setExecutiveNames(names);
+
+        const inactiveOfficerStatuses = new Set(['TERMINATED', 'EXITED', 'REMOVED', 'INACTIVE']);
+        const inactiveEmploymentStatuses = new Set(['TERMINATED', 'EXITED', 'INACTIVE']);
+        const employeeIds = data.map((exec: any) => exec.linked_employee_id).filter(Boolean);
+        const userIds = data.map((exec: any) => exec.user_id).filter(Boolean);
+
+        const { data: employees } = (employeeIds.length > 0 || userIds.length > 0)
+          ? await supabase
+              .from('employees')
+              .select('id, user_id, employment_status, termination_date')
+              .or(
+                [
+                  employeeIds.length > 0 ? `id.in.(${employeeIds.join(',')})` : null,
+                  userIds.length > 0 ? `user_id.in.(${userIds.join(',')})` : null,
+                ].filter(Boolean).join(',')
+              )
+          : { data: [] as any[] };
+
+        const employeesById = new Map((employees || []).map((employee: any) => [employee.id, employee]));
+        const employeesByUserId = new Map((employees || []).map((employee: any) => [employee.user_id, employee]));
+
+        const inactiveIds = new Set<string>();
+        data.forEach((exec: any) => {
+          const officerStatus = String(exec.officer_status || '').toUpperCase();
+          const employee =
+            (exec.linked_employee_id && employeesById.get(exec.linked_employee_id)) ||
+            employeesByUserId.get(exec.user_id);
+          const employmentStatus = String(employee?.employment_status || '').toUpperCase();
+          const isInactive =
+            inactiveOfficerStatuses.has(officerStatus) ||
+            inactiveEmploymentStatuses.has(employmentStatus) ||
+            (!!employee?.termination_date && employmentStatus !== 'ACTIVE');
+          if (isInactive) {
+            inactiveIds.add(exec.id);
+          }
+        });
+        setInactiveExecutiveIds(inactiveIds);
       }
     };
 
@@ -106,7 +144,12 @@ const AppointmentList: React.FC<AppointmentListProps> = ({
     return labels[type] || type;
   };
 
-  if (appointments.length === 0) {
+  const visibleAppointments = appointments.filter((appointment) => {
+    if (showHistory) return true;
+    return !inactiveExecutiveIds.has(appointment.executive_id) && appointment.status !== 'terminated';
+  });
+
+  if (visibleAppointments.length === 0) {
     return (
       <Card padding="xl" withBorder>
         <Stack align="center" gap="md" py="xl">
@@ -129,7 +172,7 @@ const AppointmentList: React.FC<AppointmentListProps> = ({
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {appointments.map((appointment) => (
+        {visibleAppointments.map((appointment) => (
           <Table.Tr key={appointment.id}>
             <Table.Td>
               <Text fw={500}>

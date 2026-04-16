@@ -17,8 +17,9 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { IconPin, IconPlus, IconEye, IconCheck } from '@tabler/icons-react';
+import { IconPin, IconPlus, IconEye, IconCheck, IconTrash } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchUserRoles, hasAnyRole } from '@/lib/roles';
 
 interface Announcement {
   id: string;
@@ -45,6 +46,17 @@ const AnnouncementsTab: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<Announcement | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const DELETE_PRIVILEGED_ROLES = ['admin', 'CRAVEN_FOUNDER', 'CRAVEN_CEO', 'CRAVEN_CORPORATE_SECRETARY'];
+
+  const canDeleteAnnouncement = (a: Announcement) => {
+    if (!currentUser) return false;
+    if (a.author_id === currentUser.id) return true;
+    return hasAnyRole(userRoles, DELETE_PRIVILEGED_ROLES);
+  };
 
   const form = useForm({
     initialValues: {
@@ -102,6 +114,8 @@ const AnnouncementsTab: React.FC = () => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
+      const roles = await fetchUserRoles();
+      setUserRoles(roles);
       await fetchAnnouncements();
     };
     void init();
@@ -147,6 +161,23 @@ const AnnouncementsTab: React.FC = () => {
       read_by: [...announcement.read_by, currentUser.id],
     }).eq('id', announcement.id);
     fetchAnnouncements();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from('internal_announcements').delete().eq('id', deleteTarget.id);
+      if (error) throw error;
+      notifications.show({ title: 'Deleted', message: 'Announcement removed.', color: 'green' });
+      setDeleteTarget(null);
+      fetchAnnouncements();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      notifications.show({ title: 'Delete failed', message, color: 'red' });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -215,13 +246,55 @@ const AnnouncementsTab: React.FC = () => {
                       </Tooltip>
                     </Group>
                   </Stack>
-                  {isRead && <IconCheck size={20} color="#10b981" style={{ flexShrink: 0 }} />}
+                  <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flexShrink: 0 }}>
+                    {canDeleteAnnouncement(a) && (
+                      <Button
+                        variant="subtle"
+                        color="red"
+                        size="xs"
+                        leftSection={<IconTrash size={14} />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(a);
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    )}
+                    {isRead && <IconCheck size={20} color="#10b981" style={{ flexShrink: 0 }} />}
+                  </Group>
                 </Group>
               </Paper>
             );
           })}
         </Stack>
       )}
+
+      <Modal
+        opened={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete announcement?"
+        size="md"
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            This permanently removes the announcement for everyone. This cannot be undone.
+          </Text>
+          {deleteTarget && (
+            <Paper withBorder p="sm" radius="sm">
+              <Text fw={600} size="sm">{deleteTarget.title}</Text>
+            </Paper>
+          )}
+          <Group justify="flex-end" gap="sm">
+            <Button variant="default" onClick={() => setDeleteTarget(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button color="red" loading={deleting} onClick={() => void handleConfirmDelete()}>
+              Delete
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal opened={createOpen} onClose={() => setCreateOpen(false)} title="New Announcement" size="lg">
         <form onSubmit={handleCreate}>

@@ -505,7 +505,7 @@ const ExitWorkflowWizard: React.FC = () => {
                 <Text size="sm" fw={600} c="dimmed" mb={4}>Termination Details</Text>
                 <Text size="sm"><strong>Type:</strong> {formData.termination_type}</Text>
                 <Text size="sm"><strong>Effective Date:</strong> {formData.effective_date ? dayjs(formData.effective_date).format('MMMM D, YYYY') : 'Not set'}</Text>
-                <Text size="sm"><strong>Reason:</strong> {formData.termination_reason}</Text>
+                <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}><strong>Reason:</strong> {formData.termination_reason}</Text>
               </div>
               {isExecutive && (
                 <>

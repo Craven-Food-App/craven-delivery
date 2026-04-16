@@ -97,7 +97,7 @@ const getIconForSection = (id: string): React.ReactNode => {
     // Period Close
     'close': <IconChecklist size={20} />,
     // Communications (consolidated)
-    'comms': <IconMail size={20} />,
+    'c-comms': <IconMessageCircle size={20} />,
   };
   return iconMap[id] || <IconDashboard size={20} />;
 };
@@ -111,7 +111,7 @@ const navGroups = [
   { id: 'compliance', label: 'Compliance & Controls', items: ['tax-compliance', 'audit-risk'] },
   { id: 'reporting', label: 'Stakeholder Reporting', items: ['reporting'] },
   { id: 'close', label: 'Period Close', items: ['close'] },
-  { id: 'operations', label: 'Operations', items: ['team', 'comms'] },
+  { id: 'operations', label: 'Operations', items: ['team', 'c-comms'] },
 ];
 
 export const CFOPortalLayout: React.FC<CFOPortalLayoutProps> = ({

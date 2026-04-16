@@ -91,14 +91,35 @@ const TimePtoView: React.FC = () => {
     setEmployeesLoading(true);
     try {
       // Fetch ALL employees (no status filter)
-      const { data: regularEmployees, error: employeesError } = await supabase
+      // Some environments may not yet have employment_status; fall back gracefully.
+      let { data: regularEmployees, error: employeesError } = await supabase
         .from('employees')
         .select('id, employee_number, first_name, last_name, email, department, position, ssn_last4, user_id, employment_status')
         .order('last_name', { ascending: true });
 
       if (employeesError) {
-        console.error('Error fetching regular employees:', employeesError);
-        throw employeesError;
+        const missingEmploymentStatusColumn =
+          employeesError.code === '42703' ||
+          (employeesError.message || '').toLowerCase().includes('employment_status');
+
+        if (!missingEmploymentStatusColumn) {
+          console.error('Error fetching regular employees:', employeesError);
+          throw employeesError;
+        }
+
+        // Retry without employment_status for older schema states.
+        const fallback = await supabase
+          .from('employees')
+          .select('id, employee_number, first_name, last_name, email, department, position, ssn_last4, user_id')
+          .order('last_name', { ascending: true });
+
+        regularEmployees = fallback.data;
+        employeesError = fallback.error;
+
+        if (employeesError) {
+          console.error('Error fetching regular employees (fallback):', employeesError);
+          throw employeesError;
+        }
       }
 
       // Combine both lists

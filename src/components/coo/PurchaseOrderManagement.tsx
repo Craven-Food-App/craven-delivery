@@ -514,7 +514,7 @@ export const PurchaseOrderManagement: React.FC = () => {
               />
             </Tooltip>
           )}
-          {record.status === 'draft' && (
+          {(record.status === 'draft' || record.approval_workflow === 'pending') && (
             <Popconfirm
               title="Delete this purchase order?"
               onConfirm={() => handleDelete(record.id)}

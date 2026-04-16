@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Container,
   Title,
@@ -14,6 +14,7 @@ import {
   Loader,
   Paper,
   SimpleGrid,
+  Modal,
 } from '@mantine/core';
 import { IconFileText, IconCheck, IconClock, IconAlertCircle, IconSignature, IconDownload, IconCircleCheck, IconRefresh } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -84,9 +85,33 @@ const OnboardingPacket: React.FC = () => {
   const [canRegenerate, setCanRegenerate] = useState(false);
   const [appointmentStatus, setAppointmentStatus] = useState<string>('');
   const [awaitingSecretaryReview, setAwaitingSecretaryReview] = useState(false);
+  const [documentViewerOpen, setDocumentViewerOpen] = useState(false);
+  const [documentViewerTitle, setDocumentViewerTitle] = useState('');
+  const [documentViewerBlobUrl, setDocumentViewerBlobUrl] = useState<string | null>(null);
+  const [viewingDocId, setViewingDocId] = useState<string | null>(null);
+  const documentViewerBlobRef = useRef<string | null>(null);
+
+  const revokeDocumentViewerBlob = () => {
+    const url = documentViewerBlobRef.current;
+    if (url?.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+    documentViewerBlobRef.current = null;
+    setDocumentViewerBlobUrl(null);
+  };
 
   useEffect(() => {
     loadOnboarding();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      const url = documentViewerBlobRef.current;
+      if (url?.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+      documentViewerBlobRef.current = null;
+    };
   }, []);
 
   const loadOnboarding = async () => {
@@ -318,6 +343,62 @@ const OnboardingPacket: React.FC = () => {
 
   const getDocumentUrl = (doc: OnboardingDocument): string | null => {
     return doc.file_url || doc.signed_file_url || null;
+  };
+
+  const looksLikeHtmlContent = (snippet: string): boolean => {
+    const s = snippet.trimStart().slice(0, 800).toLowerCase();
+    return (
+      s.startsWith('<!doctype') ||
+      s.startsWith('<html') ||
+      s.startsWith('<head') ||
+      s.startsWith('<!--') ||
+      (s.startsWith('<') && /<(html|head|body|div|table|style|meta|title)\b/i.test(s))
+    );
+  };
+
+  const handleViewDocument = async (doc: OnboardingDocument) => {
+    const url = getDocumentUrl(doc);
+    if (!url) {
+      notifications.show({ title: 'No document', message: 'This document has no file URL yet.', color: 'yellow' });
+      return;
+    }
+
+    const lower = url.toLowerCase();
+    if (lower.includes('.pdf') || lower.endsWith('.pdf')) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    setViewingDocId(doc.id);
+    try {
+      const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+      if (!res.ok) {
+        throw new Error(`Failed to load document (${res.status})`);
+      }
+      const contentType = (res.headers.get('content-type') || '').toLowerCase();
+      const text = await res.text();
+      const treatAsHtml =
+        contentType.includes('text/html') ||
+        lower.includes('.html') ||
+        lower.includes('.htm') ||
+        looksLikeHtmlContent(text);
+
+      if (treatAsHtml) {
+        revokeDocumentViewerBlob();
+        const blob = new Blob([text], { type: 'text/html;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+        documentViewerBlobRef.current = blobUrl;
+        setDocumentViewerBlobUrl(blobUrl);
+        setDocumentViewerTitle(getDocumentTypeName(doc.type));
+        setDocumentViewerOpen(true);
+      } else {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    } catch {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } finally {
+      setViewingDocId(null);
+    }
   };
 
   const getDocumentIcon = (doc: OnboardingDocument) => {
@@ -555,7 +636,8 @@ const OnboardingPacket: React.FC = () => {
                           {(doc.file_url || doc.signed_file_url) && (
                             <Button
                               variant="outline"
-                              onClick={() => window.open(getDocumentUrl(doc), '_blank')}
+                              onClick={() => handleViewDocument(doc)}
+                              loading={viewingDocId === doc.id}
                               leftSection={<IconDownload size={16} />}
                               size="sm"
                             >
@@ -604,6 +686,31 @@ const OnboardingPacket: React.FC = () => {
             Go to Signing Portal
           </Button>
         </Group>
+
+        <Modal
+          opened={documentViewerOpen}
+          onClose={() => {
+            setDocumentViewerOpen(false);
+            revokeDocumentViewerBlob();
+          }}
+          title={documentViewerTitle || 'Document'}
+          size="95%"
+          styles={{ body: { padding: 0 } }}
+        >
+          {documentViewerBlobUrl && (
+            <iframe
+              title={documentViewerTitle}
+              src={documentViewerBlobUrl}
+              style={{
+                width: '100%',
+                height: '85vh',
+                border: 'none',
+                display: 'block',
+              }}
+              sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-downloads"
+            />
+          )}
+        </Modal>
       </Stack>
     </Container>
   );

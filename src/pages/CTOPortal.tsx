@@ -31,7 +31,6 @@ import { UnifiedPortalShell, PortalTab, PortalKPI, PortalLoadingState, PortalAcc
 import { ExecutiveCalendarTabContent } from '@/components/calendar/ExecutiveCalendarTabContent';
 
 // Lazy load heavy components
-const BusinessEmailSystem = React.lazy(() => import('@/components/executive/BusinessEmailSystem'));
 const ExecutiveWordProcessor = React.lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
 const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 const MorningTechnicalReview = React.lazy(() => import('@/components/cto/MorningTechnicalReview'));
@@ -81,7 +80,6 @@ const TABS: PortalTab[] = [
   { id: 'roadmap', label: 'Technology Roadmap', description: 'Strategic technology planning timeline.', section: 'Management', icon: IconRocket },
   { id: 'costs', label: 'Tech Costs', description: 'Technology spend and budget tracking.', section: 'Management', icon: IconChartBar },
   // Business
-  { id: 'communications', label: 'Communications', description: 'Executive email and messaging system.', section: 'Business', icon: IconMail },
   { id: 'word', label: 'Documents', description: 'Executive document workspace.', section: 'Business', icon: IconFileText },
   { id: 'c-comms', label: 'C-Suite Comms', description: 'Cross-executive communication workspace.', section: 'Business', icon: IconMessageCircle },
   { id: 'manual', label: 'Help & Manual', description: 'Portal instruction manual and help.', section: 'Business', icon: IconInfoCircle },
@@ -154,7 +152,6 @@ function CTOPortalContent() {
       case 'team': return <TeamResourceManagement />;
       case 'roadmap': return <TechnologyRoadmap />;
       case 'costs': return <TechCostManagement />;
-      case 'communications': return <Suspense fallback={null}><BusinessEmailSystem /></Suspense>;
       case 'word': return <Suspense fallback={null}><ExecutiveWordProcessor storageKey="cto" supabaseTable="cto_documents" /></Suspense>;
       case 'c-comms': return <Suspense fallback={null}><EmbeddedCComms /></Suspense>;
       case 'manual': return <CTOPortalInstructionManual />;

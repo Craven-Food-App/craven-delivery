@@ -48,7 +48,6 @@ import {
   IconReport,
   IconWallet,
   IconTrendingUp,
-  IconMail,
   IconMessageCircle,
   IconSettings,
   IconCalendar,
@@ -60,12 +59,9 @@ import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMe
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
 // LAZY LOAD all heavy modules
-const BusinessEmailSystem = React.lazy(() => import('@/components/executive/BusinessEmailSystem'));
-const ExecutiveWordProcessor = React.lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
 const EnhancedCFODashboard = React.lazy(() => import('@/components/cfo/EnhancedCFODashboard').then(m => ({ default: m.EnhancedCFODashboard })));
 const AdvancedTreasuryManagement = React.lazy(() => import('@/components/cfo/AdvancedTreasuryManagement').then(m => ({ default: m.AdvancedTreasuryManagement })));
 const EnhancedFPandA = React.lazy(() => import('@/components/cfo/EnhancedFPandA').then(m => ({ default: m.EnhancedFPandA })));
-const CFOKnowledgeBase = React.lazy(() => import('@/components/cfo/CFOKnowledgeBase').then(m => ({ default: m.CFOKnowledgeBase })));
 const EnhancedPayroll = React.lazy(() => import('@/components/cfo/EnhancedPayroll').then(m => ({ default: m.EnhancedPayroll })));
 const EnhancedTaxPlanning = React.lazy(() => import('@/components/cfo/EnhancedTaxPlanning').then(m => ({ default: m.EnhancedTaxPlanning })));
 const EnhancedFinancialControls = React.lazy(() => import('@/components/cfo/EnhancedFinancialControls').then(m => ({ default: m.EnhancedFinancialControls })));
@@ -89,46 +85,39 @@ const CFOExpenses = React.lazy(() => import('@/components/cfo/Expenses').then(m 
 const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
 const ModuleLoader = () => (
-  <div className="flex min-h-[220px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20">
-    <div className="text-center">
-      <div className="mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-primary" />
-      <p className="text-xs text-muted-foreground">Loading module...</p>
-    </div>
+  <div className="flex min-h-[120px] items-center justify-center">
+    <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted border-t-primary" />
   </div>
 );
 
 const TABS: PortalTab[] = [
-  // Core Executive
-  { id: 'evaluation', label: 'CFO Evaluation Gate', description: 'Board-defensible CFO evaluation workflow.', section: 'Executive', icon: IconShield },
-  { id: 'onboarding', label: 'Onboarding & Governance', description: 'CFO onboarding and governance framework.', section: 'Executive', icon: IconChecklist },
-  { id: 'overview', label: 'CFO Command Center', description: 'Executive financial dashboard and KPIs.', section: 'Executive', icon: IconChartBar },
-  { id: 'calendar', label: 'Executive Calendar', description: 'Shared leadership schedule (same as Company Portal).', section: 'Executive', icon: IconCalendar },
-  // Core Accounting
-  { id: 'general-ledger', label: 'General Ledger', description: 'Chart of accounts and journal entries.', section: 'Accounting', icon: IconBuildingBank },
-  { id: 'ap', label: 'Accounts Payable', description: 'Vendor invoices and payment processing.', section: 'Accounting', icon: IconCurrencyDollar },
-  { id: 'ar', label: 'Accounts Receivable', description: 'Customer invoices and collections.', section: 'Accounting', icon: IconWallet },
-  { id: 'invoices-expenses', label: 'Invoices & Expenses', description: 'Invoice management and expense tracking.', section: 'Accounting', icon: IconFileText },
-  { id: 'vendors', label: 'Vendor Management', description: 'Vendor onboarding and performance.', section: 'Accounting', icon: IconUsers },
-  // Banking & Treasury
-  { id: 'treasury', label: 'Treasury & Banking', description: 'Cash management and banking operations.', section: 'Treasury', icon: IconBuildingBank },
-  // Team & Payroll
-  { id: 'team', label: 'Team & Payroll', description: 'Team management, payroll, and driver comp.', section: 'Operations', icon: IconUsers },
-  // Planning & Analysis
-  { id: 'fpa', label: 'FP&A & Planning', description: 'Financial planning, analysis, and forecasting.', section: 'Planning', icon: IconTrendingUp },
-  // Tax & Compliance
-  { id: 'tax-compliance', label: 'Tax & Compliance', description: 'Tax planning and financial controls.', section: 'Planning', icon: IconShield },
-  // Audit & Risk
-  { id: 'audit-risk', label: 'Audit & Risk', description: 'Audit management and risk assessment.', section: 'Planning', icon: IconReport },
-  // Reporting
-  { id: 'reporting', label: 'Stakeholder Reporting', description: 'Board, investor, and financial reports.', section: 'Reporting', icon: IconReport },
-  // Period Close
-  { id: 'close', label: 'Close Checklist', description: 'Period close tasks and reconciliations.', section: 'Reporting', icon: IconChecklist },
-  // Communications
-  { id: 'comms', label: 'Communications', description: 'Email, documents, and knowledge base.', section: 'Communications', icon: IconMail },
-  { id: 'c-comms', label: 'C-Suite Comms', description: 'Cross-executive communication workspace.', section: 'Communications', icon: IconMessageCircle },
+  // Highest priority: day-to-day financial control and execution
+  { id: 'overview', label: 'CFO Command Center', description: '', section: 'Priority', icon: IconChartBar },
+  { id: 'ap', label: 'Accounts Payable', description: '', section: 'Priority', icon: IconCurrencyDollar },
+  { id: 'ar', label: 'Accounts Receivable', description: '', section: 'Priority', icon: IconWallet },
+  { id: 'invoices-expenses', label: 'Invoices & Expenses', description: '', section: 'Priority', icon: IconFileText },
+  { id: 'treasury', label: 'Treasury & Banking', description: '', section: 'Priority', icon: IconBuildingBank },
+  { id: 'close', label: 'Close Checklist', description: '', section: 'Priority', icon: IconChecklist },
+
+  // Governance, controls, and risk
+  { id: 'tax-compliance', label: 'Tax & Compliance', description: '', section: 'Governance', icon: IconShield },
+  { id: 'audit-risk', label: 'Audit & Risk', description: '', section: 'Governance', icon: IconReport },
+  { id: 'general-ledger', label: 'General Ledger', description: '', section: 'Governance', icon: IconBuildingBank },
+
+  // Planning and strategic reporting
+  { id: 'fpa', label: 'FP&A & Planning', description: '', section: 'Planning', icon: IconTrendingUp },
+  { id: 'reporting', label: 'Stakeholder Reporting', description: '', section: 'Planning', icon: IconReport },
+  { id: 'vendors', label: 'Vendor Management', description: '', section: 'Planning', icon: IconUsers },
+  { id: 'team', label: 'Team & Payroll', description: '', section: 'Planning', icon: IconUsers },
+
+  // Executive and communication
+  { id: 'calendar', label: 'Executive Calendar', description: '', section: 'Executive', icon: IconCalendar },
+  { id: 'evaluation', label: 'CFO Evaluation Gate', description: '', section: 'Executive', icon: IconShield },
+  { id: 'onboarding', label: 'Onboarding & Governance', description: '', section: 'Executive', icon: IconChecklist },
+  { id: 'c-comms', label: 'C-Suite Comms', description: '', section: 'Executive', icon: IconMessageCircle },
 ];
 
-const SECTIONS = ['Executive', 'Accounting', 'Treasury', 'Operations', 'Planning', 'Reporting', 'Communications'];
+const SECTIONS = ['Priority', 'Governance', 'Planning', 'Executive'];
 
 function CFOPortalContent() {
   const [loading, setLoading] = useState(false);
@@ -140,6 +129,8 @@ function CFOPortalContent() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [user, setUser] = useState<any>(null);
   const [kpis, setKpis] = useState<PortalKPI[]>([]);
+  const [taxComplianceTab, setTaxComplianceTab] = useState<'tax' | 'controls' | 'approvals'>('tax');
+  const [moduleHeaderActions, setModuleHeaderActions] = useState<React.ReactNode | null>(null);
   const toast = useToast();
   const { loading: authLoading, user: authUser, execUser, isAuthorized, signOut } = useExecAuth('cfo');
 
@@ -177,7 +168,17 @@ function CFOPortalContent() {
         { id: 'transactions', label: 'Transactions', value: String((orders || []).length), delta: 'This period', up: true },
         { id: 'ap-pending', label: 'AP Pending', value: String(apRes.count || 0), delta: 'Invoices', up: (apRes.count || 0) === 0 },
         { id: 'ar-open', label: 'AR Open', value: String(arRes.count || 0), delta: 'Outstanding', up: (arRes.count || 0) === 0 },
-        { id: 'approvals', label: 'Approvals', value: String(approvalsRes.count || 0), delta: 'Pending', up: (approvalsRes.count || 0) === 0, onClick: () => setActiveSection('tax-compliance') },
+        {
+          id: 'approvals',
+          label: 'Approvals',
+          value: String(approvalsRes.count || 0),
+          delta: 'Pending',
+          up: (approvalsRes.count || 0) === 0,
+          onClick: () => {
+            setActiveSection('tax-compliance');
+            setTaxComplianceTab('approvals');
+          }
+        },
       ]);
     } finally {
       setLoading(false);
@@ -216,11 +217,11 @@ function CFOPortalContent() {
       case 'calendar':
         return <ExecutiveCalendarTabContent />;
       case 'general-ledger':
-        return <Suspense fallback={<ModuleLoader />}><CorporateGeneralLedger /></Suspense>;
+        return <Suspense fallback={<ModuleLoader />}><CorporateGeneralLedger onHeaderActionsChange={setModuleHeaderActions} /></Suspense>;
       case 'ap':
-        return <Suspense fallback={<ModuleLoader />}><CorporateAccountsPayable /></Suspense>;
+        return <Suspense fallback={<ModuleLoader />}><CorporateAccountsPayable onHeaderActionsChange={setModuleHeaderActions} /></Suspense>;
       case 'ar':
-        return <Suspense fallback={<ModuleLoader />}><CorporateAccountsReceivable /></Suspense>;
+        return <Suspense fallback={<ModuleLoader />}><CorporateAccountsReceivable onHeaderActionsChange={setModuleHeaderActions} /></Suspense>;
       case 'invoices-expenses':
         return (
           <Tabs defaultValue="invoices" keepMounted={false}>
@@ -289,7 +290,7 @@ function CFOPortalContent() {
         );
       case 'tax-compliance':
         return (
-          <Tabs defaultValue="tax" keepMounted={false}>
+          <Tabs value={taxComplianceTab} onChange={(value) => setTaxComplianceTab((value as 'tax' | 'controls' | 'approvals') || 'tax')} keepMounted={false}>
             <Tabs.List mb="md">
               <Tabs.Tab value="tax">Tax Planning</Tabs.Tab>
               <Tabs.Tab value="controls">Financial Controls</Tabs.Tab>
@@ -328,19 +329,6 @@ function CFOPortalContent() {
         );
       case 'close':
         return <CloseManagement />;
-      case 'comms':
-        return (
-          <Tabs defaultValue="email" keepMounted={false}>
-            <Tabs.List mb="md">
-              <Tabs.Tab value="email">Email & Messaging</Tabs.Tab>
-              <Tabs.Tab value="docs">Draft Documents</Tabs.Tab>
-              <Tabs.Tab value="knowledge">Knowledge Base</Tabs.Tab>
-            </Tabs.List>
-            <Tabs.Panel value="email"><Suspense fallback={<ModuleLoader />}><BusinessEmailSystem /></Suspense></Tabs.Panel>
-            <Tabs.Panel value="docs"><Suspense fallback={<ModuleLoader />}><ExecutiveWordProcessor storageKey="cfo" supabaseTable="cfo_documents" /></Suspense></Tabs.Panel>
-            <Tabs.Panel value="knowledge"><Suspense fallback={<ModuleLoader />}><CFOKnowledgeBase onNavigateToTab={setActiveSection} /></Suspense></Tabs.Panel>
-          </Tabs>
-        );
       case 'c-comms':
         return <Suspense fallback={<ModuleLoader />}><EmbeddedCComms /></Suspense>;
       default:
@@ -351,23 +339,31 @@ function CFOPortalContent() {
   return (
     <UnifiedPortalShell
       portalName="CFO Portal"
-      portalSubtitle="Financial command center and treasury management"
+      portalSubtitle=""
       sectionLabel="Executive Finance"
       tabs={TABS}
       sections={SECTIONS}
       activeTab={activeSection}
       onTabChange={setActiveSection}
       kpis={kpis}
-      kpiLabel="Financial Health — Live"
+      kpiLabel="Live"
       lastUpdated={lastUpdated}
       userTitle={execUser?.title || 'Chief Financial Officer'}
       onBack={() => navigate('/hub')}
       onSignOut={async () => { await signOut(); navigate('/auth?hq=true'); }}
       headerActions={
-        <>
-          <button onClick={() => navigate('/ceo')} className="inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted">CEO</button>
-          <button onClick={() => navigate('/finance')} className="inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted">Finance</button>
-        </>
+        moduleHeaderActions ? (
+          moduleHeaderActions
+        ) : activeSection === 'overview' ? (
+          <Group gap="xs">
+            <Badge color="green" variant="light">
+              Systems Operational
+            </Badge>
+            <Text size="xs" c="dimmed">
+              Updated {lastUpdated.toLocaleTimeString()}
+            </Text>
+          </Group>
+        ) : null
       }
     >
       {renderContent()}
@@ -460,7 +456,7 @@ function ManagerConsole() {
         <div className="rounded-md border border-border bg-background p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">AR Past Due</p><p className="text-lg font-bold text-foreground">${metrics.arPastDue.toLocaleString()}</p></div>
         <div className="rounded-md border border-border bg-background p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">Close Tasks</p><p className="text-lg font-bold text-foreground">{metrics.closeOpen}</p></div>
       </div>
-      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Team Workload</h4>
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Team</h4>
       <div className="mb-3 grid grid-cols-3 gap-2 md:grid-cols-6">
         {['CFO','Controller','AP','AR','Treasury','Auditor'].map((r) => {
           const count = roles.filter(x => x.role === r).length;
@@ -493,7 +489,7 @@ function ManagerConsole() {
           } finally { setLoading(false); }
         })}>
           <Stack>
-            <TextInput label="User ID" {...form.getInputProps('user_id')} description="Enter user UUID or leave blank to generate one" />
+            <TextInput label="User ID" {...form.getInputProps('user_id')} />
             <Select label="Role" {...form.getInputProps('role')} required data={[{value:'CFO',label:'CFO'},{value:'Controller',label:'Controller'},{value:'AP',label:'AP'},{value:'AR',label:'AR'},{value:'Treasury',label:'Treasury'},{value:'Auditor',label:'Auditor'}]} />
             <Group justify="flex-end" mt="md">
               <Button variant="subtle" onClick={() => setRoleModal(false)}>Cancel</Button>
@@ -556,7 +552,7 @@ function CashFlowForecast() {
 
   return (
     <div>
-      <p className="mb-3 text-xs text-muted-foreground">Adjust expense ratio and forward revenue growth to model cash runway in real time.</p>
+      
       <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4">
         <div>
           <Text fw={600} mb={4}>Expense Ratio</Text>
@@ -569,9 +565,9 @@ function CashFlowForecast() {
           <Text size="sm" c="dimmed">{Math.round(growthRate * 100)}%</Text>
         </div>
         <div>
-          <Text fw={600} mb={4}>Cash After Scenario</Text>
+          <Text fw={600} mb={4}>Cash</Text>
           <p className="text-lg font-bold text-foreground">${Math.round(scenarioCash).toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">6-month cumulative outlook</p>
+          
         </div>
         <div className="flex items-end">
           <button onClick={() => { setExpenseRatio(0.65); setGrowthRate(0.05); }} disabled={expenseRatio === 0.65 && growthRate === 0.05} className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-50">Reset Scenario</button>
@@ -606,7 +602,11 @@ function ApprovalsPanel() {
   const toast = useToast();
 
   const loadApprovals = useCallback(async (statusFilter: string) => {
-    const { data } = await supabase.from('ceo_financial_approvals').select('id, requester, description, amount, status, created_at').eq('status', statusFilter).order('created_at', { ascending: false });
+    const { data } = await supabase
+      .from('ceo_financial_approvals')
+      .select('id, requester_name, description, amount, status, created_at')
+      .eq('status', statusFilter)
+      .order('created_at', { ascending: false });
     setRows((data || []).map((d: any) => ({ key: d.id, ...d })));
   }, []);
 
@@ -620,6 +620,23 @@ function ApprovalsPanel() {
     } catch (err) {
       toast.error('Unable to update approval', 'Error');
     } finally { setLoading(false); }
+  }, [loadApprovals, status, toast]);
+
+  const handleDeleteApproval = useCallback(async (record: any) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('ceo_financial_approvals')
+        .delete()
+        .eq('id', record.id);
+      if (error) throw error;
+      toast.success('Request deleted', 'Success');
+      await loadApprovals(status);
+    } catch (err) {
+      toast.error('Unable to delete approval', 'Error');
+    } finally {
+      setLoading(false);
+    }
   }, [loadApprovals, status, toast]);
 
   useEffect(() => {
@@ -639,15 +656,30 @@ function ApprovalsPanel() {
       </div>
       <MantineTable data={rows} loading={loading} size={isMobile ? 'small' : 'default'} scroll={{ x: isMobile ? 800 : 'auto' }} pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }} columns={[
         { title: 'ID', dataIndex: 'id', width: 90 },
-        { title: 'Requester', dataIndex: 'requester' },
+        { title: 'Requester', dataIndex: 'requester_name' },
         { title: 'Description', dataIndex: 'description' },
         { title: 'Amount', dataIndex: 'amount', render: (v: number) => `$${(v||0).toLocaleString()}` },
         { title: 'Status', dataIndex: 'status', render: (value: string) => <Badge color={value === 'approved' ? 'green' : value === 'rejected' ? 'red' : 'yellow'} style={{ textTransform: 'capitalize' }}>{value}</Badge> },
         { title: 'Created', dataIndex: 'created_at', render: (v: string) => new Date(v).toLocaleString(), width: 180 },
-        { title: 'Actions', key: 'actions', width: 220, render: (_: any, record: any) => (
+        { title: 'Actions', key: 'actions', width: 320, render: (_: any, record: any) => (
           <Group gap="xs">
             <Button size="sm" variant="filled" onClick={() => handleApprovalAction(record, 'approved')}>Approve</Button>
-            <Button size="sm" color="red" onClick={() => modals.openConfirmModal({ title: 'Reject request?', children: <Text>This will mark the request as rejected.</Text>, labels: { confirm: 'Reject', cancel: 'Cancel' }, confirmProps: { color: 'red' }, onConfirm: () => handleApprovalAction(record, 'rejected') })}>Reject</Button>
+            <Button size="sm" color="red" onClick={() => modals.openConfirmModal({ title: 'Reject?', labels: { confirm: 'Reject', cancel: 'Cancel' }, confirmProps: { color: 'red' }, onConfirm: () => handleApprovalAction(record, 'rejected') })}>Reject</Button>
+            <Button
+              size="sm"
+              variant="outline"
+              color="red"
+              onClick={() =>
+                modals.openConfirmModal({
+                  title: 'Delete?',
+                  labels: { confirm: 'Delete', cancel: 'Cancel' },
+                  confirmProps: { color: 'red' },
+                  onConfirm: () => handleDeleteApproval(record),
+                })
+              }
+            >
+              Delete
+            </Button>
           </Group>
         )},
       ]} />

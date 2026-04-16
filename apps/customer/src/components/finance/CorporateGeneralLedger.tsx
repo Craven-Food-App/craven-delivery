@@ -501,73 +501,15 @@ export const CorporateGeneralLedger: React.FC = () => {
   }, [transactions]);
 
   return (
-    <div style={{ padding: '24px', background: '#f5f5f5', minHeight: '100vh' }}>
-      {/* Header Section */}
-      <Card
-        style={{
-          marginBottom: 24,
-          background: 'linear-gradient(135deg, #001529 0%, #002140 100%)',
-          border: 'none',
-          borderRadius: 8,
-        }}
-        bodyStyle={{ padding: '32px' }}
-      >
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={2} style={{ color: '#fff', margin: 0, fontWeight: 600 }}>
-              <FileTextOutlined style={{ marginRight: 12, fontSize: 28 }} />
-              General Ledger
-            </Title>
-            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, display: 'block', marginTop: 8 }}>
-              Complete chart of accounts and transaction history | US GAAP Compliant
-            </Text>
-          </Col>
-          <Col>
-            <Space>
-              {canManage && (
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={() => {
-                    setEditingEntry(null);
-                    setEntryLines([{ account_id: '', account_code: '', account_name: '', description: '', debit: 0, credit: 0 }]);
-                    entryForm.resetFields();
-                    entryForm.setFieldsValue({ entry_date: dayjs() });
-                    setEntryModalVisible(true);
-                  }}
-                  style={{ background: '#52c41a', borderColor: '#52c41a' }}
-                >
-                  Create Journal Entry
-                </Button>
-              )}
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={fetchGLData}
-                style={{ background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.3)', color: '#fff' }}
-              >
-                Refresh
-              </Button>
-              <Button
-                type="primary"
-                icon={<ExportOutlined />}
-                onClick={handleExport}
-                style={{ background: '#1890ff', borderColor: '#1890ff' }}
-              >
-                Export CSV
-              </Button>
-            </Space>
-          </Col>
-        </Row>
-      </Card>
+    <div style={{ padding: '12px', background: '#f5f5f5', minHeight: '100vh' }}>
 
       {/* KPI Metrics */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+      <Row gutter={[12, 12]} style={{ marginBottom: 12 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
               title="Total Debits"
               value={metrics.totalDebits}
-              prefix={<DollarOutlined />}
               precision={2}
               valueStyle={{ color: '#1890ff', fontSize: 24, fontWeight: 700 }}
               formatter={(value) => `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -579,7 +521,6 @@ export const CorporateGeneralLedger: React.FC = () => {
             <Statistic
               title="Total Credits"
               value={metrics.totalCredits}
-              prefix={<DollarOutlined />}
               precision={2}
               valueStyle={{ color: '#52c41a', fontSize: 24, fontWeight: 700 }}
               formatter={(value) => `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -591,7 +532,6 @@ export const CorporateGeneralLedger: React.FC = () => {
             <Statistic
               title="Net Balance"
               value={metrics.netBalance}
-              prefix={<DollarOutlined />}
               precision={2}
               valueStyle={{
                 color: metrics.netBalance === 0 ? '#595959' : metrics.netBalance > 0 ? '#1890ff' : '#ff4d4f',
@@ -607,17 +547,16 @@ export const CorporateGeneralLedger: React.FC = () => {
             <Statistic
               title="Transactions"
               value={metrics.transactionCount}
-              prefix={<FileTextOutlined />}
               valueStyle={{ color: '#722ed1', fontSize: 24, fontWeight: 700 }}
-              suffix={`across ${metrics.accountsActive} accounts`}
+              suffix={metrics.accountsActive > 0 ? `across ${metrics.accountsActive} accounts` : 'accounts'}
             />
           </Card>
         </Col>
       </Row>
 
       {/* Filters Section */}
-      <Card style={{ marginBottom: 24 }} title={<Text strong>Filters & Search</Text>}>
-        <Row gutter={[16, 16]}>
+      <Card style={{ marginBottom: 12 }} title={<Text strong>Filters & Search</Text>}>
+        <Row gutter={[12, 12]}>
           <Col xs={24} sm={12} md={8}>
             <Input
               placeholder="Search by entry #, account, description..."

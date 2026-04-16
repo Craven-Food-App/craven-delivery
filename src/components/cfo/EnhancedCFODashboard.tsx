@@ -338,34 +338,14 @@ export const EnhancedCFODashboard: React.FC = () => {
   }
 
   return (
-    <Stack gap="lg" p={isMobile ? 16 : 24}>
-      {/* Header with AI Badge */}
-      <Group justify="space-between" wrap="wrap">
-        <Box>
-          <Group gap="xs" mb={4}>
-            <Title order={2}>CFO Command Center</Title>
-          </Group>
-          <Text c="dimmed" size="sm">
-            Real-time financial intelligence with predictive analytics and anomaly detection
-          </Text>
-        </Box>
-        <Group gap="xs">
-          <Badge color="green" variant="light" leftSection={<IconShield size={12} />}>
-            Systems Operational
-          </Badge>
-          <Text size="xs" c="dimmed">
-            Updated {new Date().toLocaleTimeString()}
-          </Text>
-        </Group>
-      </Group>
-
+    <Stack gap="md" p={isMobile ? 10 : 14}>
       {/* Predictive Insights & Anomalies */}
       {(predictiveInsights.length > 0 || anomalies.length > 0) && (
-        <Grid gutter="md">
+        <Grid gutter="sm">
           {predictiveInsights.length > 0 && (
             <Grid.Col span={{ base: 12, md: anomalies.length > 0 ? 6 : 12 }}>
-              <Card shadow="sm" padding="lg" radius="md" withBorder>
-                <Group mb="md">
+              <Card shadow="sm" padding="sm" radius="md" withBorder>
+                <Group mb="sm">
                   <IconBrain size={20} color="#8b5cf6" />
                   <Title order={4}>Predictive Insights</Title>
                 </Group>
@@ -394,8 +374,8 @@ export const EnhancedCFODashboard: React.FC = () => {
           )}
           {anomalies.length > 0 && (
             <Grid.Col span={{ base: 12, md: predictiveInsights.length > 0 ? 6 : 12 }}>
-              <Card shadow="sm" padding="lg" radius="md" withBorder>
-                <Group mb="md">
+              <Card shadow="sm" padding="sm" radius="md" withBorder>
+                <Group mb="sm">
                   <IconAlertTriangle size={20} color="#ef4444" />
                   <Title order={4}>Anomaly Detection</Title>
                 </Group>
@@ -419,10 +399,10 @@ export const EnhancedCFODashboard: React.FC = () => {
       )}
 
       {/* Advanced KPI Grid */}
-      <Grid gutter="md">
+      <Grid gutter="sm">
         {advancedKPIs.map((kpi, idx) => (
           <Grid.Col key={idx} span={{ base: 12, sm: 6, md: 4, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder style={{ height: '100%' }}>
+            <Card shadow="sm" padding="sm" radius="md" withBorder style={{ height: '100%' }}>
               <Group justify="space-between" mb="xs">
                 <Text size="sm" c="dimmed" fw={600}>{kpi.title}</Text>
                 <Tooltip label={kpi.description || kpi.title}>
@@ -484,10 +464,10 @@ export const EnhancedCFODashboard: React.FC = () => {
       </Grid>
 
       {/* Advanced Financial Charts */}
-      <Grid gutter="md">
+      <Grid gutter="sm">
         <Grid.Col span={{ base: 12, lg: 8 }}>
-          <Card shadow="sm" padding="lg" radius="md" withBorder>
-            <Title order={4} mb="md">12-Month Financial Performance Trend</Title>
+          <Card shadow="sm" padding="sm" radius="md" withBorder>
+            <Title order={4} mb="sm">12-Month Financial Performance Trend</Title>
             <FuturisticChart
               data={financialData}
               type="area"
@@ -499,9 +479,9 @@ export const EnhancedCFODashboard: React.FC = () => {
           </Card>
         </Grid.Col>
         <Grid.Col span={{ base: 12, lg: 4 }}>
-          <Card shadow="sm" padding="lg" radius="md" withBorder>
-            <Title order={4} mb="md">Financial Health Score</Title>
-            <Stack align="center" gap="lg">
+          <Card shadow="sm" padding="sm" radius="md" withBorder>
+            <Title order={4} mb="sm">Financial Health Score</Title>
+            <Stack align="center" gap="sm">
               <RingProgress
                 size={200}
                 thickness={20}
@@ -543,8 +523,8 @@ export const EnhancedCFODashboard: React.FC = () => {
       </Grid>
 
       {/* Cash Flow Forecast */}
-      <Card shadow="sm" padding="lg" radius="md" withBorder>
-        <Title order={4} mb="md">6-Month Cash Flow Forecast</Title>
+      <Card shadow="sm" padding="sm" radius="md" withBorder>
+        <Title order={4} mb="sm">6-Month Cash Flow Forecast</Title>
         <FuturisticChart
           data={Array.from({ length: 6 }, (_, i) => {
             const month = new Date();

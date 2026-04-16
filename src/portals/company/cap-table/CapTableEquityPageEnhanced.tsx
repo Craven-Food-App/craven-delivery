@@ -89,6 +89,13 @@ const CapTableEquityPageEnhanced: React.FC = () => {
 
   useEffect(() => {
     loadCapTable();
+    const handleEquityChanged = () => {
+      loadCapTable();
+    };
+    window.addEventListener('equityGrantChanged', handleEquityChanged);
+    return () => {
+      window.removeEventListener('equityGrantChanged', handleEquityChanged);
+    };
   }, []);
 
   const toNumber = (value: any, fallback = 0): number => {
@@ -391,6 +398,12 @@ const CapTableEquityPageEnhanced: React.FC = () => {
   const getPieChartData = (): PieChartData[] => {
     if (!capTable) return [];
 
+    const getSliceColor = (index: number): string => {
+      // Golden-angle spacing keeps adjacent slices visually distinct.
+      const hue = (index * 137.508) % 360;
+      return `hsl(${hue.toFixed(3)}, 75%, 50%)`;
+    };
+
     // Recalculate all percentages from actual shares to ensure 100% accuracy
     // This ensures the pie chart always sums to exactly 100%
     const totalAuthorized = Math.max(toNumber(capTable.total_authorized, 0), 1);
@@ -400,36 +413,41 @@ const CapTableEquityPageEnhanced: React.FC = () => {
         name: 'Invero, Inc.',
         value: (capTable.holding_company_shares / totalAuthorized) * 100,
         shares: capTable.holding_company_shares,
-        color: '#3b82f6', // Blue
+        color: '',
       },
       {
         name: `Torrance Stroman — ${FOUNDER_CEO_LABEL}`,
         value: (capTable.founder_shares / totalAuthorized) * 100,
         shares: capTable.founder_shares,
-        color: '#8b5cf6', // Purple
+        color: '',
       },
       ...executives.map(exec => ({
         name: exec.name,
         value: (exec.shares / totalAuthorized) * 100,
         shares: exec.shares,
-        color: '#ec4899', // Pink
+        color: '',
       })),
       {
         name: 'Equity Pool',
         value: (capTable.equity_pool / totalAuthorized) * 100,
         shares: capTable.equity_pool,
-        color: '#f97316', // Orange
+        color: '',
       },
       ...(capTable.micro_equity_pool && capTable.micro_equity_pool > 0 ? [{
         name: 'Equity Pool (Micro-Equity)',
         value: (capTable.micro_equity_pool / totalAuthorized) * 100,
         shares: capTable.micro_equity_pool,
-        color: '#fb923c', // Lighter orange
+        color: '',
       }] : []),
     ];
 
     // Filter out zero values and verify sum
-    const filteredData = data.filter(item => item.value > 0);
+    const filteredData = data
+      .filter(item => item.value > 0)
+      .map((item, index) => ({
+        ...item,
+        color: getSliceColor(index),
+      }));
     
     // Calculate total percentage to verify it's 100%
     const totalPercentage = filteredData.reduce((sum, item) => sum + item.value, 0);
@@ -644,7 +662,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
             <Card padding="xl" radius="md" withBorder>
               <Title order={3} mb="md">Ownership Distribution</Title>
               {pieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={430}>
+                <ResponsiveContainer width="100%" height={560}>
                   <PieChart>
                     <Pie
                       data={pieData}
@@ -652,7 +670,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                       cy="50%"
                       labelLine={false}
                       label={false}
-                      outerRadius={155}
+                      outerRadius={210}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -685,7 +703,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
           <Grid.Col span={{ base: 12, lg: 5 }}>
             <Card padding="xl" radius="md" withBorder>
               <Title order={3} mb="md">Share Distribution</Title>
-              <Table highlightOnHover verticalSpacing="md">
+              <Table highlightOnHover verticalSpacing="xs">
                 <Table.Thead style={{ backgroundColor: '#f9fafb' }}>
                   <Table.Tr>
                     <Table.Th style={{ fontWeight: 600 }}>Holder</Table.Th>
@@ -710,27 +728,27 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                         <Table.Tr>
                           <Table.Td>
                             <div>
-                              <Text fw={600} size="sm">Invero, Inc.</Text>
-                              <Text size="xs" c="dimmed">Holding Company</Text>
+                              <Text fw={600} size="xs">Invero, Inc.</Text>
+                              <Text size="10px" c="dimmed">Holding Company</Text>
                             </div>
                           </Table.Td>
                           <Table.Td>
-                            <Text fw={700} size="sm">
+                            <Text fw={700} size="xs">
                               <NumberFormatter value={capTable.holding_company_shares} thousandSeparator />
                             </Text>
                           </Table.Td>
                           <Table.Td>
-                            <Badge color="blue" size="lg" variant="light">
+                            <Badge color="blue" size="sm" variant="light">
                               {holdingCompanyPercentage.toFixed(1)}%
                             </Badge>
                           </Table.Td>
                           <Table.Td>
-                            <Badge color="gray" size="sm" variant="outline">
+                            <Badge color="gray" size="xs" variant="outline">
                               $0.00
                             </Badge>
                           </Table.Td>
                           <Table.Td>
-                            <Progress value={holdingCompanyPercentage} color="blue" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                            <Progress value={holdingCompanyPercentage} color="blue" size="xs" radius="xl" style={{ minWidth: 80 }} />
                           </Table.Td>
                         </Table.Tr>
 
@@ -738,28 +756,28 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                         <Table.Tr>
                           <Table.Td>
                             <div>
-                              <Text fw={600} size="sm">Torrance Stroman</Text>
-                              <Text size="xs" c="dimmed">{FOUNDER_CEO_LABEL}</Text>
-                              <Text size="xs" c="dimmed">{FOUNDER_BOARD_ROLES_LINE}</Text>
+                              <Text fw={600} size="xs">Torrance Stroman</Text>
+                              <Text size="10px" c="dimmed">{FOUNDER_CEO_LABEL}</Text>
+                              <Text size="10px" c="dimmed">{FOUNDER_BOARD_ROLES_LINE}</Text>
                             </div>
                           </Table.Td>
                           <Table.Td>
-                            <Text fw={700} size="sm">
+                            <Text fw={700} size="xs">
                               <NumberFormatter value={capTable.founder_shares} thousandSeparator />
                             </Text>
                           </Table.Td>
                           <Table.Td>
-                            <Badge color="green" size="lg" variant="light">
+                            <Badge color="green" size="sm" variant="light">
                               {founderPercentage.toFixed(1)}%
                             </Badge>
                           </Table.Td>
                           <Table.Td>
-                            <Badge color="gray" size="sm" variant="outline">
+                            <Badge color="gray" size="xs" variant="outline">
                               $0.00
                             </Badge>
                           </Table.Td>
                           <Table.Td>
-                            <Progress value={founderPercentage} color="green" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                            <Progress value={founderPercentage} color="green" size="xs" radius="xl" style={{ minWidth: 80 }} />
                           </Table.Td>
                         </Table.Tr>
 
@@ -770,31 +788,31 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                             <Table.Tr key={`exec-${index}`}>
                               <Table.Td>
                                 <div>
-                                  <Text fw={600} size="sm">{exec.name}</Text>
-                                  <Text size="xs" c="dimmed">{exec.title}</Text>
+                                  <Text fw={600} size="xs">{exec.name}</Text>
+                                  <Text size="10px" c="dimmed">{exec.title}</Text>
                                 </div>
                               </Table.Td>
                               <Table.Td>
-                                <Text fw={700} size="sm">
+                                <Text fw={700} size="xs">
                                   <NumberFormatter value={exec.shares} thousandSeparator />
                                 </Text>
                               </Table.Td>
                               <Table.Td>
-                                <Badge color="purple" size="lg" variant="light">
+                                <Badge color="purple" size="sm" variant="light">
                                   {execPercentage.toFixed(1)}%
                                 </Badge>
                               </Table.Td>
                               <Table.Td>
                                 <Badge 
                                   color={exec.strike_price === 0 ? "gray" : "indigo"} 
-                                  size="sm" 
+                                  size="xs" 
                                   variant="outline"
                                 >
                                   ${formatFixed(exec.strike_price, 2)}
                                 </Badge>
                               </Table.Td>
                               <Table.Td>
-                                <Progress value={execPercentage} color="purple" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                                <Progress value={execPercentage} color="purple" size="xs" radius="xl" style={{ minWidth: 80 }} />
                               </Table.Td>
                             </Table.Tr>
                           );
@@ -817,27 +835,27 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                         <Table.Tr style={{ backgroundColor: '#fef3c7' }}>
                           <Table.Td>
                             <div>
-                              <Text fw={600} size="sm" c="dimmed">Equity Pool (Reserved)</Text>
-                              <Text size="xs" c="dimmed">Available for grants</Text>
+                              <Text fw={600} size="xs" c="dimmed">Equity Pool (Reserved)</Text>
+                              <Text size="10px" c="dimmed">Available for grants</Text>
                             </div>
                           </Table.Td>
                           <Table.Td>
-                            <Text fw={700} size="sm" c="dimmed">
+                            <Text fw={700} size="xs" c="dimmed">
                               <NumberFormatter value={capTable.equity_pool} thousandSeparator />
                             </Text>
                           </Table.Td>
                           <Table.Td>
-                            <Badge color="orange" size="lg" variant="light">
+                            <Badge color="orange" size="sm" variant="light">
                               {equityPoolPercentage.toFixed(1)}%
                             </Badge>
                           </Table.Td>
                           <Table.Td>
-                            <Badge color="gray" size="sm" variant="outline">
+                            <Badge color="gray" size="xs" variant="outline">
                               N/A
                             </Badge>
                           </Table.Td>
                           <Table.Td>
-                            <Progress value={equityPoolPercentage} color="orange" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                            <Progress value={equityPoolPercentage} color="orange" size="xs" radius="xl" style={{ minWidth: 80 }} />
                           </Table.Td>
                         </Table.Tr>
 
@@ -846,22 +864,22 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                           <Table.Tr style={{ backgroundColor: '#fff7ed' }}>
                             <Table.Td>
                               <div>
-                                <Text fw={600} size="sm" c="dimmed">Equity Pool (Micro-Equity)</Text>
-                                <Text size="xs" c="dimmed">Micro-equity grants</Text>
+                                <Text fw={600} size="xs" c="dimmed">Equity Pool (Micro-Equity)</Text>
+                                <Text size="10px" c="dimmed">Micro-equity grants</Text>
                               </div>
                             </Table.Td>
                             <Table.Td>
-                              <Text fw={700} size="sm" c="dimmed">
+                              <Text fw={700} size="xs" c="dimmed">
                                 <NumberFormatter value={capTable.micro_equity_pool} thousandSeparator />
                               </Text>
                             </Table.Td>
                             <Table.Td>
-                              <Badge color="orange" size="lg" variant="light">
+                              <Badge color="orange" size="sm" variant="light">
                                 {microEquityPoolPercentage.toFixed(1)}%
                               </Badge>
                             </Table.Td>
                             <Table.Td>
-                              <Badge color="gray" size="sm" variant="outline">
+                              <Badge color="gray" size="xs" variant="outline">
                                 N/A
                               </Badge>
                             </Table.Td>
@@ -869,9 +887,9 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                               <Progress 
                                 value={microEquityPoolPercentage} 
                                 color="orange" 
-                                size="sm" 
+                                size="xs" 
                                 radius="xl" 
-                                style={{ minWidth: 100 }} 
+                                style={{ minWidth: 80 }} 
                               />
                             </Table.Td>
                           </Table.Tr>
