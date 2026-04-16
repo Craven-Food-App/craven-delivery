@@ -64,8 +64,6 @@ interface PieChartData {
 const AUTHORIZED_SHARES = 70000000;
 const HOLDING_COMPANY_SHARES = 40600000;
 const FOUNDER_SHARES = 10500000;
-const JUSTIN_SHARES = 4200000;
-const JASON_SHARES = 2100000;
 const MICRO_POOL_SHARES = 1400000;
 
 function isTorranceStromanDisplayName(name: string | undefined | null): boolean {
