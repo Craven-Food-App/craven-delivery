@@ -1801,6 +1801,17 @@ const EquityGrantsList: React.FC = () => {
                         color: 'green',
                       });
 
+                      // Recalculate cap table after edit
+                      const capResult = await recalculateCapTable();
+                      if (!capResult.success) {
+                        console.warn('Cap table recalculation warning:', capResult.error);
+                        notifications.show({
+                          title: 'Warning',
+                          message: 'Grant updated but cap table recalculation failed: ' + (capResult.error || ''),
+                          color: 'yellow',
+                        });
+                      }
+
                       setEditModalOpen(false);
                       setSelectedGrant(null);
                       setEditingShares(0);
