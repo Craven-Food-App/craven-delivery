@@ -352,36 +352,6 @@ const CapTableEquityPageEnhanced: React.FC = () => {
         }
       }
 
-      // Enforce canonical executive allocations to prevent drift from stale/duplicate grants.
-      const upsertCanonicalExec = (name: string, title: string, shares: number) => {
-        const idx = executiveEquity.findIndex((e) =>
-          e.name.toLowerCase().includes(name.toLowerCase()) ||
-          e.title.toLowerCase().includes(title.toLowerCase()),
-        );
-        const percentage = (shares / AUTHORIZED_SHARES) * 100;
-        if (idx >= 0) {
-          executiveEquity[idx] = {
-            ...executiveEquity[idx],
-            name: name,
-            title: title,
-            shares,
-            percentage,
-            strike_price: toNumber(executiveEquity[idx].strike_price, 0.001),
-          };
-        } else {
-          executiveEquity.push({
-            name,
-            title,
-            shares,
-            percentage,
-            strike_price: 0.001,
-          });
-        }
-      };
-
-      upsertCanonicalExec('Justin Sweet', 'Chief Financial Officer', JUSTIN_SHARES);
-      upsertCanonicalExec('Jason Parcell', 'Chief Partnership Officer', JASON_SHARES);
-
       // Sort by shares descending
       executiveEquity.sort((a, b) => b.shares - a.shares);
 
