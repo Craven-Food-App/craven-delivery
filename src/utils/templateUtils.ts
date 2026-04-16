@@ -140,9 +140,11 @@ export async function getDocumentTemplate(
     fiduciary_ethics: ['fiduciary_ethics_ack'],
     fiduciary_duty_ethics: ['fiduciary_ethics_ack'],
     conflict_of_interest: ['conflict_disclosure'],
-    company_bylaws: ['craven_bylaws'],
-    bylaws: ['craven_bylaws'],
-    bylaws_officers_excerpt: ['craven_bylaws'],
+    // `bylaws_complete` is the canonical seeded key; keep `craven_bylaws`
+    // as backward-compatible alias for older environments.
+    company_bylaws: ['bylaws_complete', 'craven_bylaws'],
+    bylaws: ['bylaws_complete', 'craven_bylaws'],
+    bylaws_officers_excerpt: ['bylaws_complete', 'craven_bylaws'],
     pre_incorporation_consent: ['initial_director_consent'],
   };
 

@@ -847,7 +847,8 @@ serve(async (req) => {
       'board_resolution': 'board_resolution',
       'pre_incorporation_consent': 'initial_director_consent',
       'certificate_of_incorporation': 'certificate_of_incorporation',
-      'bylaws': 'craven_bylaws',
+      // Canonical key in migrations/template manager is `bylaws_complete`.
+      'bylaws': 'bylaws_complete',
       
       // Governance documents
       'bylaws_acknowledgment': 'bylaws_acknowledgment',
