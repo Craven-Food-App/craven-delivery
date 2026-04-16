@@ -466,20 +466,24 @@ const EquityGrantWizard: React.FC<EquityGrantWizardProps> = ({ opened = true, on
     onComplete: handleComplete,
   });
 
+  if (!opened) return null;
+
   return (
-    <WizardLayout
-      title="Create Equity Grant"
-      subtitle="Step-by-step process to grant equity to an individual"
-      steps={steps}
-      activeStep={wizard.activeStep}
-      completedSteps={wizard.completedSteps}
-      onStepChange={wizard.handleStepChange}
-      onNext={wizard.handleNext}
-      onBack={wizard.handleBack}
-      onComplete={handleComplete}
-      loading={wizard.loading}
-      error={wizard.error}
-    />
+    <Modal opened={opened} onClose={() => onClose?.()} size="xl" title="Create Equity Grant" centered>
+      <WizardLayout
+        title="Create Equity Grant"
+        subtitle="Step-by-step process to grant equity to an individual"
+        steps={steps}
+        activeStep={wizard.activeStep}
+        completedSteps={wizard.completedSteps}
+        onStepChange={wizard.handleStepChange}
+        onNext={wizard.handleNext}
+        onBack={wizard.handleBack}
+        onComplete={handleComplete}
+        loading={wizard.loading}
+        error={wizard.error}
+      />
+    </Modal>
   );
 };
 
