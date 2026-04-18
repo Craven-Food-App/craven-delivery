@@ -1561,7 +1561,7 @@ const MainHub: React.FC = () => {
     // JASON PARCELL (CPO): Limited access to specific portals only
     const isJasonParcell = userEmail === 'jparcell2022@gmail.com';
     if (isJasonParcell) {
-      const jasonAllowedPortals = ['cpo', 'merchant-operations', 'driver-operations', 'internal-comms', 'company', 'executive-calendar', 'intern', 'intern-manager', 'intern-sponsor', 'intern-program-admin', 'talent-management'];
+      const jasonAllowedPortals = ['cpo', 'merchant-operations', 'driver-operations', 'internal-comms', 'company', 'executive-calendar', 'intern', 'intern-manager', 'intern-sponsor', 'intern-program-admin', 'talent-management', 'market-demand', 'marketing'];
       return jasonAllowedPortals.includes(id);
     }
 
