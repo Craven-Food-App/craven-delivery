@@ -4195,6 +4195,283 @@ export type Database = {
         }
         Relationships: []
       }
+      company_file_assets: {
+        Row: {
+          checksum: string | null
+          created_at: string
+          created_by: string | null
+          file_url: string | null
+          id: string
+          metadata: Json
+          mime_type: string | null
+          node_id: string
+          size_bytes: number | null
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          checksum?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_url?: string | null
+          id?: string
+          metadata?: Json
+          mime_type?: string | null
+          node_id: string
+          size_bytes?: number | null
+          storage_bucket?: string
+          storage_path: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          checksum?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_url?: string | null
+          id?: string
+          metadata?: Json
+          mime_type?: string | null
+          node_id?: string
+          size_bytes?: number | null
+          storage_bucket?: string
+          storage_path?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_file_assets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "company_file_assets_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: true
+            referencedRelation: "company_file_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_file_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          asset_id: string | null
+          created_at: string
+          details: Json
+          id: string
+          node_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          asset_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          node_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          asset_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          node_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_file_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "company_file_audit_log_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "company_file_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_file_audit_log_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "company_file_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_file_nodes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          department_id: string | null
+          employee_id: string | null
+          executive_id: string | null
+          id: string
+          is_archived: boolean
+          name: string
+          node_type: string
+          parent_id: string | null
+          scope: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          employee_id?: string | null
+          executive_id?: string | null
+          id?: string
+          is_archived?: boolean
+          name: string
+          node_type: string
+          parent_id?: string | null
+          scope: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          employee_id?: string | null
+          executive_id?: string | null
+          id?: string
+          is_archived?: boolean
+          name?: string
+          node_type?: string
+          parent_id?: string | null
+          scope?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_file_nodes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "company_file_nodes_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_file_nodes_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_file_nodes_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_summary"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "company_file_nodes_executive_id_fkey"
+            columns: ["executive_id"]
+            isOneToOne: false
+            referencedRelation: "exec_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_file_nodes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "company_file_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_file_nodes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      company_file_permissions: {
+        Row: {
+          can_delete: boolean
+          can_read: boolean
+          can_share: boolean
+          can_write: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          node_id: string
+          role: string | null
+          user_id: string | null
+        }
+        Insert: {
+          can_delete?: boolean
+          can_read?: boolean
+          can_share?: boolean
+          can_write?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          node_id: string
+          role?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          can_delete?: boolean
+          can_read?: boolean
+          can_share?: boolean
+          can_write?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          node_id?: string
+          role?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_file_permissions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "company_file_permissions_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "company_file_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_file_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       company_settings: {
         Row: {
           created_at: string | null
@@ -31899,6 +32176,7 @@ export type Database = {
         }
         Returns: Json
       }
+      refresh_bylaws_officer_roster: { Args: never; Returns: undefined }
       refresh_effective_permissions: { Args: never; Returns: undefined }
       reject_approval_item: {
         Args: { p_actor_id?: string; p_comment?: string; p_queue_id: string }
@@ -32597,6 +32875,7 @@ export type Database = {
         }
         Returns: Json
       }
+      sync_executive_file_system_from_records: { Args: never; Returns: Json }
       sync_user_roles_for_employee: {
         Args: {
           p_employee_id: string
