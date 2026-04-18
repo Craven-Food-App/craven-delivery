@@ -151,7 +151,7 @@ const ResolutionVotingDashboard: React.FC = () => {
       const uniqueResolutions = Array.from(resolutionMap.values());
 
       // Merge duplicate "Removal of Justin Sweet" resolutions into a single entry
-      const mergedBySubject = Object.values(
+      const mergedBySubject: any[] = Object.values(
         uniqueResolutions.reduce((acc: Record<string, any>, r: any) => {
           const title = (r.title || '').toLowerCase();
           const isJustinRemoval =
