@@ -341,13 +341,13 @@ const LoadingScreen: React.FC<LoadingScreenProps> = () => {
         top: calc(50% + 160px);
         left: 50%;
         transform: translate(-50%, -50%);
-        color: white;
+        color: #1c1917;
         font-size: 18px;
-        font-weight: 500;
+        font-weight: 600;
         letter-spacing: 1px;
         text-align: center;
         white-space: nowrap;
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6), 0 0 16px rgba(255, 107, 53, 0.4);
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 14px rgba(255, 107, 53, 0.18);
         pointer-events: none;
         opacity: 0;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
@@ -575,7 +575,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = () => {
 
       .loading-logo-container {
         position: relative;
-        filter: drop-shadow(0 0 20px rgba(255, 107, 53, 0.2)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+        filter: drop-shadow(0 0 24px rgba(255, 107, 53, 0.22)) drop-shadow(0 6px 20px rgba(0, 0, 0, 0.1));
         animation: logoBreath 4s ease-in-out infinite, logoRotate 12s ease-in-out infinite;
       }
 
@@ -649,12 +649,12 @@ const LoadingScreen: React.FC<LoadingScreenProps> = () => {
         background: radial-gradient(
           circle at 40% 40%,
           transparent 0%,
-          rgba(0, 0, 0, 0.3) 50%,
-          rgba(0, 0, 0, 0.5) 100%
+          rgba(0, 0, 0, 0.12) 50%,
+          rgba(0, 0, 0, 0.2) 100%
         );
         pointer-events: none;
         mix-blend-mode: multiply;
-        opacity: 0.4;
+        opacity: 0.35;
         animation: depthShadowPulse 5s ease-in-out infinite;
       }
 
@@ -755,7 +755,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = () => {
         maxWidth: '430px',
         margin: '0 auto',
         minHeight: '100vh',
-        backgroundColor: '#000000',
+        background: 'linear-gradient(180deg, #ffffff 0%, #fafafa 55%, #f5f5f4 100%)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

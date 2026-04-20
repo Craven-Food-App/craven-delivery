@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -245,6 +245,7 @@ const Restaurants = () => {
   const [loadingHeroImage, setLoadingHeroImage] = useState(true);
   const [adPlacements, setAdPlacements] = useState<any[]>([]);
   const [loadingAds, setLoadingAds] = useState(true);
+  const [mainCustomerAdIndex, setMainCustomerAdIndex] = useState(0);
   const [activeFilter, setActiveFilter] = useState('deals');
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -274,6 +275,16 @@ const Restaurants = () => {
   const [showMapView, setShowMapView] = useState(false);
   // Default to Tampa HQ (6759 Nebraska Ave) — overwritten by browser geolocation if granted
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 27.9766, lng: -82.4563 });
+
+  const mainCustomerAds = useMemo(
+    () => adPlacements.filter((ad: any) => ad.placement_key === 'main_customer_ad'),
+    [adPlacements]
+  );
+
+  const activeMainCustomerAd = useMemo(() => {
+    if (mainCustomerAds.length === 0) return null;
+    return mainCustomerAds[mainCustomerAdIndex % mainCustomerAds.length];
+  }, [mainCustomerAds, mainCustomerAdIndex]);
   
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -469,6 +480,20 @@ const Restaurants = () => {
     fetchAvailableCuisines();
     fetchAdPlacements();
   }, []);
+
+  useEffect(() => {
+    if (mainCustomerAds.length === 0) return;
+    setMainCustomerAdIndex(Math.floor(Math.random() * mainCustomerAds.length));
+  }, [mainCustomerAds]);
+
+  useEffect(() => {
+    if (mainCustomerAds.length <= 1) return;
+    const n = mainCustomerAds.length;
+    const id = window.setInterval(() => {
+      setMainCustomerAdIndex((i) => (i + 1) % n);
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [mainCustomerAds.length]);
 
   // Update filter options based on delivery mode
   useEffect(() => {
@@ -1454,17 +1479,16 @@ const Restaurants = () => {
         }}>
           <Box component="main">
 
-            {/* Main Customer Ad - Above Quick Picks (managed in company portal) */}
-            {(() => {
-              const mainAd = adPlacements.find((ad: any) => ad.placement_key === 'main_customer_ad');
-              if (!mainAd) return null;
+            {/* Main Customer Ad — random on load, cycles every 1 min when multiple placements share main_customer_ad */}
+            {activeMainCustomerAd && (() => {
+              const mainAd = activeMainCustomerAd;
               const Wrapper = mainAd.click_url ? 'a' : 'div';
               const wrapperProps = mainAd.click_url
                 ? { href: mainAd.click_url, onClick: (e: React.MouseEvent) => { e.preventDefault(); navigate(mainAd.click_url); } }
                 : {};
               return (
                 <Box px="md" pt="md" pb="xs" style={{ backgroundColor: 'white' }}>
-                  <Wrapper {...wrapperProps} style={{ display: 'block', textDecoration: 'none', cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+                  <Wrapper key={mainAd.id} {...wrapperProps} style={{ display: 'block', textDecoration: 'none', cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
                     {mainAd.ad_code ? (
                       <div dangerouslySetInnerHTML={{ __html: mainAd.ad_code }} style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }} />
                     ) : mainAd.image_url ? (
@@ -2225,14 +2249,14 @@ const Restaurants = () => {
           {/* Show organized sections when filter is 'all' or no filter */}
           {(!cuisineFilter || cuisineFilter === 'all') ? (
             <>
-              {/* Main Customer Ad - Desktop (mirrors mobile ad placement) */}
-              {(() => {
-                const mainAd = adPlacements.find((ad: any) => ad.placement_key === 'main_customer_ad');
-                if (!mainAd) return null;
+              {/* Main Customer Ad — random on load, cycles every 1 min when multiple placements share main_customer_ad */}
+              {activeMainCustomerAd && (() => {
+                const mainAd = activeMainCustomerAd;
                 return (
                   <div className="bg-white pt-6 pb-2">
                     <div className="max-w-7xl mx-auto px-4">
                       <div
+                        key={mainAd.id}
                         onClick={() => mainAd.click_url && navigate(mainAd.click_url)}
                         style={{ cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
                       >

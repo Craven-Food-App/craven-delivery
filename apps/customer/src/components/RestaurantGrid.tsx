@@ -306,18 +306,31 @@ const RestaurantGrid = ({
           request_count: row.request_count,
           marketplace_type: row.marketplace_type || 'restaurant',
         }));
-        // National chains show everywhere; local hotspots only within 25mi
+        // National food chains show everywhere; local hotspots only within 25mi when GPS known.
+        // Retail/mall marketplace_chains pins are anchored near (lat,lng); show within radius
+        // even without GPS so Retail & Shopping is not blank when location consent is off.
         list = list.filter((r) => {
           if (isNationalChain(r.name)) return true;
           if (r.latitude == null || r.longitude == null) return false;
+          const within = calculateDistance(lat, lng, r.latitude, r.longitude) <= MAX_RADIUS;
+          const mt = r.marketplace_type || 'restaurant';
+          if ((marketplaceType === 'retail' || marketplaceType === 'mall') && (mt === 'retail' || mt === 'mall')) {
+            return within;
+          }
           if (!hasRealGps) return false;
-          return calculateDistance(lat, lng, r.latitude, r.longitude) <= MAX_RADIUS;
+          return within;
         });
         if (list.length >= minResults || radius === MAX_RADIUS) break;
       }
-      // Never show wrong type
+      // Never show wrong type (match fetchMarketplaceRestaurants: retail includes category keywords)
       if (marketplaceType) {
-        list = list.filter((r) => (r.marketplace_type || 'restaurant') === marketplaceType);
+        if (marketplaceType === 'retail') {
+          list = list.filter(
+            (r) => (r.marketplace_type || 'restaurant') === 'retail' || isRetailOrApparel(r.cuisine_type)
+          );
+        } else {
+          list = list.filter((r) => (r.marketplace_type || 'restaurant') === marketplaceType);
+        }
       }
       if (marketplaceType === 'restaurant') {
         list = list.filter((r) => !isRetailOrApparel(r.cuisine_type));

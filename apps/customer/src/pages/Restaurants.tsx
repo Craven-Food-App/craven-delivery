@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -267,6 +267,7 @@ const Restaurants = () => {
   const [loadingHeroImage, setLoadingHeroImage] = useState(true);
   const [adPlacements, setAdPlacements] = useState<any[]>([]);
   const [loadingAds, setLoadingAds] = useState(true);
+  const [mainCustomerAdIndex, setMainCustomerAdIndex] = useState(0);
   const [randomizedAds, setRandomizedAds] = useState<any[]>([]);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [activeFilter, setActiveFilter] = useState('deals');
@@ -277,6 +278,16 @@ const Restaurants = () => {
   const [apparelCategoryFilter, setApparelCategoryFilter] = useState<string>('all'); // 'all', 'Apparel', 'Accessories', 'Shoes'
   // Neutral US center for map/distance only; no hardcoded delivery address
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 39.8283, lng: -98.5795 });
+
+  const mainCustomerAds = useMemo(
+    () => adPlacements.filter((ad: any) => ad.placement_key === 'main_customer_ad'),
+    [adPlacements]
+  );
+
+  const activeMainCustomerAd = useMemo(() => {
+    if (mainCustomerAds.length === 0) return null;
+    return mainCustomerAds[mainCustomerAdIndex % mainCustomerAds.length];
+  }, [mainCustomerAds, mainCustomerAdIndex]);
   
   // Mobile app states
   // Check cached auth state first to prevent flash
@@ -1244,6 +1255,22 @@ const Restaurants = () => {
     return () => clearInterval(rotationInterval);
   }, [randomizedAds.length]);
 
+  // Main customer hero ad: random pick whenever the pool loads/changes (new refresh = new random),
+  // then cycle through all main ads every 1 minute.
+  useEffect(() => {
+    if (mainCustomerAds.length === 0) return;
+    setMainCustomerAdIndex(Math.floor(Math.random() * mainCustomerAds.length));
+  }, [mainCustomerAds]);
+
+  useEffect(() => {
+    if (mainCustomerAds.length <= 1) return;
+    const n = mainCustomerAds.length;
+    const id = window.setInterval(() => {
+      setMainCustomerAdIndex((i) => (i + 1) % n);
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [mainCustomerAds.length]);
+
   // Fetch deals on component mount
   useEffect(() => {
     fetchWeeklyDeals();
@@ -1688,7 +1715,7 @@ const Restaurants = () => {
   // Show simple loader while checking auth (loading screen is handled at app level)
   if (isMobile && checkingAuth) {
     return (
-      <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000000' }}>
+      <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg, #ffffff 0%, #fafafa 55%, #f5f5f4 100%)' }}>
         <Loader color="orange" size="lg" />
       </Box>
     );
@@ -2441,17 +2468,16 @@ const Restaurants = () => {
         }}>
           <Box component="main">
 
-            {/* Main Customer Ad - Above Quick Picks (managed in company portal) */}
-            {(() => {
-              const mainAd = adPlacements.find((ad: any) => ad.placement_key === 'main_customer_ad');
-              if (!mainAd) return null;
+            {/* Main Customer Ad — random on load, cycles every 1 min when multiple placements share main_customer_ad */}
+            {activeMainCustomerAd && (() => {
+              const mainAd = activeMainCustomerAd;
               const Wrapper = mainAd.click_url ? 'a' : 'div';
               const wrapperProps = mainAd.click_url
                 ? { href: mainAd.click_url, onClick: (e: React.MouseEvent) => { e.preventDefault(); navigate(mainAd.click_url); } }
                 : {};
               return (
                 <Box px="md" pt="md" pb="xs" style={{ backgroundColor: 'white' }}>
-                  <Wrapper {...wrapperProps} style={{ display: 'block', textDecoration: 'none', cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+                  <Wrapper key={mainAd.id} {...wrapperProps} style={{ display: 'block', textDecoration: 'none', cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
                     {mainAd.ad_code ? (
                       <div dangerouslySetInnerHTML={{ __html: mainAd.ad_code }} style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }} />
                     ) : mainAd.image_url ? (
@@ -2461,33 +2487,6 @@ const Restaurants = () => {
                 </Box>
               );
             })()}
-
-            {/* Craven Quick Picks - Promoted Restaurants */}
-            {weeklyDeals.length > 0 && (
-              <Stack
-                gap="sm"
-                style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', overflow: 'hidden' }}
-                px="md"
-                pt="sm"
-                pb="xs"
-              >
-                <Group justify="space-between" align="center" gap="xs" wrap="nowrap" style={{ margin: 0, padding: 0 }}>
-                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Craven Quick Picks</Title>
-                  <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0, flexShrink: 0 }}>
-                    <IconChevronRight size={18} />
-                  </ActionIcon>
-                </Group>
-                <RestaurantGrid
-                  searchQuery={searchQuery}
-                  deliveryAddress={location}
-                  cuisineFilter={undefined}
-                  excludeCuisine={undefined}
-                  sectionTitle={undefined}
-                  horizontal={true}
-                  customRestaurants={weeklyDeals}
-                />
-              </Stack>
-            )}
 
             {/* Great Deals - Restaurants with Promotions */}
             {weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents).length > 0 && (
@@ -3483,17 +3482,16 @@ const Restaurants = () => {
               {/* Show organized sections when filter is 'all' or no filter */}
               {(!cuisineFilter || cuisineFilter === 'all') ? (
                 <>
-                  {/* Main Customer Ad - Above Quick Picks (managed in company portal) */}
-                  {(() => {
-                    const mainAd = adPlacements.find((ad: any) => ad.placement_key === 'main_customer_ad');
-                    if (!mainAd) return null;
+                  {/* Main Customer Ad — random on load, cycles every 1 min when multiple placements share main_customer_ad */}
+                  {activeMainCustomerAd && (() => {
+                    const mainAd = activeMainCustomerAd;
                     const Wrapper = mainAd.click_url ? 'a' : 'div';
                     const wrapperProps = mainAd.click_url
                       ? { href: mainAd.click_url, onClick: (e: React.MouseEvent) => { e.preventDefault(); navigate(mainAd.click_url); } }
                       : {};
                     return (
                       <div className="mb-8">
-                        <Wrapper {...wrapperProps} style={{ display: 'block', textDecoration: 'none', cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+                        <Wrapper key={mainAd.id} {...wrapperProps} style={{ display: 'block', textDecoration: 'none', cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
                           {mainAd.ad_code ? (
                             <div dangerouslySetInnerHTML={{ __html: mainAd.ad_code }} style={{ width: '100%', maxHeight: 280, objectFit: 'cover' }} />
                           ) : mainAd.image_url ? (
@@ -3503,24 +3501,6 @@ const Restaurants = () => {
                       </div>
                     );
                   })()}
-
-                  {/* Craven Quick Picks - Promoted Restaurants */}
-                  {weeklyDeals.length > 0 && (
-                    <div className="mb-8">
-                      <div className="mb-4">
-                        <h2 className="text-xl lg:text-2xl font-bold text-gray-900">Craven Quick Picks</h2>
-                      </div>
-                      <RestaurantGrid 
-                        searchQuery={searchQuery} 
-                        deliveryAddress={location} 
-                        cuisineFilter={undefined}
-                        excludeCuisine={undefined}
-                        sectionTitle={undefined}
-                        horizontal={true}
-                        customRestaurants={weeklyDeals}
-                      />
-                    </div>
-                  )}
 
                   {/* Great Deals - Restaurants with Promotions */}
                   {weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents).length > 0 && (

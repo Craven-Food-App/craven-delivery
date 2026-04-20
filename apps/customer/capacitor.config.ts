@@ -46,8 +46,8 @@ const config: CapacitorConfig = {
       launchShowDuration: 0,
       launchAutoHide: true,
 
-      // Prevent white flash; match your app background
-      backgroundColor: '#000000',
+      // Match in-app loading / shell (light theme)
+      backgroundColor: '#ffffff',
 
       // No spinner; looks cheap and inconsistent
       showSpinner: false,
