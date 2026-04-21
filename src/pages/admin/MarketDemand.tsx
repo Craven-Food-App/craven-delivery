@@ -244,6 +244,9 @@ export default function MarketDemand() {
                           const extra = reqs.length - 1;
                           return (
                             <Stack gap={2}>
+                              {latest.requester_name && (
+                                <Text size="xs" fw={600}>{latest.requester_name}</Text>
+                              )}
                               {latest.requester_email ? (
                                 <a
                                   href={`mailto:${latest.requester_email}`}
@@ -251,9 +254,9 @@ export default function MarketDemand() {
                                 >
                                   {latest.requester_email}
                                 </a>
-                              ) : (
-                                <Text size="xs">{latest.requester_name || 'Anonymous'}</Text>
-                              )}
+                              ) : !latest.requester_name ? (
+                                <Text size="xs" c="dimmed">Unknown user</Text>
+                              ) : null}
                               <Text size="xs" c="dimmed">
                                 {latest.created_at
                                   ? new Date(latest.created_at).toLocaleString(undefined, {
