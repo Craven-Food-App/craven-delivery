@@ -83,12 +83,33 @@ export default function MarketDemand() {
       if (ids.length > 0) {
         const { data: reqData, error: reqErr } = await supabase
           .from('merchant_partnership_requests')
-          .select('id, restaurant_master_id, requester_email, requester_name, created_at')
+          .select('id, restaurant_master_id, requester_email, requester_name, user_id, created_at')
           .in('restaurant_master_id', ids)
           .order('created_at', { ascending: false });
         if (!reqErr && reqData) {
+          // Backfill missing email/name from user_profiles using user_id
+          const missingUserIds = Array.from(
+            new Set(
+              reqData
+                .filter((rq: any) => !rq.requester_email && rq.user_id)
+                .map((rq: any) => rq.user_id)
+            )
+          );
+          let profilesById: Record<string, { email: string | null; full_name: string | null }> = {};
+          if (missingUserIds.length > 0) {
+            const { data: profiles } = await supabase
+              .from('user_profiles')
+              .select('user_id, email, full_name')
+              .in('user_id', missingUserIds);
+            (profiles || []).forEach((p: any) => {
+              profilesById[p.user_id] = { email: p.email, full_name: p.full_name };
+            });
+          }
           const grouped: Record<string, any[]> = {};
           reqData.forEach((rq: any) => {
+            const profile = rq.user_id ? profilesById[rq.user_id] : undefined;
+            if (!rq.requester_email && profile?.email) rq.requester_email = profile.email;
+            if (!rq.requester_name && profile?.full_name) rq.requester_name = profile.full_name;
             if (!grouped[rq.restaurant_master_id]) grouped[rq.restaurant_master_id] = [];
             grouped[rq.restaurant_master_id].push(rq);
           });
