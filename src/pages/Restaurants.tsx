@@ -1492,29 +1492,6 @@ const Restaurants = () => {
             {/* Main Customer Ad — smooth crossfade between creatives */}
             <MainCustomerAdPanel ad={activeMainCustomerAd} maxHeight={240} variant="web-mobile" />
 
-            {/* Craven Quick Picks - Promoted Restaurants */}
-            {weeklyDeals.length > 0 && (
-              <Box style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', overflow: 'hidden' }}>
-                <Group justify="space-between" gap="xs" px="md" pt="sm" mb={0} style={{ minHeight: 'auto', margin: 0, padding: '12px 16px 0 16px', height: 'auto' }}>
-                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Craven Quick Picks</Title>
-                  <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
-                    <IconChevronRight size={18} />
-                  </ActionIcon>
-                </Group>
-                <Box style={{ marginTop: '-16px' }}>
-                  <RestaurantGrid 
-                    searchQuery={searchQuery} 
-                    deliveryAddress={location} 
-                    cuisineFilter={undefined}
-                    excludeCuisine={undefined}
-                    sectionTitle={undefined}
-                    horizontal={true}
-                    customRestaurants={weeklyDeals}
-                  />
-                </Box>
-              </Box>
-            )}
-
             {/* Great Deals - Restaurants with Promotions */}
             {weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents).length > 0 && (
               <Box px="md" pt="md" pb="sm" style={{ backgroundColor: 'white' }}>
@@ -2246,26 +2223,6 @@ const Restaurants = () => {
             <>
               {/* Main Customer Ad — smooth crossfade between creatives */}
               <MainCustomerAdPanel ad={activeMainCustomerAd} maxHeight={280} variant="web-desktop" />
-
-              {/* Craven Quick Picks - Promoted Restaurants */}
-              {weeklyDeals.length > 0 && (
-                <div className="bg-white py-8 mb-8" style={{ height: '440px' }}>
-                  <div className="max-w-7xl mx-auto px-4">
-                    <div className="mb-4">
-                      <h2 className="text-xl lg:text-2xl font-bold text-gray-900">Craven Quick Picks</h2>
-                    </div>
-                    <RestaurantGrid 
-                      searchQuery={searchQuery} 
-                      deliveryAddress={location} 
-                      cuisineFilter={undefined}
-                      excludeCuisine={undefined}
-                      sectionTitle={undefined}
-                      horizontal={true}
-                      customRestaurants={weeklyDeals}
-                    />
-                  </div>
-                </div>
-              )}
 
               {/* Great Deals - Restaurants with Promotions */}
               {weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents).length > 0 && (

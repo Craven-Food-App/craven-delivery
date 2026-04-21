@@ -67,7 +67,7 @@ interface AdFormData {
 const initialFormData: AdFormData = {
   page_path: '/restaurants',
   placement_key: 'below_quick_picks',
-  placement_name: 'Below Quick Picks',
+  placement_name: 'Below hero ad',
   image_url: '',
   ad_code: '',
   click_url: '',
@@ -87,8 +87,8 @@ const PAGE_PATHS = [
 ];
 
 const PLACEMENT_KEYS = [
-  { value: 'main_customer_ad', label: 'Main Customer Ad (Above Quick Picks)' },
-  { value: 'below_quick_picks', label: 'Below Quick Picks' },
+  { value: 'main_customer_ad', label: 'Main Customer Ad (Hero)' },
+  { value: 'below_quick_picks', label: 'Below hero ad' },
   { value: 'above_premium', label: 'Above Premium Selections' },
   { value: 'sidebar', label: 'Sidebar' },
   { value: 'header', label: 'Header' },
@@ -421,7 +421,7 @@ export const AdPlacementManager: React.FC = () => {
                   id="placement_name"
                   value={formData.placement_name}
                   onChange={(e) => setFormData({ ...formData, placement_name: e.target.value })}
-                  placeholder="e.g., Below Quick Picks"
+                  placeholder="e.g., Below hero ad"
                   required
                 />
               </div>
