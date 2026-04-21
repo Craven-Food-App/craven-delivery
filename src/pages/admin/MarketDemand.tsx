@@ -20,7 +20,7 @@ import {
   Divider,
   SimpleGrid,
 } from '@mantine/core';
-import { IconMail, IconUserPlus, IconRefresh, IconChartBar } from '@tabler/icons-react';
+import { IconMail, IconUserPlus, IconRefresh, IconChartBar, IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 
 const MERCHANT_SIGNUP_URL = 'https://cravenusa.com/merchant';
 
@@ -55,6 +55,15 @@ export default function MarketDemand() {
   const [requests, setRequests] = useState<any[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsByRestaurant, setRequestsByRestaurant] = useState<Record<string, any[]>>({});
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const fetchDemand = async () => {
     setLoading(true);
@@ -177,19 +186,38 @@ export default function MarketDemand() {
                     </Table.Td>
                   </Table.Tr>
                 ) : (
-                  rows.map((r) => (
-                    <Table.Tr key={r.id}>
+                  rows.flatMap((r) => {
+                    const reqs = requestsByRestaurant[r.id] || [];
+                    const isExpanded = expandedRows.has(r.id);
+                    const hasMultiple = reqs.length > 1;
+                    const mainRow = (
+                      <Table.Tr key={r.id}>
                       <Table.Td>
-                        <Text fw={600}>{r.name}</Text>
+                        <Group gap={6} wrap="nowrap">
+                          {hasMultiple ? (
+                            <ActionIcon
+                              size="sm"
+                              variant="subtle"
+                              onClick={() => toggleExpand(r.id)}
+                              title={isExpanded ? 'Collapse' : 'Expand requesters'}
+                            >
+                              {isExpanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+                            </ActionIcon>
+                          ) : (
+                            <Box w={22} />
+                          )}
+                          <Box>
+                            <Text fw={600}>{r.name}</Text>
                         {r.category && (
                           <Text size="xs" c="dimmed">{r.category}</Text>
                         )}
+                          </Box>
+                        </Group>
                       </Table.Td>
                       <Table.Td>{r.city || '—'}</Table.Td>
                       <Table.Td>{r.request_count ?? 0}</Table.Td>
                       <Table.Td>
                         {(() => {
-                          const reqs = requestsByRestaurant[r.id] || [];
                           if (reqs.length === 0) return <Text size="xs" c="dimmed">—</Text>;
                           const latest = reqs[0];
                           const extra = reqs.length - 1;
@@ -216,7 +244,14 @@ export default function MarketDemand() {
                                   : ''}
                               </Text>
                               {extra > 0 && (
-                                <Text size="xs" c="dimmed">+{extra} more</Text>
+                                <Text
+                                  size="xs"
+                                  c="dimmed"
+                                  style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                  onClick={() => toggleExpand(r.id)}
+                                >
+                                  {isExpanded ? 'Hide' : `+${extra} more requester${extra === 1 ? '' : 's'}`}
+                                </Text>
                               )}
                             </Stack>
                           );
@@ -285,8 +320,45 @@ export default function MarketDemand() {
                           </Button>
                         </Group>
                       </Table.Td>
-                    </Table.Tr>
-                  ))
+                      </Table.Tr>
+                    );
+                    if (!isExpanded || !hasMultiple) return [mainRow];
+                    const expansion = (
+                      <Table.Tr key={`${r.id}-expanded`} style={{ background: 'hsl(var(--muted) / 0.3)' }}>
+                        <Table.Td colSpan={7}>
+                          <Stack gap={4} py={4} pl={32}>
+                            <Text size="xs" fw={600} c="dimmed">All requesters ({reqs.length})</Text>
+                            {reqs.map((rq) => (
+                              <Group key={rq.id} gap="md" wrap="nowrap">
+                                {rq.requester_email ? (
+                                  <a
+                                    href={`mailto:${rq.requester_email}`}
+                                    style={{ color: 'hsl(var(--primary))', fontSize: 13, minWidth: 220, textDecoration: 'none' }}
+                                  >
+                                    {rq.requester_email}
+                                  </a>
+                                ) : (
+                                  <Text size="sm" style={{ minWidth: 220 }}>{rq.requester_name || 'Anonymous'}</Text>
+                                )}
+                                <Text size="xs" c="dimmed">
+                                  {rq.created_at
+                                    ? new Date(rq.created_at).toLocaleString(undefined, {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                      })
+                                    : '—'}
+                                </Text>
+                              </Group>
+                            ))}
+                          </Stack>
+                        </Table.Td>
+                      </Table.Tr>
+                    );
+                    return [mainRow, expansion];
+                  })
                 )}
               </Table.Tbody>
             </Table>
