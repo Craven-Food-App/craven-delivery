@@ -284,7 +284,8 @@ export default function MarketDemand() {
                     <Table striped>
                       <Table.Thead>
                         <Table.Tr>
-                          <Table.Th>Date</Table.Th>
+                          <Table.Th>Requested At</Table.Th>
+                          <Table.Th>Email</Table.Th>
                           <Table.Th>Order frequency</Table.Th>
                           <Table.Th>Would refer</Table.Th>
                           <Table.Th>What matters</Table.Th>
@@ -294,7 +295,17 @@ export default function MarketDemand() {
                       <Table.Tbody>
                         {requests.map((req) => (
                           <Table.Tr key={req.id}>
-                            <Table.Td>{req.created_at ? new Date(req.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</Table.Td>
+                            <Table.Td>{req.created_at ? new Date(req.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—'}</Table.Td>
+                            <Table.Td>
+                              {req.requester_email ? (
+                                <a href={`mailto:${req.requester_email}`} style={{ color: 'hsl(var(--primary))' }}>
+                                  {req.requester_email}
+                                </a>
+                              ) : '—'}
+                              {req.requester_name && (
+                                <Text size="xs" c="dimmed">{req.requester_name}</Text>
+                              )}
+                            </Table.Td>
                             <Table.Td>{ORDER_FREQ_LABELS[req.order_frequency] || req.order_frequency || '—'}</Table.Td>
                             <Table.Td>{WOULD_REFER_LABELS[req.would_refer] || req.would_refer || '—'}</Table.Td>
                             <Table.Td>{((req.what_matters_most || []).map((v: string) => WHAT_MATTERS_LABELS[v] || v).join(', ')) || '—'}</Table.Td>
