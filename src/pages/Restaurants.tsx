@@ -234,7 +234,7 @@ const RestaurantCard = ({
 const Restaurants = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-  const [location, setLocation] = useState(searchParams.get('location') || '6759 Nebraska Ave');
+  const [location, setLocation] = useState(searchParams.get('location') || '');
   const [cuisineFilter, setCuisineFilter] = useState(searchParams.get('cuisine') || 'all');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'rating');
   const [weeklyDeals, setWeeklyDeals] = useState<any[]>([]);
