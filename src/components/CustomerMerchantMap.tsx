@@ -294,7 +294,7 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
         : '';
       const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
-      const popup = new mapboxgl.Popup({ offset: [0, -PIN_TOTAL_HEIGHT_PX], closeButton: true, maxWidth: '240px' })
+      const popup = new mapboxgl.Popup({ offset: [0, -(HEAD_SIZE + TAIL_HEIGHT)], closeButton: true, maxWidth: '240px' })
         .setHTML(`
           <div style="padding:8px;font-family:system-ui,sans-serif;">
             <p style="margin:0 0 2px;font-size:14px;font-weight:700;">${merchant.name}</p>

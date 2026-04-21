@@ -1,0 +1,41 @@
+import cravenPinIcon from '@/assets/feeder_nav_button_compressed.png';
+
+/**
+ * The resolved URL to the Crave'n gold compass pin icon — for use in dynamic DOM elements.
+ */
+export const CRAVEN_PIN_URL: string = cravenPinIcon;
+
+/**
+ * Creates a branded Crave'n map-marker DOM element using the gold compass pin.
+ */
+export function createCravenMarkerElement(size: number = 36, label?: string): HTMLDivElement {
+  const el = document.createElement('div');
+  el.className = 'craven-map-pin';
+  el.style.cssText = `
+    width: ${size}px;
+    height: ${size}px;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  `;
+  const visual = document.createElement('div');
+  visual.style.cssText = `
+    width: 100%;
+    height: 100%;
+    background-image: url('${cravenPinIcon}');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  `;
+  el.appendChild(visual);
+
+  el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.15)'; });
+  el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
+
+  if (label) {
+    el.title = label;
+  }
+
+  return el;
+}

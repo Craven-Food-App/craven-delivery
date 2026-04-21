@@ -95,6 +95,7 @@ import { useCart } from '@/contexts/CartContext';
 import cravenLogo from "@/assets/craven-logo.png";
 import cravenCLogo from "@/assets/craven-c-new.png";
 import heroPromoImage from "@/assets/20251116_0529_Crave'n Delivery Promo_remix_01ka63adc2e2et6qwwt2p909xn.png";
+import CustomerMerchantMap from '@/components/CustomerMerchantMap';
 
 // Professional Rating Icon Component
 const RatingPill = ({ rating }: { rating: number }) => (
@@ -1033,6 +1034,7 @@ const Restaurants = () => {
         flexDirection: 'column',
         paddingTop: 'calc(120px + env(safe-area-inset-top, 0px))'
       }}>
+        {showMapView && <CustomerMerchantMap onClose={() => setShowMapView(false)} />}
         {/* Search & Address Bar (Fixed Header - Matching Customer App) */}
         <Box component="header" style={{ 
           backgroundColor: 'white', 
@@ -1077,20 +1079,36 @@ const Restaurants = () => {
               </Button>
             </Box>
 
-            <ActionIcon
-              onClick={() => setShowMapView((prev) => !prev)}
-              variant="subtle"
-              size="lg"
-              radius="xl"
-              style={{ flexShrink: 0 }}
+            <button
+              type="button"
+              data-map-view-toggle
               title={showMapView ? 'View list' : 'View map'}
+              aria-label={showMapView ? 'View list' : 'View map'}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMapView((prev) => !prev);
+              }}
+              style={{
+                flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                border: 'none',
+                borderRadius: 9999,
+                background: 'transparent',
+                cursor: 'pointer',
+                padding: 0,
+                WebkitTapHighlightColor: 'transparent',
+              }}
             >
               {showMapView ? (
                 <IconBuildingStore size={24} style={{ color: '#171717' }} />
               ) : (
                 <IconMap2 size={24} style={{ color: '#171717' }} />
               )}
-            </ActionIcon>
+            </button>
 
             <Group
               gap="xs"
@@ -2218,8 +2236,7 @@ const Restaurants = () => {
             </div>
           </div>
 
-          {/* Show organized sections when filter is 'all' or no filter */}
-          {(!cuisineFilter || cuisineFilter === 'all') ? (
+          {/* Home sections stay visible; pills filter the list below (same idea as mobile “View more”). */}
             <>
               {/* Main Customer Ad — smooth crossfade between creatives */}
               <MainCustomerAdPanel ad={activeMainCustomerAd} maxHeight={280} variant="web-desktop" />
@@ -2326,11 +2343,11 @@ const Restaurants = () => {
                 </div>
               </div>
 
-              {/* Browse All Section */}
-              <div className="bg-white py-8" ref={resultsRef}>
+              {/* View more — narrowed when a category pill is selected */}
+              <div className="bg-white py-8 border-t border-gray-200" ref={resultsRef}>
                 <div className="max-w-7xl mx-auto px-4">
                   <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900">Browse All</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">View more</h2>
                   </div>
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
@@ -2340,36 +2357,6 @@ const Restaurants = () => {
                 </div>
               </div>
             </>
-          ) : (
-            /* Single section when filtering by specific cuisine or searching */
-            <div className="bg-white py-8" ref={resultsRef}>
-              <div className="max-w-7xl mx-auto px-4">
-                {/* Results Header */}
-                {(searchQuery || location || cuisineFilter !== 'all') && (
-                  <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                      {searchQuery 
-                        ? `Results for "${searchQuery}"` 
-                        : activeCategory && activeCategory !== 'all' && activeCategory !== 'browse'
-                          ? `${getCategoryLabel(activeCategory)} Near You`
-                          : 'Restaurants Near You'}
-                    </h2>
-                    {location && (
-                      <p className="text-gray-600 flex items-center">
-                        <IconMapPin className="w-4 h-4 mr-2" />
-                        Delivering to: {location}
-                      </p>
-                    )}
-                  </div>
-                )}
-                <RestaurantGrid 
-                  searchQuery={searchQuery} 
-                  deliveryAddress={location} 
-                  cuisineFilter={cuisineFilter}
-                />
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

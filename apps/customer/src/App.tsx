@@ -66,18 +66,11 @@ function App() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    // Wait for isMobile to be determined
-    if (isMobile === undefined) return;
-
     // Only show loading screen on mobile devices
-    // If isMobile is false (desktop), skip loading screen immediately
-    if (isMobile === false) {
+    if (!isMobile) {
       setShowLoadingScreen(false);
       return;
     }
-
-    // Only proceed if we're on mobile (isMobile === true)
-    if (isMobile !== true) return;
 
     // Show loading screen for minimum 6 seconds to allow full animation cycles
     const timer = setTimeout(() => {
@@ -88,11 +81,7 @@ function App() {
   }, [isMobile]);
 
   // main.tsx already wraps <App /> in MantineProvider — do not nest another provider here (breaks theme/context).
-  if (isMobile === undefined) {
-    return <LoadingScreen />;
-  }
-
-  if (isMobile === true && showLoadingScreen) {
+  if (isMobile && showLoadingScreen) {
     return <LoadingScreen />;
   }
 

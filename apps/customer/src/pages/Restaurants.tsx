@@ -2004,20 +2004,36 @@ const Restaurants = () => {
               </Button>
             </Box>
 
-            <ActionIcon
-              onClick={() => setShowMapView((prev) => !prev)}
-              variant="subtle"
-              size="lg"
-              radius="xl"
-              style={{ flexShrink: 0 }}
+            <button
+              type="button"
+              data-map-view-toggle
               title={showMapView ? 'View list' : 'View map'}
+              aria-label={showMapView ? 'View list' : 'View map'}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMapView((prev) => !prev);
+              }}
+              style={{
+                flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                border: 'none',
+                borderRadius: 9999,
+                background: 'transparent',
+                cursor: 'pointer',
+                padding: 0,
+                WebkitTapHighlightColor: 'transparent',
+              }}
             >
               {showMapView ? (
                 <IconBuildingStore size={24} style={{ color: '#171717' }} />
               ) : (
                 <IconMap2 size={24} style={{ color: '#171717' }} />
               )}
-            </ActionIcon>
+            </button>
             <Group
               gap="xs"
               wrap="nowrap"
@@ -3324,9 +3340,8 @@ const Restaurants = () => {
                 </div>
               )}
 
-              {/* Show organized sections when filter is 'all' or no filter */}
-              {(!cuisineFilter || cuisineFilter === 'all') ? (
-                <>
+              {/* Home sections stay visible; category pills only narrow the "View more" grid (matches mobile). */}
+              <>
                   {/* Main Customer Ad — smooth crossfade between creatives */}
                   <MainCustomerAdPanel ad={activeMainCustomerAd} maxHeight={280} variant="customer-desktop" />
 
@@ -3438,82 +3453,87 @@ const Restaurants = () => {
                       cuisineFilter="Pet"
                     />
                   </div>
-                </>
-              ) : cuisineFilter === 'apparel' ? (
-                <>
-                  {/* Apparel Category Submenu */}
-                  <div className="mb-6 px-4">
-                    <div className="flex space-x-3 overflow-x-auto scrollbar-hide pb-2" style={{
-                      scrollbarWidth: 'none',
-                      msOverflowStyle: 'none',
-                      WebkitOverflowScrolling: 'touch'
-                    }}>
-                      <button
-                        onClick={() => setApparelCategoryFilter('all')}
-                        className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                          apparelCategoryFilter === 'all'
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        All
-                      </button>
-                      <button
-                        onClick={() => setApparelCategoryFilter('Apparel')}
-                        className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                          apparelCategoryFilter === 'Apparel'
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        Apparel
-                      </button>
-                      <button
-                        onClick={() => setApparelCategoryFilter('Accessories')}
-                        className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                          apparelCategoryFilter === 'Accessories'
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        Accessories
-                      </button>
-                      <button
-                        onClick={() => setApparelCategoryFilter('Shoes')}
-                        className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                          apparelCategoryFilter === 'Shoes'
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        Shoes
-                      </button>
-                    </div>
-                  </div>
 
-                  {/* Apparel Stores - Horizontal Scrollable Row */}
-                  <RestaurantGrid
-                    searchQuery={searchQuery}
-                    deliveryAddress={location}
-                    cuisineFilter="apparel"
-                    sectionTitle="Apparel Stores"
-                    horizontal={true}
-                    categoryFilter={apparelCategoryFilter !== 'all' ? apparelCategoryFilter : undefined}
-                    useMarketplaceCatalog={true}
-                    marketplaceType="retail"
-                  />
+                  {cuisineFilter === 'apparel' && (
+                    <>
+                      <div className="mb-6 px-4">
+                        <div className="flex space-x-3 overflow-x-auto scrollbar-hide pb-2" style={{
+                          scrollbarWidth: 'none',
+                          msOverflowStyle: 'none',
+                          WebkitOverflowScrolling: 'touch'
+                        }}>
+                          <button
+                            type="button"
+                            onClick={() => setApparelCategoryFilter('all')}
+                            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                              apparelCategoryFilter === 'all'
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            All
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setApparelCategoryFilter('Apparel')}
+                            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                              apparelCategoryFilter === 'Apparel'
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            Apparel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setApparelCategoryFilter('Accessories')}
+                            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                              apparelCategoryFilter === 'Accessories'
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            Accessories
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setApparelCategoryFilter('Shoes')}
+                            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                              apparelCategoryFilter === 'Shoes'
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            Shoes
+                          </button>
+                        </div>
+                      </div>
+
+                      <RestaurantGrid
+                        searchQuery={searchQuery}
+                        deliveryAddress={location}
+                        cuisineFilter="apparel"
+                        sectionTitle="Apparel Stores"
+                        horizontal={true}
+                        categoryFilter={apparelCategoryFilter !== 'all' ? apparelCategoryFilter : undefined}
+                        useMarketplaceCatalog={true}
+                        marketplaceType="retail"
+                      />
+                    </>
+                  )}
+
+                  <div className="mt-8 border-t border-gray-200 pt-8">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">View more</h2>
+                    <RestaurantGrid
+                      searchQuery={searchQuery}
+                      deliveryAddress={location}
+                      cuisineFilter={cuisineFilter}
+                      columns={1}
+                      useMarketplaceCatalog={true}
+                      marketplaceType="restaurant"
+                    />
+                  </div>
                 </>
-              ) : (
-                /* Single section when filtering by specific cuisine or searching — restaurants only */
-                <RestaurantGrid 
-                  searchQuery={searchQuery} 
-                  deliveryAddress={location} 
-                  cuisineFilter={cuisineFilter}
-                  horizontal={true}
-                  useMarketplaceCatalog={true}
-                  marketplaceType="restaurant"
-                />
-              )}
             </div>
           </div>
         </div>
