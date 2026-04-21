@@ -154,7 +154,22 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
         }
         return;
       }
-      const rows: any[] = Array.isArray(data) ? data : [];
+      let rows: any[] = Array.isArray(data) ? data : [];
+      // Fallback: for regions without storefront map pins, pull nearby marketplace
+      // rows so selected remote addresses still render merchants/requestables.
+      if (rows.length === 0) {
+        const { data: nearbyRows, error: nearbyError } = await (supabase as any).rpc('get_business_nearby', {
+          p_lat: lat,
+          p_lng: lng,
+          p_radius_miles: RADIUS_MILES,
+          p_marketplace_type: null,
+          p_search: null,
+          p_limit: 1500,
+        });
+        if (!nearbyError && Array.isArray(nearbyRows)) {
+          rows = nearbyRows;
+        }
+      }
       const byId = new Map<string, any>();
       for (const row of rows) byId.set(row.id, row);
       const list = (Array.from(byId.values()) as any[])
