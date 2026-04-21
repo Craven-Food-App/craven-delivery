@@ -6,15 +6,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createCravenMarkerElement } from '@/utils/createCravenMapPin';
+import merchantPinActive from '@/assets/merchant_pin.png';
+import merchantPinGrey from '@/assets/merchant_grey_pin.png';
 
 /** Map view + RPC fallback when geolocation is unavailable (matches RestaurantGrid). */
 const DEFAULT_CENTER: [number, number] = [-83.54, 41.65];
 const FALLBACK_USER_LAT = 41.65;
 const FALLBACK_USER_LNG = -83.54;
-const HEAD_SIZE = 28;
-const TAIL_HEIGHT = 10;
-/** Total vertical size of the pin graphic (circle + tail). Popup offset uses the same. */
-const PIN_TOTAL_HEIGHT_PX = HEAD_SIZE + TAIL_HEIGHT;
+/** Display width for branded pin art; height follows intrinsic aspect ratio. */
+const MERCHANT_PIN_WIDTH_PX = 48;
+/** Popup sits above the pin tip (~full marker height). */
+const MERCHANT_PIN_POPUP_OFFSET_PX = 58;
 
 /** fitBounds: street-level when pins cluster; single-point uses fixed zoom. */
 const MAP_FIT_PADDING = { top: 72, bottom: 100, left: 48, right: 48 } as const;
@@ -219,69 +221,59 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
       const lng = merchant.longitude;
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-      const inactive = merchant.status !== 'ACTIVE';
-      const borderColor = inactive ? '#9ca3af' : '#f97316';
-      const bgColor = merchant.logo_url ? '#ffffff' : '#f9fafb';
+      const isActive = merchant.status === 'ACTIVE';
 
-      // Root must size to circle + tail in normal flow. If the tail were
-      // position:absolute, the element's box height would omit the tail and
-      // anchor:'bottom' would place the lat/lng at the bottom of the circle,
-      // not the tip — pins would sit north of the true GPS point.
+      // Branded pin art: bottom of the element is the map anchor (pin tip at lat/lng).
+      // Logo sits in the hollow ring; no CSS filter on the root (WebKit marker bug).
       const el = document.createElement('div');
       el.style.cssText = `
-        display: flex; flex-direction: column; align-items: center;
-        width: ${HEAD_SIZE}px; cursor: pointer; z-index: 5;
-        ${inactive ? 'opacity: 0.88;' : ''}
+        display: flex; justify-content: center; width: ${MERCHANT_PIN_WIDTH_PX}px;
+        cursor: pointer; z-index: 5;
+        ${!isActive ? 'opacity: 0.95;' : ''}
       `;
       const inner = document.createElement('div');
       inner.style.cssText = `
-        display: flex; flex-direction: column; align-items: center;
-        width: ${HEAD_SIZE}px; min-height: ${PIN_TOTAL_HEIGHT_PX}px;
+        position: relative; width: ${MERCHANT_PIN_WIDTH_PX}px; line-height: 0;
         transition: transform 0.15s ease;
       `;
       el.appendChild(inner);
 
-      const head = document.createElement('div');
-      head.style.cssText = `
-        flex-shrink: 0;
-        width: ${HEAD_SIZE}px; height: ${HEAD_SIZE}px; border-radius: 50%;
-        border: 3px solid ${borderColor}; background: ${bgColor}; overflow: hidden;
-        display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        box-sizing: border-box;
+      const pinImg = document.createElement('img');
+      pinImg.src = isActive ? merchantPinActive : merchantPinGrey;
+      pinImg.alt = '';
+      pinImg.draggable = false;
+      pinImg.style.cssText = 'width: 100%; height: auto; display: block; user-select: none;';
+      inner.appendChild(pinImg);
+
+      const hole = document.createElement('div');
+      hole.style.cssText = `
+        position: absolute; left: 50%; top: 22%; transform: translateX(-50%);
+        width: 34%; aspect-ratio: 1; border-radius: 50%; overflow: hidden;
+        background: #fff; display: flex; align-items: center; justify-content: center;
+        pointer-events: none;
       `;
       if (merchant.logo_url) {
-        const img = document.createElement('img');
-        img.src = merchant.logo_url;
-        img.alt = merchant.name;
-        img.style.cssText = 'width: 100%; height: 100%; object-fit: contain;';
-        img.onerror = () => {
-          head.innerHTML = '';
+        const logo = document.createElement('img');
+        logo.src = merchant.logo_url;
+        logo.alt = merchant.name;
+        logo.style.cssText = 'width: 100%; height: 100%; object-fit: contain;';
+        logo.onerror = () => {
+          hole.innerHTML = '';
           const span = document.createElement('span');
           span.textContent = merchant.name.charAt(0).toUpperCase();
-          span.style.cssText = 'font-weight: 700; font-size: 12px; color: #f97316;';
-          head.appendChild(span);
+          span.style.cssText = 'font-weight: 700; font-size: 11px; color: #f97316;';
+          hole.appendChild(span);
         };
-        head.appendChild(img);
+        hole.appendChild(logo);
       } else {
         const span = document.createElement('span');
         span.textContent = merchant.name.charAt(0).toUpperCase();
-        span.style.cssText = 'font-weight: 700; font-size: 12px; color: #f97316;';
-        head.appendChild(span);
+        span.style.cssText = `font-weight: 700; font-size: 11px; color: ${isActive ? '#f97316' : '#6b7280'};`;
+        hole.appendChild(span);
       }
+      inner.appendChild(hole);
 
-      const tail = document.createElement('div');
-      tail.style.cssText = `
-        flex-shrink: 0;
-        width: 0; height: 0; margin-top: -1px;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-top: ${TAIL_HEIGHT}px solid ${borderColor};
-      `;
-
-      inner.appendChild(head);
-      inner.appendChild(tail);
-      el.addEventListener('mouseenter', () => { inner.style.transform = 'scale(1.15)'; });
+      el.addEventListener('mouseenter', () => { inner.style.transform = 'scale(1.12)'; });
       el.addEventListener('mouseleave', () => { inner.style.transform = 'scale(1)'; });
 
       const categoryLabel = merchant.cuisine_type || merchant.marketplace_type || 'Store';
@@ -294,7 +286,7 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
         : '';
       const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
-      const popup = new mapboxgl.Popup({ offset: [0, -PIN_TOTAL_HEIGHT_PX], closeButton: true, maxWidth: '240px' })
+      const popup = new mapboxgl.Popup({ offset: [0, -MERCHANT_PIN_POPUP_OFFSET_PX], closeButton: true, maxWidth: '240px' })
         .setHTML(`
           <div style="padding:8px;font-family:system-ui,sans-serif;">
             <p style="margin:0 0 2px;font-size:14px;font-weight:700;">${merchant.name}</p>
