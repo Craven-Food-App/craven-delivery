@@ -6,10 +6,18 @@ const IV_LENGTH = 12;
 
 function getKey(): Buffer {
   if (!env.MAIL_CREDENTIALS_KEY) {
-    throw new Error("MAIL_CREDENTIALS_KEY is required for mail credential encryption");
+    const detail =
+      env.NODE_ENV === "production"
+        ? "Missing required mail encryption configuration."
+        : "Configuration error: MAIL_CREDENTIALS_KEY is missing. Add MAIL_CREDENTIALS_KEY=<long-random-secret> to backend .env and restart the server.";
+    throw new Error(detail);
   }
 
   return crypto.createHash("sha256").update(env.MAIL_CREDENTIALS_KEY).digest();
+}
+
+export function assertMailCredentialsKeyConfigured(): void {
+  getKey();
 }
 
 export function encryptSecret(plainText: string): string {

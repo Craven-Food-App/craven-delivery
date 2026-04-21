@@ -13,8 +13,10 @@ import {
   syncMailbox,
   upsertMailboxPermission,
   forwardMessage,
+  updateMailbox,
 } from "../mail/service.js";
 import { ICloudMailProvider } from "../mail/icloud-provider.js";
+import { assertMailCredentialsKeyConfigured } from "../mail/crypto.js";
 
 const r = Router();
 const provider = new ICloudMailProvider();
@@ -219,6 +221,7 @@ r.post("/mailboxes/:mailboxId/manual-sync", async (req, res) => {
 
 r.post("/mailboxes", async (req, res) => {
   try {
+    assertMailCredentialsKeyConfigured();
     const auth = await requireAuth(req, res);
     if (!auth) return;
     const body = z
@@ -245,11 +248,26 @@ r.post("/mailboxes", async (req, res) => {
 
 r.patch("/mailboxes/:mailboxId", async (req, res) => {
   try {
+    assertMailCredentialsKeyConfigured();
     const auth = await requireAuth(req, res);
     if (!auth) return;
-    const sb = (await import("../supabase-admin.js")).supabaseAdmin();
-    await sb.from("mailboxes").update(req.body).eq("id", req.params.mailboxId);
-    res.json({ ok: true });
+    const body = z
+      .object({
+        displayName: z.string().min(1),
+        emailAddress: z.string().email(),
+        username: z.string().email(),
+        appPassword: z.string().min(8).optional(),
+        imapHost: z.string().default("imap.mail.me.com"),
+        imapPort: z.number().default(993),
+        imapSecure: z.boolean().default(true),
+        smtpHost: z.string().default("smtp.mail.me.com"),
+        smtpPort: z.number().default(587),
+        smtpSecure: z.boolean().default(false),
+        isActive: z.boolean().default(true),
+      })
+      .parse(req.body);
+    const mailbox = await updateMailbox(req.params.mailboxId, body);
+    res.json({ data: mailbox });
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Failed to update mailbox" });
   }

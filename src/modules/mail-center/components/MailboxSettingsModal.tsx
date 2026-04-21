@@ -9,11 +9,13 @@ export default function MailboxSettingsModal({
   onClose,
   mailboxId,
   selectedMailbox,
+  onMailboxSaved,
 }: {
   opened: boolean;
   onClose: () => void;
   mailboxId?: string;
   selectedMailbox?: any;
+  onMailboxSaved?: (mailboxId: string) => void;
 }) {
   const [userId, setUserId] = useState("");
   const [role, setRole] = useState("readonly");
@@ -36,15 +38,22 @@ export default function MailboxSettingsModal({
   const [savingMailbox, setSavingMailbox] = useState(false);
   const [testingMailbox, setTestingMailbox] = useState(false);
   const [savingPermission, setSavingPermission] = useState(false);
+  const [createdMailboxId, setCreatedMailboxId] = useState<string | null>(null);
+  const effectiveMailboxId = mailboxId || createdMailboxId;
 
   const permissionsQuery = useQuery({
-    queryKey: ["mailbox-permissions", mailboxId],
-    enabled: Boolean(mailboxId && opened),
-    queryFn: () => mailApi.getPermissions(mailboxId as string),
+    queryKey: ["mailbox-permissions", effectiveMailboxId],
+    enabled: Boolean(effectiveMailboxId && opened),
+    queryFn: () => mailApi.getPermissions(effectiveMailboxId as string),
   });
 
   useEffect(() => {
-    if (!opened || !selectedMailbox) return;
+    if (!opened) return;
+    if (!selectedMailbox) {
+      setCreatedMailboxId(null);
+      return;
+    }
+    setCreatedMailboxId(null);
     setDisplayName(selectedMailbox.display_name || "");
     setEmailAddress(selectedMailbox.email_address || "");
     setUsername(selectedMailbox.username || selectedMailbox.email_address || "");
@@ -83,13 +92,13 @@ export default function MailboxSettingsModal({
             variant="default"
             loading={testingMailbox}
             onClick={async () => {
-              if (!mailboxId) {
+              if (!effectiveMailboxId) {
                 message.warning("Save mailbox first, then test connection.");
                 return;
               }
               setTestingMailbox(true);
               try {
-                await mailApi.testMailboxConnection(mailboxId);
+                await mailApi.testMailboxConnection(effectiveMailboxId);
                 message.success("Mailbox connection test successful.");
               } catch (error: any) {
                 message.error(error.message || "Connection test failed.");
@@ -124,21 +133,29 @@ export default function MailboxSettingsModal({
                 };
 
                 if (mailboxId) {
-                  await mailApi.updateMailbox(mailboxId, {
-                    display_name: displayName,
-                    email_address: emailAddress,
+                  const updated = await mailApi.updateMailbox(mailboxId, {
+                    displayName,
+                    emailAddress,
                     username,
-                    imap_host: imapHost,
-                    imap_port: Number(imapPort),
-                    imap_secure: imapSecure,
-                    smtp_host: smtpHost,
-                    smtp_port: Number(smtpPort),
-                    smtp_secure: smtpSecure,
-                    is_active: isActive,
+                    appPassword: appPassword || undefined,
+                    imapHost,
+                    imapPort: Number(imapPort),
+                    imapSecure,
+                    smtpHost,
+                    smtpPort: Number(smtpPort),
+                    smtpSecure,
+                    isActive,
                   });
+                  const updatedId = updated?.data?.id || updated?.id || mailboxId;
+                  onMailboxSaved?.(updatedId);
                   message.success("Mailbox updated.");
                 } else {
-                  await mailApi.createMailbox(payload);
+                  const created = await mailApi.createMailbox(payload);
+                  const newId = created?.data?.id || created?.id || null;
+                  if (newId) {
+                    setCreatedMailboxId(newId);
+                    onMailboxSaved?.(newId);
+                  }
                   message.success("Mailbox created.");
                 }
               } catch (error: any) {
@@ -174,7 +191,7 @@ export default function MailboxSettingsModal({
           variant="light"
           loading={savingPermission}
           onClick={async () => {
-            if (!mailboxId) {
+            if (!effectiveMailboxId) {
               message.warning("Select or create a mailbox first.");
               return;
             }
@@ -184,7 +201,7 @@ export default function MailboxSettingsModal({
             }
             setSavingPermission(true);
             try {
-              await mailApi.updatePermission(mailboxId, { userId, role, canRead, canReply, canAssign, canArchive, canDelete });
+              await mailApi.updatePermission(effectiveMailboxId, { userId, role, canRead, canReply, canAssign, canArchive, canDelete });
               await permissionsQuery.refetch();
               message.success("Mailbox permission updated.");
             } catch (error: any) {

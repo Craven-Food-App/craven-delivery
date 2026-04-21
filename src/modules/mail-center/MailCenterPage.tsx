@@ -191,6 +191,10 @@ export default function MailCenterPage() {
         onClose={() => setSettingsOpen(false)}
         mailboxId={selectedMailboxId}
         selectedMailbox={selectedMailbox}
+        onMailboxSaved={(newMailboxId) => {
+          queryClient.invalidateQueries({ queryKey: ["mailboxes"] });
+          navigate(`/hub/mail/${newMailboxId}`);
+        }}
       />
     </>
   );

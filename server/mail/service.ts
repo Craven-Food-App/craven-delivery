@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "../supabase-admin.js";
 import type { MailboxConfig } from "./provider.js";
 import { ICloudMailProvider } from "./icloud-provider.js";
-import { encryptSecret } from "./crypto.js";
+import { assertMailCredentialsKeyConfigured, encryptSecret } from "./crypto.js";
 import { sanitizeInboundHtml } from "./sanitize.js";
 
 const provider = new ICloudMailProvider();
@@ -335,6 +335,7 @@ export async function forwardMessage(params: {
 }
 
 export async function createMailbox(payload: any) {
+  assertMailCredentialsKeyConfigured();
   const sb = supabaseAdmin();
   const encrypted = encryptSecret(payload.appPassword);
   const { data, error } = await sb
@@ -356,6 +357,38 @@ export async function createMailbox(payload: any) {
     })
     .select("*")
     .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateMailbox(mailboxId: string, payload: any) {
+  const sb = supabaseAdmin();
+  const updateData: Record<string, unknown> = {
+    display_name: payload.displayName,
+    email_address: payload.emailAddress,
+    username: payload.username,
+    imap_host: payload.imapHost,
+    imap_port: payload.imapPort,
+    imap_secure: payload.imapSecure,
+    smtp_host: payload.smtpHost,
+    smtp_port: payload.smtpPort,
+    smtp_secure: payload.smtpSecure,
+    is_active: payload.isActive,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (typeof payload.appPassword === "string" && payload.appPassword.trim().length > 0) {
+    assertMailCredentialsKeyConfigured();
+    updateData.encrypted_app_password = encryptSecret(payload.appPassword.trim());
+  }
+
+  const { data, error } = await sb
+    .from("mailboxes")
+    .update(updateData)
+    .eq("id", mailboxId)
+    .select("*")
+    .single();
+
   if (error) throw error;
   return data;
 }

@@ -9,8 +9,10 @@ import invitesRoute from "./routes/invites.js";
 import supportRoute from "./routes/support.js";
 import mailRoute from "./routes/mail.js";
 import { startMailSyncScheduler } from "./mail/scheduler.js";
+import { assertMailCredentialsKeyConfigured } from "./mail/crypto.js";
 
 const app = express();
+assertMailCredentialsKeyConfigured();
 
 // Apply security headers FIRST (before any other middleware)
 if (env.NODE_ENV === 'production') {
