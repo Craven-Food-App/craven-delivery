@@ -354,16 +354,21 @@ export default function MarketDemand() {
                             <Text size="xs" fw={600} c="dimmed">All requesters ({reqs.length})</Text>
                             {reqs.map((rq) => (
                               <Group key={rq.id} gap="md" wrap="nowrap">
-                                {rq.requester_email ? (
-                                  <a
-                                    href={`mailto:${rq.requester_email}`}
-                                    style={{ color: 'hsl(var(--primary))', fontSize: 13, minWidth: 220, textDecoration: 'none' }}
-                                  >
-                                    {rq.requester_email}
-                                  </a>
-                                ) : (
-                                  <Text size="sm" style={{ minWidth: 220 }}>{rq.requester_name || 'Anonymous'}</Text>
-                                )}
+                                <Box style={{ minWidth: 260 }}>
+                                  {rq.requester_name && (
+                                    <Text size="sm" fw={600}>{rq.requester_name}</Text>
+                                  )}
+                                  {rq.requester_email ? (
+                                    <a
+                                      href={`mailto:${rq.requester_email}`}
+                                      style={{ color: 'hsl(var(--primary))', fontSize: 13, textDecoration: 'none' }}
+                                    >
+                                      {rq.requester_email}
+                                    </a>
+                                  ) : !rq.requester_name ? (
+                                    <Text size="sm" c="dimmed">Unknown user</Text>
+                                  ) : null}
+                                </Box>
                                 <Text size="xs" c="dimmed">
                                   {rq.created_at
                                     ? new Date(rq.created_at).toLocaleString(undefined, {
