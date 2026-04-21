@@ -178,10 +178,17 @@ const RestaurantCard = ({
           ) : (
             <span className="text-gray-600 font-semibold text-center px-3 line-clamp-2 text-sm">{name}</span>
           )}
-          {isRequestable && onRequest && (
+          {isRequestable && (onShareWithBusiness || onRequest) && (
             <button
               type="button"
-              onClick={handleRequest}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onShareWithBusiness) {
+                  onShareWithBusiness({ id, name, image, cuisine });
+                } else if (onRequest) {
+                  handleRequest(e as any);
+                }
+              }}
               disabled={requesting}
               className="absolute bottom-2 right-2 z-10 py-1.5 px-2.5 rounded-md bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 disabled:opacity-70 flex items-center gap-1 shadow-lg"
             >
@@ -227,24 +234,6 @@ const RestaurantCard = ({
             {rightBadge && (
               <span className="text-sm font-medium text-blue-600 flex-shrink-0">{rightBadge}</span>
             )}
-            {isRequestable && (onShareWithBusiness ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onShareWithBusiness({ id, name, image, cuisine });
-                }}
-                className="text-orange-500 font-medium hover:underline inline-flex items-center gap-0.5 text-xs flex-shrink-0"
-              >
-                <Share2 className="h-3 w-3" />
-                Share with business
-              </button>
-            ) : (
-              <span className="text-orange-500 font-medium inline-flex items-center gap-0.5 text-xs flex-shrink-0">
-                <Share2 className="h-3 w-3" />
-                Share with business
-              </span>
-            ))}
           </div>
           {isComingSoon && showNotifyInline && !notifySent && (
             <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
