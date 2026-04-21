@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 import { getLogoBackgroundColor } from '@/utils/logoUtils';
 import {
@@ -231,6 +231,7 @@ const RestaurantMenuPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
     const tabsRef = useRef<HTMLDivElement>(null);
+    const mobileStickyNavRef = useRef<HTMLDivElement>(null);
     
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
@@ -767,11 +768,12 @@ const RestaurantMenuPage = () => {
         });
 
         const sections = [
-            'featured', 
-            'most-ordered', 
+            'featured',
+            'featured-mobile',
+            'most-ordered',
             'reviews',
             'reviews-mobile',
-            'frequently-ordered', 
+            'frequently-ordered',
             'frequently-ordered-mobile',
             ...categories.map(c => c.id),
             ...categories.map(c => `${c.id}-mobile`)
@@ -819,12 +821,17 @@ const RestaurantMenuPage = () => {
         }
         
         if (section) {
-            const offset = tabsRef.current ? tabsRef.current.offsetHeight + 16 : 100;
+            const sticky = mobileStickyNavRef.current ?? tabsRef.current;
+            const stickyH = sticky?.offsetHeight ?? 0;
+            const safeTop = typeof window !== 'undefined'
+              ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-top)')) || 0
+              : 0;
+            const offset = stickyH + 12 + safeTop + 56;
             const elementPosition = section.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - offset;
-            
+
             window.scrollTo({
-                top: offsetPosition,
+                top: Math.max(0, offsetPosition),
                 behavior: 'smooth'
             });
         }
@@ -1000,6 +1007,16 @@ const RestaurantMenuPage = () => {
             href: `#${cat.id}`
         }))
     ];
+
+    const activeNavKey = useMemo(() => activeSection.replace(/-mobile$/, ''), [activeSection]);
+
+    const mobileChipActive = (logicalId: string) => {
+      if (isSearchMode) return logicalId === 'search';
+      if (logicalId === 'most-ordered' || logicalId === 'frequently-ordered') {
+        return activeNavKey === 'frequently-ordered' || activeNavKey === 'most-ordered';
+      }
+      return activeNavKey === logicalId;
+    };
 
     // --- UI Components ---
 
@@ -1771,12 +1788,12 @@ const RestaurantMenuPage = () => {
                   scrollToSection(link.id);
                 }}
                 style={{
-                  backgroundColor: activeSection === link.id ? 'var(--mantine-color-orange-0)' : 'transparent',
-                  color: activeSection === link.id ? 'var(--mantine-color-orange-6)' : 'var(--mantine-color-gray-7)',
-                  fontWeight: activeSection === link.id ? 600 : 500,
-                  borderLeft: activeSection === link.id ? '4px solid var(--mantine-color-orange-6)' : 'none',
-                  marginLeft: activeSection === link.id ? '-8px' : 0,
-                  paddingLeft: activeSection === link.id ? '12px' : '8px',
+                  backgroundColor: activeNavKey === link.id ? 'var(--mantine-color-orange-0)' : 'transparent',
+                  color: activeNavKey === link.id ? 'var(--mantine-color-orange-6)' : 'var(--mantine-color-gray-7)',
+                  fontWeight: activeNavKey === link.id ? 600 : 500,
+                  borderLeft: activeNavKey === link.id ? '4px solid var(--mantine-color-orange-6)' : 'none',
+                  marginLeft: activeNavKey === link.id ? '-8px' : 0,
+                  paddingLeft: activeNavKey === link.id ? '12px' : '8px',
                 }}
               >
                 {link.label}
@@ -2368,28 +2385,242 @@ const RestaurantMenuPage = () => {
                       </Group>
                     </Stack>
                   </Group>
+                </Box>
 
-                  {/* Delivery/Pickup Toggle - Mobile */}
-                  <Group grow>
-                    <Button
-                      variant={deliveryMethod === 'delivery' ? 'filled' : 'light'}
-                      color={deliveryMethod === 'delivery' ? 'dark' : 'gray'}
-                      leftSection={<IconTruck size={16} />}
-                      onClick={() => setDeliveryMethod('delivery')}
-                      style={{ flex: 1 }}
+                {/* Mobile: sticky nav — enterprise-style segmented delivery + underline category tabs */}
+                <Box
+                  ref={mobileStickyNavRef}
+                  style={{
+                    position: 'sticky',
+                    top: 'calc(56px + env(safe-area-inset-top, 0px))',
+                    zIndex: 200,
+                    margin: '0 -16px',
+                    backgroundColor: '#ffffff',
+                    borderBottom: '1px solid #e2e8f0',
+                    boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
+                    isolation: 'isolate',
+                  }}
+                >
+                  <Stack gap={0}>
+                    <Box px="md" py={12} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <Box
+                        style={{
+                          display: 'flex',
+                          gap: 4,
+                          backgroundColor: '#f1f5f9',
+                          borderRadius: 8,
+                          padding: 4,
+                          border: '1px solid #e2e8f0',
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryMethod('delivery')}
+                          style={{
+                            flex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            border: 'none',
+                            borderRadius: 6,
+                            padding: '10px 12px',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            letterSpacing: '-0.01em',
+                            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                            cursor: 'pointer',
+                            WebkitTapHighlightColor: 'transparent',
+                            transition: 'background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease',
+                            ...(deliveryMethod === 'delivery'
+                              ? {
+                                  backgroundColor: '#ffffff',
+                                  color: '#0f172a',
+                                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.08)',
+                                }
+                              : {
+                                  backgroundColor: 'transparent',
+                                  color: '#64748b',
+                                  boxShadow: 'none',
+                                }),
+                          }}
+                        >
+                          <IconTruck size={15} stroke={1.75} />
+                          <span>Delivery</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryMethod('pickup')}
+                          style={{
+                            flex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            border: 'none',
+                            borderRadius: 6,
+                            padding: '10px 12px',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            letterSpacing: '-0.01em',
+                            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                            cursor: 'pointer',
+                            WebkitTapHighlightColor: 'transparent',
+                            transition: 'background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease',
+                            ...(deliveryMethod === 'pickup'
+                              ? {
+                                  backgroundColor: '#ffffff',
+                                  color: '#0f172a',
+                                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.08)',
+                                }
+                              : {
+                                  backgroundColor: 'transparent',
+                                  color: '#64748b',
+                                  boxShadow: 'none',
+                                }),
+                          }}
+                        >
+                          <IconBuildingStore size={15} stroke={1.75} />
+                          <span>Pickup</span>
+                        </button>
+                      </Box>
+                    </Box>
+                    <Box
+                      style={{
+                        width: '100%',
+                        overflowX: 'auto',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                        WebkitOverflowScrolling: 'touch',
+                        backgroundColor: '#fafbfc',
+                        borderBottom: '1px solid #e2e8f0',
+                      }}
+                      className="scrollbar-hide"
                     >
-                      Delivery
-                    </Button>
-                    <Button
-                      variant={deliveryMethod === 'pickup' ? 'filled' : 'light'}
-                      color={deliveryMethod === 'pickup' ? 'dark' : 'gray'}
-                      leftSection={<IconBuildingStore size={16} />}
-                      onClick={() => setDeliveryMethod('pickup')}
-                      style={{ flex: 1 }}
-                    >
-                      Pickup
-                    </Button>
-                  </Group>
+                      <Group gap={0} wrap="nowrap" align="stretch" px={4} style={{ flexWrap: 'nowrap', minHeight: 48 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSearchMode(true);
+                            setSearchQuery('');
+                          }}
+                          style={{
+                            flexShrink: 0,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            padding: '14px 14px',
+                            fontSize: 13,
+                            fontWeight: mobileChipActive('search') ? 600 : 500,
+                            letterSpacing: '-0.02em',
+                            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                            color: mobileChipActive('search') ? '#0f172a' : '#64748b',
+                            borderBottom: mobileChipActive('search') ? '2px solid #c2410c' : '2px solid transparent',
+                            marginBottom: -1,
+                            WebkitTapHighlightColor: 'transparent',
+                            transition: 'color 0.15s ease, border-color 0.15s ease',
+                          }}
+                        >
+                          <IconSearch size={15} stroke={1.75} style={{ opacity: 0.85 }} />
+                          <span>Search</span>
+                        </button>
+                        {mostOrderedItems.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsSearchMode(false);
+                              setSearchQuery('');
+                              scrollToSection('most-ordered');
+                            }}
+                            style={{
+                              flexShrink: 0,
+                              border: 'none',
+                              background: 'transparent',
+                              cursor: 'pointer',
+                              padding: '14px 14px',
+                              fontSize: 13,
+                              fontWeight: mobileChipActive('most-ordered') ? 600 : 500,
+                              letterSpacing: '-0.02em',
+                              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                              color: mobileChipActive('most-ordered') ? '#0f172a' : '#64748b',
+                              borderBottom: mobileChipActive('most-ordered') ? '2px solid #c2410c' : '2px solid transparent',
+                              marginBottom: -1,
+                              WebkitTapHighlightColor: 'transparent',
+                              transition: 'color 0.15s ease, border-color 0.15s ease',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {isRetail ? 'Best sellers' : 'Most ordered'}
+                          </button>
+                        )}
+                        {frequentlyOrderedItems.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsSearchMode(false);
+                              setSearchQuery('');
+                              scrollToSection('frequently-ordered-mobile');
+                            }}
+                            style={{
+                              flexShrink: 0,
+                              border: 'none',
+                              background: 'transparent',
+                              cursor: 'pointer',
+                              padding: '14px 14px',
+                              fontSize: 13,
+                              fontWeight: mobileChipActive('frequently-ordered') ? 600 : 500,
+                              letterSpacing: '-0.02em',
+                              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                              color: mobileChipActive('frequently-ordered') ? '#0f172a' : '#64748b',
+                              borderBottom: mobileChipActive('frequently-ordered') ? '2px solid #c2410c' : '2px solid transparent',
+                              marginBottom: -1,
+                              WebkitTapHighlightColor: 'transparent',
+                              transition: 'color 0.15s ease, border-color 0.15s ease',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {isRetail ? 'Popular' : 'Frequently ordered'}
+                          </button>
+                        )}
+                        {categories.map((category) => (
+                          <button
+                            type="button"
+                            key={category.id}
+                            onClick={() => {
+                              setIsSearchMode(false);
+                              setSearchQuery('');
+                              scrollToSection(category.id);
+                            }}
+                            style={{
+                              flexShrink: 0,
+                              border: 'none',
+                              background: 'transparent',
+                              cursor: 'pointer',
+                              padding: '14px 14px',
+                              fontSize: 13,
+                              fontWeight: mobileChipActive(category.id) ? 600 : 500,
+                              letterSpacing: '-0.02em',
+                              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                              color: mobileChipActive(category.id) ? '#0f172a' : '#64748b',
+                              borderBottom: mobileChipActive(category.id) ? '2px solid #c2410c' : '2px solid transparent',
+                              marginBottom: -1,
+                              WebkitTapHighlightColor: 'transparent',
+                              transition: 'color 0.15s ease, border-color 0.15s ease',
+                              whiteSpace: 'nowrap',
+                              maxWidth: 200,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {category.name}
+                          </button>
+                        ))}
+                      </Group>
+                    </Box>
+                  </Stack>
                 </Box>
 
                 {/* Pickup Interface - Mobile - Show when pickup is selected */}
@@ -2398,106 +2629,6 @@ const RestaurantMenuPage = () => {
                     <PickupInterface />
                   </Box>
                 )}
-
-                {/* Sticky Category Tabs - Mobile - Navigation Bar Style */}
-                <Box
-                  style={{
-                    position: 'sticky',
-                    top: '110px',
-                    zIndex: 40,
-                    backgroundColor: 'white',
-                    borderBottom: '1px solid var(--mantine-color-gray-3)',
-                    margin: '0 -16px',
-                  }}
-                >
-                  <ScrollArea scrollbars="x" style={{ width: '100%' }}>
-                    <Group gap={0} style={{ flexWrap: 'nowrap', padding: '0 16px' }}>
-                      {/* Search Icon */}
-                      <Box
-                        onClick={() => {
-                          setIsSearchMode(true);
-                          setSearchQuery('');
-                        }}
-                        style={{
-                          padding: '10px 16px',
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                          flexShrink: 0,
-                          borderBottom: isSearchMode ? '2px solid var(--mantine-color-dark-9)' : '2px solid transparent',
-                          color: isSearchMode ? 'var(--mantine-color-dark-9)' : 'var(--mantine-color-gray-7)',
-                          fontWeight: isSearchMode ? 600 : 400,
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        <IconSearch size={18} />
-                      </Box>
-                    {mostOrderedItems.length > 0 && (
-                      <Box
-                        onClick={() => {
-                          setIsSearchMode(false);
-                          setSearchQuery('');
-                          scrollToSection('most-ordered');
-                        }}
-                        style={{
-                          padding: '10px 16px',
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                          flexShrink: 0,
-                          borderBottom: activeSection === 'most-ordered' && !isSearchMode ? '2px solid var(--mantine-color-dark-9)' : '2px solid transparent',
-                          color: activeSection === 'most-ordered' && !isSearchMode ? 'var(--mantine-color-dark-9)' : 'var(--mantine-color-gray-7)',
-                          fontWeight: activeSection === 'most-ordered' && !isSearchMode ? 600 : 400,
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        <Text size="sm">🔥 Most Ordered</Text>
-                      </Box>
-                    )}
-                    {frequentlyOrderedItems.length > 0 && (
-                      <Box
-                        onClick={() => {
-                          setIsSearchMode(false);
-                          setSearchQuery('');
-                          scrollToSection('frequently-ordered-mobile');
-                        }}
-                        style={{
-                          padding: '10px 16px',
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                          flexShrink: 0,
-                          borderBottom: activeSection === 'frequently-ordered-mobile' && !isSearchMode ? '2px solid var(--mantine-color-dark-9)' : '2px solid transparent',
-                          color: activeSection === 'frequently-ordered-mobile' && !isSearchMode ? 'var(--mantine-color-dark-9)' : 'var(--mantine-color-gray-7)',
-                          fontWeight: activeSection === 'frequently-ordered-mobile' && !isSearchMode ? 600 : 400,
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        <Text size="sm">⭐ Frequently Ordered</Text>
-                      </Box>
-                    )}
-                    {categories.map(category => (
-                        <Box
-                        key={category.id}
-                          onClick={() => {
-                            setIsSearchMode(false);
-                            setSearchQuery('');
-                            scrollToSection(category.id);
-                          }}
-                          style={{
-                            padding: '10px 16px',
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            flexShrink: 0,
-                            borderBottom: activeSection === category.id && !isSearchMode ? '2px solid var(--mantine-color-dark-9)' : '2px solid transparent',
-                            color: activeSection === category.id && !isSearchMode ? 'var(--mantine-color-dark-9)' : 'var(--mantine-color-gray-7)',
-                            fontWeight: activeSection === category.id && !isSearchMode ? 600 : 400,
-                            transition: 'all 0.2s',
-                          }}
-                        >
-                          <Text size="sm">{category.name}</Text>
-                        </Box>
-                    ))}
-                  </Group>
-                </ScrollArea>
-                </Box>
 
                 {/* Mobile Menu Items - Compact List */}
                 <Stack gap="lg" p="md">
@@ -2603,7 +2734,7 @@ const RestaurantMenuPage = () => {
 
                   {/* Featured Items - Mobile */}
                   {!isSearchMode && menuItems.length > 0 && (
-                    <Box id="featured-mobile" mb="xl" style={{ scrollMarginTop: '96px' }}>
+                    <Box id="featured-mobile" mb="xl" style={{ scrollMarginTop: 'calc(120px + env(safe-area-inset-top, 0px))' }}>
                       <Title order={2} size="xl" fw={700} mb="md">Featured Items</Title>
                       <ScrollArea scrollbars="x">
                         <Group gap={4} style={{ flexWrap: 'nowrap' }} pb="md">
@@ -2682,7 +2813,7 @@ const RestaurantMenuPage = () => {
 
                   {/* Reviews Section - Mobile — Crave'n Community Ratings */}
                   {!isSearchMode && (
-                    <Box id="reviews-mobile" mb="xl" style={{ scrollMarginTop: '96px' }}>
+                    <Box id="reviews-mobile" mb="xl" style={{ scrollMarginTop: 'calc(120px + env(safe-area-inset-top, 0px))' }}>
                       {/* Section Header */}
                       <Group justify="space-between" align="flex-start" mb="lg">
                         <Stack gap={2}>
@@ -2925,7 +3056,7 @@ const RestaurantMenuPage = () => {
 
                   {/* Frequently Ordered Section - Mobile */}
                   {!isSearchMode && frequentlyOrderedItems.length > 0 && (
-                    <Box id="frequently-ordered-mobile" mb="xl" style={{ scrollMarginTop: '96px' }}>
+                    <Box id="frequently-ordered-mobile" mb="xl" style={{ scrollMarginTop: 'calc(120px + env(safe-area-inset-top, 0px))' }}>
                       <Title order={2} size="xl" fw={700} mb="md">Frequently Ordered</Title>
                       <Grid gutter={4}>
                         {frequentlyOrderedItems.map(item => (
@@ -2988,7 +3119,7 @@ const RestaurantMenuPage = () => {
                     if (items.length === 0) return null;
                     
                     return (
-                      <Box key={category.id} id={`${category.id}-mobile`} style={{ scrollMarginTop: '96px' }}>
+                      <Box key={category.id} id={`${category.id}-mobile`} style={{ scrollMarginTop: 'calc(120px + env(safe-area-inset-top, 0px))' }}>
                         <Title order={2} size="xl" fw={700} mb="md">{category.name}</Title>
                         <Stack gap="sm">
                           {items.map(item => (

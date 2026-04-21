@@ -1298,13 +1298,6 @@ const Restaurants = () => {
     }
   }, [showAddressSelector]);
 
-  // Fetch addresses when selector opens
-  useEffect(() => {
-    if (showAddressSelector) {
-      fetchSavedAddresses();
-    }
-  }, [showAddressSelector]);
-
   // Update filter options based on delivery mode
   useEffect(() => {
     const updatedFilters = filterOptions.map(filter => ({
@@ -1318,15 +1311,11 @@ const Restaurants = () => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      // Check if click is inside any dropdown or the address selector button
       const isInsideDropdown = target.closest('[data-dropdown]');
-      const isAddressButton = target.closest('button[onclick*="setShowAddressSelector"]') || 
-                              target.closest('.address-selector-button') ||
-                              target.closest('[class*="address-selector"]');
-      // Also check if click is inside the address selector ref
+      const isAddressTrigger = target.closest('[data-address-selector-trigger]');
       const isInsideAddressSelector = addressSelectorRef.current?.contains(target);
-      
-      if (!isInsideDropdown && !isAddressButton && !isInsideAddressSelector) {
+
+      if (!isInsideDropdown && !isAddressTrigger && !isInsideAddressSelector) {
         setShowAddressSelector(false);
         setShowNotifications(false);
         setShowCart(false);
@@ -1997,6 +1986,7 @@ const Restaurants = () => {
             <Box style={{ position: 'relative', width: '180px', flexShrink: 0 }}>
               <Button
                 variant="subtle"
+                data-address-selector-trigger
                 leftSection={
                   <MantineImage
                     src={cravenCLogo}
@@ -2132,6 +2122,9 @@ const Restaurants = () => {
         {showAddressSelector && (
           <Box
             ref={addressSelectorRef}
+            data-dropdown
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
             style={{
               position: 'fixed',
               top: 'calc(120px + env(safe-area-inset-top, 0px))',
@@ -2712,6 +2705,7 @@ const Restaurants = () => {
           {/* Location & Delivery Mode */}
           <Group gap="xs">
             <Button
+              data-address-selector-trigger
               onClick={() => setShowAddressSelector(!showAddressSelector)}
               variant="subtle"
               leftSection={<IconMapPin size={16} style={{ color: '#4b5563' }} />}
@@ -2804,6 +2798,8 @@ const Restaurants = () => {
               {/* Location Selector */}
               <div className="relative">
                 <button 
+                  type="button"
+                  data-address-selector-trigger
                   onClick={() => setShowAddressSelector(!showAddressSelector)}
                   className="address-selector-button flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors"
                 >
