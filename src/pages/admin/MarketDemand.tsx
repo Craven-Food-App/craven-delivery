@@ -97,10 +97,11 @@ export default function MarketDemand() {
           );
           let profilesById: Record<string, { email: string | null; full_name: string | null }> = {};
           if (missingUserIds.length > 0) {
-            const { data: profiles } = await supabase
-              .from('user_profiles')
-              .select('user_id, email, full_name')
-              .in('user_id', missingUserIds);
+            const { data: profiles, error: rpcErr } = await supabase.rpc(
+              'get_partnership_request_requesters',
+              { _user_ids: missingUserIds }
+            );
+            if (rpcErr) console.error('Error fetching requester profiles:', rpcErr);
             (profiles || []).forEach((p: any) => {
               profilesById[p.user_id] = { email: p.email, full_name: p.full_name };
             });
