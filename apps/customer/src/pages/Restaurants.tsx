@@ -805,11 +805,40 @@ const Restaurants = () => {
     };
   };
 
+  const extractCoords = (addressData: any): { latitude: number | null; longitude: number | null } => {
+    const center = Array.isArray(addressData?.center) ? addressData.center : null;
+    if (center && center.length >= 2) {
+      const lng = Number(center[0]);
+      const lat = Number(center[1]);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        return { latitude: lat, longitude: lng };
+      }
+    }
+    return { latitude: null, longitude: null };
+  };
+
   const selectAddress = async (address: string, index?: number) => {
     try {
+      // Get the full address data for this selection
+      const addressData = index !== undefined && addressSuggestionsData[index]
+        ? addressSuggestionsData[index]
+        : null;
+      const parsed = addressData ? parseAddress(addressData) : null;
+      const coords = extractCoords(addressData);
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         // If not logged in, just set location without saving
+        if (parsed) {
+          setDeliveryAddress({
+            street_address: parsed.street_address,
+            city: parsed.city,
+            state: parsed.state,
+            zip_code: parsed.zip_code,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          });
+        }
         setLocation(address);
         setAddressSearchQuery('');
         setAddressSuggestions([]);
@@ -823,15 +852,7 @@ const Restaurants = () => {
         return;
       }
 
-      // Get the full address data for this selection
-      const addressData = index !== undefined && addressSuggestionsData[index] 
-        ? addressSuggestionsData[index] 
-        : null;
-
-      if (addressData) {
-        // Parse the address components
-        const parsed = parseAddress(addressData);
-        
+      if (addressData && parsed) {
         // Check if address already exists
         const { data: existingAddresses } = await supabase
           .from('delivery_addresses')
@@ -885,6 +906,8 @@ const Restaurants = () => {
           city: parsed.city,
           state: parsed.state,
           zip_code: parsed.zip_code,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
         });
       } else {
         // If we don't have full data, just set the location
@@ -967,6 +990,8 @@ const Restaurants = () => {
       state: address.state,
       zip_code: address.zip_code,
       is_default: address.is_default,
+      latitude: (address.latitude ?? address.lat) ?? null,
+      longitude: (address.longitude ?? address.lng) ?? null,
     });
     notifications.show({
       title: "Location Updated",
@@ -1290,6 +1315,55 @@ const Restaurants = () => {
       setLocation((prev) => (prev === full ? prev : full));
     }
   }, [selectedAddress?.street_address, selectedAddress?.city, selectedAddress?.state, selectedAddress?.zip_code]);
+  const selectedAddressCoords = useMemo(() => {
+    const lat = Number((selectedAddress as any)?.latitude);
+    const lng = Number((selectedAddress as any)?.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return { lat, lng };
+    }
+    return null;
+  }, [(selectedAddress as any)?.latitude, (selectedAddress as any)?.longitude]);
+
+  useEffect(() => {
+    if (selectedAddressCoords || !location || location.length < 6 || !selectedAddress) {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        let mapboxToken = '';
+        try {
+          const { data } = await supabase.functions.invoke('get-mapbox-token');
+          if (data?.token) mapboxToken = data.token;
+        } catch {
+          // fallback token below
+        }
+        if (!mapboxToken) {
+          mapboxToken = 'pk.eyJ1IjoiY3JhdmUtbiIsImEiOiJjbWVxb21qbTQyNTRnMm1vaHg5bDZwcmw2In0.aOsYrL2B0cjfcCGW1jHAdw';
+        }
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?` +
+          `access_token=${mapboxToken}&country=US&limit=1`
+        );
+        const json = await response.json();
+        const center = json?.features?.[0]?.center;
+        if (!cancelled && Array.isArray(center) && center.length >= 2) {
+          const lng = Number(center[0]);
+          const lat = Number(center[1]);
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            setDeliveryAddress({
+              ...selectedAddress,
+              latitude: lat,
+              longitude: lng,
+            });
+          }
+        }
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [location, selectedAddressCoords, selectedAddress, setDeliveryAddress]);
 
   // Fetch addresses when selector opens
   useEffect(() => {
@@ -1959,7 +2033,12 @@ const Restaurants = () => {
           paddingTop: 'calc(120px + env(safe-area-inset-top, 0px))'
         }}>
         {/* Map view with location beacon — shown for mobile web and native app */}
-        {showMapView && <CustomerMerchantMap onClose={() => setShowMapView(false)} />}
+        {showMapView && (
+          <CustomerMerchantMap
+            onClose={() => setShowMapView(false)}
+            targetLocation={selectedAddressCoords}
+          />
+        )}
         {/* Search & Address Bar (Fixed Header - Matching Source App) */}
         <Box component="header" style={{ 
           backgroundColor: 'white', 
@@ -2489,7 +2568,8 @@ const Restaurants = () => {
                 </Title>
                 <RestaurantGrid 
                   searchQuery={searchQuery} 
-                  deliveryAddress={location} 
+                  deliveryAddress={location}
+                  targetLocation={selectedAddressCoords}
                   cuisineFilter={undefined}
                   excludeCuisine={undefined}
                   sectionTitle={undefined}
@@ -2513,6 +2593,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedAddressCoords}
                 sectionTitle="Restaurants Near You"
                 horizontal={true}
                 useNearbyByLocation={true}
@@ -2525,6 +2606,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedAddressCoords}
                 sectionTitle="Shopping Centers Near You"
                 horizontal={true}
                 useNearbyByLocation={true}
@@ -2537,6 +2619,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedAddressCoords}
                 cuisineFilter="late night hunger"
                 sectionTitle="Late Night Hunger"
                 horizontal={true}
@@ -2550,6 +2633,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedAddressCoords}
                 cuisineFilter="kids"
                 sectionTitle="Kids Menu"
                 horizontal={true}
@@ -2569,6 +2653,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedAddressCoords}
                 sectionTitle="Retail Stores Near You"
                 horizontal={true}
                 useNearbyByLocation={true}
@@ -2581,6 +2666,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedAddressCoords}
                 sectionTitle="Cosmetic Stores"
                 horizontal={true}
                 useMarketplaceCatalog={true}
@@ -2594,6 +2680,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedAddressCoords}
                 sectionTitle="Pet Stores"
                 horizontal={true}
                 useMarketplaceCatalog={true}
@@ -2611,6 +2698,7 @@ const Restaurants = () => {
                 <RestaurantGrid
                   searchQuery={searchQuery}
                   deliveryAddress={location}
+                  targetLocation={selectedAddressCoords}
                   cuisineFilter={cuisineFilter}
                   columns={1}
                   useMarketplaceCatalog={true}
@@ -2650,7 +2738,12 @@ const Restaurants = () => {
     return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white' }}>
       {/* Map view with location beacon — same component on desktop */}
-      {showMapView && <CustomerMerchantMap onClose={() => setShowMapView(false)} />}
+      {showMapView && (
+        <CustomerMerchantMap
+          onClose={() => setShowMapView(false)}
+          targetLocation={selectedAddressCoords}
+        />
+      )}
       {/* Mobile Header - Mantine UI */}
       <Box 
         component="header"
@@ -3353,7 +3446,8 @@ const Restaurants = () => {
                       </div>
                       <RestaurantGrid 
                         searchQuery={searchQuery} 
-                        deliveryAddress={location} 
+                        deliveryAddress={location}
+                        targetLocation={selectedAddressCoords}
                         cuisineFilter={undefined}
                         excludeCuisine={undefined}
                         sectionTitle={undefined}
@@ -3372,6 +3466,7 @@ const Restaurants = () => {
                     <RestaurantGrid
                       searchQuery={searchQuery}
                       deliveryAddress={location}
+                      targetLocation={selectedAddressCoords}
                       sectionTitle="Restaurants Near You"
                       horizontal={true}
                       useNearbyByLocation={true}
@@ -3383,6 +3478,7 @@ const Restaurants = () => {
                     <RestaurantGrid
                       searchQuery={searchQuery}
                       deliveryAddress={location}
+                      targetLocation={selectedAddressCoords}
                       sectionTitle="Shopping Centers Near You"
                       horizontal={true}
                       useNearbyByLocation={true}
@@ -3394,6 +3490,7 @@ const Restaurants = () => {
                     <RestaurantGrid
                       searchQuery={searchQuery}
                       deliveryAddress={location}
+                      targetLocation={selectedAddressCoords}
                       cuisineFilter="late night hunger"
                       sectionTitle="Late Night Hunger"
                       horizontal={true}
@@ -3406,6 +3503,7 @@ const Restaurants = () => {
                     <RestaurantGrid
                       searchQuery={searchQuery}
                       deliveryAddress={location}
+                      targetLocation={selectedAddressCoords}
                       cuisineFilter="kids"
                       sectionTitle="Kids Menu"
                       horizontal={true}
@@ -3423,6 +3521,7 @@ const Restaurants = () => {
                     <RestaurantGrid
                       searchQuery={searchQuery}
                       deliveryAddress={location}
+                      targetLocation={selectedAddressCoords}
                       sectionTitle="Retail Stores Near You"
                       horizontal={true}
                       useNearbyByLocation={true}
@@ -3434,6 +3533,7 @@ const Restaurants = () => {
                     <RestaurantGrid
                       searchQuery={searchQuery}
                       deliveryAddress={location}
+                      targetLocation={selectedAddressCoords}
                       sectionTitle="Cosmetic Stores"
                       horizontal={true}
                       useMarketplaceCatalog={true}
@@ -3446,6 +3546,7 @@ const Restaurants = () => {
                     <RestaurantGrid
                       searchQuery={searchQuery}
                       deliveryAddress={location}
+                      targetLocation={selectedAddressCoords}
                       sectionTitle="Pet Stores"
                       horizontal={true}
                       useMarketplaceCatalog={true}
@@ -3512,6 +3613,7 @@ const Restaurants = () => {
                       <RestaurantGrid
                         searchQuery={searchQuery}
                         deliveryAddress={location}
+                        targetLocation={selectedAddressCoords}
                         cuisineFilter="apparel"
                         sectionTitle="Apparel Stores"
                         horizontal={true}
@@ -3527,6 +3629,7 @@ const Restaurants = () => {
                     <RestaurantGrid
                       searchQuery={searchQuery}
                       deliveryAddress={location}
+                      targetLocation={selectedAddressCoords}
                       cuisineFilter={cuisineFilter}
                       columns={1}
                       useMarketplaceCatalog={true}

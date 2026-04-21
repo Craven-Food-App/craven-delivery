@@ -113,6 +113,7 @@ interface RestaurantGridProps {
   useNearbyByLocation?: boolean;
   /** Filter nearby results by marketplace_type: restaurant | retail | mall */
   marketplaceType?: 'restaurant' | 'retail' | 'mall' | null;
+  targetLocation?: { lat: number; lng: number } | null;
 }
 const RestaurantGrid = ({
   searchQuery,
@@ -127,10 +128,12 @@ const RestaurantGrid = ({
   useMarketplaceCatalog = false,
   useNearbyByLocation = false,
   marketplaceType = null,
+  targetLocation = null,
 }: RestaurantGridProps = {}) => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const effectiveLocation = targetLocation ?? userLocation;
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState<{ id: string; name: string; image?: string; cuisine?: string } | null>(null);
 
@@ -175,9 +178,9 @@ const RestaurantGrid = ({
 
   const fetchNearbyByLocation = async () => {
     setLoading(true);
-    const lat = userLocation?.lat ?? 41.65;
-    const lng = userLocation?.lng ?? -83.54;
-    const hasRealGps = !!userLocation;
+    const lat = effectiveLocation?.lat ?? 41.65;
+    const lng = effectiveLocation?.lng ?? -83.54;
+    const hasRealGps = !!effectiveLocation;
     const MAX_RADIUS = 25; // 25 mile hard cap
     const radii = [10, 15, 25];
     const minResults = 6;
@@ -258,8 +261,8 @@ const RestaurantGrid = ({
 
   const fetchMarketplaceRestaurants = async () => {
     setLoading(true);
-    const lat = userLocation?.lat ?? 41.65;
-    const lng = userLocation?.lng ?? -83.54;
+    const lat = effectiveLocation?.lat ?? 41.65;
+    const lng = effectiveLocation?.lng ?? -83.54;
     try {
       const { data, error } = await (supabase as any).rpc('get_marketplace_restaurants', {
         p_lat: lat,
@@ -370,10 +373,10 @@ const RestaurantGrid = ({
         filteredData = filteredData.filter((restaurant: Restaurant) => {
           if (isNationalChain(restaurant.name)) return true;
           if (!restaurant.latitude || !restaurant.longitude) return false;
-          if (!userLocation) return false;
+          if (!effectiveLocation) return false;
           const distance = calculateDistance(
-            userLocation.lat,
-            userLocation.lng,
+            effectiveLocation.lat,
+            effectiveLocation.lng,
             restaurant.latitude,
             restaurant.longitude
           );
@@ -459,9 +462,9 @@ const RestaurantGrid = ({
 
   const formatRestaurantData = (restaurant: Restaurant) => {
     let distanceStr: string | undefined;
-    if (userLocation && restaurant.latitude != null && restaurant.longitude != null) {
+    if (effectiveLocation && restaurant.latitude != null && restaurant.longitude != null) {
       const miles = calculateDistance(
-        userLocation.lat, userLocation.lng,
+        effectiveLocation.lat, effectiveLocation.lng,
         restaurant.latitude, restaurant.longitude
       );
       distanceStr = `${miles.toFixed(1)} mi`;

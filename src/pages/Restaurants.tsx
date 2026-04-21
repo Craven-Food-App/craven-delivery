@@ -266,6 +266,7 @@ const Restaurants = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
+  const [selectedLocationCoords, setSelectedLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [mobileAddressSearch, setMobileAddressSearch] = useState(''); // Mobile web address input
   const [notificationsList, setNotificationsList] = useState<any[]>([]);
   const [cartItems, setCartItems] = useState<any[]>([]);
@@ -396,7 +397,22 @@ const Restaurants = () => {
     }
   };
 
-  const selectAddress = (address: string) => {
+  const selectAddress = async (address: string) => {
+    let coords: { lat: number; lng: number } | null = null;
+    try {
+      const mapboxResp = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?` +
+          `access_token=pk.eyJ1IjoiY3JhdmUtbiIsImEiOiJjbWVxb21qbTQyNTRnMm1vaHg5bDZwcmw2In0.aOsYrL2B0cjfcCGW1jHAdw&country=US&limit=1`,
+      );
+      const mapboxJson = await mapboxResp.json();
+      const center = mapboxJson?.features?.[0]?.center;
+      if (Array.isArray(center) && center.length >= 2) {
+        coords = { lat: Number(center[1]), lng: Number(center[0]) };
+      }
+    } catch {
+      coords = null;
+    }
+    setSelectedLocationCoords(coords);
     setLocation(address);
     setShowAddressSelector(false);
     notifications.show({
@@ -1066,7 +1082,12 @@ const Restaurants = () => {
         flexDirection: 'column',
         paddingTop: 'calc(120px + env(safe-area-inset-top, 0px))'
       }}>
-        {showMapView && <CustomerMerchantMap onClose={() => setShowMapView(false)} />}
+        {showMapView && (
+          <CustomerMerchantMap
+            onClose={() => setShowMapView(false)}
+            targetLocation={selectedLocationCoords}
+          />
+        )}
         {/* Search & Address Bar (Fixed Header - Matching Customer App) */}
         <Box component="header" style={{ 
           backgroundColor: 'white', 
@@ -1550,7 +1571,8 @@ const Restaurants = () => {
                 </Title>
                 <RestaurantGrid 
                   searchQuery={searchQuery} 
-                  deliveryAddress={location} 
+                  deliveryAddress={location}
+                  targetLocation={selectedLocationCoords}
                   cuisineFilter={undefined}
                   excludeCuisine={undefined}
                   sectionTitle={undefined}
@@ -1572,6 +1594,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedLocationCoords}
                 sectionTitle="Restaurants Near You"
                 horizontal={true}
                 useNearbyByLocation={true}
@@ -1584,6 +1607,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedLocationCoords}
                 sectionTitle="Shopping Centers Near You"
                 horizontal={true}
                 useNearbyByLocation={true}
@@ -1596,6 +1620,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedLocationCoords}
                 cuisineFilter="late night hunger"
                 sectionTitle="Late Night Hunger"
                 horizontal={true}
@@ -1609,6 +1634,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedLocationCoords}
                 cuisineFilter="kids"
                 sectionTitle="Kids Menu"
                 horizontal={true}
@@ -1628,6 +1654,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedLocationCoords}
                 sectionTitle="Retail Stores Near You"
                 horizontal={true}
                 useNearbyByLocation={true}
@@ -1640,6 +1667,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedLocationCoords}
                 sectionTitle="Cosmetic Stores"
                 horizontal={true}
                 useMarketplaceCatalog={true}
@@ -1653,6 +1681,7 @@ const Restaurants = () => {
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
+                targetLocation={selectedLocationCoords}
                 sectionTitle="Pet Stores"
                 horizontal={true}
                 useMarketplaceCatalog={true}
@@ -1670,6 +1699,7 @@ const Restaurants = () => {
                 <RestaurantGrid
                   searchQuery={searchQuery}
                   deliveryAddress={location}
+                  targetLocation={selectedLocationCoords}
                   cuisineFilter={cuisineFilter}
                   columns={1}
                   useMarketplaceCatalog={true}
@@ -2282,7 +2312,8 @@ const Restaurants = () => {
                     </div>
                     <RestaurantGrid 
                       searchQuery={searchQuery} 
-                      deliveryAddress={location} 
+                      deliveryAddress={location}
+                      targetLocation={selectedLocationCoords}
                       cuisineFilter={undefined}
                       excludeCuisine={undefined}
                       sectionTitle={undefined}
@@ -2305,7 +2336,8 @@ const Restaurants = () => {
                 <div className="max-w-7xl mx-auto px-4">
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
-                    deliveryAddress={location} 
+                    deliveryAddress={location}
+                    targetLocation={selectedLocationCoords}
                     cuisineFilter={undefined}
                     excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
                     sectionTitle="Restaurants Near You"
@@ -2321,7 +2353,8 @@ const Restaurants = () => {
                 <div className="max-w-7xl mx-auto px-4">
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
-                    deliveryAddress={location} 
+                    deliveryAddress={location}
+                    targetLocation={selectedLocationCoords}
                     cuisineFilter="late nate hunger"
                     sectionTitle="Late Nate Hunger"
                     horizontal={true}
@@ -2334,7 +2367,8 @@ const Restaurants = () => {
                 <div className="max-w-7xl mx-auto px-4">
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
-                    deliveryAddress={location} 
+                    deliveryAddress={location}
+                    targetLocation={selectedLocationCoords}
                     cuisineFilter="kids"
                     sectionTitle="Kids Menu"
                     horizontal={true}
@@ -2354,7 +2388,8 @@ const Restaurants = () => {
                 <div className="max-w-7xl mx-auto px-4">
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
-                    deliveryAddress={location} 
+                    deliveryAddress={location}
+                    targetLocation={selectedLocationCoords}
                     cuisineFilter="apparel"
                     sectionTitle="Apparel & Fashion"
                     horizontal={true}
@@ -2367,7 +2402,8 @@ const Restaurants = () => {
                 <div className="max-w-7xl mx-auto px-4">
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
-                    deliveryAddress={location} 
+                    deliveryAddress={location}
+                    targetLocation={selectedLocationCoords}
                     cuisineFilter="retail"
                     sectionTitle="Retail Stores"
                     horizontal={true}
@@ -2383,7 +2419,8 @@ const Restaurants = () => {
                   </div>
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
-                    deliveryAddress={location} 
+                    deliveryAddress={location}
+                    targetLocation={selectedLocationCoords}
                     cuisineFilter={cuisineFilter}
                   />
                 </div>

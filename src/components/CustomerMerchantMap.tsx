@@ -74,9 +74,10 @@ interface QuickMenuItem {
 
 interface CustomerMerchantMapProps {
   onClose: () => void;
+  targetLocation?: { lat: number; lng: number } | null;
 }
 
-export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClose }) => {
+export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClose, targetLocation = null }) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -97,6 +98,7 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
   const [requestingMerchant, setRequestingMerchant] = useState(false);
   const [panelMessage, setPanelMessage] = useState<string | null>(null);
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
+  const effectiveLocation = targetLocation ?? userLocation;
 
   useEffect(() => {
     let cancelled = false;
@@ -134,8 +136,8 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
         parent_location: r.parent_location || null,
         request_count: r.request_count ?? null,
       });
-      const lat = userLocation?.lat ?? FALLBACK_USER_LAT;
-      const lng = userLocation?.lng ?? FALLBACK_USER_LNG;
+      const lat = effectiveLocation?.lat ?? FALLBACK_USER_LAT;
+      const lng = effectiveLocation?.lng ?? FALLBACK_USER_LNG;
       // get_marketplace_map_pins excludes synthetic marketplace_chains rows
       // so every pin sits on its real storefront coordinates.
       const { data, error: rpcError } = await (supabase as any).rpc('get_marketplace_map_pins', {
@@ -175,7 +177,7 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [token, userLocation?.lat, userLocation?.lng]);
+  }, [token, effectiveLocation?.lat, effectiveLocation?.lng]);
 
   useEffect(() => {
     if (!token || !mapContainer.current) return;
@@ -209,9 +211,9 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
   // Only recenter when there are no merchant pins yet; otherwise fitBounds in
   // the markers effect frames user + pins at the correct zoom.
   useEffect(() => {
-    if (!map.current || !userLocation || merchants.length > 0) return;
-    map.current.setCenter([userLocation.lng, userLocation.lat]);
-  }, [userLocation?.lat, userLocation?.lng, merchants.length]);
+    if (!map.current || !effectiveLocation || merchants.length > 0) return;
+    map.current.setCenter([effectiveLocation.lng, effectiveLocation.lat]);
+  }, [effectiveLocation?.lat, effectiveLocation?.lng, merchants.length]);
 
   useEffect(() => {
     if (!map.current || !navigator.geolocation) return;
@@ -459,9 +461,9 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
 
     const lngs = merchants.map((x) => x.longitude).filter(Number.isFinite);
     const lats = merchants.map((x) => x.latitude).filter(Number.isFinite);
-    if (userLocation) {
-      lngs.push(userLocation.lng);
-      lats.push(userLocation.lat);
+    if (effectiveLocation) {
+      lngs.push(effectiveLocation.lng);
+      lats.push(effectiveLocation.lat);
     }
     const shouldFit = lngs.length > 0 && lats.length > 0;
     const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
@@ -484,13 +486,13 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
 
     if (shouldFit && !hasFittedRef.current) {
       hasFittedRef.current = true;
-      if (userLocation) hasFittedWithUserRef.current = true;
+      if (effectiveLocation) hasFittedWithUserRef.current = true;
       runFit();
-    } else if (shouldFit && userLocation && !hasFittedWithUserRef.current) {
+    } else if (shouldFit && effectiveLocation && !hasFittedWithUserRef.current) {
       hasFittedWithUserRef.current = true;
       runFit();
     }
-  }, [token, merchants, userLocation]);
+  }, [token, merchants, effectiveLocation]);
 
   const shell = (
     <div

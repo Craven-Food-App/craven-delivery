@@ -10,6 +10,8 @@ export interface DeliveryAddressRecord {
   state: string;
   zip_code: string;
   is_default?: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface DeliveryAddressContextType {
