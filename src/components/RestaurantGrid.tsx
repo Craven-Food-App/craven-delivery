@@ -300,6 +300,50 @@ const RestaurantGrid = ({
       if (marketplaceType === 'restaurant') {
         list = list.filter((r) => !isRetailOrApparel(r.cuisine_type));
       }
+      // Broaden low-density areas: enrich nearby with marketplace catalog rows
+      // using the same selected location so discovery works outside core seed regions.
+      if (list.length < 20) {
+        try {
+          const { data: catalogRows, error: catalogError } = await (supabase as any).rpc('get_marketplace_restaurants', {
+            p_lat: lat,
+            p_lng: lng,
+            p_search: searchQuery || null,
+            p_cuisine: cuisineFilter && cuisineFilter !== 'all' ? cuisineFilter : null,
+            p_limit: 500,
+            p_marketplace_type: marketplaceType && marketplaceType !== 'restaurant' ? marketplaceType : null,
+            p_radius_miles: 60,
+          });
+          if (!catalogError && Array.isArray(catalogRows)) {
+            const mapped: Restaurant[] = catalogRows.map((row: any) => ({
+              id: row.id,
+              name: row.name,
+              cuisine_type: row.cuisine_type || row.category || '',
+              image_url: row.logo_url || row.image_url,
+              latitude: row.lat != null ? Number(row.lat) : undefined,
+              longitude: row.lng != null ? Number(row.lng) : undefined,
+              rating: row.rating != null ? Number(row.rating) : undefined,
+              min_delivery_time: row.min_delivery_time,
+              max_delivery_time: row.max_delivery_time,
+              delivery_fee_cents: row.delivery_fee_cents,
+              is_promoted: row.is_promoted ?? false,
+              marketplaceStatus: row.status === 'ACTIVE' ? 'ACTIVE' : row.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
+              request_count: row.request_count,
+              marketplace_type: row.marketplace_type || 'restaurant',
+            }));
+            const seen = new Set(list.map((r) => r.id));
+            const merged = [...list];
+            for (const row of mapped) {
+              if (!seen.has(row.id)) {
+                seen.add(row.id);
+                merged.push(row);
+              }
+            }
+            list = merged;
+          }
+        } catch {
+          // Keep best-effort nearby list if catalog enrichment fails
+        }
+      }
       if (excludeCuisine) {
         const excludeList = excludeCuisine.split(',').map((c: string) => c.trim().toLowerCase());
         setRestaurants(list.filter((r) => !r.cuisine_type || !excludeList.includes(r.cuisine_type.toLowerCase())));
