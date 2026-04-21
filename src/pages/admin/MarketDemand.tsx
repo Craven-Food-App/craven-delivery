@@ -54,6 +54,7 @@ export default function MarketDemand() {
   const [selectedRestaurant, setSelectedRestaurant] = useState<{ id: string; name: string } | null>(null);
   const [requests, setRequests] = useState<any[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsByRestaurant, setRequestsByRestaurant] = useState<Record<string, any[]>>({});
 
   const fetchDemand = async () => {
     setLoading(true);
@@ -67,6 +68,26 @@ export default function MarketDemand() {
 
       if (error) throw error;
       setRows(data || []);
+
+      // Fetch all partnership requests for these restaurants
+      const ids = (data || []).map((r: any) => r.id);
+      if (ids.length > 0) {
+        const { data: reqData, error: reqErr } = await supabase
+          .from('merchant_partnership_requests')
+          .select('id, restaurant_master_id, requester_email, requester_name, created_at')
+          .in('restaurant_master_id', ids)
+          .order('created_at', { ascending: false });
+        if (!reqErr && reqData) {
+          const grouped: Record<string, any[]> = {};
+          reqData.forEach((rq: any) => {
+            if (!grouped[rq.restaurant_master_id]) grouped[rq.restaurant_master_id] = [];
+            grouped[rq.restaurant_master_id].push(rq);
+          });
+          setRequestsByRestaurant(grouped);
+        }
+      } else {
+        setRequestsByRestaurant({});
+      }
     } catch (err) {
       console.error('Error fetching market demand:', err);
       setRows([]);
@@ -140,6 +161,7 @@ export default function MarketDemand() {
                   <Table.Th>Restaurant</Table.Th>
                   <Table.Th>City</Table.Th>
                   <Table.Th>Requests</Table.Th>
+                  <Table.Th>Requested By</Table.Th>
                   <Table.Th>Status</Table.Th>
                   <Table.Th>Last Requested</Table.Th>
                   <Table.Th>Actions</Table.Th>
@@ -148,7 +170,7 @@ export default function MarketDemand() {
               <Table.Tbody>
                 {rows.length === 0 ? (
                   <Table.Tr>
-                    <Table.Td colSpan={6}>
+                    <Table.Td colSpan={7}>
                       <Text size="sm" c="dimmed" ta="center" py="xl">
                         No requestable or lead-ready restaurants yet.
                       </Text>
@@ -165,6 +187,41 @@ export default function MarketDemand() {
                       </Table.Td>
                       <Table.Td>{r.city || '—'}</Table.Td>
                       <Table.Td>{r.request_count ?? 0}</Table.Td>
+                      <Table.Td>
+                        {(() => {
+                          const reqs = requestsByRestaurant[r.id] || [];
+                          if (reqs.length === 0) return <Text size="xs" c="dimmed">—</Text>;
+                          const latest = reqs[0];
+                          const extra = reqs.length - 1;
+                          return (
+                            <Stack gap={2}>
+                              {latest.requester_email ? (
+                                <a
+                                  href={`mailto:${latest.requester_email}`}
+                                  style={{ color: 'hsl(var(--primary))', fontSize: 12, textDecoration: 'none' }}
+                                >
+                                  {latest.requester_email}
+                                </a>
+                              ) : (
+                                <Text size="xs">{latest.requester_name || 'Anonymous'}</Text>
+                              )}
+                              <Text size="xs" c="dimmed">
+                                {latest.created_at
+                                  ? new Date(latest.created_at).toLocaleString(undefined, {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: 'numeric',
+                                      minute: '2-digit',
+                                    })
+                                  : ''}
+                              </Text>
+                              {extra > 0 && (
+                                <Text size="xs" c="dimmed">+{extra} more</Text>
+                              )}
+                            </Stack>
+                          );
+                        })()}
+                      </Table.Td>
                       <Table.Td>
                         <Badge
                           color={
