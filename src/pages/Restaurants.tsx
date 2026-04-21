@@ -92,6 +92,7 @@ import {
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
+import { useDeliveryAddress } from '@/contexts/DeliveryAddressContext';
 import cravenLogo from "@/assets/craven-logo.png";
 import cravenCLogo from "@/assets/craven-c-new.png";
 import heroPromoImage from "@/assets/20251116_0529_Crave'n Delivery Promo_remix_01ka63adc2e2et6qwwt2p909xn.png";
@@ -277,6 +278,7 @@ const Restaurants = () => {
   const [showMapView, setShowMapView] = useState(false);
   // Default to Tampa HQ (6759 Nebraska Ave) — overwritten by browser geolocation if granted
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 27.9766, lng: -82.4563 });
+  const { selectedAddress, setSelectedAddress } = useDeliveryAddress();
 
   const mainCustomerAds = useMemo(
     () => adPlacements.filter((ad: any) => ad.placement_key === 'main_customer_ad'),
@@ -346,6 +348,71 @@ const Restaurants = () => {
     setSearchParams(params);
   }, [searchQuery, location, cuisineFilter, sortBy, setSearchParams]);
 
+  useEffect(() => {
+    if (selectedAddress?.street_address && selectedAddress?.city && selectedAddress?.state && selectedAddress?.zip_code) {
+      const full = `${selectedAddress.street_address}, ${selectedAddress.city}, ${selectedAddress.state} ${selectedAddress.zip_code}`;
+      setLocation((prev) => (prev === full ? prev : full));
+    }
+    const lat = Number((selectedAddress as any)?.latitude);
+    const lng = Number((selectedAddress as any)?.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      setSelectedLocationCoords((prev) => (
+        prev && prev.lat === lat && prev.lng === lng ? prev : { lat, lng }
+      ));
+    }
+  }, [
+    selectedAddress?.street_address,
+    selectedAddress?.city,
+    selectedAddress?.state,
+    selectedAddress?.zip_code,
+    (selectedAddress as any)?.latitude,
+    (selectedAddress as any)?.longitude,
+  ]);
+
+  useEffect(() => {
+    if (!selectedAddress?.street_address || (selectedAddress as any)?.latitude != null || (selectedAddress as any)?.longitude != null) {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        let mapboxToken = '';
+        try {
+          const { data } = await supabase.functions.invoke('get-mapbox-token');
+          if (data?.token) mapboxToken = data.token;
+        } catch {
+          // fallback below
+        }
+        if (!mapboxToken) {
+          mapboxToken = 'pk.eyJ1IjoiY3JhdmUtbiIsImEiOiJjbWVxb21qbTQyNTRnMm1vaHg5bDZwcmw2In0.aOsYrL2B0cjfcCGW1jHAdw';
+        }
+        const full = `${selectedAddress.street_address}, ${selectedAddress.city}, ${selectedAddress.state} ${selectedAddress.zip_code}`;
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(full)}.json?` +
+            `access_token=${mapboxToken}&country=US&limit=1`,
+        );
+        const result = await response.json();
+        const center = result?.features?.[0]?.center;
+        if (!cancelled && Array.isArray(center) && center.length >= 2) {
+          const lng = Number(center[0]);
+          const lat = Number(center[1]);
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            setSelectedAddress({
+              ...selectedAddress,
+              latitude: lat,
+              longitude: lng,
+            });
+          }
+        }
+      } catch {
+        // noop
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedAddress, setSelectedAddress]);
+
   const handleSearch = () => {
     resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -411,6 +478,20 @@ const Restaurants = () => {
       }
     } catch {
       coords = null;
+    }
+    const parts = address.split(',').map((part) => part.trim());
+    const stateZip = (parts[2] || '').split(/\s+/);
+    const state = stateZip[0] || '';
+    const zip = stateZip.slice(1).join(' ');
+    if (parts[0] && parts[1] && state && zip) {
+      setSelectedAddress({
+        street_address: parts[0],
+        city: parts[1],
+        state,
+        zip_code: zip,
+        latitude: coords?.lat ?? null,
+        longitude: coords?.lng ?? null,
+      });
     }
     setSelectedLocationCoords(coords);
     setLocation(address);
