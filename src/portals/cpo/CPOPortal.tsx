@@ -15,6 +15,7 @@ import {
   IconBuildingStore,
   IconMessage,
   IconPackage,
+  IconPhoneCall,
 } from '@tabler/icons-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,11 +33,13 @@ import RenewalCalendar from './tabs/RenewalCalendar';
 import PartnerScorecards from './tabs/PartnerScorecards';
 import MerchantMetrics from './tabs/MerchantMetrics';
 import VendorRecords from './tabs/VendorRecords';
+import ProspectQueue from '@/components/ceo/ProspectQueue';
 
 const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
 
 const TABS: PortalTab[] = [
   { id: 'pipeline', label: 'Pipeline', description: 'Deal pipeline and strategic partners.', section: 'Operations', icon: IconLine },
+  { id: 'prospects', label: 'Prospect Queue', description: 'Receive CEO pushes, execute outreach, and convert to pipeline.', section: 'Operations', icon: IconPhoneCall },
   {
     id: 'vendors',
     label: 'Vendors',
@@ -138,6 +141,7 @@ const CPOPortal: React.FC = () => {
     switch (activeTab) {
       case 'dashboard': return <CPODashboard />;
       case 'pipeline': return <PartnerPipeline />;
+      case 'prospects': return <ProspectQueue mode="cpo" />;
       case 'vendors': return <VendorRecords />;
       case 'contracts': return <ContractManagement />;
       case 'activity': return <ActivityLog />;

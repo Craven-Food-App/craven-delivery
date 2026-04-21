@@ -21,6 +21,7 @@ export const env = {
   SMTP_USER: process.env.SMTP_USER || '',
   SMTP_PASS: process.env.SMTP_PASS || '',
   SMTP_FROM: process.env.SMTP_FROM || "Crave'n Docs <no-reply@cravenusa.com>",
+  MAIL_CREDENTIALS_KEY: process.env.MAIL_CREDENTIALS_KEY || "",
   
   // CORS Configuration
   ORIGIN: process.env.ORIGIN || "http://localhost:8080",

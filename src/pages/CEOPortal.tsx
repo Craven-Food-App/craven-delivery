@@ -17,6 +17,7 @@ import {
   IconLogout,
   IconMail,
   IconPencil,
+  IconPhoneCall,
   IconRocket,
   IconSchool,
   IconShield,
@@ -48,6 +49,7 @@ const InternsManagement = lazy(() => import('@/components/ceo/InternsManagement'
 const CfoEvaluationGatePanel = lazy(() => import('@/components/cfo/CfoEvaluationGatePanel'));
 const CtoEvaluationGatePanel = lazy(() => import('@/components/cto/CtoEvaluationGatePanel'));
 const EmbeddedCComms = lazy(() => import('@/portals/internal-comms/EmbeddedCComms'));
+const ProspectQueue = lazy(() => import('@/components/ceo/ProspectQueue'));
 
 interface CEOMetrics {
   totalRevenue: number;
@@ -72,6 +74,7 @@ type TabId =
   | 'code-changes'
   | 'executive-evaluations'
   | 'personnel'
+  | 'prospects'
   | 'interns'
   | 'equity'
   | 'strategic'
@@ -99,6 +102,7 @@ const TAB_DEFINITIONS: TabDefinition[] = [
   { id: 'code-changes', label: 'Code Reviews', description: 'Production code-change approval and release risk gate.', section: 'Approvals', icon: IconCode },
   { id: 'executive-evaluations', label: 'Exec Evaluations', description: 'Board-defensible review workflows for C-suite leadership.', section: 'Approvals', icon: IconShield },
   { id: 'personnel', label: 'Personnel', description: 'Headcount, hiring, and organizational controls.', section: 'People', icon: IconUsers },
+  { id: 'prospects', label: 'Prospect Queue', description: 'Import and work merchant outreach queue for onboarding.', section: 'People', icon: IconPhoneCall },
   { id: 'interns', label: 'Interns & Pathway', description: 'Intern program pipeline and conversion visibility.', section: 'People', icon: IconSchool },
   { id: 'equity', label: 'Equity', description: 'Ownership structure and grant visibility.', section: 'People', icon: IconTrophy },
   { id: 'strategic', label: 'Strategic Planning', description: 'Multi-quarter objectives and execution oversight.', section: 'Strategy', icon: IconRocket },
@@ -173,6 +177,8 @@ const CEOPortal: React.FC = () => {
         );
       case 'personnel':
         return <PersonnelManager />;
+      case 'prospects':
+        return <ProspectQueue mode="ceo" />;
       case 'financial':
         return <FinancialApprovals />;
       case 'code-changes':

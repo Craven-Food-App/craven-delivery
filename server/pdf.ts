@@ -1,6 +1,13 @@
-import puppeteer from "puppeteer";
-
 export async function htmlToPdfBuffer(html: string): Promise<Buffer> {
+  let puppeteer: any;
+  try {
+    // Lazy-load so the API can boot even when Puppeteer is absent.
+    const module = await import("puppeteer");
+    puppeteer = module.default;
+  } catch {
+    throw new Error("PDF generation dependency missing: install `puppeteer` to enable document PDF endpoints.");
+  }
+
   const browser = await puppeteer.launch({
     headless: "new",
     args: ["--no-sandbox", "--disable-setuid-sandbox"]

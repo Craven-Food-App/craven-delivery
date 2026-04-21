@@ -74,7 +74,7 @@ interface HubSection {
 const isPortalInDepartment = (portalId: string, deptId: string): boolean => {
   switch (deptId) {
     case "executive":
-      return ["ceo", "admin", "company", "executive-calendar", "investors", "cxo", "cfo", "cpo"].includes(portalId);
+      return ["ceo", "admin", "company", "executive-calendar", "investors", "cxo", "cfo", "cpo", "mail-center"].includes(portalId);
     case "operations":
       return [
         "coo",
@@ -107,7 +107,7 @@ const isPortalInDepartment = (portalId: string, deptId: string): boolean => {
         "intern-program-admin",
       ].includes(portalId);
     case "support":
-      return ["support-operations", "customer-success"].includes(portalId);
+      return ["support-operations", "customer-success", "mail-center"].includes(portalId);
     case "logistics":
       return ["coo", "driver-operations", "merchant-operations"].includes(portalId);
     default:
@@ -1453,6 +1453,14 @@ const MainHub: React.FC = () => {
       path: "/hub/internal-comms",
       color: "#FF6B35",
     },
+    {
+      id: "mail-center",
+      name: "Mail Center",
+      description: "Internal mailbox operations for shared company accounts",
+      icon: MessageOutlined,
+      path: "/hub/mail",
+      color: "#334155",
+    },
   ];
 
   const hubSections: HubSection[] = [
@@ -1460,7 +1468,7 @@ const MainHub: React.FC = () => {
       id: "executive-leadership",
       title: "Executive & Leadership",
       subtitle: "Strategic leadership and corporate governance",
-      portalIds: ["ceo", "admin", "company", "executive-calendar", "investors", "investor-demo", "cpo", "internal-comms"],
+      portalIds: ["ceo", "admin", "company", "executive-calendar", "investors", "investor-demo", "cpo", "internal-comms", "mail-center"],
     },
     {
       id: "operations-delivery",
@@ -1584,6 +1592,7 @@ const MainHub: React.FC = () => {
       case 'cxo': return canCEO;
       case 'cpo': return canCEO || (user?.email && hasFullAccess(user.email));
       case 'internal-comms': return canCEO || canCFO || canCOO || canCTO || (user?.email && hasFullAccess(user.email));
+      case 'mail-center': return canCEO || canCFO || canCOO || canCTO || (user?.email && hasFullAccess(user.email));
       case 'hr': return canHR;
       case 'foundational-invites': 
         const allowed = canAdmin || canCEO || (user?.email && hasFullAccess(user.email));
