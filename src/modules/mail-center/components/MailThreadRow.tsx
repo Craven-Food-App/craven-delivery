@@ -1,24 +1,45 @@
-import { Badge, Group, Paper, Text } from "@mantine/core";
+import { formatMailListDate } from "../mailDateUtils";
+import styles from "../mailCenterICloud.module.css";
+
+function parseParticipants(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.filter((x): x is string => typeof x === "string");
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
 
 export default function MailThreadRow({ thread, selected, onClick }: any) {
-  const participants = Array.isArray(thread.participants_json) ? thread.participants_json : [];
+  const participants = parseParticipants(thread.participants_json);
+  const unread = Number(thread.unread_count) > 0;
+  const dateStr = formatMailListDate(thread.last_message_at);
+  const preview = participants.slice(1).join(", ");
+
   return (
-    <Paper p="sm" withBorder bg={selected ? "gray.0" : "white"} onClick={onClick} style={{ cursor: "pointer" }}>
-      <Group justify="space-between">
-        <Text fw={thread.unread_count > 0 ? 700 : 500} size="sm">
+    <button
+      type="button"
+      className={`${styles.threadRow} ${selected ? styles.threadRowSelected : ""}`}
+      onClick={onClick}
+    >
+      <div className={styles.threadRowTop}>
+        <span className={`${styles.threadSender} ${unread ? styles.threadSenderUnread : ""}`}>
           {participants[0] || "Unknown sender"}
-        </Text>
-        {thread.unread_count > 0 ? <Badge color="blue">{thread.unread_count}</Badge> : null}
-      </Group>
-      <Text size="sm" fw={600} lineClamp={1}>
-        {thread.subject || "(No subject)"}
-      </Text>
-      <Group justify="space-between">
-        <Text size="xs" c="dimmed" lineClamp={1}>
-          {participants.slice(1).join(", ")}
-        </Text>
-        {thread.assigned_user_id ? <Badge size="xs">Assigned</Badge> : null}
-      </Group>
-    </Paper>
+        </span>
+        <span className={styles.threadDate}>{dateStr}</span>
+      </div>
+      <div className={`${styles.threadSubject} ${unread ? styles.threadSubjectUnread : ""}`}>{thread.subject || "(No subject)"}</div>
+      {preview ? <div className={styles.threadPreview}>{preview}</div> : null}
+      {unread || thread.assigned_user_id ? (
+        <div className={styles.threadMeta}>
+          {unread ? <span className={styles.badgeDot}>{thread.unread_count}</span> : null}
+          {thread.assigned_user_id ? <span className={styles.threadPreview}>Assigned</span> : null}
+        </div>
+      ) : null}
+    </button>
   );
 }

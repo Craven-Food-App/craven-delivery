@@ -1,0 +1,618 @@
+/* Mail workspace — iCloud Mail–inspired layout (generic web mail styling; not affiliated with Apple) */
+
+.shellMain {
+  --mail-bg: #f6f6f7;
+  --mail-surface: #ffffff;
+  --mail-border: #d2d2d7;
+  --mail-border-light: #e5e5ea;
+  --mail-blue: #f97316;
+  --mail-blue-hover: #ea580c;
+  --mail-selection-solid: #fff4e6;
+  --mail-text: #1d1d1f;
+  --mail-text-secondary: rgba(60, 60, 67, 0.6);
+  --mail-text-tertiary: rgba(60, 60, 67, 0.45);
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+  background: var(--mail-bg);
+  color: var(--mail-text);
+  padding: 0 !important;
+  min-height: calc(100vh - 52px);
+}
+
+.appHeader {
+  background: var(--mail-surface) !important;
+  border-bottom: 1px solid var(--mail-border) !important;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 100%;
+  padding: 0 16px;
+}
+
+.toolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.toolbarTitle {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--mail-text);
+}
+
+.backLink {
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  margin: 0 -10px 0 0;
+  font-size: 17px;
+  color: var(--mail-blue);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.backLink:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mail-blue);
+  cursor: pointer;
+}
+
+.iconBtn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--mail-text-secondary);
+}
+
+.mainGrid {
+  display: flex;
+  align-items: stretch;
+  height: calc(100vh - 52px);
+  max-height: calc(100vh - 52px);
+}
+
+.colSidebar {
+  width: 260px;
+  min-width: 220px;
+  background: var(--mail-surface);
+  border-right: 1px solid var(--mail-border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.colList {
+  flex: 1;
+  min-width: 280px;
+  background: var(--mail-surface);
+  border-right: 1px solid var(--mail-border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.colReader {
+  flex: 1.15;
+  min-width: 300px;
+  background: var(--mail-surface);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sidebarInner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 12px 10px 12px;
+  gap: 8px;
+}
+
+.accountLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mail-text-tertiary);
+  padding: 4px 8px 6px;
+}
+
+.selectRoot :global(.mantine-Select-input) {
+  border-radius: 8px;
+  border-color: var(--mail-border-light);
+  font-size: 15px;
+  min-height: 36px;
+}
+
+.selectRoot :global(.mantine-Input-label) {
+  display: none;
+}
+
+.folderList {
+  flex: 1;
+  min-height: 120px;
+  overflow: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+
+.folderRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  margin: 1px 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 15px;
+  color: var(--mail-text);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.folderRow:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.folderRowActive {
+  background: var(--mail-selection-solid);
+  color: var(--mail-blue);
+  font-weight: 600;
+}
+
+.folderIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  opacity: 0.85;
+}
+
+.sidebarFooter {
+  padding-top: 8px;
+  border-top: 1px solid var(--mail-border-light);
+  margin-top: auto;
+}
+
+.syncRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px 4px;
+}
+
+.syncMeta {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--mail-text-tertiary);
+  padding: 0 8px 8px;
+}
+
+.syncButton {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--mail-blue);
+  background: transparent;
+  border: 1px solid var(--mail-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.syncButton:hover {
+  background: rgba(249, 115, 22, 0.08);
+}
+
+.syncButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.readOnlyHint {
+  font-size: 12px;
+  color: var(--mail-text-tertiary);
+  text-align: center;
+  padding: 8px;
+}
+
+.listColumnBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.listHeader {
+  flex-shrink: 0;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--mail-border-light);
+}
+
+.searchInput :global(.mantine-TextInput-input) {
+  border-radius: 10px;
+  border: none;
+  background: #e8e8ed;
+  font-size: 15px;
+  min-height: 36px;
+  padding-left: 36px;
+}
+
+.searchInput :global(.mantine-TextInput-input):focus {
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.4);
+}
+
+.searchInput :global(.mantine-TextInput-section[data-position="left"]) {
+  padding-left: 10px;
+  color: var(--mail-text-tertiary);
+}
+
+.threadListScroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.threadRow {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid var(--mail-border-light);
+  background: var(--mail-surface);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.threadRow:hover {
+  background: #fafafa;
+}
+
+.threadRowSelected {
+  background: var(--mail-selection-solid);
+}
+
+.threadRowTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.threadSender {
+  font-size: 15px;
+  color: var(--mail-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.threadSenderUnread {
+  font-weight: 600;
+}
+
+.threadDate {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--mail-text-tertiary);
+}
+
+.threadSubject {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--mail-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.threadSubjectUnread {
+  font-weight: 600;
+}
+
+.threadPreview {
+  font-size: 13px;
+  color: var(--mail-text-secondary);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.threadMeta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.badgeDot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--mail-blue);
+  color: #fff;
+}
+
+.listFooter {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-top: 1px solid var(--mail-border-light);
+  display: flex;
+  justify-content: center;
+}
+
+.listFooter :global(.mantine-Pagination-control) {
+  border: none;
+  font-size: 13px;
+  color: var(--mail-text-secondary);
+}
+
+.listFooter :global(.mantine-Pagination-control[data-active]) {
+  background: var(--mail-blue);
+  color: #fff;
+}
+
+.emptyState {
+  padding: 48px 24px;
+  text-align: center;
+  font-size: 15px;
+  color: var(--mail-text-secondary);
+  line-height: 1.45;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.readerEmpty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mail-text-tertiary);
+  font-size: 17px;
+}
+
+.readerBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.readerToolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--mail-border-light);
+  flex-wrap: wrap;
+}
+
+.readerToolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.toolBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 15px;
+  color: var(--mail-blue);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.toolBtn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.toolBtnDanger {
+  color: #ff3b30;
+}
+
+.readerScroll {
+  flex: 1;
+  overflow: auto;
+  padding: 0 16px 24px;
+}
+
+.mailTabs :global(.mantine-Tabs-list) {
+  border-bottom: 1px solid var(--mail-border-light);
+  gap: 0;
+  padding: 0 4px;
+  background: transparent;
+}
+
+.mailTabs :global(.mantine-Tabs-tab) {
+  font-size: 15px;
+  padding: 10px 14px;
+  color: var(--mail-text-secondary);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  margin-bottom: -1px;
+}
+
+.mailTabs :global(.mantine-Tabs-tab[data-active]) {
+  color: var(--mail-blue);
+  font-weight: 600;
+  border-bottom-color: var(--mail-blue);
+}
+
+.mailTabs :global(.mantine-Tabs-panel) {
+  padding-top: 12px;
+}
+
+.msgCard {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--mail-border-light);
+}
+
+.msgCard:last-child {
+  border-bottom: none;
+}
+
+.msgHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.msgFrom {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--mail-text);
+}
+
+.msgTime {
+  font-size: 13px;
+  color: var(--mail-text-tertiary);
+  flex-shrink: 0;
+}
+
+.msgTo {
+  font-size: 13px;
+  color: var(--mail-text-secondary);
+  margin-bottom: 12px;
+}
+
+.msgBody {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--mail-text);
+  word-break: break-word;
+}
+
+.msgBody :global(a) {
+  color: var(--mail-blue);
+}
+
+.msgAttach {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--mail-text-secondary);
+}
+
+.replySection {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--mail-border-light);
+}
+
+.replyTabs :global(.mantine-Tabs-list) {
+  border-bottom: 1px solid var(--mail-border-light);
+  gap: 0;
+}
+
+.replyTabs :global(.mantine-Tabs-tab) {
+  font-size: 15px;
+  padding: 8px 12px;
+  color: var(--mail-text-secondary);
+}
+
+.replyTabs :global(.mantine-Tabs-tab[data-active]) {
+  color: var(--mail-blue);
+  font-weight: 600;
+}
+
+.composer :global(.mantine-TextInput-input),
+.composer :global(.mantine-Textarea-input) {
+  border-radius: 8px;
+  border-color: var(--mail-border-light);
+  font-size: 15px;
+}
+
+.composer :global(.mantine-Button-root) {
+  border-radius: 8px;
+  background: var(--mail-blue);
+  font-weight: 600;
+}
+
+.composer :global(.mantine-Button-root):hover {
+  background: var(--mail-blue-hover);
+}
+
+.assignSelect :global(.mantine-Select-input) {
+  border-radius: 8px;
+  font-size: 13px;
+  min-height: 32px;
+}
+
+.alertBox {
+  margin: 8px 10px 0;
+}
+
+.syncPill {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--mail-text-secondary);
+}
+
+.syncPillOk {
+  background: rgba(52, 199, 89, 0.15);
+  color: #248a3d;
+}
+
+.syncPillWarn {
+  background: rgba(255, 59, 48, 0.12);
+  color: #c41e16;
+}

@@ -47,9 +47,28 @@ export async function listThreads(params: {
   pageSize: number;
 }) {
   const sb = supabaseAdmin();
+  const folder = params.folder || "inbox";
   let q = sb.from("mail_threads").select("*", { count: "exact" }).eq("mailbox_id", params.mailboxId);
-  if (params.folder === "archived") q = q.eq("is_archived", true);
-  if (params.folder === "trash") q = q.eq("is_deleted", true);
+
+  if (folder === "archived") {
+    q = q.eq("is_archived", true);
+  } else if (folder === "trash") {
+    q = q.eq("is_deleted", true);
+  } else if (folder === "inbox" || folder === "sent") {
+    const { data: threadIds, error: rpcError } = await sb.rpc("mail_thread_ids_for_folder", {
+      p_mailbox_id: params.mailboxId,
+      p_folder: folder,
+    });
+    if (rpcError) throw rpcError;
+    const ids = (threadIds || []).filter(Boolean) as string[];
+    if (ids.length === 0) return { data: [], count: 0 };
+    q = q.in("id", ids);
+  } else if (folder === "unread") {
+    q = q.eq("is_archived", false).eq("is_deleted", false);
+  } else {
+    q = q.eq("is_archived", false).eq("is_deleted", false);
+  }
+
   if (params.unreadOnly) q = q.gt("unread_count", 0);
   if (params.assignedToMe) q = q.eq("assigned_user_id", params.userId);
   if (params.search) q = q.or(`subject.ilike.%${params.search}%,participants_json::text.ilike.%${params.search}%`);
@@ -97,7 +116,7 @@ export async function syncMailbox(mailboxId: string, userId?: string) {
             mailbox_id: mailboxId,
             thread_key: threadKey,
             subject: msg.subject || "(No subject)",
-            participants_json: JSON.stringify([msg.fromEmail, ...msg.to, ...msg.cc].filter(Boolean)),
+            participants_json: [msg.fromEmail, ...msg.to, ...msg.cc].filter(Boolean),
             last_message_at: msg.receivedAt || new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },

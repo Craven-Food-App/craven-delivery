@@ -1,11 +1,13 @@
-import { Badge } from "@mantine/core";
+import styles from "../mailCenterICloud.module.css";
 
 export default function SyncStatusBadge({ status }: { status?: string | null }) {
-  const normalized = (status || "unknown").toLowerCase();
-  const color = normalized === "ok" ? "green" : normalized === "never" ? "gray" : "red";
-  return (
-    <Badge variant="light" color={color}>
-      Sync: {status || "unknown"}
-    </Badge>
-  );
+  const label = status == null || status === "" ? "Never" : status;
+  const normalized = (status || "never").toLowerCase();
+  const extra =
+    normalized === "ok"
+      ? styles.syncPillOk
+      : normalized === "never" || status == null || status === ""
+        ? ""
+        : styles.syncPillWarn;
+  return <span className={[styles.syncPill, extra].filter(Boolean).join(" ")}>{label}</span>;
 }

@@ -1,5 +1,6 @@
 import { Button, Group, Stack, Textarea, TextInput } from "@mantine/core";
 import { useState } from "react";
+import styles from "../mailCenterICloud.module.css";
 
 export default function MailReplyComposer({ onSend }: { onSend: (payload: any) => Promise<void> }) {
   const [bodyText, setBodyText] = useState("");
@@ -8,12 +9,12 @@ export default function MailReplyComposer({ onSend }: { onSend: (payload: any) =
   const [loading, setLoading] = useState(false);
 
   return (
-    <Stack>
+    <Stack className={styles.composer} gap="sm">
       <Group grow>
-        <TextInput label="CC" value={cc} onChange={(e) => setCc(e.currentTarget.value)} />
-        <TextInput label="BCC" value={bcc} onChange={(e) => setBcc(e.currentTarget.value)} />
+        <TextInput label="Cc" value={cc} onChange={(e) => setCc(e.currentTarget.value)} />
+        <TextInput label="Bcc" value={bcc} onChange={(e) => setBcc(e.currentTarget.value)} />
       </Group>
-      <Textarea label="Reply" minRows={6} value={bodyText} onChange={(e) => setBodyText(e.currentTarget.value)} />
+      <Textarea label="Message" minRows={6} value={bodyText} onChange={(e) => setBodyText(e.currentTarget.value)} />
       <Button
         loading={loading}
         onClick={async () => {
@@ -31,7 +32,7 @@ export default function MailReplyComposer({ onSend }: { onSend: (payload: any) =
           }
         }}
       >
-        Send Reply
+        Send
       </Button>
     </Stack>
   );
