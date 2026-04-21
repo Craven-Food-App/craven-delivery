@@ -6,7 +6,10 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createCravenMarkerElement } from '@/utils/createCravenMapPin';
 
-const DEFAULT_CENTER: [number, number] = [-83.55, 41.65]; // Toledo, OH
+/** Map view + RPC fallback when geolocation is unavailable (matches RestaurantGrid). */
+const DEFAULT_CENTER: [number, number] = [-83.54, 41.65];
+const FALLBACK_USER_LAT = 41.65;
+const FALLBACK_USER_LNG = -83.54;
 const HEAD_SIZE = 28;
 const TAIL_HEIGHT = 10;
 
@@ -40,7 +43,6 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get Mapbox token
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -49,14 +51,13 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
         const t = (data as { token?: string })?.token;
         if (!cancelled && t) setToken(t);
         else if (!cancelled) setError('Map unavailable');
-      } catch (e) {
+      } catch {
         if (!cancelled) setError('Map unavailable');
       }
     })();
     return () => { cancelled = true; };
   }, []);
 
-  // Fetch marketplace locations within 30 mi of user (any US city). Uses geolocation when available.
   const RADIUS_MILES = 30;
   useEffect(() => {
     if (!token) return;
@@ -76,8 +77,8 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
         status: r.status === 'ACTIVE' ? 'ACTIVE' : r.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
         parent_location: r.parent_location || null,
       });
-      const lat = userLocation?.lat ?? null;
-      const lng = userLocation?.lng ?? null;
+      const lat = userLocation?.lat ?? FALLBACK_USER_LAT;
+      const lng = userLocation?.lng ?? FALLBACK_USER_LNG;
       const rpcParams = {
         p_lat: lat,
         p_lng: lng,
@@ -130,19 +131,26 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
     return () => { cancelled = true; };
   }, [token, userLocation?.lat, userLocation?.lng]);
 
-  // Init map (default center; user location applied when available)
   useEffect(() => {
     if (!token || !mapContainer.current) return;
     mapboxgl.accessToken = token;
+    const container = mapContainer.current;
     const m = new mapboxgl.Map({
-      container: mapContainer.current,
+      container,
       style: 'mapbox://styles/mapbox/light-v11',
       center: DEFAULT_CENTER,
       zoom: 10,
     });
     m.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    const onResize = () => {
+      m.resize();
+    };
+    m.once('load', onResize);
+    const ro = new ResizeObserver(onResize);
+    ro.observe(container);
     map.current = m;
     return () => {
+      ro.disconnect();
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
       markersRef.current.forEach((mr) => mr.remove());
@@ -152,14 +160,12 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
     };
   }, [token]);
 
-  // Center map on user when location is available (any US city)
   useEffect(() => {
     if (map.current && userLocation) {
       map.current.setCenter([userLocation.lng, userLocation.lat]);
     }
   }, [userLocation?.lat, userLocation?.lng]);
 
-  // User location beacon (Craven pin) — works on mobile web and native app; no platform check.
   useEffect(() => {
     if (!map.current || !navigator.geolocation) return;
     const m = map.current;
@@ -173,18 +179,20 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
         userMarkerRef.current?.remove();
         const el = createCravenMarkerElement(40, 'You are here');
         el.style.zIndex = '10';
-        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+        const marker = new mapboxgl.Marker({
+          element: el,
+          anchor: 'bottom',
+        })
           .setLngLat([lng, lat])
           .addTo(m);
         userMarkerRef.current = marker;
       },
-      () => { /* user denied or unavailable — no beacon */ },
+      () => { /* user denied or unavailable */ },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
     return () => { cancelled = true; };
   }, [token]);
 
-  // Add markers when map and merchants ready
   useEffect(() => {
     if (!map.current || merchants.length === 0) return;
     const m = map.current;
@@ -196,30 +204,31 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
       const lng = merchant.longitude;
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-      const borderColor = merchant.status === 'ACTIVE' ? '#f97316' : '#6b7280';
-      const bgColor = merchant.logo_url ? 'transparent' : '#f9fafb';
+      const inactive = merchant.status !== 'ACTIVE';
+      const borderColor = inactive ? '#9ca3af' : '#f97316';
+      const bgColor = merchant.logo_url ? '#ffffff' : '#f9fafb';
 
       const el = document.createElement('div');
       el.style.cssText = `
-        width: ${HEAD_SIZE}px; height: ${HEAD_SIZE + TAIL_HEIGHT}px;
-        display: flex; flex-direction: column; align-items: center;
-        cursor: pointer; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); z-index: 5;
+        position: relative; width: ${HEAD_SIZE}px; cursor: pointer; z-index: 5;
+        ${inactive ? 'opacity: 0.88;' : ''}
       `;
       const inner = document.createElement('div');
-      inner.style.cssText = 'display: flex; flex-direction: column; align-items: center; transition: transform 0.15s ease;';
+      inner.style.cssText = `position: relative; width: ${HEAD_SIZE}px; transition: transform 0.15s ease;`;
       el.appendChild(inner);
 
       const head = document.createElement('div');
       head.style.cssText = `
         width: ${HEAD_SIZE}px; height: ${HEAD_SIZE}px; border-radius: 50%;
-        background: ${bgColor}; border: 1.5px solid ${borderColor};
-        overflow: hidden; display: flex; align-items: center; justify-content: center;
+        border: 3px solid ${borderColor}; background: ${bgColor}; overflow: hidden;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       `;
       if (merchant.logo_url) {
         const img = document.createElement('img');
         img.src = merchant.logo_url;
         img.alt = merchant.name;
-        img.style.cssText = `width: ${HEAD_SIZE}px; height: ${HEAD_SIZE}px; object-fit: contain; border-radius: 50%;`;
+        img.style.cssText = 'width: 100%; height: 100%; object-fit: contain;';
         img.onerror = () => {
           head.innerHTML = '';
           const span = document.createElement('span');
@@ -234,12 +243,14 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
         span.style.cssText = 'font-weight: 700; font-size: 12px; color: #f97316;';
         head.appendChild(span);
       }
+
       const tail = document.createElement('div');
       tail.style.cssText = `
-        width: 0; height: 0;
-        border-left: 7px solid transparent; border-right: 7px solid transparent;
-        border-top: ${TAIL_HEIGHT}px solid ${borderColor}; margin-top: -1px;
+        position: absolute; left: 50%; top: 100%; margin-left: -6px;
+        width: 0; height: 0; border-left: 6px solid transparent;
+        border-right: 6px solid transparent; border-top: ${TAIL_HEIGHT}px solid ${borderColor};
       `;
+
       inner.appendChild(head);
       inner.appendChild(tail);
       el.addEventListener('mouseenter', () => { inner.style.transform = 'scale(1.15)'; });
@@ -268,11 +279,18 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
           </div>
         `);
 
-      const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+      const marker = new mapboxgl.Marker({
+        element: el,
+        anchor: 'bottom',
+      })
         .setLngLat([lng, lat])
         .setPopup(popup)
         .addTo(m);
       markersRef.current.push(marker);
+    });
+
+    requestAnimationFrame(() => {
+      m.resize();
     });
 
     const lngs = merchants.map((x) => x.longitude).filter(Number.isFinite);

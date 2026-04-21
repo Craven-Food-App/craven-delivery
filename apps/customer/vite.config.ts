@@ -25,9 +25,13 @@ export default defineConfig(({ mode }) => {
       strictPort: false,
       open: false,
       cors: true,
+      // Bind on all interfaces but keep HMR on localhost so the browser matches
+      // http://localhost:8080 (avoids flaky ws when only IPv4/IPv6 differs on Windows).
       hmr: {
-        protocol: 'ws',
-        // Let Vite auto-detect the host to match server configuration
+        protocol: "ws",
+        host: "localhost",
+        port: 8080,
+        clientPort: 8080,
         reconnect: true,
       },
       watch: {
@@ -41,7 +45,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
-        "@shared": path.resolve(__dirname, "../src"),
+        "@shared": path.resolve(__dirname, "../../src"),
       },
       dedupe: ['react', 'react-dom'], // Add this to fix React context issue
     },
@@ -54,9 +58,8 @@ export default defineConfig(({ mode }) => {
       },
     },
     optimizeDeps: {
-      entries: ['index.html'],
-      include: ['react', 'react-dom'],
-      force: true, // Force re-optimization to fix React instance issues
+      entries: ["index.html"],
+      include: ["react", "react-dom"],
     },
   };
 });

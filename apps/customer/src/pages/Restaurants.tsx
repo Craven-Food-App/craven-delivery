@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import RestaurantGrid from '@/components/RestaurantGrid';
 import AccountPopup from '@/components/AccountPopup';
+import { MainCustomerAdPanel } from '@shared/components/MainCustomerAdPanel';
 import { 
   Box, 
   Stack, 
@@ -1256,7 +1257,7 @@ const Restaurants = () => {
   }, [randomizedAds.length]);
 
   // Main customer hero ad: random pick whenever the pool loads/changes (new refresh = new random),
-  // then cycle through all main ads every 1 minute.
+  // then cycle through all main ads every 30 seconds.
   useEffect(() => {
     if (mainCustomerAds.length === 0) return;
     setMainCustomerAdIndex(Math.floor(Math.random() * mainCustomerAds.length));
@@ -1267,7 +1268,7 @@ const Restaurants = () => {
     const n = mainCustomerAds.length;
     const id = window.setInterval(() => {
       setMainCustomerAdIndex((i) => (i + 1) % n);
-    }, 60_000);
+    }, 30_000);
     return () => clearInterval(id);
   }, [mainCustomerAds.length]);
 
@@ -2468,163 +2469,15 @@ const Restaurants = () => {
         }}>
           <Box component="main">
 
-            {/* Main Customer Ad — random on load, cycles every 1 min when multiple placements share main_customer_ad */}
-            {activeMainCustomerAd && (() => {
-              const mainAd = activeMainCustomerAd;
-              const Wrapper = mainAd.click_url ? 'a' : 'div';
-              const wrapperProps = mainAd.click_url
-                ? { href: mainAd.click_url, onClick: (e: React.MouseEvent) => { e.preventDefault(); navigate(mainAd.click_url); } }
-                : {};
-              return (
-                <Box px="md" pt="md" pb="xs" style={{ backgroundColor: 'white' }}>
-                  <Wrapper key={mainAd.id} {...wrapperProps} style={{ display: 'block', textDecoration: 'none', cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-                    {mainAd.ad_code ? (
-                      <div dangerouslySetInnerHTML={{ __html: mainAd.ad_code }} style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }} />
-                    ) : mainAd.image_url ? (
-                      <MantineImage src={mainAd.image_url} alt="Promotion" style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }} />
-                    ) : null}
-                  </Wrapper>
-                </Box>
-              );
-            })()}
+            {/* Main Customer Ad — random on load, cycles every 30s; smooth crossfade between creatives */}
+            <MainCustomerAdPanel ad={activeMainCustomerAd} maxHeight={240} variant="customer-mobile" />
 
             {/* Great Deals - Restaurants with Promotions */}
             {weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents).length > 0 && (
               <Box px="md" pt="md" pb="sm" style={{ backgroundColor: 'white' }}>
-                <Group gap="xs" align="center" style={{ margin: 0, padding: 0 }}>
-                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>
-                    Great Deals
-                  </Title>
-                  {/* Hyper-realistic animated flame */}
-                  <Box
-                    component="span"
-                    style={{
-                      position: 'relative',
-                      display: 'inline-block',
-                      width: '20px',
-                      height: '24px',
-                      marginLeft: '6px',
-                      verticalAlign: 'middle',
-                    }}
-                  >
-                    {/* Main flame - center tongue */}
-                    <Box
-                      component="span"
-                      className="flame-main"
-                      style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: '50%',
-                        width: '6px',
-                        height: '20px',
-                        background: 'linear-gradient(to top, #ff4500 0%, #ff6b35 30%, #ff8c42 60%, #ffd700 90%, #fff 100%)',
-                        clipPath: 'polygon(50% 100%, 0% 80%, 0% 50%, 20% 30%, 30% 10%, 50% 0%, 70% 10%, 80% 30%, 100% 50%, 100% 80%)',
-                        borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
-                        animation: 'flameMain 0.3s ease-in-out infinite',
-                        transformOrigin: 'bottom center',
-                        filter: 'blur(0.3px)',
-                        boxShadow: '0 0 8px rgba(255, 107, 53, 0.9), 0 0 16px rgba(255, 69, 0, 0.6)',
-                      }}
-                    />
-                    {/* Left flame tongue */}
-                    <Box
-                      component="span"
-                      className="flame-left"
-                      style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: '15%',
-                        width: '5px',
-                        height: '16px',
-                        background: 'linear-gradient(to top, #ff4500 0%, #ff6b35 40%, #ff8c42 70%, transparent 100%)',
-                        clipPath: 'polygon(50% 100%, 0% 85%, 0% 60%, 30% 40%, 40% 20%, 50% 0%, 60% 15%, 70% 35%, 100% 55%, 100% 80%)',
-                        animation: 'flameLeft 0.4s ease-in-out infinite',
-                        transformOrigin: 'bottom center',
-                        filter: 'blur(0.4px)',
-                      }}
-                    />
-                    {/* Right flame tongue */}
-                    <Box
-                      component="span"
-                      className="flame-right"
-                      style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        right: '15%',
-                        width: '5px',
-                        height: '16px',
-                        background: 'linear-gradient(to top, #ff4500 0%, #ff6b35 40%, #ff8c42 70%, transparent 100%)',
-                        clipPath: 'polygon(50% 100%, 0% 80%, 0% 55%, 30% 35%, 40% 15%, 50% 0%, 60% 20%, 70% 40%, 100% 60%, 100% 85%)',
-                        animation: 'flameRight 0.5s ease-in-out infinite',
-                        transformOrigin: 'bottom center',
-                        filter: 'blur(0.4px)',
-                      }}
-                    />
-                    {/* Top flicker - small tongue */}
-                    <Box
-                      component="span"
-                      className="flame-top"
-                      style={{
-                        position: 'absolute',
-                        bottom: '14px',
-                        left: '50%',
-                        width: '4px',
-                        height: '10px',
-                        background: 'linear-gradient(to top, transparent 0%, #ff8c42 20%, #ffd700 60%, #fff 100%)',
-                        clipPath: 'polygon(50% 100%, 20% 80%, 30% 60%, 40% 40%, 50% 0%, 60% 40%, 70% 60%, 80% 80%)',
-                        animation: 'flameTop 0.25s ease-in-out infinite',
-                        transformOrigin: 'bottom center',
-                        filter: 'blur(0.5px)',
-                      }}
-                    />
-                    {/* Spark particles */}
-                    <Box
-                      component="span"
-                      className="flame-spark-1"
-                      style={{
-                        position: 'absolute',
-                        bottom: '16px',
-                        left: '25%',
-                        width: '1.5px',
-                        height: '1.5px',
-                        background: '#ffd700',
-                        borderRadius: '50%',
-                        animation: 'spark1 1s ease-out infinite',
-                        boxShadow: '0 0 3px rgba(255, 215, 0, 1)',
-                      }}
-                    />
-                    <Box
-                      component="span"
-                      className="flame-spark-2"
-                      style={{
-                        position: 'absolute',
-                        bottom: '18px',
-                        right: '25%',
-                        width: '1.5px',
-                        height: '1.5px',
-                        background: '#fff',
-                        borderRadius: '50%',
-                        animation: 'spark2 1.3s ease-out infinite',
-                        boxShadow: '0 0 3px rgba(255, 255, 255, 0.9)',
-                      }}
-                    />
-                    {/* Base glow */}
-                    <Box
-                      component="span"
-                      style={{
-                        position: 'absolute',
-                        bottom: '-1px',
-                        left: '50%',
-                        width: '12px',
-                        height: '6px',
-                        background: 'radial-gradient(ellipse at center, rgba(255, 107, 53, 0.5) 0%, transparent 70%)',
-                        animation: 'flameBaseGlow 0.6s ease-in-out infinite alternate',
-                        transform: 'translateX(-50%)',
-                        pointerEvents: 'none',
-                      }}
-                    />
-                  </Box>
-                </Group>
+                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>
+                  Great Deals
+                </Title>
                 <RestaurantGrid 
                   searchQuery={searchQuery} 
                   deliveryAddress={location} 
@@ -2640,11 +2493,9 @@ const Restaurants = () => {
             {/* ═══ FOOD & RESTAURANTS ═══ */}
             {!Capacitor.isNativePlatform() && (
               <Box px="md" pt="md" pb={4} mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-                <Group gap="xs" mb={4}>
-                  <Text style={{ fontSize: '20px' }}>🍽️</Text>
-                  <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>Food & Restaurants</Title>
-                </Group>
-                <Text size="xs" c="dimmed">Order delivery from your favorites</Text>
+                <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>
+                  Food & Restaurants
+                </Title>
               </Box>
             )}
 
@@ -2678,7 +2529,7 @@ const Restaurants = () => {
                 searchQuery={searchQuery}
                 deliveryAddress={location}
                 cuisineFilter="late night hunger"
-                sectionTitle="🌙 Late Night Hunger"
+                sectionTitle="Late Night Hunger"
                 horizontal={true}
                 useMarketplaceCatalog={true}
                 marketplaceType="restaurant"
@@ -2691,7 +2542,7 @@ const Restaurants = () => {
                 searchQuery={searchQuery}
                 deliveryAddress={location}
                 cuisineFilter="kids"
-                sectionTitle="🧒 Kids Menu"
+                sectionTitle="Kids Menu"
                 horizontal={true}
                 useMarketplaceCatalog={true}
                 marketplaceType="restaurant"
@@ -2700,11 +2551,9 @@ const Restaurants = () => {
 
             {/* ═══ RETAIL & SHOPPING — one section, all retail (apparel + stores), never under restaurants ═══ */}
             <Box px="md" pt="xs" pb={0} style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
-              <Group gap="xs" mb={4}>
-                <Text style={{ fontSize: '20px' }}>🛍️</Text>
-                <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>Retail & Shopping</Title>
-              </Group>
-              <Text size="xs" c="dimmed">Stores, apparel, accessories & more — delivered</Text>
+              <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, marginBottom: 4 }}>
+                Retail & Shopping
+              </Title>
             </Box>
 
             <Box ref={retailSectionRef} id="retail-section" data-section="retail">
@@ -3482,25 +3331,8 @@ const Restaurants = () => {
               {/* Show organized sections when filter is 'all' or no filter */}
               {(!cuisineFilter || cuisineFilter === 'all') ? (
                 <>
-                  {/* Main Customer Ad — random on load, cycles every 1 min when multiple placements share main_customer_ad */}
-                  {activeMainCustomerAd && (() => {
-                    const mainAd = activeMainCustomerAd;
-                    const Wrapper = mainAd.click_url ? 'a' : 'div';
-                    const wrapperProps = mainAd.click_url
-                      ? { href: mainAd.click_url, onClick: (e: React.MouseEvent) => { e.preventDefault(); navigate(mainAd.click_url); } }
-                      : {};
-                    return (
-                      <div className="mb-8">
-                        <Wrapper key={mainAd.id} {...wrapperProps} style={{ display: 'block', textDecoration: 'none', cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-                          {mainAd.ad_code ? (
-                            <div dangerouslySetInnerHTML={{ __html: mainAd.ad_code }} style={{ width: '100%', maxHeight: 280, objectFit: 'cover' }} />
-                          ) : mainAd.image_url ? (
-                            <img src={mainAd.image_url} alt="Promotion" style={{ width: '100%', maxHeight: 280, objectFit: 'cover' }} />
-                          ) : null}
-                        </Wrapper>
-                      </div>
-                    );
-                  })()}
+                  {/* Main Customer Ad — smooth crossfade between creatives */}
+                  <MainCustomerAdPanel ad={activeMainCustomerAd} maxHeight={280} variant="customer-desktop" />
 
                   {/* Great Deals - Restaurants with Promotions */}
                   {weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents).length > 0 && (
@@ -3522,11 +3354,7 @@ const Restaurants = () => {
 
                   {/* ═══════ FOOD & RESTAURANTS SECTION ═══════ */}
                   <div className="mb-2 px-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span style={{ fontSize: '28px' }}>🍽️</span>
-                      <h2 className="text-2xl font-bold text-gray-900">Food & Restaurants</h2>
-                    </div>
-                    <p className="text-gray-500 text-sm mb-4">Order delivery from your favorite restaurants</p>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Food & Restaurants</h2>
                   </div>
 
                   <div className="mb-4">
@@ -3556,7 +3384,7 @@ const Restaurants = () => {
                       searchQuery={searchQuery}
                       deliveryAddress={location}
                       cuisineFilter="late night hunger"
-                      sectionTitle="🌙 Late Night Hunger"
+                      sectionTitle="Late Night Hunger"
                       horizontal={true}
                       useMarketplaceCatalog={true}
                       marketplaceType="restaurant"
@@ -3568,7 +3396,7 @@ const Restaurants = () => {
                       searchQuery={searchQuery}
                       deliveryAddress={location}
                       cuisineFilter="kids"
-                      sectionTitle="🧒 Kids Menu"
+                      sectionTitle="Kids Menu"
                       horizontal={true}
                       useMarketplaceCatalog={true}
                       marketplaceType="restaurant"
@@ -3577,11 +3405,7 @@ const Restaurants = () => {
 
                   {/* ═══════ RETAIL & SHOPPING — one section, all retail (apparel + stores), not under Food & Restaurants ═══════ */}
                   <div className="bg-gradient-to-r from-gray-50 to-white py-6 mt-4 border-t-2 border-gray-100 px-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span style={{ fontSize: '28px' }}>🛍️</span>
-                      <h2 className="text-2xl font-bold text-gray-900">Retail & Shopping</h2>
-                    </div>
-                    <p className="text-gray-500 text-sm mb-4">Stores, apparel, accessories & more — delivered to your door</p>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Retail & Shopping</h2>
                   </div>
 
                   <div className="mb-8">

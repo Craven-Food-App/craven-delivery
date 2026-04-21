@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import RestaurantGrid from '@/components/RestaurantGrid';
 import AccountPopup from '@/components/AccountPopup';
+import { MainCustomerAdPanel } from '@/components/MainCustomerAdPanel';
 import { 
   Box, 
   Stack, 
@@ -53,7 +54,6 @@ import {
   IconUser,
   IconSettings,
   IconChevronRight,
-  IconFlame,
   IconAward,
   IconTruck,
   IconShield,
@@ -491,7 +491,7 @@ const Restaurants = () => {
     const n = mainCustomerAds.length;
     const id = window.setInterval(() => {
       setMainCustomerAdIndex((i) => (i + 1) % n);
-    }, 60_000);
+    }, 30_000);
     return () => clearInterval(id);
   }, [mainCustomerAds.length]);
 
@@ -1479,25 +1479,8 @@ const Restaurants = () => {
         }}>
           <Box component="main">
 
-            {/* Main Customer Ad — random on load, cycles every 1 min when multiple placements share main_customer_ad */}
-            {activeMainCustomerAd && (() => {
-              const mainAd = activeMainCustomerAd;
-              const Wrapper = mainAd.click_url ? 'a' : 'div';
-              const wrapperProps = mainAd.click_url
-                ? { href: mainAd.click_url, onClick: (e: React.MouseEvent) => { e.preventDefault(); navigate(mainAd.click_url); } }
-                : {};
-              return (
-                <Box px="md" pt="md" pb="xs" style={{ backgroundColor: 'white' }}>
-                  <Wrapper key={mainAd.id} {...wrapperProps} style={{ display: 'block', textDecoration: 'none', cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-                    {mainAd.ad_code ? (
-                      <div dangerouslySetInnerHTML={{ __html: mainAd.ad_code }} style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }} />
-                    ) : mainAd.image_url ? (
-                      <MantineImage src={mainAd.image_url} alt="Promotion" style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }} />
-                    ) : null}
-                  </Wrapper>
-                </Box>
-              );
-            })()}
+            {/* Main Customer Ad — smooth crossfade between creatives */}
+            <MainCustomerAdPanel ad={activeMainCustomerAd} maxHeight={240} variant="web-mobile" />
 
             {/* Craven Quick Picks - Promoted Restaurants */}
             {weeklyDeals.length > 0 && (
@@ -1525,12 +1508,9 @@ const Restaurants = () => {
             {/* Great Deals - Restaurants with Promotions */}
             {weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents).length > 0 && (
               <Box px="md" pt="md" pb="sm" style={{ backgroundColor: 'white' }}>
-                <Group gap="xs" align="center" style={{ margin: 0, padding: 0 }}>
-                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>
-                    Great Deals
-                  </Title>
-                  <IconFlame size={20} style={{ color: '#ff6b35' }} />
-                </Group>
+                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>
+                  Great Deals
+                </Title>
                 <RestaurantGrid 
                   searchQuery={searchQuery} 
                   deliveryAddress={location} 
@@ -1545,11 +1525,9 @@ const Restaurants = () => {
 
             {/* ═══ FOOD & RESTAURANTS ═══ */}
             <Box px="md" pt="md" pb={4} mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-              <Group gap="xs" mb={4}>
-                <Text style={{ fontSize: '20px' }}>🍽️</Text>
-                <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>Food & Restaurants</Title>
-              </Group>
-              <Text size="xs" c="dimmed">Order delivery from your favorites</Text>
+              <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>
+                Food & Restaurants
+              </Title>
             </Box>
 
             {/* Restaurants Near You — location-based nearby */}
@@ -1582,7 +1560,7 @@ const Restaurants = () => {
                 searchQuery={searchQuery}
                 deliveryAddress={location}
                 cuisineFilter="late night hunger"
-                sectionTitle="🌙 Late Night Hunger"
+                sectionTitle="Late Night Hunger"
                 horizontal={true}
                 useMarketplaceCatalog={true}
                 marketplaceType="restaurant"
@@ -1595,7 +1573,7 @@ const Restaurants = () => {
                 searchQuery={searchQuery}
                 deliveryAddress={location}
                 cuisineFilter="kids"
-                sectionTitle="🧒 Kids Menu"
+                sectionTitle="Kids Menu"
                 horizontal={true}
                 useMarketplaceCatalog={true}
                 marketplaceType="restaurant"
@@ -1604,11 +1582,9 @@ const Restaurants = () => {
 
             {/* ═══ RETAIL & SHOPPING ═══ */}
             <Box px="md" pt="lg" pb={4} style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
-              <Group gap="xs" mb={4}>
-                <Text style={{ fontSize: '20px' }}>🛍️</Text>
-                <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>Retail & Shopping</Title>
-              </Group>
-              <Text size="xs" c="dimmed">Stores, apparel, accessories & more — delivered</Text>
+              <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, marginBottom: 4 }}>
+                Retail & Shopping
+              </Title>
             </Box>
 
             <Box>
@@ -2249,27 +2225,8 @@ const Restaurants = () => {
           {/* Show organized sections when filter is 'all' or no filter */}
           {(!cuisineFilter || cuisineFilter === 'all') ? (
             <>
-              {/* Main Customer Ad — random on load, cycles every 1 min when multiple placements share main_customer_ad */}
-              {activeMainCustomerAd && (() => {
-                const mainAd = activeMainCustomerAd;
-                return (
-                  <div className="bg-white pt-6 pb-2">
-                    <div className="max-w-7xl mx-auto px-4">
-                      <div
-                        key={mainAd.id}
-                        onClick={() => mainAd.click_url && navigate(mainAd.click_url)}
-                        style={{ cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
-                      >
-                        {mainAd.ad_code ? (
-                          <div dangerouslySetInnerHTML={{ __html: mainAd.ad_code }} style={{ width: '100%', maxHeight: 280, objectFit: 'cover' }} />
-                        ) : mainAd.image_url ? (
-                          <img src={mainAd.image_url} alt="Promotion" style={{ width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }} />
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
+              {/* Main Customer Ad — smooth crossfade between creatives */}
+              <MainCustomerAdPanel ad={activeMainCustomerAd} maxHeight={280} variant="web-desktop" />
 
               {/* Craven Quick Picks - Promoted Restaurants */}
               {weeklyDeals.length > 0 && (
@@ -2314,11 +2271,7 @@ const Restaurants = () => {
               {/* ═══════ FOOD & RESTAURANTS SECTION ═══════ */}
               <div className="bg-white py-0" style={{ marginTop: '0px', marginBottom: '0px' }}>
                 <div className="max-w-7xl mx-auto px-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span style={{ fontSize: '28px' }}>🍽️</span>
-                    <h2 className="text-2xl font-bold text-gray-900">Food & Restaurants</h2>
-                  </div>
-                  <p className="text-gray-500 text-sm mb-4">Order delivery from your favorite restaurants</p>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Food & Restaurants</h2>
                 </div>
               </div>
 
@@ -2345,7 +2298,7 @@ const Restaurants = () => {
                     searchQuery={searchQuery} 
                     deliveryAddress={location} 
                     cuisineFilter="late nate hunger"
-                    sectionTitle="🌙 Late Nate Hunger"
+                    sectionTitle="Late Nate Hunger"
                     horizontal={true}
                   />
                 </div>
@@ -2358,7 +2311,7 @@ const Restaurants = () => {
                     searchQuery={searchQuery} 
                     deliveryAddress={location} 
                     cuisineFilter="kids"
-                    sectionTitle="🧒 Kids Menu"
+                    sectionTitle="Kids Menu"
                     horizontal={true}
                   />
                 </div>
@@ -2367,11 +2320,7 @@ const Restaurants = () => {
               {/* ═══════ RETAIL & SHOPPING SECTION ═══════ */}
               <div className="bg-gradient-to-r from-gray-50 to-white py-6 mt-4 border-t-2 border-gray-100">
                 <div className="max-w-7xl mx-auto px-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span style={{ fontSize: '28px' }}>🛍️</span>
-                    <h2 className="text-2xl font-bold text-gray-900">Retail & Shopping</h2>
-                  </div>
-                  <p className="text-gray-500 text-sm mb-4">Shop apparel, accessories, and more — delivered to your door</p>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Retail & Shopping</h2>
                 </div>
               </div>
 
@@ -2382,7 +2331,7 @@ const Restaurants = () => {
                     searchQuery={searchQuery} 
                     deliveryAddress={location} 
                     cuisineFilter="apparel"
-                    sectionTitle="👗 Apparel & Fashion"
+                    sectionTitle="Apparel & Fashion"
                     horizontal={true}
                   />
                 </div>
@@ -2395,7 +2344,7 @@ const Restaurants = () => {
                     searchQuery={searchQuery} 
                     deliveryAddress={location} 
                     cuisineFilter="retail"
-                    sectionTitle="🏪 Retail Stores"
+                    sectionTitle="Retail Stores"
                     horizontal={true}
                   />
                 </div>
