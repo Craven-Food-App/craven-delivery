@@ -32223,6 +32223,14 @@ export type Database = {
         Args: { p_restaurant_id: string }
         Returns: number
       }
+      restaurants_row_marketplace_type: {
+        Args: {
+          p_cuisine_type: string
+          p_merchant_category: Database["public"]["Enums"]["merchant_category"]
+          p_restaurant_type: string
+        }
+        Returns: string
+      }
       revoke_expired_reservations: { Args: never; Returns: number }
       rpc_has_finance_permission: {
         Args: { p_entity_id?: string; p_permission_code: string }
