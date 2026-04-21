@@ -31822,6 +31822,14 @@ export type Database = {
         }
         Returns: string
       }
+      get_partnership_request_requesters: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          email: string
+          full_name: string
+          user_id: string
+        }[]
+      }
       get_promo_offer: { Args: { p_user_id: string }; Returns: Json }
       get_promo_usage_stats: { Args: never; Returns: Json }
       get_region_capacity_status: {
