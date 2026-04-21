@@ -54,6 +54,7 @@ export default function MarketDemand() {
   const [selectedRestaurant, setSelectedRestaurant] = useState<{ id: string; name: string } | null>(null);
   const [requests, setRequests] = useState<any[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsByRestaurant, setRequestsByRestaurant] = useState<Record<string, any[]>>({});
 
   const fetchDemand = async () => {
     setLoading(true);
@@ -67,6 +68,26 @@ export default function MarketDemand() {
 
       if (error) throw error;
       setRows(data || []);
+
+      // Fetch all partnership requests for these restaurants
+      const ids = (data || []).map((r: any) => r.id);
+      if (ids.length > 0) {
+        const { data: reqData, error: reqErr } = await supabase
+          .from('merchant_partnership_requests')
+          .select('id, restaurant_master_id, requester_email, requester_name, created_at')
+          .in('restaurant_master_id', ids)
+          .order('created_at', { ascending: false });
+        if (!reqErr && reqData) {
+          const grouped: Record<string, any[]> = {};
+          reqData.forEach((rq: any) => {
+            if (!grouped[rq.restaurant_master_id]) grouped[rq.restaurant_master_id] = [];
+            grouped[rq.restaurant_master_id].push(rq);
+          });
+          setRequestsByRestaurant(grouped);
+        }
+      } else {
+        setRequestsByRestaurant({});
+      }
     } catch (err) {
       console.error('Error fetching market demand:', err);
       setRows([]);
