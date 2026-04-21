@@ -351,17 +351,49 @@ const Restaurants = () => {
 
   // Address selector functionality
   const handleAddressSearch = async (query: string) => {
-    if (query.length < 3) return;
-    
-    // Mock address suggestions - in real app, this would call a geocoding API
-    const mockSuggestions = [
-      `${query} Street, Toledo, OH`,
-      `${query} Avenue, Toledo, OH`,
-      `${query} Boulevard, Toledo, OH`,
-      `${query} Drive, Toledo, OH`,
-      `${query} Lane, Toledo, OH`
-    ];
-    setAddressSuggestions(mockSuggestions);
+    if (query.length < 3) {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    try {
+      let mapboxToken = '';
+
+      try {
+        const { data } = await supabase.functions.invoke('get-mapbox-token');
+        if (data?.token) mapboxToken = data.token;
+      } catch {
+        // dev fallback below
+      }
+
+      if (!mapboxToken) {
+        mapboxToken = 'pk.eyJ1IjoiY3JhdmUtbiIsImEiOiJjbWVxb21qbTQyNTRnMm1vaHg5bDZwcmw2In0.aOsYrL2B0cjfcCGW1jHAdw';
+      }
+
+      const mapboxResp = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?` +
+          `access_token=${mapboxToken}&country=US&autocomplete=true&types=address,poi&limit=5`,
+      );
+      const mapboxJson = await mapboxResp.json();
+      let suggestions: string[] = Array.isArray(mapboxJson?.features)
+        ? mapboxJson.features.map((feature: any) => feature.place_name).filter(Boolean)
+        : [];
+
+      if (!suggestions.length) {
+        const nominatimResp = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`,
+        );
+        const nominatimJson = await nominatimResp.json();
+        if (Array.isArray(nominatimJson)) {
+          suggestions = nominatimJson.map((item: any) => item.display_name).filter(Boolean);
+        }
+      }
+
+      setAddressSuggestions(suggestions);
+    } catch (error) {
+      console.error('Address search failed:', error);
+      setAddressSuggestions([]);
+    }
   };
 
   const selectAddress = (address: string) => {
