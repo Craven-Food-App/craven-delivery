@@ -20,7 +20,7 @@ import {
   Divider,
   SimpleGrid,
 } from '@mantine/core';
-import { IconMail, IconUserPlus, IconRefresh, IconChartBar } from '@tabler/icons-react';
+import { IconMail, IconUserPlus, IconRefresh, IconChartBar, IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 
 const MERCHANT_SIGNUP_URL = 'https://cravenusa.com/merchant';
 
@@ -55,6 +55,15 @@ export default function MarketDemand() {
   const [requests, setRequests] = useState<any[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsByRestaurant, setRequestsByRestaurant] = useState<Record<string, any[]>>({});
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const fetchDemand = async () => {
     setLoading(true);
