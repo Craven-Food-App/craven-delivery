@@ -19304,6 +19304,391 @@ export type Database = {
           },
         ]
       }
+      mail_attachments: {
+        Row: {
+          content_id: string | null
+          created_at: string
+          file_size: number
+          filename: string
+          id: string
+          message_id: string
+          mime_type: string
+          storage_path: string
+        }
+        Insert: {
+          content_id?: string | null
+          created_at?: string
+          file_size?: number
+          filename: string
+          id?: string
+          message_id: string
+          mime_type: string
+          storage_path: string
+        }
+        Update: {
+          content_id?: string | null
+          created_at?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          message_id?: string
+          mime_type?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "mail_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mail_messages: {
+        Row: {
+          bcc_json: Json
+          cc_json: Json
+          created_at: string
+          external_message_id: string | null
+          external_uid: string | null
+          folder_name: string | null
+          from_email: string | null
+          from_name: string | null
+          has_attachments: boolean
+          html_body: string | null
+          id: string
+          in_reply_to: string | null
+          is_inbound: boolean
+          is_outbound: boolean
+          is_read: boolean
+          mailbox_id: string
+          preview_text: string | null
+          raw_headers_json: Json
+          received_at: string | null
+          references_header: string | null
+          sent_at: string | null
+          subject: string | null
+          sync_hash: string | null
+          text_body: string | null
+          thread_id: string
+          to_json: Json
+          updated_at: string
+        }
+        Insert: {
+          bcc_json?: Json
+          cc_json?: Json
+          created_at?: string
+          external_message_id?: string | null
+          external_uid?: string | null
+          folder_name?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          has_attachments?: boolean
+          html_body?: string | null
+          id?: string
+          in_reply_to?: string | null
+          is_inbound?: boolean
+          is_outbound?: boolean
+          is_read?: boolean
+          mailbox_id: string
+          preview_text?: string | null
+          raw_headers_json?: Json
+          received_at?: string | null
+          references_header?: string | null
+          sent_at?: string | null
+          subject?: string | null
+          sync_hash?: string | null
+          text_body?: string | null
+          thread_id: string
+          to_json?: Json
+          updated_at?: string
+        }
+        Update: {
+          bcc_json?: Json
+          cc_json?: Json
+          created_at?: string
+          external_message_id?: string | null
+          external_uid?: string | null
+          folder_name?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          has_attachments?: boolean
+          html_body?: string | null
+          id?: string
+          in_reply_to?: string | null
+          is_inbound?: boolean
+          is_outbound?: boolean
+          is_read?: boolean
+          mailbox_id?: string
+          preview_text?: string | null
+          raw_headers_json?: Json
+          received_at?: string | null
+          references_header?: string | null
+          sent_at?: string | null
+          subject?: string | null
+          sync_hash?: string | null
+          text_body?: string | null
+          thread_id?: string
+          to_json?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_messages_mailbox_id_fkey"
+            columns: ["mailbox_id"]
+            isOneToOne: false
+            referencedRelation: "mailboxes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mail_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "mail_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mail_thread_activity: {
+        Row: {
+          activity_meta_json: Json
+          activity_type: string
+          created_at: string
+          id: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          activity_meta_json?: Json
+          activity_type: string
+          created_at?: string
+          id?: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          activity_meta_json?: Json
+          activity_type?: string
+          created_at?: string
+          id?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_thread_activity_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "mail_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mail_thread_notes: {
+        Row: {
+          created_at: string
+          id: string
+          note: string
+          thread_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note: string
+          thread_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string
+          thread_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_thread_notes_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "mail_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mail_threads: {
+        Row: {
+          assigned_user_id: string | null
+          created_at: string
+          id: string
+          is_archived: boolean
+          is_deleted: boolean
+          last_message_at: string | null
+          mailbox_id: string
+          participants_json: Json
+          status_tag: string | null
+          subject: string | null
+          thread_key: string
+          unread_count: number
+          updated_at: string
+        }
+        Insert: {
+          assigned_user_id?: string | null
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          is_deleted?: boolean
+          last_message_at?: string | null
+          mailbox_id: string
+          participants_json?: Json
+          status_tag?: string | null
+          subject?: string | null
+          thread_key: string
+          unread_count?: number
+          updated_at?: string
+        }
+        Update: {
+          assigned_user_id?: string | null
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          is_deleted?: boolean
+          last_message_at?: string | null
+          mailbox_id?: string
+          participants_json?: Json
+          status_tag?: string | null
+          subject?: string | null
+          thread_key?: string
+          unread_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_threads_mailbox_id_fkey"
+            columns: ["mailbox_id"]
+            isOneToOne: false
+            referencedRelation: "mailboxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mailbox_permissions: {
+        Row: {
+          can_archive: boolean
+          can_assign: boolean
+          can_delete: boolean
+          can_read: boolean
+          can_reply: boolean
+          created_at: string
+          id: string
+          mailbox_id: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_archive?: boolean
+          can_assign?: boolean
+          can_delete?: boolean
+          can_read?: boolean
+          can_reply?: boolean
+          created_at?: string
+          id?: string
+          mailbox_id: string
+          role: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_archive?: boolean
+          can_assign?: boolean
+          can_delete?: boolean
+          can_read?: boolean
+          can_reply?: boolean
+          created_at?: string
+          id?: string
+          mailbox_id?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mailbox_permissions_mailbox_id_fkey"
+            columns: ["mailbox_id"]
+            isOneToOne: false
+            referencedRelation: "mailboxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mailboxes: {
+        Row: {
+          created_at: string
+          display_name: string
+          email_address: string
+          encrypted_app_password: string
+          id: string
+          imap_host: string
+          imap_port: number
+          imap_secure: boolean
+          is_active: boolean
+          last_sync_at: string | null
+          last_sync_status: string | null
+          last_synced_uid_by_folder_json: Json
+          provider: string
+          smtp_host: string
+          smtp_port: number
+          smtp_secure: boolean
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          email_address: string
+          encrypted_app_password: string
+          id?: string
+          imap_host?: string
+          imap_port?: number
+          imap_secure?: boolean
+          is_active?: boolean
+          last_sync_at?: string | null
+          last_sync_status?: string | null
+          last_synced_uid_by_folder_json?: Json
+          provider?: string
+          smtp_host?: string
+          smtp_port?: number
+          smtp_secure?: boolean
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          email_address?: string
+          encrypted_app_password?: string
+          id?: string
+          imap_host?: string
+          imap_port?: number
+          imap_secure?: boolean
+          is_active?: boolean
+          last_sync_at?: string | null
+          last_sync_status?: string | null
+          last_synced_uid_by_folder_json?: Json
+          provider?: string
+          smtp_host?: string
+          smtp_port?: number
+          smtp_secure?: boolean
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       marketing_assets: {
         Row: {
           alt_text: string | null
@@ -20253,6 +20638,181 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      merchant_prospect_activities: {
+        Row: {
+          activity_type: string
+          actor_user_id: string
+          created_at: string
+          follow_up_at: string | null
+          id: string
+          metadata: Json
+          note: string | null
+          outcome: string | null
+          prospect_id: string
+        }
+        Insert: {
+          activity_type: string
+          actor_user_id: string
+          created_at?: string
+          follow_up_at?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          outcome?: string | null
+          prospect_id: string
+        }
+        Update: {
+          activity_type?: string
+          actor_user_id?: string
+          created_at?: string
+          follow_up_at?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          outcome?: string | null
+          prospect_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_prospect_activities_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_prospect_import_batches: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_report: Json
+          filename: string
+          id: string
+          imported_rows: number
+          rejected_rows: number
+          source_type: string
+          status: string
+          total_rows: number
+          uploaded_by_user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_report?: Json
+          filename: string
+          id?: string
+          imported_rows?: number
+          rejected_rows?: number
+          source_type?: string
+          status?: string
+          total_rows?: number
+          uploaded_by_user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_report?: Json
+          filename?: string
+          id?: string
+          imported_rows?: number
+          rejected_rows?: number
+          source_type?: string
+          status?: string
+          total_rows?: number
+          uploaded_by_user_id?: string
+        }
+        Relationships: []
+      }
+      merchant_prospects: {
+        Row: {
+          address_line1: string | null
+          assigned_by_user_id: string | null
+          batch_id: string | null
+          business_name: string
+          category: string | null
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          last_contact_at: string | null
+          legal_name: string | null
+          next_call_at: string | null
+          notes: string | null
+          owner_user_id: string | null
+          phone: string | null
+          postal_code: string | null
+          priority: number
+          score: number | null
+          source: string
+          state: string | null
+          status: string
+          updated_at: string
+          website: string | null
+          won_merchant_id: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          assigned_by_user_id?: string | null
+          batch_id?: string | null
+          business_name: string
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contact_at?: string | null
+          legal_name?: string | null
+          next_call_at?: string | null
+          notes?: string | null
+          owner_user_id?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          priority?: number
+          score?: number | null
+          source?: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+          won_merchant_id?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          assigned_by_user_id?: string | null
+          batch_id?: string | null
+          business_name?: string
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contact_at?: string | null
+          legal_name?: string | null
+          next_call_at?: string | null
+          notes?: string | null
+          owner_user_id?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          priority?: number
+          score?: number | null
+          source?: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+          won_merchant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_prospects_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_prospect_import_batches"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -31031,6 +31591,10 @@ export type Database = {
         Returns: unknown
       }
       _st_within: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      accept_merchant_prospect: {
+        Args: { p_prospect_id: string }
+        Returns: Json
+      }
       accumulate_gas_money: {
         Args: { p_amount_cents: number; p_driver_id: string }
         Returns: undefined
@@ -31255,6 +31819,41 @@ export type Database = {
         Args: { p_hours_back?: number; p_threshold?: number; p_user_id: string }
         Returns: boolean
       }
+      claim_next_merchant_prospect: {
+        Args: { p_owner_user_id?: string }
+        Returns: {
+          address_line1: string | null
+          assigned_by_user_id: string | null
+          batch_id: string | null
+          business_name: string
+          category: string | null
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          last_contact_at: string | null
+          legal_name: string | null
+          next_call_at: string | null
+          notes: string | null
+          owner_user_id: string | null
+          phone: string | null
+          postal_code: string | null
+          priority: number
+          score: number | null
+          source: string
+          state: string | null
+          status: string
+          updated_at: string
+          website: string | null
+          won_merchant_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "merchant_prospects"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       cleanup_expired_sessions: { Args: never; Returns: undefined }
       cleanup_expired_verifications: { Args: never; Returns: undefined }
       clock_in: {
@@ -31274,6 +31873,10 @@ export type Database = {
           p_time_fee_cents: number
         }
         Returns: number
+      }
+      convert_prospect_to_partnership: {
+        Args: { p_prospect_id: string; p_status?: string }
+        Returns: Json
       }
       create_board_resolution_for_removal: {
         Args: {
@@ -31767,6 +32370,31 @@ export type Database = {
           total_attempts: number
         }[]
       }
+      get_marketplace_map_pins: {
+        Args: {
+          p_lat?: number
+          p_limit?: number
+          p_lng?: number
+          p_marketplace_type?: string
+          p_radius_miles?: number
+        }
+        Returns: {
+          address: string
+          city: string
+          cuisine_type: string
+          distance_miles: number
+          id: string
+          image_url: string
+          lat: number
+          lng: number
+          logo_url: string
+          marketplace_type: string
+          name: string
+          parent_location: string
+          state: string
+          status: string
+        }[]
+      }
       get_marketplace_restaurants: {
         Args: {
           p_cuisine?: string
@@ -32066,6 +32694,17 @@ export type Database = {
         }
         Returns: string
       }
+      log_merchant_prospect_activity: {
+        Args: {
+          p_activity_type: string
+          p_follow_up_at?: string
+          p_note?: string
+          p_outcome?: string
+          p_prospect_id: string
+          p_status?: string
+        }
+        Returns: Json
+      }
       log_tester_activity_day: { Args: { p_user_id: string }; Returns: Json }
       longtransactionsenabled: { Args: never; Returns: boolean }
       lookup_user_by_email: {
@@ -32075,6 +32714,10 @@ export type Database = {
           found_in: string
           user_id: string
         }[]
+      }
+      mail_thread_ids_for_folder: {
+        Args: { p_folder: string; p_mailbox_id: string }
+        Returns: string[]
       }
       make_user_active_driver: {
         Args: { target_user_id: string; vehicle_info?: Json }
@@ -32168,6 +32811,10 @@ export type Database = {
       process_driver_referral_milestone: {
         Args: { p_milestone_number: number; p_referral_id: string }
         Returns: boolean
+      }
+      push_merchant_prospect_to_cpo: {
+        Args: { p_owner_user_id?: string; p_prospect_id: string }
+        Returns: Json
       }
       redeem_reserved_promo: {
         Args: { p_order_id: string; p_user_id: string }
