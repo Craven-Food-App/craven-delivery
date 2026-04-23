@@ -39,6 +39,50 @@ interface Activity {
 
 const STATUS_OPTIONS: ProspectStatus[] = ['new', 'attempted', 'contacted', 'qualified', 'won', 'lost', 'do_not_call'];
 
+interface StructuredPitch {
+  header?: string;
+  area?: string;
+  businessType?: string;
+  askFor?: string;
+  grabber?: string;
+  hook?: string;
+  close?: string;
+  objectionHandler?: string;
+}
+
+function extractSection(notes: string, label: string, nextLabels: string[]): string | undefined {
+  const startIndex = notes.indexOf(label);
+  if (startIndex < 0) return undefined;
+  const sectionStart = startIndex + label.length;
+  const nextIndex = nextLabels
+    .map((nextLabel) => notes.indexOf(nextLabel, sectionStart))
+    .filter((idx) => idx >= 0)
+    .sort((a, b) => a - b)[0];
+  const value = notes.slice(sectionStart, nextIndex ?? notes.length).trim();
+  return value || undefined;
+}
+
+function parseStructuredPitch(notes?: string | null): StructuredPitch | null {
+  if (!notes) return null;
+  if (!notes.includes('GRABBER:') && !notes.includes('HOOK:') && !notes.includes('CLOSE:')) return null;
+
+  return {
+    header: extractSection(notes, '=== TOLEDO SPRINT TARGET ', ['Area:']),
+    area: extractSection(notes, 'Area:', ['Type:', 'Ask for:', '--- 30-SECOND PITCH ---']),
+    businessType: extractSection(notes, 'Type:', ['Ask for:', '--- 30-SECOND PITCH ---']),
+    askFor: extractSection(notes, 'Ask for:', ['--- 30-SECOND PITCH ---', 'GRABBER:']),
+    grabber: extractSection(notes, 'GRABBER:', ['HOOK:', 'CLOSE:', '--- IF THEY USE ANOTHER APP ---']),
+    hook: extractSection(notes, 'HOOK:', ['CLOSE:', '--- IF THEY USE ANOTHER APP ---']),
+    close: extractSection(notes, 'CLOSE:', ['--- IF THEY USE ANOTHER APP ---']),
+    objectionHandler: extractSection(notes, 'Say:', []),
+  };
+}
+
+function humanizeStatus(value?: string | null): string {
+  if (!value) return 'unknown';
+  return value.replace(/_/g, ' ');
+}
+
 function parseCsv(text: string): Record<string, string>[] {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (lines.length < 2) return [];
@@ -95,6 +139,7 @@ export const ProspectQueue: React.FC<ProspectQueueProps> = ({ mode = 'ceo' }) =>
   const [followUpAt, setFollowUpAt] = useState('');
   const [note, setNote] = useState('');
   const [ownerUserId, setOwnerUserId] = useState('');
+  const structuredPitch = useMemo(() => parseStructuredPitch(selected?.notes), [selected?.notes]);
 
   const filteredProspects = useMemo(() => {
     return prospects.filter((p) => {
@@ -393,7 +438,7 @@ export const ProspectQueue: React.FC<ProspectQueueProps> = ({ mode = 'ceo' }) =>
                   </div>
                   <p className="truncate text-[11px] text-muted-foreground">{p.phone || 'No phone'} • {p.city || '—'}</p>
                   <div className="mt-1 flex items-center justify-between">
-                    <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] capitalize">{p.status.replace(/_/g, ' ')}</span>
+                    <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] capitalize">{humanizeStatus(p.status)}</span>
                     {urgency && <span className="text-[10px] font-semibold text-destructive">Overdue</span>}
                   </div>
                 </button>
@@ -431,7 +476,7 @@ export const ProspectQueue: React.FC<ProspectQueueProps> = ({ mode = 'ceo' }) =>
                 <div className="flex items-center justify-between gap-2">
                   <h4 className="text-sm font-semibold text-foreground">{selected.business_name}</h4>
                   <span className="rounded-full border border-border px-2 py-0.5 text-[10px] capitalize">
-                    {selected.status.replace(/_/g, ' ')}
+                    {humanizeStatus(selected.status)}
                   </span>
                 </div>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2 text-xs">
@@ -446,12 +491,46 @@ export const ProspectQueue: React.FC<ProspectQueueProps> = ({ mode = 'ceo' }) =>
                   </p>
                   <p><span className="text-muted-foreground">Next Call:</span> {selected.next_call_at ? new Date(selected.next_call_at).toLocaleString() : '—'}</p>
                   <p><span className="text-muted-foreground">Last Contact:</span> {selected.last_contact_at ? new Date(selected.last_contact_at).toLocaleString() : '—'}</p>
-                  <p><span className="text-muted-foreground">Delivery State:</span> {selected.delivery_state.replace(/_/g, ' ')}</p>
+                  <p><span className="text-muted-foreground">Delivery State:</span> {humanizeStatus(selected.delivery_state)}</p>
                   <p><span className="text-muted-foreground">Pipeline:</span> {selected.pipeline_partnership_id || 'Not yet'}</p>
                 </div>
-                {selected.notes && (
-                  <p className="mt-2 text-xs text-muted-foreground">{selected.notes}</p>
-                )}
+                {structuredPitch ? (
+                  <div className="mt-3 space-y-2">
+                    <div className="rounded-md border border-primary/20 bg-primary/5 p-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">30-Second Pitch</p>
+                      {structuredPitch.grabber && (
+                        <p className="mt-1 text-xs text-foreground"><span className="font-semibold text-muted-foreground">Grabber:</span> {structuredPitch.grabber}</p>
+                      )}
+                      {structuredPitch.hook && (
+                        <p className="mt-1 text-xs text-foreground"><span className="font-semibold text-muted-foreground">Hook:</span> {structuredPitch.hook}</p>
+                      )}
+                      {structuredPitch.close && (
+                        <p className="mt-1 text-xs text-foreground"><span className="font-semibold text-muted-foreground">Close:</span> {structuredPitch.close}</p>
+                      )}
+                    </div>
+
+                    <div className="rounded-md border border-border bg-muted/20 p-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Target Snapshot</p>
+                      <p className="mt-1 text-xs text-foreground">
+                        {structuredPitch.header || 'Toledo Sprint'}
+                        {structuredPitch.area ? ` • ${structuredPitch.area}` : ''}
+                        {structuredPitch.businessType ? ` • ${structuredPitch.businessType}` : ''}
+                      </p>
+                      {structuredPitch.askFor && (
+                        <p className="mt-1 text-xs text-foreground"><span className="font-semibold text-muted-foreground">Ask for:</span> {structuredPitch.askFor}</p>
+                      )}
+                    </div>
+
+                    {structuredPitch.objectionHandler && (
+                      <div className="rounded-md border border-border bg-background p-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">If They Use Another App</p>
+                        <p className="mt-1 text-xs text-foreground">{structuredPitch.objectionHandler}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : selected.notes ? (
+                  <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{selected.notes}</p>
+                ) : null}
               </div>
 
               <div className="rounded-md border border-border bg-background p-3 space-y-2">
