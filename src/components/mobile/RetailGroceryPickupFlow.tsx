@@ -119,11 +119,10 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
     { key: 2, label: 'Packaging order' },
     { key: 3, label: 'Ready' },
   ] as const;
-  const [orderStatusStepLocal, setOrderStatusStepLocal] = useState<number>(0);
   const orderStatusStep =
     typeof orderStatusStepProp === 'number' && orderStatusStepProp >= 0 && orderStatusStepProp <= 3
       ? orderStatusStepProp
-      : orderStatusStepLocal;
+      : 0;
 
   const safeSpotCount = useMemo(() => {
     const n = parkingSpotCount ?? 6;
@@ -136,9 +135,6 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   }, [safeSpotCount]);
 
   const handleConfirmArrival = async () => {
-    if (typeof orderStatusStepProp !== 'number') {
-      setOrderStatusStepLocal((prev) => (prev < 1 ? 1 : prev)); // advance to "Getting Ready"
-    }
     if (onArrivalConfirmed) {
       await onArrivalConfirmed();
     }
@@ -147,9 +143,6 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
 
   const handleSelectSpot = async (spot: number) => {
     setSelectedSpot(spot);
-    if (typeof orderStatusStepProp !== 'number') {
-      setOrderStatusStepLocal((prev) => (prev < 2 ? 2 : prev)); // advance to "Packaging order"
-    }
     if (onParkingSpotSelected) {
       await onParkingSpotSelected(spot);
     }

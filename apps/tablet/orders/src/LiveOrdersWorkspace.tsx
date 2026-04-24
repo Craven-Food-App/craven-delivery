@@ -269,6 +269,39 @@ export default function LiveOrdersWorkspace() {
     });
   };
 
+  const upsertOrderFromRealtime = (row: Partial<LiveOrder> & { id: string }) => {
+    setOrders((prev) => {
+      const idx = prev.findIndex((o) => o.id === row.id);
+      if (idx === -1) {
+        const nextOrder: LiveOrder = {
+          id: row.id,
+          order_number: row.order_number ?? null,
+          customer_name: row.customer_name ?? null,
+          order_status: row.order_status ?? "pending",
+          created_at: row.created_at ?? new Date().toISOString(),
+          total_cents: Number(row.total_cents ?? 0),
+          driver_id: row.driver_id ?? null,
+          accepted_at: row.accepted_at ?? null,
+          driver_arrived_at: row.driver_arrived_at ?? null,
+          pickup_parking_spot: row.pickup_parking_spot ?? null,
+          delivery_method: row.delivery_method ?? null,
+          delivery_address: row.delivery_address ?? null,
+          pickup_address: row.pickup_address ?? null,
+          estimated_delivery_time: row.estimated_delivery_time ?? null,
+          order_items: []
+        };
+        return [nextOrder, ...prev];
+      }
+      const copy = [...prev];
+      copy[idx] = {
+        ...copy[idx],
+        ...row,
+        total_cents: Number(row.total_cents ?? copy[idx].total_cents ?? 0)
+      } as LiveOrder;
+      return copy;
+    });
+  };
+
   const fetchOrders = async () => {
     if (!selectedRestaurant?.id) return;
     setLoadingOrders(true);
@@ -420,6 +453,9 @@ export default function LiveOrdersWorkspace() {
         { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${selectedRestaurant.id}` },
         (payload: any) => {
           if (payload?.eventType === "INSERT") {
+            if (payload?.new?.id) {
+              upsertOrderFromRealtime(payload.new);
+            }
             const oid = String(payload?.new?.id || "");
             if (oid && !recentNewOrderIdsRef.current.has(oid)) {
               recentNewOrderIdsRef.current.add(oid);
@@ -435,6 +471,13 @@ export default function LiveOrdersWorkspace() {
                 setUrgentNewOrderBanner((prev) => (prev?.orderId === oid ? null : prev));
               }, 12000);
             }
+          }
+          if (payload?.eventType === "UPDATE" && payload?.new?.id) {
+            upsertOrderFromRealtime(payload.new);
+          }
+          if (payload?.eventType === "DELETE" && payload?.old?.id) {
+            const oid = String(payload.old.id);
+            setOrders((prev) => prev.filter((o) => o.id !== oid));
           }
           void fetchOrders();
         }
@@ -471,6 +514,15 @@ export default function LiveOrdersWorkspace() {
       ordersChannel.unsubscribe();
       assignmentsChannel.unsubscribe();
     };
+  }, [selectedRestaurant?.id]);
+
+  // Realtime fail-safe: lightweight heartbeat sync to avoid manual refresh when a WS event is missed.
+  useEffect(() => {
+    if (!selectedRestaurant?.id) return;
+    const interval = window.setInterval(() => {
+      void fetchOrders();
+    }, 4000);
+    return () => window.clearInterval(interval);
   }, [selectedRestaurant?.id]);
 
   const counts = useMemo(() => {

@@ -664,6 +664,7 @@ export const MobileDriverDashboard: React.FC = () => {
     }
   };
   const [activeDelivery, setActiveDelivery] = useState<any>(null);
+  const [merchantRetailOrderStatus, setMerchantRetailOrderStatus] = useState<string | null>(null);
   const [deliveryRouteStops, setDeliveryRouteStops] = useState<any[]>([]);
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
   const [routeView, setRouteView] = useState<'stops_list' | 'delivering'>('delivering');
@@ -775,6 +776,56 @@ export const MobileDriverDashboard: React.FC = () => {
   const {
     playNotification
   } = useNotificationSettings();
+
+  useEffect(() => {
+    if (driverState !== 'on_retail_pickup' || !activeDelivery) {
+      setMerchantRetailOrderStatus(null);
+      return;
+    }
+    const oid = activeDelivery.order_id || activeDelivery.id;
+    if (!oid) return;
+    let cancelled = false;
+    const fetchStatus = async () => {
+      const { data } = await supabase
+        .from('orders')
+        .select('order_status')
+        .eq('id', oid)
+        .maybeSingle();
+      if (!cancelled) {
+        setMerchantRetailOrderStatus((data as any)?.order_status ?? null);
+      }
+    };
+    fetchStatus();
+    const channel = supabase
+      .channel(`retail_order_status_${oid}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${oid}`,
+        },
+        (payload: any) => {
+          if (cancelled) return;
+          setMerchantRetailOrderStatus(payload?.new?.order_status ?? null);
+        }
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [driverState, activeDelivery?.order_id, activeDelivery?.id]);
+
+  const retailMerchantStatusStep = useMemo(() => {
+    const status = String(merchantRetailOrderStatus || activeDelivery?.order_status || '').toLowerCase();
+    if (status === 'pending') return 0; // Order received
+    if (status === 'confirmed') return 1; // Preparing
+    if (status === 'preparing') return 2; // Packaging order
+    if (status === 'ready' || status === 'picked_up' || status === 'out_for_delivery' || status === 'delivered') return 3; // Ready+
+    return 0;
+  }, [merchantRetailOrderStatus, activeDelivery?.order_status]);
   const { showNotification, notifications: iosNotifications, dismissNotification } = useIOSNotifications();
   const { state: cravingState, addDeliveryPoints, updateAcceptanceRate, startSpeedMonitoring } = useCravingWheel(user?.id || '');
 
@@ -2399,6 +2450,7 @@ export const MobileDriverDashboard: React.FC = () => {
               pickupTagLabel="Curbside pickup"
               tripLabel={activeDelivery.order_id ? `Trip ${activeDelivery.order_id.slice(-4)}` : undefined}
               parkingSpotCount={(activeDelivery as any).parking_spot_count}
+              orderStatusStep={retailMerchantStatusStep}
               onArrivalConfirmed={async () => {
                 const oid = activeDelivery.order_id || activeDelivery.id;
                 const { error } = await setOrderDriverArrivedAtStore(oid);
