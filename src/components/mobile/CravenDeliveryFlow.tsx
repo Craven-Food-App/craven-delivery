@@ -14,6 +14,7 @@ import { useNavigation } from '@/hooks/useNavigation';
 import { speakDeliveryInstructions } from './ActiveFeedingMenu';
 import SlideToConfirm from '@/components/SlideToConfirm';
 import { getStopPickupKey } from '@/lib/deliveryRouteKeys';
+import { setOrderDriverArrivedAtStore } from '@/lib/orderDriverPresence';
 import feederAppIcon from '@/assets/feeder_app_icon.png';
 import {
   Box,
@@ -814,6 +815,12 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   }, [status, onProgressChange, pickupPhotoUrl, deliveryPhotoUrl]);
 
   const handleConfirmArrivalAtStore = async () => {
+    if (orderDetails?.order_id) {
+      const { error } = await setOrderDriverArrivedAtStore(orderDetails.order_id);
+      if (error) {
+        console.warn('Could not record driver arrival (merchant may still use manual status):', error);
+      }
+    }
     setStatus(DRIVER_STATUS.AT_STORE);
     await updateOrderStatus('at_restaurant');
   };

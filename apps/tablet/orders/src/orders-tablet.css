@@ -1,0 +1,10 @@
+.orders-tablet-app {
+  min-height: 100%;
+  background: #fff;
+}
+
+.orders-tablet-app .live-orders-shell {
+  min-height: 100vh;
+  padding: 12px 16px 18px;
+  box-sizing: border-box;
+}

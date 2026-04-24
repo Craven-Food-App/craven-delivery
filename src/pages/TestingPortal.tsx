@@ -4,6 +4,7 @@ import { TestCustomer } from '@/components/testing/TestCustomer';
 import { TestDriver } from '@/components/testing/TestDriver';
 import { TestRestaurant } from '@/components/testing/TestRestaurant';
 import { LiveDriverTesting } from '@/components/testing/LiveDriverTesting';
+import { LiveMerchantTesting } from '@/components/testing/LiveMerchantTesting';
 import { TestDataManager } from '@/components/testing/TestDataManager';
 import { TestDiamondExclusiveOrders } from '@/components/testing/TestDiamondExclusiveOrders';
 import { TestCtoEvaluation } from '@/components/testing/TestCtoEvaluation';
@@ -11,7 +12,7 @@ import { TestOnFireGame } from '@/components/testing/TestOnFireGame';
 import { TestOrderCompletion } from '@/components/testing/TestOrderCompletion';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Users, Car, Store, Zap, Database, Gem, Shield, Flame, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Users, Car, Store, Zap, Database, Gem, Shield, Flame, CheckCircle, Building2 } from 'lucide-react';
 import cravenLogo from "@/assets/craven-logo.png";
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
@@ -30,6 +31,7 @@ const TestingPortal: React.FC = () => {
     { id: 'driver', label: 'Driver Testing', icon: Car },
     { id: 'restaurant', label: 'Restaurant Testing', icon: Store },
     { id: 'live', label: 'Live Driver Testing', icon: Zap },
+    { id: 'live-merchant', label: 'Live Merchant Testing', icon: Building2 },
     { id: 'order-completion', label: 'LIVE Order Completion', icon: CheckCircle },
     { id: 'data', label: 'Test Data Manager', icon: Database },
     { id: 'diamond-exclusive', label: 'Diamond Exclusive Orders', icon: Gem },
@@ -47,6 +49,8 @@ const TestingPortal: React.FC = () => {
         return <TestRestaurant />;
       case 'live':
         return <LiveDriverTesting />;
+      case 'live-merchant':
+        return <LiveMerchantTesting />;
       case 'data':
         return <TestDataManager />;
       case 'diamond-exclusive':

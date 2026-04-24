@@ -40,6 +40,10 @@ interface CustomerOrder {
   driver_id?: string | null;
   driver_name?: string | null;
   driver_vehicle?: string | null;
+  /** Set when the feeder marks arrival at the merchant (realtime to merchant). */
+  driver_arrived_at?: string | null;
+  /** Retail/curbside: spot number the feeder selected. */
+  pickup_parking_spot?: string | null;
 }
 
 interface RestaurantCustomerOrderManagementProps {
@@ -83,7 +87,17 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId, playSoundForNe
           table: 'orders',
           filter: `restaurant_id=eq.${restaurantId}`,
         },
-        (payload: { eventType?: string; new?: NewOrderRealtimePayload }) => {
+        (payload: {
+          eventType?: string;
+          new?: NewOrderRealtimePayload & {
+            driver_arrived_at?: string | null;
+            pickup_parking_spot?: string | null;
+          };
+          old?: {
+            driver_arrived_at?: string | null;
+            pickup_parking_spot?: string | null;
+          };
+        }) => {
           if (payload?.eventType === 'INSERT' && payload?.new) {
             setNewOrderAlert({
               id: payload.new.id,
@@ -97,6 +111,32 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId, playSoundForNe
               } catch {
                 // ignore
               }
+            }
+          }
+          if (payload?.eventType === 'UPDATE' && payload?.new) {
+            const n = payload.new;
+            const o = payload.old;
+            if (
+              n.driver_arrived_at &&
+              n.driver_arrived_at !== o?.driver_arrived_at
+            ) {
+              notifications.show({
+                title: 'Feeder at store',
+                message: 'A driver has arrived to pick up this order.',
+                color: 'teal',
+              });
+            }
+            if (
+              n.pickup_parking_spot != null &&
+              String(n.pickup_parking_spot) !== '' &&
+              String(n.pickup_parking_spot) !==
+                String(o?.pickup_parking_spot ?? '')
+            ) {
+              notifications.show({
+                title: 'Curbside / parking',
+                message: `Feeder is at spot ${n.pickup_parking_spot}.`,
+                color: 'blue',
+              });
             }
           }
           fetchOrders();

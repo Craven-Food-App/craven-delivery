@@ -58,6 +58,12 @@ verify_jwt = false
 [functions.create-test-order]
 verify_jwt = true
 
+# false: gateway JWT check runs before the function; browser OPTIONS preflight has no
+# Authorization header, so verify_jwt=true can return 401 without CORS headers and
+# the client only sees a CORS error. Auth is enforced inside the function (getUser + admin).
+[functions.create-merchant-test-order]
+verify_jwt = false
+
 [functions.send-approval-email]
 verify_jwt = true
 

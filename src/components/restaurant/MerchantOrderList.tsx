@@ -32,6 +32,8 @@ export interface CustomerOrderForList {
   pickup_code?: string | null;
   driver_name?: string | null;
   driver_vehicle?: string | null;
+  driver_arrived_at?: string | null;
+  pickup_parking_spot?: string | null;
 }
 
 const STATUS_MAP: Record<string, { label: string; bg: string; text: string; border: string }> = {
@@ -218,6 +220,18 @@ function OrderRow({ order, getStatusLabel, onUpdateStatus, onRefund, canRefund }
           </span>
         </div>
       )}
+      {order.driver_arrived_at && (
+        <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
+          <span>Feeder arrived</span>
+          <span>{format(new Date(order.driver_arrived_at), "M/d/yyyy, h:mm a")}</span>
+        </div>
+      )}
+      {order.pickup_parking_spot && (
+        <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
+          <span>Curbside / spot</span>
+          <span style={{ fontWeight: 700 }}>{order.pickup_parking_spot}</span>
+        </div>
+      )}
       <div style={{ margin: "12px 0", borderTop: "1px solid #eee", paddingTop: 8 }}>
         {items.map((item, i) => (
           <div key={i} style={{ margin: "6px 0" }}>
@@ -366,6 +380,69 @@ function OrderRow({ order, getStatusLabel, onUpdateStatus, onRefund, canRefund }
                 {pickupCode !== "—" && <CopyButton value={pickupCode} />}
               </div>
             </div>
+
+            {(order.driver_arrived_at || order.pickup_parking_spot) && (
+              <div
+                style={{
+                  marginBottom: 14,
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  background: "linear-gradient(135deg, #f0fdfa 0%, #ecfeff 100%)",
+                  border: "1px solid #99f6e4",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 8,
+                }}
+              >
+                {order.driver_arrived_at && (
+                  <div>
+                    <p
+                      style={{
+                        margin: "0 0 3px",
+                        fontSize: 9.5,
+                        fontWeight: 600,
+                        letterSpacing: "0.12em",
+                        textTransform: "uppercase",
+                        color: "#0d9488",
+                      }}
+                    >
+                      Feeder arrived
+                    </p>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#134e4a" }}>
+                      {format(new Date(order.driver_arrived_at), "M/d/yyyy, h:mm a")}
+                    </p>
+                  </div>
+                )}
+                {order.pickup_parking_spot && (
+                  <div>
+                    <p
+                      style={{
+                        margin: "0 0 3px",
+                        fontSize: 9.5,
+                        fontWeight: 600,
+                        letterSpacing: "0.12em",
+                        textTransform: "uppercase",
+                        color: "#0d9488",
+                      }}
+                    >
+                      Curbside / spot
+                    </p>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: 15,
+                        fontWeight: 800,
+                        color: "#0f766e",
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      {order.pickup_parking_spot}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: 16 }}>
               <div>

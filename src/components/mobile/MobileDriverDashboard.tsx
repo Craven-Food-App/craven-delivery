@@ -55,6 +55,7 @@ import type { OrderAssignment } from '@/components/mobile/feederOrderTypes';
 import FeederPendingOffersPanel from '@/components/mobile/FeederPendingOffersPanel';
 import { claimOrderAssignment, claimOrderAssignmentsBatch } from '@/lib/claimOrderAssignment';
 import { formatPickupKey } from '@/lib/deliveryRouteKeys';
+import { setOrderDriverArrivedAtStore, setOrderPickupParkingSpot } from '@/lib/orderDriverPresence';
 import { DEFAULT_MAX_BATCH_DROPOFF_MILES, sumPayoutCents } from '@/lib/feederOfferBatching';
 type DriverState = 'offline' | 'online_searching' | 'online_paused' | 'on_delivery' | 'on_retail_pickup';
 type VehicleType = 'car' | 'bike' | 'scooter' | 'walk' | 'motorcycle';
@@ -2399,10 +2400,18 @@ export const MobileDriverDashboard: React.FC = () => {
               tripLabel={activeDelivery.order_id ? `Trip ${activeDelivery.order_id.slice(-4)}` : undefined}
               parkingSpotCount={(activeDelivery as any).parking_spot_count}
               onArrivalConfirmed={async () => {
-                // Placeholder for future: update order status to at_store / arrived_for_pickup
+                const oid = activeDelivery.order_id || activeDelivery.id;
+                const { error } = await setOrderDriverArrivedAtStore(oid);
+                if (error) {
+                  console.warn('setOrderDriverArrivedAtStore', error);
+                }
               }}
-              onParkingSpotSelected={async () => {
-                // Parking spot chosen – QR step will show next
+              onParkingSpotSelected={async (spot: number) => {
+                const oid = activeDelivery.order_id || activeDelivery.id;
+                const { error } = await setOrderPickupParkingSpot(oid, spot);
+                if (error) {
+                  console.warn('setOrderPickupParkingSpot', error);
+                }
               }}
               onQrConfirmed={async () => {
                 // Clerk scanned QR – could log event or update order status here
