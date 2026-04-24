@@ -9,19 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Car, MapPin, Zap, Send, Clock, CheckCircle, AlertTriangle, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { fetchActiveOnlineFeeders, type OnlineFeederRow } from '@/lib/activeOnlineFeeders';
 
-interface OnlineDriver {
-  id: string;
-  user_id: string;
-  full_name: string;
-  vehicle_type: string;
-  vehicle_make: string;
-  vehicle_model: string;
-  current_latitude: number | null;
-  current_longitude: number | null;
-  is_available: boolean;
-  rating: number;
-}
+type OnlineDriver = OnlineFeederRow;
 
 export const LiveDriverTesting = () => {
   const [onlineDrivers, setOnlineDrivers] = useState<OnlineDriver[]>([]);
@@ -67,67 +57,11 @@ export const LiveDriverTesting = () => {
   const fetchOnlineDrivers = async () => {
     setIsLoading(true);
     try {
-      // Primary source: driver_profiles with is_available=true AND status='online'
-      // This is the authoritative source — a feeder is "actively feeding" when they
-      // chose "Feed Now", selected an end time, and their profile reflects that.
-      // driver_sessions may not exist for all feeders (not all create session records).
-      const { data: activeProfiles, error: profilesError } = await supabase
-        .from('driver_profiles')
-        .select('id, user_id, vehicle_type, vehicle_make, vehicle_model, rating, is_available, status, last_location_update')
-        .eq('is_available', true)
-        .eq('status', 'online');
-
-      if (profilesError) {
-        console.error('Error fetching active feeder profiles:', profilesError);
-        throw profilesError;
+      const { feeders, error } = await fetchActiveOnlineFeeders();
+      if (error) {
+        throw error;
       }
-
-      console.log('Active feeder profiles (is_available + online):', activeProfiles?.length || 0);
-
-      if (!activeProfiles || activeProfiles.length === 0) {
-        setOnlineDrivers([]);
-        setIsLoading(false);
-        return;
-      }
-
-      const driverUserIds = [...new Set(activeProfiles.map(d => d.user_id))];
-
-      // Fetch names and locations in parallel
-      const [profilesResult, locationsResult] = await Promise.all([
-        supabase
-          .from('user_profiles')
-          .select('user_id, full_name')
-          .in('user_id', driverUserIds),
-        supabase
-          .from('craver_locations')
-          .select('user_id, lat, lng')
-          .in('user_id', driverUserIds),
-      ]);
-
-      const profiles = profilesResult.data;
-      const locations = locationsResult.data;
-
-      const seenUserIds = new Set<string>();
-      const combinedDrivers: OnlineDriver[] = activeProfiles
-        .filter(driver => {
-          if (seenUserIds.has(driver.user_id)) return false;
-          seenUserIds.add(driver.user_id);
-          return true;
-        })
-        .map(driver => {
-          const profile = profiles?.find(p => p.user_id === driver.user_id);
-          const location = locations?.find(l => l.user_id === driver.user_id);
-          return {
-            ...driver,
-            full_name: profile?.full_name || 'Unknown Feeder',
-            current_latitude: location?.lat || null,
-            current_longitude: location?.lng || null,
-            is_available: true,
-            rating: driver.rating || 5.0,
-          };
-        });
-
-      setOnlineDrivers(combinedDrivers);
+      setOnlineDrivers(feeders);
     } catch (error: any) {
       console.error('Error fetching online feeders:', error);
       toast({
@@ -264,7 +198,9 @@ export const LiveDriverTesting = () => {
             <Users className="h-5 w-5" />
             Online Feeders ({onlineDrivers.length})
           </CardTitle>
-          <CardDescription>Currently available feeders</CardDescription>
+          <CardDescription>
+            Feeders in an active feed session (online, heartbeat, searching for orders — not paused or stale).
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Button onClick={fetchOnlineDrivers} variant="outline" className="mb-4" disabled={isLoading}>

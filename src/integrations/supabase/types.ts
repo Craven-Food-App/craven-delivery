@@ -9736,6 +9736,7 @@ export type Database = {
       driver_profiles: {
         Row: {
           acceptance_rate: number | null
+          active_device_session_id: string | null
           admin_approved_ultimate: boolean | null
           completed_orders: number | null
           completion_rate: number | null
@@ -9781,6 +9782,7 @@ export type Database = {
         }
         Insert: {
           acceptance_rate?: number | null
+          active_device_session_id?: string | null
           admin_approved_ultimate?: boolean | null
           completed_orders?: number | null
           completion_rate?: number | null
@@ -9826,6 +9828,7 @@ export type Database = {
         }
         Update: {
           acceptance_rate?: number | null
+          active_device_session_id?: string | null
           admin_approved_ultimate?: boolean | null
           completed_orders?: number | null
           completion_rate?: number | null

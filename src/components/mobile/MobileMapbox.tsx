@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MAPBOX_CONFIG, HIGHWAY_OVERLAY_COLOR } from '@/config/mapbox';
-import { useDriverLocation } from '@/hooks/useDriverLocation';
+import type { DriverLocationData } from '@/hooks/useDriverLocation';
 import {
   DeliveryZone,
   getZoneForLocation,
@@ -38,6 +38,8 @@ export interface DeliveryPickupLocation {
 
 interface MobileMapboxProps {
   className?: string;
+  /** Live GPS from a single `useDriverLocation` instance in the parent (feeder map + speed must match). */
+  driverLocation: DriverLocationData | null;
   onZoneStatusChange?: (info: { isInZone: boolean; zone: DeliveryZone | null }) => void;
   resetToDefaultZoom?: boolean; // When true, resets map to default zoom
   onScheduleClick?: () => void; // Open schedule page
@@ -52,6 +54,7 @@ const HIGHWAY_OVERLAY_LAYER_ID = 'feeder-highways-orange';
 
 export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   className = '',
+  driverLocation: location,
   onZoneStatusChange,
   resetToDefaultZoom = false,
   onScheduleClick,
@@ -63,7 +66,6 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   const deliveryPickupMarkerRef = useRef<any>(null);
   const navigationControlAdded = useRef<boolean>(false);
   const [isMapReady, setIsMapReady] = useState(false);
-  const { location, startTracking, isTracking } = useDriverLocation();
   const [showRecenter, setShowRecenter] = useState(false);
   const { zones } = useDeliveryZones();
   const merchantMarkersRef = useRef<any[]>([]);
@@ -75,13 +77,6 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   const merchantMarkerKeyRef = useRef<string>('');
   const hasFittedBoundsToMerchantsRef = useRef(false);
   const userHasPanned = useRef(false);
-
-  const driverLocation = useMemo<[number, number] | null>(() => {
-    if (location) {
-      return [location.latitude, location.longitude];
-    }
-    return null;
-  }, [location]);
 
   const updateZoneLayers = useCallback(
     (zonesData: DeliveryZone[]) => {
@@ -209,13 +204,6 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     [onZoneStatusChange, zones, calculateRotation]
   );
 
-  // Start location tracking immediately when component mounts
-  useEffect(() => {
-    if (!isTracking) {
-      startTracking();
-    }
-  }, [startTracking, isTracking]);
-
   // Initialize map only once on mount
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -259,7 +247,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
                 marker.current.setLngLat([lng, lat]);
               },
               () => { /* keep Toledo fallback */ },
-              { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+              { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
             );
           }
           
@@ -1089,9 +1077,6 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
               if (location) {
                 lat = location.latitude;
                 lng = location.longitude;
-              } else if (driverLocation) {
-                lat = driverLocation[0];
-                lng = driverLocation[1];
               } else if (marker.current) {
                 // Fallback: get current marker position
                 const currentPos = marker.current.getLngLat();

@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { hasLocationDisclosureConsent } from '@/utils/locationDisclosure';
 
-interface LocationData {
+export interface DriverLocationData {
   latitude: number;
   longitude: number;
   heading?: number;
@@ -11,29 +11,46 @@ interface LocationData {
 }
 
 interface UseDriverLocationReturn {
-  location: LocationData | null;
+  location: DriverLocationData | null;
   isTracking: boolean;
   error: string | null;
   startTracking: () => void;
   stopTracking: () => void;
 }
 
+const WATCH_OPTIONS: PositionOptions = {
+  enableHighAccuracy: true,
+  /** iOS may need a generous timeout; still request fresh fixes */
+  timeout: 20000,
+  /** 0 = do not use a cached position; critical for live map following while driving */
+  maximumAge: 0,
+};
+
 export const useDriverLocation = (): UseDriverLocationReturn => {
-  const [location, setLocation] = useState<LocationData | null>(null);
+  const [location, setLocation] = useState<DriverLocationData | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const watchId = useRef<number | null>(null);
-  const updateInterval = useRef<NodeJS.Timeout | null>(null);
-  const retryCount = useRef<number>(0);
-  const maxRetries = useRef<number>(3);
-  const isBlockingUI = useRef<boolean>(false);
+  const updateInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const retryCount = useRef(0);
+  const maxRetries = 3;
+  const isBlockingUI = useRef(false);
+  /** Latest fix for DB sync (interval must not read stale React state). */
+  const locationRef = useRef<DriverLocationData | null>(null);
+  const permissionChangeHandler = useRef<(() => void) | null>(null);
 
-  const updateLocationInDatabase = async (locationData: LocationData) => {
+  const setLocationAndRef = useCallback((data: DriverLocationData | null) => {
+    locationRef.current = data;
+    setLocation(data);
+  }, []);
+
+  const updateLocationInDatabase = useCallback(async (locationData: DriverLocationData) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Update driver's current location in driver_profiles
       const { error: profileError } = await supabase
         .from('driver_profiles')
         .update({
@@ -41,7 +58,7 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
           current_longitude: locationData.longitude,
           last_location_update: new Date().toISOString(),
           heading: locationData.heading,
-          speed: locationData.speed
+          speed: locationData.speed,
         })
         .eq('user_id', user.id);
 
@@ -50,17 +67,14 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
         return;
       }
 
-      // Add to location history
-      const { error: historyError } = await supabase
-        .from('driver_location_history')
-        .insert({
-          driver_id: user.id,
-          latitude: locationData.latitude,
-          longitude: locationData.longitude,
-          heading: locationData.heading,
-          speed: locationData.speed,
-          accuracy: locationData.accuracy
-        });
+      const { error: historyError } = await supabase.from('driver_location_history').insert({
+        driver_id: user.id,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        heading: locationData.heading,
+        speed: locationData.speed,
+        accuracy: locationData.accuracy,
+      });
 
       if (historyError) {
         console.error('Error inserting location history:', historyError);
@@ -68,80 +82,48 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
     } catch (err) {
       console.error('Database update error:', err);
     }
-  };
+  }, []);
 
-  const startTracking = () => {
-    // Do not call any location API until user has seen the in-app disclosure (Google Play requirement).
-    if (!hasLocationDisclosureConsent()) {
-      return;
+  const clearWatchAndInterval = useCallback(() => {
+    if (watchId.current !== null) {
+      navigator.geolocation.clearWatch(watchId.current);
+      watchId.current = null;
     }
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by this browser');
-      return;
+    if (updateInterval.current) {
+      clearInterval(updateInterval.current);
+      updateInterval.current = null;
     }
+  }, []);
 
-    // Do not trigger the system permission dialog unless user already chose "Continue" on our disclosure.
-    // When state is "prompt", user either chose "Not now" or hasn't been asked; don't call getCurrentPosition.
-    if ('permissions' in navigator) {
-      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-        console.log('Geolocation permission status:', result.state);
-        if (result.state === 'denied') {
-          setError('GPS permission denied. Please enable location access in your browser settings.');
-          return;
-        }
-        if (result.state === 'prompt') {
-          // Avoid showing system dialog; only track after user granted via our disclosure flow.
-          return;
-        }
-        startLocationTracking();
-      }).catch(() => {
-        // Fallback if permissions API is not available
-        startLocationTracking();
-      });
-    } else {
-      startLocationTracking();
-    }
-  };
+  const startLocationTracking = useCallback(() => {
+    if (!navigator.geolocation) return;
 
-  const startLocationTracking = () => {
+    clearWatchAndInterval();
     setIsTracking(true);
     setError(null);
 
-    const options: PositionOptions = {
-      enableHighAccuracy: true,
-      timeout: 15000, // Increased timeout
-      maximumAge: 10000 // Allow slightly older positions
-    };
-
-    // Get initial position
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const locationData: LocationData = {
+        const locationData: DriverLocationData = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-          heading: position.coords.heading || undefined,
-          speed: position.coords.speed || undefined,
-          accuracy: position.coords.accuracy
+          heading: position.coords.heading ?? undefined,
+          speed: position.coords.speed ?? undefined,
+          accuracy: position.coords.accuracy,
         };
-
-        setLocation(locationData);
-        updateLocationInDatabase(locationData);
+        setLocationAndRef(locationData);
+        void updateLocationInDatabase(locationData);
+        retryCount.current = 0;
       },
       (err) => {
         console.error('Error getting initial position:', {
           code: err.code,
           message: err.message,
-          PERMISSION_DENIED: err.PERMISSION_DENIED,
-          POSITION_UNAVAILABLE: err.POSITION_UNAVAILABLE,
-          TIMEOUT: err.TIMEOUT
         });
-        
         retryCount.current += 1;
-        
-        // Stop retrying after max attempts to prevent UI blocking
-        if (retryCount.current >= maxRetries.current) {
+        if (retryCount.current >= maxRetries) {
           let errorMessage = 'Location services unavailable. ';
-          switch(err.code) {
+          switch (err.code) {
             case err.PERMISSION_DENIED:
               errorMessage += 'Please enable location access in browser settings.';
               break;
@@ -154,49 +136,36 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
             default:
               errorMessage += 'Please check your device settings.';
           }
-          
           setError(errorMessage);
           isBlockingUI.current = true;
           setIsTracking(false);
           return;
         }
-        
-        // For retries, just log and continue without blocking UI
-        console.log(`GPS retry ${retryCount.current}/${maxRetries.current}`);
+        console.log(`GPS retry ${retryCount.current}/${maxRetries}`);
       },
-      options
+      WATCH_OPTIONS
     );
 
-    // Start watching position
     watchId.current = navigator.geolocation.watchPosition(
       (position) => {
-        const locationData: LocationData = {
+        const locationData: DriverLocationData = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-          heading: position.coords.heading || undefined,
-          speed: position.coords.speed || undefined,
-          accuracy: position.coords.accuracy
+          heading: position.coords.heading ?? undefined,
+          speed: position.coords.speed ?? undefined,
+          accuracy: position.coords.accuracy,
         };
-
-        setLocation(locationData);
-        console.log('Location updated:', locationData);
+        setLocationAndRef(locationData);
       },
       (err) => {
         console.error('Error watching position:', {
           code: err.code,
           message: err.message,
-          PERMISSION_DENIED: err.PERMISSION_DENIED,
-          POSITION_UNAVAILABLE: err.POSITION_UNAVAILABLE,
-          TIMEOUT: err.TIMEOUT
         });
-        
-        // Don't stop tracking for timeouts, but limit retries
         if (err.code === err.TIMEOUT) {
           console.log('Location timeout, continuing...');
           return;
         }
-        
-        // For critical errors, stop tracking to prevent UI blocking
         if (err.code === err.PERMISSION_DENIED) {
           setError('GPS permission denied. Please allow location access.');
           isBlockingUI.current = true;
@@ -207,40 +176,85 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
           setIsTracking(false);
         }
       },
-      options
+      WATCH_OPTIONS
     );
 
-    // Update database every 30 seconds
     updateInterval.current = setInterval(() => {
-      if (location) {
-        updateLocationInDatabase(location);
+      const current = locationRef.current;
+      if (current) {
+        void updateLocationInDatabase(current);
       }
     }, 30000);
-  };
+  }, [clearWatchAndInterval, setLocationAndRef, updateLocationInDatabase]);
 
-  const stopTracking = () => {
-    if (watchId.current !== null) {
-      navigator.geolocation.clearWatch(watchId.current);
-      watchId.current = null;
+  const startTracking = useCallback(() => {
+    if (!hasLocationDisclosureConsent()) {
+      return;
+    }
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by this browser');
+      return;
     }
 
-    if (updateInterval.current) {
-      clearInterval(updateInterval.current);
-      updateInterval.current = null;
-    }
+    const attachPermissionListener = (result: PermissionStatus) => {
+      if (permissionChangeHandler.current) {
+        result.removeEventListener('change', permissionChangeHandler.current);
+      }
+      permissionChangeHandler.current = () => {
+        if (result.state === 'denied') {
+          setError('GPS permission denied. Please enable location access in your browser settings.');
+          return;
+        }
+        if (result.state === 'granted' && hasLocationDisclosureConsent() && !watchId.current) {
+          startLocationTracking();
+        }
+      };
+      result.addEventListener('change', permissionChangeHandler.current);
+    };
 
-    // Reset retry counters
+    if ('permissions' in navigator) {
+      navigator.permissions
+        .query({ name: 'geolocation' as PermissionName })
+        .then((result) => {
+          attachPermissionListener(result);
+          if (result.state === 'denied') {
+            setError('GPS permission denied. Please enable location access in your browser settings.');
+            return;
+          }
+          /** Before our disclosure, block starting (no system dialog). After consent, "prompt" is OK — getCurrentPosition triggers the OS prompt. */
+          if (result.state === 'prompt' && !hasLocationDisclosureConsent()) {
+            return;
+          }
+          startLocationTracking();
+        })
+        .catch(() => {
+          startLocationTracking();
+        });
+    } else {
+      startLocationTracking();
+    }
+  }, [startLocationTracking]);
+
+  const stopTracking = useCallback(() => {
+    clearWatchAndInterval();
     retryCount.current = 0;
     isBlockingUI.current = false;
-    
     setIsTracking(false);
-    setLocation(null);
+    setLocationAndRef(null);
     setError(null);
-  };
+  }, [clearWatchAndInterval, setLocationAndRef]);
 
+  /** Unmount: clear watch/interval only (no setState after unmount). */
   useEffect(() => {
     return () => {
-      stopTracking();
+      if (watchId.current !== null) {
+        navigator.geolocation.clearWatch(watchId.current);
+        watchId.current = null;
+      }
+      if (updateInterval.current) {
+        clearInterval(updateInterval.current);
+        updateInterval.current = null;
+      }
     };
   }, []);
 
@@ -249,6 +263,6 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
     isTracking,
     error,
     startTracking,
-    stopTracking
+    stopTracking,
   };
 };
