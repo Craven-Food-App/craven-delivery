@@ -1781,19 +1781,43 @@ export const MobileDriverDashboard: React.FC = () => {
           .select('id, order_number, subtotal_cents, customer_name, customer_id, customer_phone, delivery_notes, dropoff_address, payout_cents, tip_cents, distance_km')
           .eq('id', b.order_id)
           .maybeSingle();
-        if (od) orderRows.push(od);
-      }
-      if (orderRows.length !== batch.length) {
-        toast.error('Could not load all orders in this batch.');
-        return;
+        if (od) {
+          orderRows.push(od);
+        } else {
+          const addr = b.dropoff_address;
+          const addressStr =
+            typeof addr === 'string'
+              ? addr
+              : addr && typeof addr === 'object'
+                ? [ (addr as any).street, (addr as any).address, (addr as any).city, (addr as any).state, (addr as any).zip, (addr as any).zip_code]
+                    .filter(Boolean)
+                    .join(', ') || '—'
+                : '—';
+          orderRows.push({
+            id: b.order_id,
+            order_number: b.order_number,
+            subtotal_cents: b.subtotal_cents,
+            customer_name: b.customer_name,
+            customer_id: null,
+            customer_phone: null,
+            delivery_notes: null,
+            dropoff_address: b.dropoff_address,
+            payout_cents: b.payout_cents,
+            tip_cents: b.tip_cents,
+            distance_km: b.distance_km,
+            _fromOfferOnly: true,
+            _labelFallback: addressStr,
+          } as any);
+        }
       }
       const first = batch[0];
       const totalPayout = sumPayoutCents(batch);
       const totalTips = batch.reduce((s, b) => s + (b.tip_cents || 0), 0);
       const ordersForPickup = orderRows.map((o) => {
         const addr = o.dropoff_address;
-        const addressStr =
-          typeof addr === 'string'
+        const addressStr = o._labelFallback
+          ? o._labelFallback
+          : typeof addr === 'string'
             ? addr
             : addr && typeof addr === 'object'
               ? [addr.street, addr.address, addr.city, addr.state, addr.zip, addr.zip_code]
@@ -1851,19 +1875,18 @@ export const MobileDriverDashboard: React.FC = () => {
       `)
       .eq('id', current.order_id)
       .maybeSingle();
-    if (!orderData) {
-      toast.error('Order not found.');
-      removePendingByIds([current.assignment_id]);
-      return;
-    }
-    let resolvedCustomerName = orderData.customer_name;
-    if (!resolvedCustomerName && orderData.customer_id) {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('full_name')
-        .eq('user_id', orderData.customer_id)
-        .maybeSingle();
-      if (profile?.full_name) resolvedCustomerName = profile.full_name;
+
+    let resolvedCustomerName = current.customer_name;
+    if (orderData) {
+      resolvedCustomerName = orderData.customer_name ?? resolvedCustomerName;
+      if (!resolvedCustomerName && orderData.customer_id) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('full_name')
+          .eq('user_id', orderData.customer_id)
+          .maybeSingle();
+        if (profile?.full_name) resolvedCustomerName = profile.full_name;
+      }
     }
     const { data: orderItemsData } = await supabase
       .from('order_items')
@@ -1880,24 +1903,46 @@ export const MobileDriverDashboard: React.FC = () => {
       image_url: item.menu_items?.image_url,
     }));
     const itemsToUse = (current as any).items?.length > 0 ? (current as any).items : formattedItems;
-    setActiveDelivery({
-      ...current,
-      order_id: current.order_id,
-      assignment_id: current.assignment_id,
-      order_number: (orderData as any).order_number,
-      restaurant_name: current.restaurant_name,
-      pickup_address: current.pickup_address,
-      dropoff_address: (orderData as any).dropoff_address || current.dropoff_address,
-      payout_cents: (orderData as any).payout_cents || current.payout_cents,
-      distance_mi: current.distance_mi,
-      isTestOrder: current.isTestOrder,
-      items: itemsToUse,
-      subtotal_cents: (orderData as any).subtotal_cents || current.payout_cents,
-      tip_cents: (orderData as any).tip_cents ?? (current as any).tip_cents,
-      customer_name: resolvedCustomerName,
-      customer_phone: (orderData as any).customer_phone,
-      delivery_notes: (orderData as any).delivery_notes,
-    });
+    if (!orderData) {
+      // Claim succeeded; DB read can still fail (RLS/replica) — use offer payload so the trip can start.
+      setActiveDelivery({
+        ...current,
+        order_id: current.order_id,
+        assignment_id: current.assignment_id,
+        order_number: current.order_number,
+        restaurant_name: current.restaurant_name,
+        pickup_address: current.pickup_address,
+        dropoff_address: current.dropoff_address,
+        payout_cents: current.payout_cents,
+        distance_mi: current.distance_mi,
+        isTestOrder: current.isTestOrder,
+        items: itemsToUse,
+        subtotal_cents: current.subtotal_cents ?? current.payout_cents,
+        tip_cents: (current as any).tip_cents,
+        customer_name: resolvedCustomerName,
+        customer_phone: undefined,
+        delivery_notes: undefined,
+      });
+    } else {
+      setActiveDelivery({
+        ...current,
+        order_id: current.order_id,
+        assignment_id: current.assignment_id,
+        order_number: (orderData as any).order_number,
+        restaurant_name: current.restaurant_name,
+        pickup_address: current.pickup_address,
+        dropoff_address: (orderData as any).dropoff_address || current.dropoff_address,
+        payout_cents: (orderData as any).payout_cents || current.payout_cents,
+        distance_mi: current.distance_mi,
+        isTestOrder: current.isTestOrder,
+        items: itemsToUse,
+        subtotal_cents: (orderData as any).subtotal_cents || current.payout_cents,
+        tip_cents: (orderData as any).tip_cents ?? (current as any).tip_cents,
+        customer_name: resolvedCustomerName,
+        customer_phone: (orderData as any).customer_phone,
+        delivery_notes: (orderData as any).delivery_notes,
+      });
+    }
     if (isOfferRetail(current)) {
       setHasCompletedRetailPickup(false);
       setDriverState('on_retail_pickup');
