@@ -48,6 +48,10 @@ type LiveOrder = {
   order_status: string | null;
   created_at: string | null;
   total_cents: number;
+  driver_id: string | null;
+  accepted_at: string | null;
+  driver_arrived_at: string | null;
+  pickup_parking_spot: string | null;
   delivery_method: string | null;
   delivery_address: unknown;
   estimated_delivery_time: string | null;
@@ -58,6 +62,14 @@ type LiveOrder = {
     special_instructions: string | null;
     name: string;
   }>;
+};
+
+type AssignmentRow = {
+  id: string;
+  order_id: string;
+  driver_id: string;
+  status: string;
+  expires_at: string;
 };
 
 const STATUS_UI: Record<string, { tab: LiveTab; label: string; color: string }> = {
@@ -85,6 +97,7 @@ export default function LiveOrdersWorkspace() {
   const [activeTab, setActiveTab] = useState<LiveTab>("new");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [assignmentsByOrder, setAssignmentsByOrder] = useState<Record<string, AssignmentRow[]>>({});
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [realtimeStatus, setRealtimeStatus] = useState<"connected" | "connecting" | "disconnected">("connecting");
   const [issueOpen, setIssueOpen] = useState(false);
@@ -93,6 +106,7 @@ export default function LiveOrdersWorkspace() {
   const [prepMinutes, setPrepMinutes] = useState<number>(20);
   const lastPendingCount = useRef(0);
   const alertAudioRef = useRef<HTMLAudioElement | null>(null);
+  const visibleOrderIdsRef = useRef<Set<string>>(new Set());
 
   const storeLabel = useMemo(() => {
     if (!selectedRestaurant) return "No store selected";
@@ -110,7 +124,7 @@ export default function LiveOrdersWorkspace() {
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id, order_number, customer_name, order_status, created_at, total_cents, delivery_method, delivery_address, estimated_delivery_time"
+          "id, order_number, customer_name, order_status, created_at, total_cents, driver_id, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time"
         )
         .eq("restaurant_id", selectedRestaurant.id)
         .order("created_at", { ascending: false })
@@ -136,6 +150,23 @@ export default function LiveOrdersWorkspace() {
         })
       );
       setOrders(hydrated);
+      visibleOrderIdsRef.current = new Set(hydrated.map((o) => o.id));
+      const ids = hydrated.map((o) => o.id);
+      if (ids.length > 0) {
+        const { data: assignments } = await supabase
+          .from("order_assignments")
+          .select("id, order_id, driver_id, status, expires_at")
+          .in("order_id", ids)
+          .order("created_at", { ascending: false });
+        const grouped: Record<string, AssignmentRow[]> = {};
+        (assignments || []).forEach((a: any) => {
+          if (!grouped[a.order_id]) grouped[a.order_id] = [];
+          grouped[a.order_id].push(a as AssignmentRow);
+        });
+        setAssignmentsByOrder(grouped);
+      } else {
+        setAssignmentsByOrder({});
+      }
       if (!selectedOrderId && hydrated.length > 0) setSelectedOrderId(hydrated[0].id);
     } catch (err: unknown) {
       notifications.show({
@@ -159,7 +190,7 @@ export default function LiveOrdersWorkspace() {
     if (!selectedRestaurant?.id) return;
     void fetchOrders();
     setRealtimeStatus("connecting");
-    const channel = supabase
+    const ordersChannel = supabase
       .channel(`live-orders-${selectedRestaurant.id}`)
       .on(
         "postgres_changes" as any,
@@ -172,8 +203,33 @@ export default function LiveOrdersWorkspace() {
         if (status === "SUBSCRIBED") setRealtimeStatus("connected");
         else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") setRealtimeStatus("disconnected");
       });
+    const assignmentsChannel = supabase
+      .channel(`live-order-assignments-${selectedRestaurant.id}`)
+      .on(
+        "postgres_changes" as any,
+        { event: "*", schema: "public", table: "order_assignments" },
+        async (payload: any) => {
+          const changedOrderId = payload?.new?.order_id || payload?.old?.order_id;
+          if (!changedOrderId) return;
+          // only react to assignments for currently visible restaurant orders
+          if (!visibleOrderIdsRef.current.has(changedOrderId)) return;
+          const { data: assignments } = await supabase
+            .from("order_assignments")
+            .select("id, order_id, driver_id, status, expires_at")
+            .eq("order_id", changedOrderId)
+            .order("created_at", { ascending: false });
+          setAssignmentsByOrder((prev) => ({
+            ...prev,
+            [changedOrderId]: (assignments || []) as AssignmentRow[]
+          }));
+          // assignment changes can also imply driver assignment/acceptance state
+          void fetchOrders();
+        }
+      )
+      .subscribe();
     return () => {
-      channel.unsubscribe();
+      ordersChannel.unsubscribe();
+      assignmentsChannel.unsubscribe();
     };
   }, [selectedRestaurant?.id]);
 
@@ -205,6 +261,19 @@ export default function LiveOrdersWorkspace() {
     () => orders.filter((o) => (STATUS_UI[o.order_status || "pending"]?.tab || "new") === activeTab),
     [orders, activeTab]
   );
+
+  const getFeederStatus = (order: LiveOrder): string => {
+    const assignments = assignmentsByOrder[order.id] || [];
+    const accepted = assignments.find((a) => a.status === "accepted");
+    const pending = assignments.find((a) => a.status === "pending");
+    if (order.driver_arrived_at) return "Feeder arrived";
+    if (order.pickup_parking_spot) return `At curbside spot ${order.pickup_parking_spot}`;
+    if (order.order_status === "picked_up" || order.order_status === "out_for_delivery") return "Picked up / en route";
+    if (order.driver_id || accepted) return "Feeder assigned";
+    if (pending) return "Searching for feeder";
+    if (order.order_status === "ready") return "Waiting for feeder";
+    return "Searching for feeder";
+  };
 
   const updateOrder = async (orderId: string, patch: Record<string, unknown>) => {
     const { error } = await supabase.from("orders").update(patch).eq("id", orderId);
@@ -429,6 +498,9 @@ export default function LiveOrdersWorkspace() {
                         <Badge mt="md" color={statusUi.color} variant="light" size="lg" fullWidth>
                           {statusUi.label}
                         </Badge>
+                        <Text size="xs" c="dimmed" mt={8}>
+                          {getFeederStatus(order)}
+                        </Text>
                       </Card>
                     );
                   })}
@@ -523,7 +595,7 @@ export default function LiveOrdersWorkspace() {
                     <Card withBorder>
                       <Text fw={700}>Feeder Status</Text>
                       <Text size="sm" c="dimmed">
-                        {selectedOrder.order_status === "ready" ? "Waiting for feeder pickup." : "Searching for feeder..."}
+                        {getFeederStatus(selectedOrder)}
                       </Text>
                     </Card>
                     <Text fw={700}>Total: {formatMoney(selectedOrder.total_cents)}</Text>
