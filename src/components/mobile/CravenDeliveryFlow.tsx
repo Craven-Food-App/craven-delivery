@@ -893,7 +893,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     if (uploadedUrl) {
       setDeliveryPhotoUrl(uploadedUrl);
       
-      if (!isTestOrder && orderDetails.order_id) {
+      if (orderDetails.order_id) {
         try {
           const { data: { user } } = await supabase.auth.getUser();
           await supabase.functions.invoke('finalize-delivery', {
@@ -906,6 +906,14 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           });
         } catch (error) {
           console.error('Error finalizing delivery:', error);
+          // Fallback: ensure merchant sees completion even if function call fails.
+          await supabase
+            .from('orders')
+            .update({
+              order_status: 'delivered',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', orderDetails.order_id);
         }
       }
       
@@ -924,7 +932,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       uploadedUrl = await uploadPhoto(opts.deliveryPhotoUrl, 'delivery');
       if (uploadedUrl) setDeliveryPhotoUrl(uploadedUrl);
     }
-    if (!isTestOrder && orderDetails.order_id) {
+    if (orderDetails.order_id) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         await supabase.functions.invoke('finalize-delivery', {
@@ -938,6 +946,14 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         });
       } catch (error) {
         console.error('Error finalizing delivery:', error);
+        // Fallback: ensure merchant sees completion even if function call fails.
+        await supabase
+          .from('orders')
+          .update({
+            order_status: 'delivered',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', orderDetails.order_id);
       }
     }
     // Multi-stop route: tell parent this stop is done; parent shows list or stays for completion

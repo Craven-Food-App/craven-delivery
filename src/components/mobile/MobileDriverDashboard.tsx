@@ -2414,10 +2414,23 @@ export const MobileDriverDashboard: React.FC = () => {
                 }
               }}
               onQrConfirmed={async () => {
-                // Clerk scanned QR – could log event or update order status here
+                // QR confirms feeder identity / right vehicle at handoff point.
+                // Do NOT mark picked_up here; picked_up is set when feeder starts route.
               }}
               onStartScanning={async () => {
                 // After starting scanning, transition into the main delivery flow (to customer)
+                const oid = activeDelivery.order_id || activeDelivery.id;
+                const { error } = await supabase
+                  .from('orders')
+                  .update({
+                    order_status: 'picked_up',
+                    pickup_confirmed_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', oid);
+                if (error) {
+                  console.warn('mark picked_up on pickup completion failed', error);
+                }
                 setHasCompletedRetailPickup(true);
                 setDriverState('on_delivery');
               }}

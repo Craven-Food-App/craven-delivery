@@ -17,10 +17,10 @@ import {
   Switch,
   Tabs,
   Text,
+  TextInput,
   Textarea,
   Title
 } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import {
   IconAlertTriangle,
   IconBell,
@@ -54,6 +54,7 @@ type LiveOrder = {
   pickup_parking_spot: string | null;
   delivery_method: string | null;
   delivery_address: unknown;
+  pickup_address?: unknown;
   estimated_delivery_time: string | null;
   order_items: Array<{
     id: string;
@@ -70,6 +71,15 @@ type AssignmentRow = {
   driver_id: string;
   status: string;
   expires_at: string;
+};
+
+type OpsAlert = {
+  id: string;
+  title: string;
+  message: string;
+  level: "info" | "warning" | "critical" | "success";
+  orderId?: string;
+  createdAt: number;
 };
 
 const STATUS_UI: Record<string, { tab: LiveTab; label: string; color: string }> = {
@@ -89,6 +99,18 @@ const formatTime = (value: string | null | undefined) =>
     : "--";
 
 const formatMoney = (cents: number) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
+const toNum = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+const haversineMiles = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const toRad = (n: number) => (n * Math.PI) / 180;
+  const R = 3958.8;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
 export default function LiveOrdersWorkspace() {
   const navigate = useNavigate();
@@ -104,9 +126,18 @@ export default function LiveOrdersWorkspace() {
   const [issueType, setIssueType] = useState<string>("item_unavailable");
   const [issueNotes, setIssueNotes] = useState("");
   const [prepMinutes, setPrepMinutes] = useState<number>(20);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrValue, setQrValue] = useState("");
+  const [driverDistanceByOrder, setDriverDistanceByOrder] = useState<Record<string, number>>({});
+  const [opsAlerts, setOpsAlerts] = useState<OpsAlert[]>([]);
   const lastPendingCount = useRef(0);
   const alertAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUnlockedRef = useRef(false);
+  const recentNewOrderIdsRef = useRef<Set<string>>(new Set());
   const visibleOrderIdsRef = useRef<Set<string>>(new Set());
+  const arrivedNotifiedRef = useRef<Set<string>>(new Set());
+  const approachingNotifiedRef = useRef<Set<string>>(new Set());
+  const spotNotifiedRef = useRef<Set<string>>(new Set());
 
   const storeLabel = useMemo(() => {
     if (!selectedRestaurant) return "No store selected";
@@ -117,6 +148,126 @@ export default function LiveOrdersWorkspace() {
     [orders, selectedOrderId]
   );
 
+  const printReceipt = (order: LiveOrder) => {
+    const orderNo = order.order_number || order.id.slice(-4).toUpperCase();
+    const merchantName = selectedRestaurant?.name || "Merchant";
+    const merchantAddress = (selectedRestaurant as any)?.address || "Address unavailable";
+    const merchantPhone = (selectedRestaurant as any)?.phone || "Phone unavailable";
+    const nowText = new Date().toLocaleString();
+    const createdText = formatTime(order.created_at);
+    const itemsTotal = order.order_items.reduce((sum, i) => sum + i.price_cents * i.quantity, 0);
+    const taxEstimate = Math.max(0, order.total_cents - itemsTotal);
+    const rows = order.order_items
+      .map(
+        (item) => `
+          <div class="line item">
+            <div class="left">${item.quantity}x ${item.name}</div>
+            <div class="right">${formatMoney(item.price_cents * item.quantity)}</div>
+          </div>
+          ${
+            item.special_instructions
+              ? `<div class="line note"><div class="left">  - ${item.special_instructions}</div><div></div></div>`
+              : ""
+          }
+        `
+      )
+      .join("");
+    const html = `
+      <!doctype html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Crave'n Receipt ${orderNo}</title>
+        <style>
+          @page { size: 80mm auto; margin: 6mm; }
+          body { font-family: "Courier New", monospace; margin: 0; color: #111; }
+          .ticket { width: 72mm; margin: 0 auto; }
+          .center { text-align: center; }
+          .logo { max-width: 120px; max-height: 52px; object-fit: contain; margin: 0 auto 6px; display: block; }
+          .brand { font-weight: 800; font-size: 18px; margin-bottom: 3px; }
+          .sub { font-size: 12px; line-height: 1.35; }
+          .craven { margin-top: 6px; font-size: 12px; font-weight: 700; color: #c2410c; }
+          hr { border: none; border-top: 1px dashed #888; margin: 8px 0; }
+          .line { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.35; }
+          .item .left { font-weight: 700; }
+          .note { color: #444; font-size: 11px; margin-bottom: 4px; }
+          .totals .line { margin: 2px 0; }
+          .grand { font-weight: 800; font-size: 14px; margin-top: 6px; }
+          .footer { margin-top: 8px; font-size: 11px; text-align: center; color: #555; }
+        </style>
+      </head>
+      <body>
+        <div class="ticket">
+          <div class="center">
+            ${selectedRestaurant && (selectedRestaurant as any).logo_url ? `<img class="logo" src="${(selectedRestaurant as any).logo_url}" alt="${merchantName}" />` : ""}
+            <div class="brand">${merchantName}</div>
+            <div class="sub">${merchantAddress}</div>
+            <div class="sub">${merchantPhone}</div>
+            <div class="craven">ORDER PLACED VIA CRAVE'N</div>
+          </div>
+          <hr />
+          <div class="line"><div>Order #</div><div>${orderNo}</div></div>
+          <div class="line"><div>Status</div><div>${(order.order_status || "pending").replace(/_/g, " ")}</div></div>
+          <div class="line"><div>Customer</div><div>${order.customer_name || "Customer"}</div></div>
+          <div class="line"><div>Type</div><div>${order.delivery_method || "delivery"}</div></div>
+          <div class="line"><div>Placed</div><div>${createdText}</div></div>
+          <div class="line"><div>Printed</div><div>${nowText}</div></div>
+          <hr />
+          ${rows}
+          <hr />
+          <div class="totals">
+            <div class="line"><div>Subtotal</div><div>${formatMoney(itemsTotal)}</div></div>
+            <div class="line"><div>Tax/Fees</div><div>${formatMoney(taxEstimate)}</div></div>
+            <div class="line grand"><div>TOTAL</div><div>${formatMoney(order.total_cents)}</div></div>
+          </div>
+          <hr />
+          <div class="footer">
+            Crave'n merchant operations receipt<br />
+            Keep this ticket with the handoff.
+          </div>
+        </div>
+        <script>
+          window.onload = () => {
+            window.print();
+            setTimeout(() => window.close(), 250);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+    const w = window.open("", "_blank", "noopener,noreferrer,width=420,height=900");
+    if (!w) {
+      pushOpsAlert({
+        title: "Print blocked",
+        message: "Please allow popups to print receipts.",
+        level: "critical",
+        orderId: order.id
+      });
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  };
+
+  const pushOpsAlert = (
+    alert: Omit<OpsAlert, "id" | "createdAt">,
+    dedupeKey?: string
+  ) => {
+    setOpsAlerts((prev) => {
+      if (dedupeKey) {
+        const exists = prev.some((a) => `${a.level}|${a.title}|${a.orderId || ""}|${a.message}` === dedupeKey);
+        if (exists) return prev;
+      }
+      const next: OpsAlert = {
+        ...alert,
+        id: crypto.randomUUID(),
+        createdAt: Date.now()
+      };
+      return [next, ...prev].slice(0, 30);
+    });
+  };
+
   const fetchOrders = async () => {
     if (!selectedRestaurant?.id) return;
     setLoadingOrders(true);
@@ -124,7 +275,7 @@ export default function LiveOrdersWorkspace() {
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id, order_number, customer_name, order_status, created_at, total_cents, driver_id, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time"
+          "id, order_number, customer_name, order_status, created_at, total_cents, driver_id, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, pickup_address, estimated_delivery_time"
         )
         .eq("restaurant_id", selectedRestaurant.id)
         .order("created_at", { ascending: false })
@@ -169,10 +320,10 @@ export default function LiveOrdersWorkspace() {
       }
       if (!selectedOrderId && hydrated.length > 0) setSelectedOrderId(hydrated[0].id);
     } catch (err: unknown) {
-      notifications.show({
-        title: "Could not load orders",
-        message: err instanceof Error ? err.message : "Unknown error",
-        color: "red"
+      pushOpsAlert({
+        title: "Live Orders sync error",
+        message: err instanceof Error ? err.message : "Unknown error while loading orders.",
+        level: "critical"
       });
     } finally {
       setLoadingOrders(false);
@@ -180,11 +331,76 @@ export default function LiveOrdersWorkspace() {
   };
 
   useEffect(() => {
-    alertAudioRef.current = new Audio("/craven-notification.wav");
+    const a = new Audio("/craven-notification.wav");
+    a.preload = "auto";
+    alertAudioRef.current = a;
+
+    const unlockAudio = () => {
+      audioUnlockedRef.current = true;
+      // Try a silent warm-up so subsequent plays are instant.
+      try {
+        if (alertAudioRef.current) {
+          const prev = alertAudioRef.current.volume;
+          alertAudioRef.current.volume = 0;
+          const p = alertAudioRef.current.play();
+          if (p && typeof p.then === "function") {
+            p.then(() => {
+              if (!alertAudioRef.current) return;
+              alertAudioRef.current.pause();
+              alertAudioRef.current.currentTime = 0;
+              alertAudioRef.current.volume = prev;
+            }).catch(() => {
+              if (alertAudioRef.current) alertAudioRef.current.volume = prev;
+            });
+          } else {
+            alertAudioRef.current.pause();
+            alertAudioRef.current.currentTime = 0;
+            alertAudioRef.current.volume = prev;
+          }
+        }
+      } catch {}
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+    };
+    window.addEventListener("pointerdown", unlockAudio, { once: true });
+    window.addEventListener("keydown", unlockAudio, { once: true });
+
     return () => {
       alertAudioRef.current = null;
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
     };
   }, []);
+
+  const playNewOrderAlert = () => {
+    if (!soundEnabled) return;
+    // Primary path: app notification sound asset
+    try {
+      const audio = alertAudioRef.current;
+      if (audio) {
+        audio.currentTime = 0;
+        void audio.play();
+        return;
+      }
+    } catch {}
+    // Fallback: immediate WebAudio beep for autoplay-restricted contexts
+    try {
+      const Ctx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext | undefined;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+    } catch {}
+  };
 
   useEffect(() => {
     if (!selectedRestaurant?.id) return;
@@ -195,7 +411,20 @@ export default function LiveOrdersWorkspace() {
       .on(
         "postgres_changes" as any,
         { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${selectedRestaurant.id}` },
-        () => {
+        (payload: any) => {
+          if (payload?.eventType === "INSERT") {
+            const oid = String(payload?.new?.id || "");
+            if (oid && !recentNewOrderIdsRef.current.has(oid)) {
+              recentNewOrderIdsRef.current.add(oid);
+              // keep set bounded
+              if (recentNewOrderIdsRef.current.size > 300) {
+                const trimmed = Array.from(recentNewOrderIdsRef.current).slice(-200);
+                recentNewOrderIdsRef.current = new Set(trimmed);
+              }
+              // fire immediately on realtime event (no fetch delay)
+              playNewOrderAlert();
+            }
+          }
           void fetchOrders();
         }
       )
@@ -245,14 +474,12 @@ export default function LiveOrdersWorkspace() {
   useEffect(() => {
     const pending = counts.new;
     if (pending > lastPendingCount.current && soundEnabled) {
-      try {
-        alertAudioRef.current?.play().catch(() => {});
-      } catch {}
-      notifications.show({
+      playNewOrderAlert();
+      pushOpsAlert({
         title: "New order received",
         message: `${pending} order${pending > 1 ? "s" : ""} need confirmation.`,
-        color: "orange"
-      });
+        level: "warning"
+      }, `warning|new-order||${pending}`);
     }
     lastPendingCount.current = pending;
   }, [counts.new, soundEnabled]);
@@ -262,23 +489,127 @@ export default function LiveOrdersWorkspace() {
     [orders, activeTab]
   );
 
+  const isCurbsideOrder = (order: LiveOrder) =>
+    Boolean(order.pickup_parking_spot) ||
+    String(order.delivery_method || "").toLowerCase().includes("curbside");
+
+  const getWaitMinutes = (order: LiveOrder): number => {
+    if (!order.driver_arrived_at) return 0;
+    const ms = Date.now() - new Date(order.driver_arrived_at).getTime();
+    return Math.max(0, Math.floor(ms / 60000));
+  };
+
+  const isPostPickupState = (order: LiveOrder) =>
+    order.order_status === "picked_up" ||
+    order.order_status === "out_for_delivery" ||
+    order.order_status === "delivered";
+
+  const getWaitBlinkStyle = (order: LiveOrder): React.CSSProperties => {
+    if (isPostPickupState(order)) return {};
+    const wait = getWaitMinutes(order);
+    if (!order.driver_arrived_at) return {};
+    if (wait >= 5) {
+      return { animation: "live-orders-blink-fast 0.5s infinite", background: "#e03131", color: "#fff" };
+    }
+    return { animation: "live-orders-blink 1.5s infinite", background: "#ff922b", color: "#fff" };
+  };
+
   const getFeederStatus = (order: LiveOrder): string => {
     const assignments = assignmentsByOrder[order.id] || [];
     const accepted = assignments.find((a) => a.status === "accepted");
     const pending = assignments.find((a) => a.status === "pending");
+    if (order.order_status === "delivered") return "Picked up & completed";
+    if (order.order_status === "out_for_delivery") return "In route to customer";
+    if (order.order_status === "picked_up") return "In route to customer";
     if (order.driver_arrived_at) return "Feeder arrived";
     if (order.pickup_parking_spot) return `At curbside spot ${order.pickup_parking_spot}`;
-    if (order.order_status === "picked_up" || order.order_status === "out_for_delivery") return "Picked up / en route";
     if (order.driver_id || accepted) return "Feeder assigned";
     if (pending) return "Searching for feeder";
     if (order.order_status === "ready") return "Waiting for feeder";
     return "Searching for feeder";
   };
 
+  useEffect(() => {
+    // Arrival + parking alerts
+    for (const order of orders) {
+      if (order.driver_arrived_at && !arrivedNotifiedRef.current.has(order.id)) {
+        arrivedNotifiedRef.current.add(order.id);
+        pushOpsAlert({
+          title: isCurbsideOrder(order) ? "Feeder has arrived (curbside)" : "Feeder has arrived",
+          message: isCurbsideOrder(order)
+            ? order.pickup_parking_spot
+              ? `Driver is at curbside spot ${order.pickup_parking_spot}.`
+              : "Driver is outside for curbside pickup."
+            : "Driver is at your store.",
+          level: "warning",
+          orderId: order.id
+        }, `warning|arrived|${order.id}|${order.pickup_parking_spot || ""}`);
+      }
+      if (order.pickup_parking_spot) {
+        const spotKey = `${order.id}:${order.pickup_parking_spot}`;
+        if (spotNotifiedRef.current.has(spotKey)) continue;
+        spotNotifiedRef.current.add(spotKey);
+        pushOpsAlert({
+          title: "Retail spot selected",
+          message: `Feeder parked at spot ${order.pickup_parking_spot}.`,
+          level: "info",
+          orderId: order.id
+        }, `info|spot|${spotKey}`);
+      }
+    }
+  }, [orders]);
+
+  useEffect(() => {
+    if (!selectedRestaurant?.id) return;
+    const channel = supabase
+      .channel(`live-driver-locations-${selectedRestaurant.id}`)
+      .on(
+        "postgres_changes" as any,
+        { event: "*", schema: "public", table: "driver_locations" },
+        async (payload: any) => {
+          const row = payload?.new as { user_id?: string; lat?: number; lng?: number } | undefined;
+          if (!row?.user_id || typeof row.lat !== "number" || typeof row.lng !== "number") return;
+          const targetOrders = orders.filter((o) => o.driver_id === row.user_id && !o.driver_arrived_at);
+          if (targetOrders.length === 0) return;
+          const nextDist: Record<string, number> = {};
+          for (const order of targetOrders) {
+            const p = (order.pickup_address || {}) as Record<string, unknown>;
+            const plat = toNum(p.latitude);
+            const plng = toNum(p.longitude);
+            if (plat == null || plng == null) continue;
+            const miles = haversineMiles(row.lat, row.lng, plat, plng);
+            nextDist[order.id] = miles;
+            // in-store approaching alert at <= 1 mile
+            if (!isCurbsideOrder(order) && miles <= 1 && !approachingNotifiedRef.current.has(order.id)) {
+              approachingNotifiedRef.current.add(order.id);
+              pushOpsAlert({
+                title: "Driver is approaching",
+                message: "Feeder is within 1 mile of your store.",
+                level: "info",
+                orderId: order.id
+              }, `info|approaching|${order.id}|1mile`);
+            }
+          }
+          if (Object.keys(nextDist).length > 0) {
+            setDriverDistanceByOrder((prev) => ({ ...prev, ...nextDist }));
+          }
+        }
+      )
+      .subscribe();
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [selectedRestaurant?.id, orders]);
+
   const updateOrder = async (orderId: string, patch: Record<string, unknown>) => {
     const { error } = await supabase.from("orders").update(patch).eq("id", orderId);
     if (error) {
-      notifications.show({ title: "Update failed", message: error.message, color: "red" });
+      pushOpsAlert({
+        title: "Order update failed",
+        message: error.message,
+        level: "critical",
+        orderId
+      });
       return false;
     }
     await fetchOrders();
@@ -311,12 +642,13 @@ export default function LiveOrdersWorkspace() {
     if (!selectedOrder) return;
     const ok = await updateOrder(selectedOrder.id, { order_status: "cancelled" });
     if (!ok) return;
-    notifications.show({
+    pushOpsAlert({
       title: "Issue reported",
       message: issueNotes.trim()
         ? `${issueType.replace(/_/g, " ")}: ${issueNotes.trim()}`
         : issueType.replace(/_/g, " "),
-      color: "orange"
+      level: "warning",
+      orderId: selectedOrder.id
     });
     setIssueOpen(false);
     setIssueNotes("");
@@ -426,6 +758,63 @@ export default function LiveOrdersWorkspace() {
                 </Card>
               )}
 
+              {opsAlerts.length > 0 && (
+                <Card withBorder radius="md" mb="md" style={{ background: "#fff" }}>
+                  <Group justify="space-between" mb={8}>
+                    <Text fw={700}>Operational Alerts</Text>
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      color="gray"
+                      onClick={() => setOpsAlerts([])}
+                    >
+                      Clear all
+                    </Button>
+                  </Group>
+                  <Stack gap={8}>
+                    {opsAlerts.slice(0, 5).map((a) => {
+                      const styleMap: Record<OpsAlert["level"], { bg: string; border: string; text: string }> = {
+                        info: { bg: "#eff6ff", border: "#bfdbfe", text: "#1e3a8a" },
+                        warning: { bg: "#fff7ed", border: "#fed7aa", text: "#9a3412" },
+                        critical: { bg: "#fef2f2", border: "#fecaca", text: "#991b1b" },
+                        success: { bg: "#ecfdf5", border: "#a7f3d0", text: "#065f46" }
+                      };
+                      const s = styleMap[a.level];
+                      return (
+                        <Group
+                          key={a.id}
+                          justify="space-between"
+                          align="start"
+                          style={{
+                            background: s.bg,
+                            border: `1px solid ${s.border}`,
+                            borderRadius: 8,
+                            padding: "8px 10px"
+                          }}
+                        >
+                          <Box style={{ flex: 1, minWidth: 0 }}>
+                            <Text fw={700} size="sm" c={s.text}>
+                              {a.title}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              {a.message}
+                            </Text>
+                          </Box>
+                          <ActionIcon
+                            size="sm"
+                            variant="subtle"
+                            color="gray"
+                            onClick={() => setOpsAlerts((prev) => prev.filter((x) => x.id !== a.id))}
+                          >
+                            ×
+                          </ActionIcon>
+                        </Group>
+                      );
+                    })}
+                  </Stack>
+                </Card>
+              )}
+
               <Tabs value={activeTab} onChange={(v) => setActiveTab((v as LiveTab) || "new")} color="orange">
                 <Tabs.List>
                   <Tabs.Tab value="new">New {counts.new > 0 ? `(${counts.new})` : ""}</Tabs.Tab>
@@ -453,6 +842,8 @@ export default function LiveOrdersWorkspace() {
                       .slice(0, 2)
                       .map((i) => `${i.quantity}x ${i.name}`)
                       .join(", ");
+                    const waitMinutes = getWaitMinutes(order);
+                    const postPickup = isPostPickupState(order);
                     return (
                       <Card
                         key={order.id}
@@ -498,6 +889,21 @@ export default function LiveOrdersWorkspace() {
                         <Badge mt="md" color={statusUi.color} variant="light" size="lg" fullWidth>
                           {statusUi.label}
                         </Badge>
+                        {order.driver_arrived_at && !postPickup && (
+                          <Badge mt={8} fullWidth style={getWaitBlinkStyle(order)}>
+                            Driver waiting {waitMinutes} min
+                          </Badge>
+                        )}
+                        {order.driver_arrived_at && postPickup && (
+                          <Badge mt={8} fullWidth color="gray" variant="light">
+                            Waited: {waitMinutes} min
+                          </Badge>
+                        )}
+                        {order.pickup_parking_spot && (
+                          <Badge mt={8} color="teal" variant={postPickup ? "light" : "filled"} fullWidth>
+                            {postPickup ? `Reserved spot: ${order.pickup_parking_spot}` : `Spot ${order.pickup_parking_spot}`}
+                          </Badge>
+                        )}
                         <Text size="xs" c="dimmed" mt={8}>
                           {getFeederStatus(order)}
                         </Text>
@@ -575,7 +981,11 @@ export default function LiveOrdersWorkspace() {
                       <Button variant="light" leftSection={<IconClock size={15} />} onClick={() => void addPrepTime(5)}>
                         Add 5 min
                       </Button>
-                      <Button variant="light" leftSection={<IconPrinter size={15} />} onClick={() => window.print()}>
+                      <Button
+                        variant="light"
+                        leftSection={<IconPrinter size={15} />}
+                        onClick={() => selectedOrder && printReceipt(selectedOrder)}
+                      >
                         Print
                       </Button>
                     </Group>
@@ -597,7 +1007,30 @@ export default function LiveOrdersWorkspace() {
                       <Text size="sm" c="dimmed">
                         {getFeederStatus(selectedOrder)}
                       </Text>
+                      {selectedOrder.driver_arrived_at && !isPostPickupState(selectedOrder) && (
+                        <Text size="sm" fw={700} c="red" mt={6}>
+                          Waiting {getWaitMinutes(selectedOrder)} min
+                        </Text>
+                      )}
+                      {selectedOrder.driver_arrived_at && isPostPickupState(selectedOrder) && (
+                        <Text size="sm" fw={700} c="dark" mt={6}>
+                          Waited: {getWaitMinutes(selectedOrder)} min
+                        </Text>
+                      )}
+                      {selectedOrder.pickup_parking_spot && (
+                        <Text size="sm" fw={700} c="teal" mt={6}>
+                          Reserved spot: {selectedOrder.pickup_parking_spot}
+                        </Text>
+                      )}
+                      {!isCurbsideOrder(selectedOrder) && driverDistanceByOrder[selectedOrder.id] != null && !selectedOrder.driver_arrived_at && (
+                        <Text size="sm" c="blue" mt={6}>
+                          Approaching: {driverDistanceByOrder[selectedOrder.id].toFixed(2)} mi
+                        </Text>
+                      )}
                     </Card>
+                    <Button variant="light" leftSection={<IconClipboardList size={15} />} onClick={() => setQrOpen(true)}>
+                      Scan feeder QR to verify pickup
+                    </Button>
                     <Text fw={700}>Total: {formatMoney(selectedOrder.total_cents)}</Text>
                   </Stack>
                 )}
@@ -635,6 +1068,55 @@ export default function LiveOrdersWorkspace() {
           </Button>
         </Stack>
       </Modal>
+      <Modal opened={qrOpen} onClose={() => setQrOpen(false)} title="Verify feeder QR" centered>
+        <Stack>
+          <Text size="sm" c="dimmed">
+            Scan or enter feeder QR code. This verifies correct vehicle handoff and activates pickup.
+          </Text>
+          <TextInput
+            label="Feeder QR code"
+            placeholder="Paste scanned QR value"
+            value={qrValue}
+            onChange={(e) => setQrValue(e.currentTarget.value)}
+          />
+          <Button
+            color="orange"
+            onClick={async () => {
+              if (!selectedOrder) return;
+              if (!qrValue.trim()) {
+                pushOpsAlert({
+                  title: "QR required",
+                  message: "Scan or enter the feeder QR first.",
+                  level: "critical",
+                  orderId: selectedOrder.id
+                });
+                return;
+              }
+              // QR here verifies feeder identity / vehicle only; it does NOT mark picked up.
+              pushOpsAlert({
+                title: "Feeder verified",
+                message: "Feeder and vehicle verified. Order remains in current state until feeder completes pickup.",
+                level: "success",
+                orderId: selectedOrder.id
+              });
+              setQrOpen(false);
+              setQrValue("");
+            }}
+          >
+            Verify and Activate Pickup
+          </Button>
+        </Stack>
+      </Modal>
+      <style>{`
+        @keyframes live-orders-blink {
+          0%, 50%, 100% { opacity: 1; }
+          25%, 75% { opacity: 0.45; }
+        }
+        @keyframes live-orders-blink-fast {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.18; }
+        }
+      `}</style>
     </Box>
   );
 }

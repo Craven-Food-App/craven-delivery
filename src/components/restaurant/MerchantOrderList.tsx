@@ -42,6 +42,7 @@ const STATUS_MAP: Record<string, { label: string; bg: string; text: string; bord
   confirmed: { label: "Confirmed", bg: "#fff7ed", text: "#9a3412", border: "#fed7aa" },
   preparing: { label: "Preparing", bg: "#fff7ed", text: "#9a3412", border: "#fed7aa" },
   ready: { label: "Ready", bg: "#eff6ff", text: "#1e40af", border: "#bfdbfe" },
+  picked_up: { label: "Picked up", bg: "#eef2ff", text: "#3730a3", border: "#c7d2fe" },
   out_for_delivery: { label: "Out for delivery", bg: "#eff6ff", text: "#1e40af", border: "#bfdbfe" },
   cancelled: { label: "Cancelled", bg: "#fef2f2", text: "#991b1b", border: "#fecaca" },
 };
@@ -266,6 +267,7 @@ function OrderRow({ order, getStatusLabel, onUpdateStatus, onRefund, canRefund }
     confirmed: "preparing",
     preparing: "ready",
     ready: "out_for_delivery",
+    picked_up: "out_for_delivery",
     out_for_delivery: "delivered",
     delivered: null,
     cancelled: null,

@@ -30,7 +30,7 @@ interface CustomerOrder {
   delivery_method: 'delivery' | 'pickup';
   delivery_address?: string;
   special_instructions?: string;
-  order_status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'out_for_delivery' | 'delivered' | 'cancelled';
+  order_status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'out_for_delivery' | 'delivered' | 'cancelled';
   payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
   estimated_pickup_time?: string;
   estimated_delivery_time?: string;
@@ -327,6 +327,7 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId, playSoundForNe
       confirmed: "secondary",
       preparing: "default",
       ready: "default",
+      picked_up: "default",
       out_for_delivery: "default",
       delivered: "secondary",
       cancelled: "destructive"
@@ -340,6 +341,7 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId, playSoundForNe
       confirmed: 'preparing',
       preparing: 'ready',
       ready: 'out_for_delivery',
+      picked_up: 'out_for_delivery',
       out_for_delivery: 'delivered',
       delivered: null,
       cancelled: null
@@ -384,7 +386,7 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId, playSoundForNe
   }
 
   const pendingOrders = filterOrdersByStatus('pending');
-  const activeOrders = orders.filter(o => ['confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.order_status));
+  const activeOrders = orders.filter(o => ['confirmed', 'preparing', 'ready', 'picked_up', 'out_for_delivery'].includes(o.order_status));
   const completedOrders = filterOrdersByStatus('delivered');
 
   const todayRevenueCents = orders.reduce(
@@ -514,7 +516,7 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId, playSoundForNe
           const filtered = filterOrdersByStatus(tab === "active" ? undefined : tab === "all" ? undefined : tab).filter(
             (order) =>
               tab === "active"
-                ? ["confirmed", "preparing", "ready", "out_for_delivery"].includes(order.order_status)
+                ? ["confirmed", "preparing", "ready", "picked_up", "out_for_delivery"].includes(order.order_status)
                 : tab === "all" || order.order_status === tab
           ) as CustomerOrderForList[];
           return (
