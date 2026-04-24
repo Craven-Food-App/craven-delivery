@@ -130,6 +130,7 @@ export default function LiveOrdersWorkspace() {
   const [qrValue, setQrValue] = useState("");
   const [driverDistanceByOrder, setDriverDistanceByOrder] = useState<Record<string, number>>({});
   const [opsAlerts, setOpsAlerts] = useState<OpsAlert[]>([]);
+  const [urgentNewOrderBanner, setUrgentNewOrderBanner] = useState<{ orderId: string; at: number } | null>(null);
   const lastPendingCount = useRef(0);
   const alertAudioRef = useRef<HTMLAudioElement | null>(null);
   const audioUnlockedRef = useRef(false);
@@ -283,23 +284,29 @@ export default function LiveOrdersWorkspace() {
       if (error) throw error;
 
       const rows = (data || []) as LiveOrder[];
-      const hydrated = await Promise.all(
-        rows.map(async (order) => {
-          const { data: items } = await supabase
-            .from("order_items")
-            .select("id, quantity, price_cents, special_instructions, menu_items(name)")
-            .eq("order_id", order.id);
-          const mappedItems =
-            items?.map((item: any) => ({
-              id: item.id,
-              quantity: item.quantity,
-              price_cents: item.price_cents,
-              special_instructions: item.special_instructions ?? null,
-              name: item.menu_items?.name || "Item"
-            })) || [];
-          return { ...order, order_items: mappedItems };
-        })
-      );
+      const orderIds = rows.map((r) => r.id);
+      let itemsByOrder: Record<string, LiveOrder["order_items"]> = {};
+      if (orderIds.length > 0) {
+        const { data: allItems } = await supabase
+          .from("order_items")
+          .select("id, order_id, quantity, price_cents, special_instructions, menu_items(name)")
+          .in("order_id", orderIds);
+        itemsByOrder = {};
+        (allItems || []).forEach((item: any) => {
+          if (!itemsByOrder[item.order_id]) itemsByOrder[item.order_id] = [];
+          itemsByOrder[item.order_id].push({
+            id: item.id,
+            quantity: item.quantity,
+            price_cents: item.price_cents,
+            special_instructions: item.special_instructions ?? null,
+            name: item.menu_items?.name || "Item"
+          });
+        });
+      }
+      const hydrated = rows.map((order) => ({
+        ...order,
+        order_items: itemsByOrder[order.id] || []
+      }));
       setOrders(hydrated);
       visibleOrderIdsRef.current = new Set(hydrated.map((o) => o.id));
       const ids = hydrated.map((o) => o.id);
@@ -423,6 +430,10 @@ export default function LiveOrdersWorkspace() {
               }
               // fire immediately on realtime event (no fetch delay)
               playNewOrderAlert();
+              setUrgentNewOrderBanner({ orderId: oid, at: Date.now() });
+              setTimeout(() => {
+                setUrgentNewOrderBanner((prev) => (prev?.orderId === oid ? null : prev));
+              }, 12000);
             }
           }
           void fetchOrders();
@@ -754,6 +765,28 @@ export default function LiveOrdersWorkspace() {
                         {counts.new} new order{counts.new > 1 ? "s" : ""} need confirmation
                       </Text>
                     </Group>
+                  </Group>
+                </Card>
+              )}
+              {urgentNewOrderBanner && (
+                <Card
+                  withBorder
+                  radius="md"
+                  mb="md"
+                  style={{
+                    background: "linear-gradient(90deg, #ff6b00 0%, #ff3d00 100%)",
+                    borderColor: "#ff922b",
+                    animation: "live-orders-banner-pulse 0.8s infinite",
+                    boxShadow: "0 0 0 4px rgba(255,107,0,0.2)"
+                  }}
+                >
+                  <Group justify="space-between" align="center">
+                    <Text fw={900} c="white" size="lg" style={{ letterSpacing: "0.03em" }}>
+                      NEW ORDER - ACTION REQUIRED NOW
+                    </Text>
+                    <Badge color="dark" variant="filled">
+                      LIVE
+                    </Badge>
                   </Group>
                 </Card>
               )}
@@ -1115,6 +1148,10 @@ export default function LiveOrdersWorkspace() {
         @keyframes live-orders-blink-fast {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.18; }
+        }
+        @keyframes live-orders-banner-pulse {
+          0%, 100% { transform: scale(1); filter: saturate(1); }
+          50% { transform: scale(1.01); filter: saturate(1.25); }
         }
       `}</style>
     </Box>
