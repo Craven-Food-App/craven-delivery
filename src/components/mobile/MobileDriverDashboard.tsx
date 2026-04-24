@@ -54,6 +54,7 @@ import OfflineIndicator from '@/components/OfflineIndicator';
 import type { OrderAssignment } from '@/components/mobile/feederOrderTypes';
 import FeederPendingOffersPanel from '@/components/mobile/FeederPendingOffersPanel';
 import { claimOrderAssignment, claimOrderAssignmentsBatch } from '@/lib/claimOrderAssignment';
+import { formatPickupKey } from '@/lib/deliveryRouteKeys';
 import { DEFAULT_MAX_BATCH_DROPOFF_MILES, sumPayoutCents } from '@/lib/feederOfferBatching';
 type DriverState = 'offline' | 'online_searching' | 'online_paused' | 'on_delivery' | 'on_retail_pickup';
 type VehicleType = 'car' | 'bike' | 'scooter' | 'walk' | 'motorcycle';
@@ -690,7 +691,23 @@ export const MobileDriverDashboard: React.FC = () => {
   const deliveryStops = useMemo(() => {
     if (!activeDelivery) return [];
     const fromBackend = (activeDelivery as any).deliveryStops;
-    if (Array.isArray(fromBackend) && fromBackend.length > 0) return fromBackend;
+    const basePickupKey = formatPickupKey(
+      (activeDelivery as any).restaurant_id,
+      (activeDelivery as any).pickup_address
+    );
+    if (Array.isArray(fromBackend) && fromBackend.length > 0) {
+      return fromBackend.map((s: any) => ({
+        ...s,
+        pickup_key:
+          s.pickup_key ??
+          formatPickupKey(
+            s.restaurant_id ?? (activeDelivery as any).restaurant_id,
+            s.pickup_address ?? (activeDelivery as any).pickup_address
+          ),
+        restaurant_id: s.restaurant_id ?? (activeDelivery as any).restaurant_id,
+        pickup_address: s.pickup_address ?? (activeDelivery as any).pickup_address,
+      }));
+    }
     const orders = (activeDelivery as any).ordersForPickup;
     const dropoffCount = (activeDelivery as any).dropoff_count ?? (activeDelivery as any).dropoffCount ?? 0;
     const baseAddress = activeDelivery.dropoff_address || 'Delivery Address';
@@ -701,12 +718,15 @@ export const MobileDriverDashboard: React.FC = () => {
         id: o.id || `stop-${i}`,
         order_number: o.order_number ?? (typeof o.id === 'string' ? o.id.replace(/\D/g, '').slice(-4) || String(i + 1).padStart(3, '0') : String(i + 1).padStart(3, '0')),
         customer_name: o.label || o.customer_name || 'Customer',
-        dropoff_address: o.address || addressStr,
+        dropoff_address: o.address != null && o.address !== '' ? o.address : addressStr,
         payout_cents: Math.round((activeDelivery.payout_cents || 0) / Math.max(1, orders.length)),
         delivery_notes: activeDelivery.delivery_notes,
         customer_phone: activeDelivery.customer_phone,
-        items: activeDelivery.items || [],
+        items: o.items?.length > 0 ? o.items : activeDelivery.items || [],
         estimated_delivery_time: activeDelivery.estimated_delivery_time,
+        restaurant_id: (activeDelivery as any).restaurant_id,
+        pickup_address: (activeDelivery as any).pickup_address,
+        pickup_key: basePickupKey,
       }));
       return list;
     }
@@ -723,9 +743,13 @@ export const MobileDriverDashboard: React.FC = () => {
         customer_phone: activeDelivery.customer_phone,
         items: activeDelivery.items || [],
         estimated_delivery_time: activeDelivery.estimated_delivery_time,
+        restaurant_id: (activeDelivery as any).restaurant_id,
+        pickup_address: (activeDelivery as any).pickup_address,
+        pickup_key: basePickupKey,
       }));
     }
-    return [activeDelivery];
+    const withKey = { ...activeDelivery, pickup_key: (activeDelivery as any).pickup_key ?? basePickupKey };
+    return [withKey];
   }, [activeDelivery]);
 
   // Only set initial route list view when we first start this delivery (new activeDelivery), not on every render
@@ -2398,6 +2422,8 @@ export const MobileDriverDashboard: React.FC = () => {
             order_id: s.order_id || s.id,
             order_number: s.order_number || activeDelivery.order_number || undefined,
             restaurant_name: s.restaurant_name || activeDelivery.restaurant_name || '',
+            restaurant_id: s.restaurant_id ?? (activeDelivery as any).restaurant_id,
+            pickup_key: s.pickup_key,
             pickup_address: s.pickup_address ?? activeDelivery.pickup_address ?? '',
             dropoff_address: s.dropoff_address ?? (typeof s.dropoff_address === 'object' ? s.dropoff_address?.address : null) ?? activeDelivery.dropoff_address ?? '',
             customer_name: s.customer_name ?? s.customerName ?? activeDelivery.customer_name ?? '',

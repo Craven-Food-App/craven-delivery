@@ -262,6 +262,8 @@ export interface DeliveryFlowStepTwoProps {
   onToggleItem: (itemId: string) => void;
   onNavigate: () => void;
   onConfirmPickup: () => void;
+  /** When >1, this leg is part of a multi-stop batch — remind to verify each order at the store. */
+  batchRouteStopCount?: number;
 }
 
 export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
@@ -279,6 +281,7 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
   onToggleItem,
   onNavigate,
   onConfirmPickup,
+  batchRouteStopCount,
 }) => {
   const [sheetTranslatePct, setSheetTranslatePct] = useState(SNAP_HALF);
   const [dragging, setDragging] = useState(false);
@@ -419,6 +422,24 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
           </div>
 
           <div ref={bodyRef} className="dfl-step-two-body" style={{ overflowY: 'auto' }}>
+            {batchRouteStopCount != null && batchRouteStopCount > 1 && (
+              <div
+                style={{
+                  marginBottom: 14,
+                  padding: '12px 14px',
+                  borderRadius: 12,
+                  background: 'linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(220, 38, 38, 0.1))',
+                  border: '1px solid rgba(234, 88, 12, 0.28)',
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                  color: '#1c1c1e',
+                }}
+              >
+                <strong style={{ display: 'block', marginBottom: 4, color: '#c2410c' }}>Multi-order batch</strong>
+                Confirm <em>this</em> order’s items with the store before you leave. If the next leg is a different
+                restaurant, the app will send you there to verify the next handoff before drop-offs.
+              </div>
+            )}
             <div className="dfl-step-two-steps">
               <div className="dfl-step-two-step done" />
               <div className="dfl-step-two-step active" />

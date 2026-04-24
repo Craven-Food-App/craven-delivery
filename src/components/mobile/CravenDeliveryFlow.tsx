@@ -13,6 +13,7 @@ import { OrderChatOverlay } from './OrderChatOverlay';
 import { useNavigation } from '@/hooks/useNavigation';
 import { speakDeliveryInstructions } from './ActiveFeedingMenu';
 import SlideToConfirm from '@/components/SlideToConfirm';
+import { getStopPickupKey } from '@/lib/deliveryRouteKeys';
 import feederAppIcon from '@/assets/feeder_app_icon.png';
 import {
   Box,
@@ -351,19 +352,48 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [animatedTotal, setAnimatedTotal] = useState(0);
   const [isAnimating, setIsAnimating] = useState(true);
   const prevStopIndexRef = useRef<number>(currentStopIndex);
-
-  // Multi-stop: when parent advances to next stop (not after last), reset to "Head to your stop"
+  const multiStopRouteKey = useMemo(
+    () =>
+      deliveryStops && deliveryStops.length > 1
+        ? deliveryStops.map((s: { order_id?: string }) => s.order_id).join('|')
+        : '',
+    [deliveryStops]
+  );
+  const routeKeyRef = useRef(multiStopRouteKey);
+  // New batch / route: reset index tracking so we don't misfire TO_STORE vs TO_CUSTOMER
   useEffect(() => {
-    if (
-      deliveryStops &&
-      deliveryStops.length > 1 &&
-      currentStopIndex !== prevStopIndexRef.current &&
-      currentStopIndex < deliveryStops.length
-    ) {
-      prevStopIndexRef.current = currentStopIndex;
-      setStatus(DRIVER_STATUS.TO_CUSTOMER);
+    if (multiStopRouteKey !== routeKeyRef.current) {
+      routeKeyRef.current = multiStopRouteKey;
+      prevStopIndexRef.current = 0;
     }
-  }, [deliveryStops, currentStopIndex]);
+  }, [multiStopRouteKey]);
+
+  // Multi-stop: when parent advances, next leg is either same pickup (go to customer) or new merchant (back to store)
+  useEffect(() => {
+    if (!deliveryStops || deliveryStops.length <= 1) return;
+    if (currentStopIndex >= deliveryStops.length) return;
+    if (currentStopIndex === prevStopIndexRef.current) return;
+    const fallback = {
+      restaurant_id: orderDetails?.restaurant_id,
+      pickup_address: orderDetails?.pickup_address,
+    };
+    prevStopIndexRef.current = currentStopIndex;
+    if (currentStopIndex === 0) return;
+    const prevK = getStopPickupKey(deliveryStops[currentStopIndex - 1], fallback);
+    const thisK = getStopPickupKey(deliveryStops[currentStopIndex], fallback);
+    if (thisK === prevK) {
+      setStatus(DRIVER_STATUS.TO_CUSTOMER);
+    } else {
+      setStatus(DRIVER_STATUS.TO_STORE);
+    }
+    setCheckedItems(new Set());
+    setPickupPhotoUrl(undefined);
+  }, [deliveryStops, currentStopIndex, orderDetails?.order_id, orderDetails?.restaurant_id]);
+
+  // Each stop’s order: clear item checkmarks when the active order id changes
+  useEffect(() => {
+    setCheckedItems(new Set());
+  }, [orderDetails?.order_id]);
 
   // GPS tracking for automatic instruction reading
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -1391,6 +1421,15 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         return parts.join(', ');
       };
       const headerHeightPx = 'calc(env(safe-area-inset-top, 0px) + 56px)';
+      const batchGrad = 'linear-gradient(90deg, #f97316 0%, #ea580c 45%, #dc2626 100%)';
+      const batchCardGrad = 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%)';
+      const gradText: React.CSSProperties = {
+        background: batchGrad,
+        WebkitBackgroundClip: 'text',
+        backgroundClip: 'text',
+        color: 'transparent',
+        fontWeight: 700,
+      };
       const stopsListContent = (
         <div
           style={{
@@ -1405,7 +1444,6 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             display: 'block',
           }}
         >
-          {/* Blue header – fixed height; scroll area starts strictly below via top offset */}
           <header
             style={{
               position: 'absolute',
@@ -1414,7 +1452,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               right: 0,
               height: headerHeightPx,
               minHeight: 56,
-              background: '#2563EB',
+              background: batchGrad,
               paddingTop: 'env(safe-area-inset-top, 0px)',
               paddingLeft: 16,
               paddingRight: 16,
@@ -1429,12 +1467,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               size="lg"
               radius="xl"
               aria-label="Menu"
-              style={{ flexShrink: 0 }}
+              style={{ flexShrink: 0, background: 'rgba(255,255,255,0.95)' }}
             >
               <IconMenu2 size={20} stroke={2} />
             </ActionIcon>
           </header>
-          {/* Scroll area: positioned below header with exact pixel offset so nothing is ever behind it */}
           <div
             style={{
               position: 'absolute',
@@ -1448,11 +1485,14 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               padding: '20px 16px calc(20px + env(safe-area-inset-bottom, 0px)) 16px',
             }}
           >
-            <p style={{ margin: 0, fontSize: 18, fontWeight: 700, marginBottom: 8, color: '#111' }}>Your stops</p>
+            <p style={{ margin: 0, fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#111' }}>Your stops</p>
+            <p style={{ margin: '0 0 4px 0', fontSize: 12, fontWeight: 600, ...gradText }}>
+              Batch route
+            </p>
             <p style={{ margin: 0, fontSize: 14, color: '#6b7280', marginBottom: 16 }}>
               {currentStopIndex === 0
-                ? "Start the top order when you're ready to go."
-                : `${currentStopIndex} of ${deliveryStops.length} completed. Slide to start the next stop.`}
+                ? "Start the top order when you're ready. At the store, check off each order before you leave. Next stops with the same pickup are drop-offs with bags you already have."
+                : `${currentStopIndex} of ${deliveryStops.length} completed. Slide to start the next stop. If the next order is a different store, you’ll be sent there to verify the handoff first.`}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {deliveryStops.map((stop: any, index: number) => {
@@ -1468,17 +1508,24 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                     style={{
                       borderRadius: 16,
                       background: '#fff',
-                      border: isNext ? '2px solid #2563EB' : '1px solid #E5E7EB',
-                      boxShadow: isNext ? '0 4px 14px rgba(37, 99, 235, 0.12)' : 'none',
+                      border: isNext ? '2px solid transparent' : '1px solid #E5E7EB',
+                      backgroundImage: isNext
+                        ? 'linear-gradient(#fff, #fff), ' + batchCardGrad
+                        : undefined,
+                      backgroundOrigin: isNext ? 'border-box' : undefined,
+                      backgroundClip: isNext ? 'padding-box, border-box' : undefined,
+                      boxShadow: isNext ? '0 6px 20px rgba(234, 88, 12, 0.18)' : 'none',
                       overflow: 'hidden',
                     }}
                   >
                     <div style={{ padding: 16, borderBottom: '1px solid #F3F4F6' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 8 }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
-                          <span style={{ color: '#2563EB', marginRight: 4 }}>Stop {stopNumber}.</span> {name}
+                          <span style={{ marginRight: 4, ...gradText }}>Stop {stopNumber}.</span> {name}
                         </span>
-                        {orderNum && <span style={{ fontSize: 12, fontWeight: 600, color: '#2563EB', flexShrink: 0 }}>Order: {orderNum}</span>}
+                        {orderNum && (
+                          <span style={{ fontSize: 12, fontWeight: 600, flexShrink: 0, ...gradText }}>Order: {orderNum}</span>
+                        )}
                       </div>
                       <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>{address}</p>
                     </div>
@@ -1492,6 +1539,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                       <div style={{ padding: 16 }}>
                         <p style={{ margin: '0 0 8px 0', fontSize: 12, color: '#6b7280', textAlign: 'center' }}>Slide to confirm to start this stop</p>
                         <SlideToConfirm
+                          variant="batch"
                           label="Slide to confirm to start"
                           onConfirm={() => onStartStop(currentStopIndex)}
                         />
@@ -1576,6 +1624,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             });
           }}
           onConfirmPickup={handleStartPickupVerification}
+          batchRouteStopCount={deliveryStops && deliveryStops.length > 1 ? deliveryStops.length : undefined}
         />
       );
     }

@@ -11,6 +11,8 @@ type SlideToConfirmProps = {
   disabled?: boolean;
   loading?: boolean;
   resetAfterConfirmMs?: number;
+  /** Orange → red (batch / multi-stop route) instead of solid orange. */
+  variant?: 'default' | 'batch';
 };
 
 const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
@@ -19,6 +21,7 @@ const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
   disabled = false,
   loading = false,
   resetAfterConfirmMs = 800,
+  variant = 'default',
 }) => {
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -124,7 +127,10 @@ const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
 
   const progress = getProgress();
   const fillColor = "#F57C00"; // Crave'n orange (spec)
-  const trackBg = disabled ? "#F4F4F4" : "#ECECEC";
+  const batchProgressFill =
+    'linear-gradient(90deg, #f97316 0%, #ea580c 45%, #dc2626 100%)';
+  const trackBg = disabled ? "#F4F4F4" : variant === 'batch' ? '#f3f4f6' : "#ECECEC";
+  const trackBorder = variant === 'batch' ? '1px solid rgba(234, 88, 12, 0.35)' : '1px solid #E2E2E2';
   const labelColor = disabled ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.45)";
   const labelOpacity = Math.max(0, 1 - progress / 50); // Fade as thumb passes
 
@@ -146,7 +152,7 @@ const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
         height: 52,
         borderRadius: 999,
         background: trackBg,
-        border: '1px solid #E2E2E2',
+        border: trackBorder,
         padding: 6,
         cursor: isActive ? 'not-allowed' : 'grab',
         userSelect: 'none',
@@ -162,7 +168,7 @@ const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
           top: 0,
           bottom: 0,
           width: `${progress}%`,
-          background: fillColor,
+          background: variant === 'batch' ? batchProgressFill : fillColor,
           borderRadius: 999,
           transition: isDragging ? 'none' : 'width 150ms ease-out',
         }}
@@ -231,10 +237,10 @@ const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
         {isInternalLoading || loading ? (
           <svg width={16} height={16} viewBox="0 0 24 24" style={{ animation: 'spin 0.8s linear infinite' }}>
             <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-            <circle cx="12" cy="12" r="10" stroke={fillColor} strokeWidth="2" fill="none" strokeDasharray="47.124" strokeDashoffset="23.562" strokeLinecap="round" opacity="0.6" />
+            <circle cx="12" cy="12" r="10" stroke={variant === 'batch' ? '#ea580c' : fillColor} strokeWidth="2" fill="none" strokeDasharray="47.124" strokeDashoffset="23.562" strokeLinecap="round" opacity="0.6" />
           </svg>
         ) : isConfirmed ? (
-          <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={fillColor} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={variant === 'batch' ? '#dc2626' : fillColor} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20,6 9,17 4,12" />
           </svg>
         ) : (
