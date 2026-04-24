@@ -235,9 +235,14 @@ serve(async (req) => {
     }
 
     const taxCents = Math.round(subtotalCents * 0.08); // 8% tax
-    // Randomize tip: 10-25%
+    // Randomize tip with realistic bounds for Live Driver Testing.
+    // Keeps percentages sensible while preventing extreme values from odd menu data.
     const tipPercentage = Math.random() * 0.15 + 0.10; // 10-25%
-    const tipCents = Math.round(subtotalCents * tipPercentage);
+    const rawTipCents = Math.round(subtotalCents * tipPercentage);
+    const minTipCents = subtotalCents > 0 ? 100 : 0; // $1 floor when subtotal exists
+    const maxTipByPercent = Math.round(subtotalCents * 0.30); // hard cap at 30%
+    const maxTipCents = Math.min(1500, Math.max(minTipCents, maxTipByPercent)); // never more than $15
+    const tipCents = Math.min(maxTipCents, Math.max(minTipCents, rawTipCents));
     const totalCents = subtotalCents + taxCents + tipCents;
 
     // Calculate mileage pay: $0.67 per mile (IRS standard rate)

@@ -2095,8 +2095,10 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   };
 
   const renderComplete = () => {
-    const totalEarned = typeof currentOrder.pay === 'number' ? currentOrder.pay : parseFloat(String(currentOrder.pay || 0));
-    const tipAmount = (orderDetails?.tip_cents || 0) / 100;
+    const tipCentsTotal = deliveryStops?.length
+      ? deliveryStops.reduce((sum: number, s: any) => sum + (s.tip_cents ?? 0), 0)
+      : (orderDetails?.tip_cents ?? 0);
+    const tipAmount = tipCentsTotal / 100;
     // Use canonical order ID (same as merchant and customer) – full id, not derived
     const displayOrderId = orderDetails?.order_id ?? orderDetails?.id ?? currentOrder.id ?? '';
     const totalMiles = currentOrder.totalDistance || 0;
@@ -2106,6 +2108,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       ? deliveryStops.reduce((sum: number, s: any) => sum + (s.payout_cents ?? 0), 0)
       : (orderDetails?.payout_cents ?? 0);
     const deliveryPay = deliveryPayCents / 100;
+    const totalEarned = deliveryPay + mileagePay + tipAmount;
 
     // Calculate elapsed time
     let elapsedTime = '0 min';

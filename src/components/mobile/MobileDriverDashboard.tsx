@@ -720,6 +720,7 @@ export const MobileDriverDashboard: React.FC = () => {
         customer_name: o.label || o.customer_name || 'Customer',
         dropoff_address: o.address != null && o.address !== '' ? o.address : addressStr,
         payout_cents: Math.round((activeDelivery.payout_cents || 0) / Math.max(1, orders.length)),
+        tip_cents: o.tip_cents ?? Math.round(((activeDelivery as any).tip_cents || 0) / Math.max(1, orders.length)),
         delivery_notes: activeDelivery.delivery_notes,
         customer_phone: activeDelivery.customer_phone,
         items: o.items?.length > 0 ? o.items : activeDelivery.items || [],
@@ -739,6 +740,7 @@ export const MobileDriverDashboard: React.FC = () => {
         customer_name: activeDelivery.customer_name || `Stop ${i + 1}`,
         dropoff_address: addressStr,
         payout_cents: Math.round((activeDelivery.payout_cents || 0) / n),
+        tip_cents: Math.round(((activeDelivery as any).tip_cents || 0) / n),
         delivery_notes: activeDelivery.delivery_notes,
         customer_phone: activeDelivery.customer_phone,
         items: activeDelivery.items || [],
@@ -1855,6 +1857,7 @@ export const MobileDriverDashboard: React.FC = () => {
           address: addressStr,
           customer_name: o.customer_name,
           payout_cents: o.payout_cents,
+          tip_cents: o.tip_cents,
         };
       });
       setActiveDelivery({
@@ -2430,6 +2433,7 @@ export const MobileDriverDashboard: React.FC = () => {
             customer_phone: s.customer_phone ?? activeDelivery.customer_phone,
             delivery_notes: s.delivery_notes ?? activeDelivery.delivery_notes ?? '',
             payout_cents: s.payout_cents ?? activeDelivery.payout_cents ?? 0,
+            tip_cents: s.tip_cents ?? (activeDelivery as any).tip_cents ?? 0,
             mileage_pay_cents: s.mileage_pay_cents ?? (activeDelivery as any).mileage_pay_cents ?? 0,
             subtotal_cents: s.subtotal_cents ?? activeDelivery.subtotal_cents ?? 0,
             estimated_time: s.estimated_time ?? activeDelivery.estimated_time ?? 30,
