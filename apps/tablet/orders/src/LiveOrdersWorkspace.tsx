@@ -302,6 +302,50 @@ export default function LiveOrdersWorkspace() {
     });
   };
 
+  const fetchAssignmentsForOrder = async (orderId: string) => {
+    const { data: assignments } = await supabase
+      .from("order_assignments")
+      .select("id, order_id, driver_id, status, expires_at")
+      .eq("order_id", orderId)
+      .order("created_at", { ascending: false });
+    setAssignmentsByOrder((prev) => ({
+      ...prev,
+      [orderId]: (assignments || []) as AssignmentRow[]
+    }));
+  };
+
+  const hydrateOrderItems = async (orderId: string) => {
+    const { data: items } = await supabase
+      .from("order_items")
+      .select("id, order_id, quantity, price_cents, special_instructions, menu_items(name)")
+      .eq("order_id", orderId);
+    const normalized = (items || []).map((item: any) => ({
+      id: item.id,
+      quantity: item.quantity,
+      price_cents: item.price_cents,
+      special_instructions: item.special_instructions ?? null,
+      name: item.menu_items?.name || "Item"
+    }));
+    setOrders((prev) =>
+      prev.map((order) => (order.id === orderId ? { ...order, order_items: normalized } : order))
+    );
+  };
+
+  const fetchAndHydrateOrder = async (orderId: string) => {
+    if (!selectedRestaurant?.id) return;
+    const { data, error } = await supabase
+      .from("orders")
+      .select(
+        "id, order_number, customer_name, order_status, created_at, total_cents, driver_id, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, pickup_address, estimated_delivery_time"
+      )
+      .eq("restaurant_id", selectedRestaurant.id)
+      .eq("id", orderId)
+      .maybeSingle();
+    if (error || !data) return;
+    upsertOrderFromRealtime(data as Partial<LiveOrder> & { id: string });
+    await Promise.all([hydrateOrderItems(orderId), fetchAssignmentsForOrder(orderId)]);
+  };
+
   const fetchOrders = async () => {
     if (!selectedRestaurant?.id) return;
     setLoadingOrders(true);
@@ -455,6 +499,7 @@ export default function LiveOrdersWorkspace() {
           if (payload?.eventType === "INSERT") {
             if (payload?.new?.id) {
               upsertOrderFromRealtime(payload.new);
+              void fetchAndHydrateOrder(String(payload.new.id));
             }
             const oid = String(payload?.new?.id || "");
             if (oid && !recentNewOrderIdsRef.current.has(oid)) {
@@ -474,12 +519,17 @@ export default function LiveOrdersWorkspace() {
           }
           if (payload?.eventType === "UPDATE" && payload?.new?.id) {
             upsertOrderFromRealtime(payload.new);
+            void fetchAssignmentsForOrder(String(payload.new.id));
           }
           if (payload?.eventType === "DELETE" && payload?.old?.id) {
             const oid = String(payload.old.id);
             setOrders((prev) => prev.filter((o) => o.id !== oid));
+            setAssignmentsByOrder((prev) => {
+              const next = { ...prev };
+              delete next[oid];
+              return next;
+            });
           }
-          void fetchOrders();
         }
       )
       .subscribe((status) => {
@@ -496,17 +546,7 @@ export default function LiveOrdersWorkspace() {
           if (!changedOrderId) return;
           // only react to assignments for currently visible restaurant orders
           if (!visibleOrderIdsRef.current.has(changedOrderId)) return;
-          const { data: assignments } = await supabase
-            .from("order_assignments")
-            .select("id, order_id, driver_id, status, expires_at")
-            .eq("order_id", changedOrderId)
-            .order("created_at", { ascending: false });
-          setAssignmentsByOrder((prev) => ({
-            ...prev,
-            [changedOrderId]: (assignments || []) as AssignmentRow[]
-          }));
-          // assignment changes can also imply driver assignment/acceptance state
-          void fetchOrders();
+          await fetchAssignmentsForOrder(changedOrderId);
         }
       )
       .subscribe();
@@ -516,14 +556,14 @@ export default function LiveOrdersWorkspace() {
     };
   }, [selectedRestaurant?.id]);
 
-  // Realtime fail-safe: lightweight heartbeat sync to avoid manual refresh when a WS event is missed.
+  // Fallback sync only when websocket is not healthy.
   useEffect(() => {
-    if (!selectedRestaurant?.id) return;
+    if (!selectedRestaurant?.id || realtimeStatus !== "disconnected") return;
     const interval = window.setInterval(() => {
       void fetchOrders();
-    }, 4000);
+    }, 15000);
     return () => window.clearInterval(interval);
-  }, [selectedRestaurant?.id]);
+  }, [selectedRestaurant?.id, realtimeStatus]);
 
   const counts = useMemo(() => {
     const c = { new: 0, preparing: 0, ready: 0, completed: 0, issues: 0 };
