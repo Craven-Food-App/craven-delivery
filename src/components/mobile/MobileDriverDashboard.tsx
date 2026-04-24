@@ -233,9 +233,8 @@ export const MobileDriverDashboard: React.FC = () => {
           const onlineSince = new Date(session.session_data.online_since).getTime();
           setOnlineTime(Math.max(0, Date.now() - onlineSince));
           
-          // Start background tasks after UI is ready
+          // Realtime: useEffect on driverState + user re-subscribes. Heartbeat here.
           setTimeout(() => {
-            setupRealtimeListener(user.id);
             const interval = startSessionHeartbeat();
             setHeartbeatInterval(interval);
           }, 100);
@@ -822,8 +821,17 @@ export const MobileDriverDashboard: React.FC = () => {
   // Setup real-time listener: broadcast + INSERT/UPDATE/DELETE (queue does not replace on new offers)
   const setupRealtimeListener = (userId: string) => {
     realtimeCleanupRef.current?.();
+    /** supabase-js broadcast may pass { payload }, or the payload object directly, or double-wrapped */
+    const normalizeBroadcastData = (msg: any): any => {
+      if (!msg) return null;
+      if (msg.assignment_id != null || msg.order_id) return msg;
+      const p = msg.payload;
+      if (p && (p.assignment_id != null || p.order_id)) return p;
+      if (p?.payload && (p.payload.assignment_id != null || p.payload.order_id)) return p.payload;
+      return p ?? msg;
+    };
     const handleBroadcast = (raw: any) => {
-      const pp: any = raw || {};
+      const pp: any = normalizeBroadcastData(raw) || {};
       const a: OrderAssignment = {
         assignment_id: pp.assignment_id,
         order_id: pp.order_id,
@@ -870,8 +878,10 @@ export const MobileDriverDashboard: React.FC = () => {
 
     const broadcastChannel = supabase
       .channel(`driver_${userId}`)
-      .on('broadcast', { event: 'order_assignment' }, (payload) => {
-        handleBroadcast((payload as any).payload);
+      .on('broadcast', { event: 'order_assignment' }, (ev: any) => {
+        const raw = ev?.payload !== undefined && ev !== null ? ev.payload : ev;
+        const data = normalizeBroadcastData(raw);
+        if (data) handleBroadcast(data);
       })
       .subscribe();
 
@@ -893,7 +903,27 @@ export const MobileDriverDashboard: React.FC = () => {
             .select('pickup_address, dropoff_address, payout_cents, distance_km, restaurant_id, order_number, tip_cents, restaurants(name, restaurant_type, logo_url, image_url)')
             .eq('id', row.order_id)
             .maybeSingle();
-          if (!order) return;
+          if (!order) {
+            setPendingOrderOffers((prev) => {
+              if (row.id in prev) return prev;
+              return {
+                ...prev,
+                [row.id]: {
+                  assignment_id: row.id,
+                  order_id: row.order_id,
+                  restaurant_name: 'New order',
+                  pickup_address: {},
+                  dropoff_address: {},
+                  payout_cents: 0,
+                  distance_km: 0,
+                  distance_mi: '0',
+                  expires_at: row.expires_at,
+                  estimated_time: 15,
+                } as OrderAssignment,
+              };
+            });
+            return;
+          }
           const restaurants = (order as any).restaurants;
           const restaurantName =
             restaurants?.name ||
@@ -989,6 +1019,21 @@ export const MobileDriverDashboard: React.FC = () => {
       realtimeCleanupRef.current?.();
     };
   }, []);
+
+  /** Always subscribe to assignment broadcasts + DB while feeder is in-session (covers unpause, missed early setup). */
+  useEffect(() => {
+    if (!user?.id) return;
+    if (driverState !== 'online_searching' && driverState !== 'online_paused') {
+      realtimeCleanupRef.current?.();
+      realtimeCleanupRef.current = null;
+      return;
+    }
+    const cleanup = setupRealtimeListener(user.id);
+    return () => {
+      cleanup?.();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setupRealtimeListener rebuilt each render; only re-subscribe on user/session mode
+  }, [user?.id, driverState]);
 
   // Enrich open single-offer detail with store type / logo when missing
   useEffect(() => {
@@ -1231,8 +1276,7 @@ export const MobileDriverDashboard: React.FC = () => {
           last_activity: new Date().toISOString()
         }).eq('driver_id', driverProfile.id);
 
-        // Setup realtime listener
-        setupRealtimeListener(user.id);
+        // Realtime: useEffect re-subscribes when driverState is online_searching
 
         // Show seamless welcome back message
         const timeMessage = sessionData.end_time ? ` until ${new Date(sessionData.end_time).toLocaleTimeString([], {
@@ -1478,8 +1522,8 @@ export const MobileDriverDashboard: React.FC = () => {
       if (!endTime) {
         setShowTimeSelector(true);
       }
-      setupRealtimeListener(user.id);
-      
+      // Realtime: useEffect re-subscribes when driverState is online_searching
+
       // Start session heartbeat to keep driver online  
       const interval = startSessionHeartbeat();
       setHeartbeatInterval(interval);

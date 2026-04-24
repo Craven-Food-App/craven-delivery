@@ -65,8 +65,13 @@ export async function fetchActiveOnlineFeeders(): Promise<{
         if (Number.isNaN(end) || now >= end) return false;
       }
       const ds = sd.driver_state as string | undefined;
-      if (ds === 'online_paused') return false;
-      return ds === 'online_searching' || ds === undefined || ds === null;
+      // Include paused: still in an active session (e.g. Live Driver Testing can target them)
+      return (
+        ds === 'online_searching' ||
+        ds === 'online_paused' ||
+        ds === undefined ||
+        ds === null
+      );
     });
 
     if (activeProfiles.length === 0) {
