@@ -57,6 +57,14 @@ import { claimOrderAssignment, claimOrderAssignmentsBatch } from '@/lib/claimOrd
 import { formatPickupKey } from '@/lib/deliveryRouteKeys';
 import { setOrderDriverArrivedAtStore, setOrderPickupParkingSpot } from '@/lib/orderDriverPresence';
 import { DEFAULT_MAX_BATCH_DROPOFF_MILES, sumPayoutCents } from '@/lib/feederOfferBatching';
+import FeederCleanPayCard from '@/components/mobile/FeederCleanPayCard';
+import {
+  getFeederCleanPaySummary,
+  mergeFeederCleanPaySummaries,
+  saveFeederCleanPayOfferAcceptance,
+  syncFeederCleanPayAdjustmentAtPickup,
+  type FeederCleanPaySummary,
+} from '@/lib/feederCleanPaySummary';
 type DriverState = 'offline' | 'online_searching' | 'online_paused' | 'on_delivery' | 'on_retail_pickup';
 type VehicleType = 'car' | 'bike' | 'scooter' | 'walk' | 'motorcycle';
 type EarningMode = 'perHour' | 'perOffer';
@@ -420,6 +428,8 @@ export const MobileDriverDashboard: React.FC = () => {
   const [resetMapZoom, setResetMapZoom] = useState(false);
   /** Full-screen offer detail (one order) */
   const [orderDetailAssignment, setOrderDetailAssignment] = useState<OrderAssignment | null>(null);
+  const [activeOfferCleanPay, setActiveOfferCleanPay] = useState<FeederCleanPaySummary | null>(null);
+  const [retailCleanPaySummary, setRetailCleanPaySummary] = useState<FeederCleanPaySummary | null>(null);
   /** Full-screen batch offer (retail review or combined) */
   const [batchDetailOffers, setBatchDetailOffers] = useState<OrderAssignment[] | null>(null);
   const [retailOfferStep, setRetailOfferStep] = useState<1 | 2 | null>(null);
@@ -1140,6 +1150,47 @@ export const MobileDriverDashboard: React.FC = () => {
     return () => { cancelled = true; };
   }, [orderDetailAssignment?.order_id, orderDetailAssignment?.storeType]);
 
+  /** Clean Pay: live offer preview (single or batch) on the order-offer overlay. */
+  useEffect(() => {
+    if (orderDetailAssignment?.order_id) {
+      let cancelled = false;
+      void getFeederCleanPaySummary(orderDetailAssignment.order_id, 'offered').then((s) => {
+        if (!cancelled) setActiveOfferCleanPay(s);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+    if (batchDetailOffers?.length) {
+      let cancelled = false;
+      void Promise.all(batchDetailOffers.map((o) => getFeederCleanPaySummary(o.order_id, 'offered'))).then((rows) => {
+        const ok = rows.filter(Boolean) as FeederCleanPaySummary[];
+        if (!cancelled) setActiveOfferCleanPay(mergeFeederCleanPaySummaries(ok));
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+    setActiveOfferCleanPay(null);
+    return undefined;
+  }, [orderDetailAssignment?.order_id, batchDetailOffers]);
+
+  /** Clean Pay: compact card during retail curbside pickup. */
+  useEffect(() => {
+    const oid = activeDelivery?.order_id;
+    if (!oid || driverState !== 'on_retail_pickup') {
+      setRetailCleanPaySummary(null);
+      return;
+    }
+    let cancelled = false;
+    void getFeederCleanPaySummary(oid, 'arrivedAtMerchant').then((s) => {
+      if (!cancelled) setRetailCleanPaySummary(s);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeDelivery?.order_id, driverState]);
+
   // Check session persistence and onboarding on component mount
   useEffect(() => {
     let isMounted = true;
@@ -1828,6 +1879,17 @@ export const MobileDriverDashboard: React.FC = () => {
     setRetailOfferStep(null);
   };
 
+  const mapCleanPayOffer = (s: FeederCleanPaySummary | null) =>
+    s
+      ? {
+          basePayDollars: s.basePayCents / 100,
+          deliveryFeeShareDollars: s.deliveryFeeShareCents / 100,
+          customerTipDollars: s.customerTipCents / 100,
+          promoBonusDollars: s.promoBonusCents / 100,
+          totalGuaranteedDollars: s.totalGuaranteedCents / 100,
+        }
+      : null;
+
   const runAcceptAndStartDelivery = async (
     current: OrderAssignment,
     opts?: { skipClaim?: boolean; batch?: OrderAssignment[] }
@@ -1848,6 +1910,15 @@ export const MobileDriverDashboard: React.FC = () => {
           removePendingByIds([current.assignment_id]);
           return;
         }
+      }
+    }
+
+    const cleanPayOrderIds =
+      batch && batch.length > 0 ? batch.map((b) => b.order_id) : [current.order_id];
+    for (const oid of cleanPayOrderIds) {
+      const cp = await saveFeederCleanPayOfferAcceptance(oid);
+      if (!cp.ok) {
+        console.warn('saveFeederCleanPayOfferAcceptance', oid, cp.error);
       }
     }
 
@@ -2451,6 +2522,11 @@ export const MobileDriverDashboard: React.FC = () => {
               tripLabel={activeDelivery.order_id ? `Trip ${activeDelivery.order_id.slice(-4)}` : undefined}
               parkingSpotCount={(activeDelivery as any).parking_spot_count}
               orderStatusStep={retailMerchantStatusStep}
+              cleanPaySlot={
+                retailCleanPaySummary ? (
+                  <FeederCleanPayCard variant="compact" orderEarnings={retailCleanPaySummary} showAdjustment />
+                ) : null
+              }
               onArrivalConfirmed={async () => {
                 const oid = activeDelivery.order_id || activeDelivery.id;
                 const { error } = await setOrderDriverArrivedAtStore(oid);
@@ -2482,6 +2558,10 @@ export const MobileDriverDashboard: React.FC = () => {
                   .eq('id', oid);
                 if (error) {
                   console.warn('mark picked_up on pickup completion failed', error);
+                }
+                const syncCp = await syncFeederCleanPayAdjustmentAtPickup(oid);
+                if (!syncCp.ok) {
+                  console.warn('syncFeederCleanPayAdjustmentAtPickup', syncCp.error);
                 }
                 setHasCompletedRetailPickup(true);
                 setDriverState('on_delivery');
@@ -2569,19 +2649,26 @@ export const MobileDriverDashboard: React.FC = () => {
 
       {/* Dev: ?previewRetailOffer=1 — retail offer preview with real store from database */}
       {previewRetailOffer && !orderDetailAssignment && !batchDetailOffers && !activeDelivery && (
-        <RetailGroceryOfferFlow
-          step={previewRetailStep}
-          estimateAmount={50}
-          mileageEarnings={10}
-          stops={5}
-          totalMiles={15}
-          durationText="45 mins"
-          pickupLabel="Pickup"
-          pickupStoreName={previewRetailStore?.name ?? 'Loading…'}
-          dropoffCount={4}
-          tags={['Multi-stop route']}
-          getOffersUntil={undefined}
-          onAccept={() => setPreviewRetailStep(2)}
+            <RetailGroceryOfferFlow
+              step={previewRetailStep}
+              estimateAmount={50}
+              mileageEarnings={10}
+              stops={5}
+              totalMiles={15}
+              durationText="45 mins"
+              pickupLabel="Pickup"
+              pickupStoreName={previewRetailStore?.name ?? 'Loading…'}
+              dropoffCount={4}
+              tags={['Multi-stop route']}
+              getOffersUntil={undefined}
+              cleanPayOffer={{
+                basePayDollars: 2.5,
+                deliveryFeeShareDollars: 4.25,
+                customerTipDollars: 3.0,
+                promoBonusDollars: 0,
+                totalGuaranteedDollars: 6.75,
+              }}
+              onAccept={() => setPreviewRetailStep(2)}
           onReject={() => navigate('/mobile')}
           onStartRoute={() => {
             const mockOrderId = 'PREVIEW-ROUTE';
@@ -2678,6 +2765,7 @@ export const MobileDriverDashboard: React.FC = () => {
               dropoffCount={1}
               tags={[]}
               getOffersUntil={getOffersUntil}
+              cleanPayOffer={mapCleanPayOffer(activeOfferCleanPay)}
               onAccept={() => {
                 if (isRetailOrder) setRetailOfferStep(2);
                 else void runAcceptAndStartDelivery(a);
@@ -2723,6 +2811,7 @@ export const MobileDriverDashboard: React.FC = () => {
               dropoffCount={list.length}
               tags={['Same pickup · nearby drop-offs']}
               getOffersUntil={getUntil}
+              cleanPayOffer={mapCleanPayOffer(activeOfferCleanPay)}
               onAccept={() => {
                 if (isRo) setRetailOfferStep(2);
                 else void runAcceptAndStartDelivery(a, { batch: list });

@@ -116,6 +116,23 @@ serve(async (req) => {
 
     if (earnErr) throw earnErr;
 
+    // Clean Pay: finalize feeder-visible payout metadata on the order (matches driver_earnings)
+    try {
+      await supabase
+        .from("orders")
+        .update({
+          feeder_delivery_completed_at: new Date().toISOString(),
+          feeder_final_payout_cents: driverPayoutCents,
+          feeder_payout_status: "paid",
+          feeder_tip_status: "paid_to_feeder",
+          feeder_clean_pay_verified: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orderId);
+    } catch (e) {
+      console.error("Clean Pay order metadata update (non-fatal):", e);
+    }
+
     // NEW: Credit driver wallet with earnings (for feeder card spends)
     const { error: walletErr } = await supabase.rpc('credit_wallet_from_earnings', {
       p_driver_id: resolvedDriverId,

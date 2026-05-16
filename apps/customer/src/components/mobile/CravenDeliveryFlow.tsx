@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { IconMapPin, IconNavigation, IconCurrencyDollar, IconClock, IconPackage, IconHome, IconBell, IconCopy, IconToolsKitchen2, IconCheck } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCustomerNameForDriver } from '@/utils/nameFormatting';
@@ -6,6 +6,13 @@ import { notifications } from '@mantine/notifications';
 import FullscreenCamera from './FullscreenCamera';
 import { speakDeliveryInstructions } from './ActiveFeedingMenu';
 import feederAppIcon from '@/assets/feeder_app_icon.png';
+import FeederCleanPayCard from '@/components/mobile/FeederCleanPayCard';
+import {
+  getFeederCleanPaySummary,
+  syncFeederCleanPayAdjustmentAtPickup,
+  type FeederCleanPayFlowStage,
+  type FeederCleanPaySummary,
+} from '@/lib/feederCleanPaySummary';
 import {
   Box,
   Stack,
@@ -81,6 +88,25 @@ const STAGE_NAMES: Record<DeliveryStage, string> = {
   capture_proof: 'Capture Delivery Proof',
   delivered: 'Delivered',
 };
+
+function driverStatusToCleanPayStage(driverStatus: string): FeederCleanPayFlowStage {
+  switch (driverStatus) {
+    case DRIVER_STATUS.TO_STORE:
+      return 'enRouteToMerchant';
+    case DRIVER_STATUS.AT_STORE:
+    case DRIVER_STATUS.AWAITING_PICKUP_PHOTO:
+      return 'arrivedAtMerchant';
+    case DRIVER_STATUS.TO_CUSTOMER:
+      return 'enRouteToCustomer';
+    case DRIVER_STATUS.AT_CUSTOMER:
+    case DRIVER_STATUS.AWAITING_DELIVERY_PHOTO:
+      return 'arrivedAtCustomer';
+    case DRIVER_STATUS.COMPLETE:
+      return 'completed';
+    default:
+      return 'accepted';
+  }
+}
 
 // ===== UTILITY FUNCTIONS =====
 
@@ -337,6 +363,9 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [orderStartTime, setOrderStartTime] = useState<Date | null>(null);
   const [animatedTotal, setAnimatedTotal] = useState(0);
   const [isAnimating, setIsAnimating] = useState(true);
+  const receiptRef = useRef<HTMLDivElement | null>(null);
+  const [cleanPaySummary, setCleanPaySummary] = useState<FeederCleanPaySummary | null>(null);
+  const [completeCleanPaySummary, setCompleteCleanPaySummary] = useState<FeederCleanPaySummary | null>(null);
 
   // Set order start time when component mounts (order is accepted)
   useEffect(() => {
@@ -344,6 +373,41 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       setOrderStartTime(new Date());
     }
   }, [orderDetails, orderStartTime]);
+
+  useEffect(() => {
+    const oid = orderDetails?.order_id;
+    const test = orderDetails?.isTestOrder;
+    if (!oid || test || status === DRIVER_STATUS.COMPLETE) return;
+    let cancelled = false;
+    const stage = driverStatusToCleanPayStage(status);
+    void getFeederCleanPaySummary(oid, stage).then((s) => {
+      if (!cancelled) setCleanPaySummary(s);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orderDetails?.order_id, orderDetails?.isTestOrder, status]);
+
+  useEffect(() => {
+    const oid = orderDetails?.order_id;
+    const test = orderDetails?.isTestOrder;
+    if (!oid || test || status !== DRIVER_STATUS.COMPLETE) return;
+    let cancelled = false;
+    const run = async () => {
+      for (let i = 0; i < 16; i++) {
+        if (cancelled) return;
+        const s = await getFeederCleanPaySummary(oid, 'completed');
+        if (cancelled) return;
+        setCompleteCleanPaySummary(s);
+        if (s != null && typeof s.finalPayoutCents === 'number') break;
+        await new Promise((r) => setTimeout(r, 350));
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [orderDetails?.order_id, orderDetails?.isTestOrder, status]);
 
   // Animate total earnings counter - must be before any early returns
   // Only run once when status changes to COMPLETE
@@ -699,9 +763,13 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       
       // Wait for animation, then transition to next step
       setTimeout(async () => {
+        if (!isTestOrder && orderDetails.order_id) {
+          const sync = await syncFeederCleanPayAdjustmentAtPickup(orderDetails.order_id);
+          if (!sync.ok) console.warn('syncFeederCleanPayAdjustmentAtPickup', sync.error);
+        }
         setStatus(DRIVER_STATUS.TO_CUSTOMER);
         await updateOrderStatus('picked_up');
-        
+
         // Hide transition after a brief moment to show the new state
         setTimeout(() => {
           setShowTransition(false);
@@ -1225,6 +1293,10 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const renderActiveFlow = () => {
     const payAmount = typeof currentOrder.pay === 'number' ? currentOrder.pay : parseFloat(String(currentOrder.pay || 0));
     const isToStore = currentFlow?.isPickup ?? true;
+    const cleanPayCompact =
+      !isTestOrder && cleanPaySummary ? (
+        <FeederCleanPayCard variant="compact" orderEarnings={cleanPaySummary} showAdjustment />
+      ) : null;
 
     if (!currentFlow || !currentFlow.title) {
       return (
@@ -1442,6 +1514,8 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                   </Group>
                 </Card>
 
+                {cleanPayCompact}
+
                 {status === DRIVER_STATUS.TO_STORE && (
                   <Button 
                     onClick={handleConfirmArrivalAtStore}
@@ -1524,6 +1598,8 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                   </Group>
                 </Card>
 
+                {cleanPayCompact}
+
                 {status === DRIVER_STATUS.TO_CUSTOMER && (
                   <Button 
                     onClick={handleConfirmArrivalAtCustomer}
@@ -1561,6 +1637,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     const totalEarned = typeof currentOrder.pay === 'number' ? currentOrder.pay : parseFloat(String(currentOrder.pay || 0));
     const tipAmount = (orderDetails?.tip_cents || 0) / 100;
     const orderId = currentOrder.id.split('-')[1] || currentOrder.id.slice(-8);
+    const displayOrderId = orderDetails?.order_id || orderId;
     const totalMiles = currentOrder.totalDistance || 0;
     
     // Calculate elapsed time
@@ -1641,6 +1718,30 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             Delivery Complete
           </Title>
 
+          {!isTestOrder && (completeCleanPaySummary || cleanPaySummary) ? (
+            <Box ref={receiptRef} w="100%" maw={420}>
+              <FeederCleanPayCard
+                variant="full"
+                orderEarnings={(completeCleanPaySummary || cleanPaySummary)!}
+                orderStatus={orderDetails?.order_status}
+                showTimestamps
+                showVerificationBadge
+                showAdjustment
+                onViewOrderDetails={() =>
+                  notifications.show({
+                    title: 'Order details',
+                    message: `Order ID: ${displayOrderId}`,
+                    color: 'dark',
+                  })
+                }
+                onViewEarningsReceipt={() =>
+                  receiptRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+                onReturnToMap={onCompleteDelivery}
+              />
+            </Box>
+          ) : null}
+
           {/* Animated Total Earned */}
           <Box mt="xs" mb="sm">
             <Text 
@@ -1656,7 +1757,8 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               fw={800}
               c={isAnimating ? 'dark' : '#22c55e'}
               style={{
-                fontSize: '100px',
+                fontSize:
+                  !isTestOrder && (completeCleanPaySummary || cleanPaySummary) ? '48px' : '100px',
                 lineHeight: '1',
                 fontFamily: 'system-ui, -apple-system, sans-serif',
                 letterSpacing: '-0.02em',
@@ -1730,26 +1832,32 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             </Stack>
           </Card>
 
-          {/* Resume Feeding Button - Orange to Red Gradient */}
-          <Button
-            onClick={onCompleteDelivery}
-            size="lg"
-            fullWidth
-            maw={420}
-            h={56}
-            style={{
-              background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%)',
-              color: 'white',
-              fontSize: '16px',
-              fontWeight: 600,
-              letterSpacing: '0.02em',
-              borderRadius: '12px',
-              border: 'none',
-              boxShadow: '0 4px 14px rgba(234, 88, 12, 0.4)',
-            }}
-          >
-            RESUME FEEDING
-          </Button>
+          {(isTestOrder || (!completeCleanPaySummary && !cleanPaySummary)) ? (
+            <Button
+              onClick={onCompleteDelivery}
+              size="lg"
+              fullWidth
+              maw={420}
+              h={56}
+              style={{
+                background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%)',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: 600,
+                letterSpacing: '0.02em',
+                borderRadius: '12px',
+                border: 'none',
+                boxShadow: '0 4px 14px rgba(234, 88, 12, 0.4)',
+              }}
+            >
+              RESUME FEEDING
+            </Button>
+          ) : null}
+          {!isTestOrder && (completeCleanPaySummary || cleanPaySummary) ? (
+            <Button variant="light" color="gray" fullWidth maw={420} size="md" onClick={onCompleteDelivery}>
+              Continue feeding
+            </Button>
+          ) : null}
         </Stack>
       </Box>
     );

@@ -42,6 +42,14 @@ export interface RetailGroceryOfferFlowProps {
   tags?: string[];
   /** e.g. "1:00 PM" */
   getOffersUntil?: string;
+  /** When set, shows Clean Pay Standard offer breakdown before accept (step 1). */
+  cleanPayOffer?: {
+    basePayDollars: number;
+    deliveryFeeShareDollars: number;
+    customerTipDollars: number;
+    promoBonusDollars: number;
+    totalGuaranteedDollars: number;
+  } | null;
   onAccept: () => void;
   onReject: () => void;
   /** Called when user taps "Start route" on step 2 */
@@ -93,6 +101,7 @@ export const RetailGroceryOfferFlow: React.FC<RetailGroceryOfferFlowProps> = ({
   dropoffCount,
   tags = [],
   getOffersUntil,
+  cleanPayOffer,
   onAccept,
   onReject,
   onStartRoute,
@@ -191,6 +200,69 @@ export const RetailGroceryOfferFlow: React.FC<RetailGroceryOfferFlowProps> = ({
               <ChevronRight />
             </div>
           </div>
+
+          {cleanPayOffer && step === 1 && (
+            <div
+              style={{
+                marginBottom: 16,
+                padding: 12,
+                borderRadius: 12,
+                background: '#FFFBEB',
+                border: `1px solid #FDE68A`,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: '#92400E',
+                    background: '#FEF3C7',
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                  }}
+                >
+                  Clean Pay
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: C.textPrimary }}>Locked offer</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: C.textPrimary }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: C.textSecondary }}>Base Pay</span>
+                  <span style={{ fontWeight: 600 }}>${cleanPayOffer.basePayDollars.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: C.textSecondary }}>Delivery Fee Share</span>
+                  <span style={{ fontWeight: 600 }}>${cleanPayOffer.deliveryFeeShareDollars.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: C.textSecondary }}>Customer Tip</span>
+                  <span style={{ fontWeight: 600 }}>${cleanPayOffer.customerTipDollars.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: C.textSecondary }}>Promo or Bonus</span>
+                  <span style={{ fontWeight: 600 }}>${cleanPayOffer.promoBonusDollars.toFixed(2)}</span>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    marginTop: 6,
+                    paddingTop: 8,
+                    borderTop: `1px dashed ${C.border}`,
+                  }}
+                >
+                  <span style={{ fontWeight: 700 }}>Total Guaranteed Offer</span>
+                  <span style={{ fontWeight: 800, color: C.green }}>${cleanPayOffer.totalGuaranteedDollars.toFixed(2)}</span>
+                </div>
+              </div>
+              <p style={{ margin: '10px 0 0', fontSize: 11, lineHeight: 1.35, color: C.textSecondary }}>
+                Customer tips are shown separately and paid to the Feeder.
+              </p>
+            </div>
+          )}
 
           {/* Pickup row */}
           <div

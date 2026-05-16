@@ -6,6 +6,8 @@
 
 import React from 'react';
 import { TimerRing } from './TimerRing';
+import FeederCleanPayCard from '@/components/mobile/FeederCleanPayCard';
+import type { FeederCleanPaySummary } from '@/lib/feederCleanPaySummary';
 
 // ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
 const C = {
@@ -39,6 +41,8 @@ interface DeliveryRequestProps {
   tip: number;           // dollars
   feePercentage: number; // e.g., 70
   mapComponent?: React.ReactNode; // Your existing Mapbox GL component
+  /** Live Clean Pay preview from `get_feeder_clean_pay_summary` (offered stage). */
+  cleanPaySummary?: FeederCleanPaySummary | null;
   onAccept: () => void;
   onDecline: () => void;
   onClose: () => void;
@@ -115,6 +119,7 @@ export const NewDeliveryRequest: React.FC<DeliveryRequestProps> = ({
   tip,
   feePercentage,
   mapComponent,
+  cleanPaySummary = null,
   onAccept,
   onDecline,
   onClose,
@@ -621,6 +626,12 @@ export const NewDeliveryRequest: React.FC<DeliveryRequestProps> = ({
             </div>
           </div>
         </div>
+
+        {cleanPaySummary ? (
+          <div style={{ margin: '12px 20px 0', width: 'calc(100% - 40px)' }}>
+            <FeederCleanPayCard variant="compact" orderEarnings={cleanPaySummary} showAdjustment={false} />
+          </div>
+        ) : null}
 
         {/* ── Action Buttons ────────────────────────────────────────── */}
         <div

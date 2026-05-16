@@ -51,6 +51,8 @@ export interface ContactlessDeliveryFlowProps {
   onContact?: () => void;
   onCompleteDropOff: (opts: { deliveryPhotoUrl?: string; dropOffLocation?: string }) => void | Promise<void>;
   onClose?: () => void;
+  /** Shown on step 5 above “Complete drop-off” after photo is taken */
+  beforeCompleteDeliverySlot?: React.ReactNode;
 }
 
 type StepIndex = 1 | 2 | 3 | 4 | 5;
@@ -69,6 +71,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
   onContact,
   onCompleteDropOff,
   onClose,
+  beforeCompleteDeliverySlot,
 }) => {
   const [showBanner, setShowBanner] = useState(true);
   const [step1Scanned, setStep1Scanned] = useState(0);
@@ -494,6 +497,9 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                       >
                         Retake
                       </Button>
+                      {beforeCompleteDeliverySlot ? (
+                        <Box mt="md">{beforeCompleteDeliverySlot}</Box>
+                      ) : null}
                       <Box mt="md">
                         <SlideToConfirm
                           label="Complete drop-off"

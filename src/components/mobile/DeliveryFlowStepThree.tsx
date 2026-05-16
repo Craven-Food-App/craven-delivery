@@ -197,6 +197,7 @@ export interface DeliveryFlowStepThreeProps {
   onSpeakInstructions?: () => void;
   onCopyInstructions?: () => void;
   onArrived: () => void;
+  cleanPaySlot?: React.ReactNode;
 }
 
 export const DeliveryFlowStepThree: React.FC<DeliveryFlowStepThreeProps> = ({
@@ -219,6 +220,7 @@ export const DeliveryFlowStepThree: React.FC<DeliveryFlowStepThreeProps> = ({
   onSpeakInstructions,
   onCopyInstructions,
   onArrived,
+  cleanPaySlot,
 }) => {
   const [sheetTranslatePct, setSheetTranslatePct] = useState(SNAP_HALF);
   const [dragging, setDragging] = useState(false);
@@ -493,6 +495,7 @@ export const DeliveryFlowStepThree: React.FC<DeliveryFlowStepThreeProps> = ({
                 </div>
               </div>
             </div>
+            {cleanPaySlot ? <div style={{ marginTop: 10 }}>{cleanPaySlot}</div> : null}
             <div style={{ height: 20 }} />
           </div>
 

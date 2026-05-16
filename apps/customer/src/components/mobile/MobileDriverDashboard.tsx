@@ -44,6 +44,11 @@ import { useCrashReporting } from '@/hooks/useCrashReporting';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { LoadingState, LoadingOverlay } from '@/components/LoadingStates';
 import OfflineIndicator from '@/components/OfflineIndicator';
+import {
+  getFeederCleanPaySummary,
+  saveFeederCleanPayOfferAcceptance,
+  type FeederCleanPaySummary,
+} from '@/lib/feederCleanPaySummary';
 type DriverState = 'offline' | 'online_searching' | 'online_paused' | 'on_delivery';
 type VehicleType = 'car' | 'bike' | 'scooter' | 'walk' | 'motorcycle';
 type EarningMode = 'perHour' | 'perOffer';
@@ -619,6 +624,7 @@ export const MobileDriverDashboard: React.FC = () => {
     }
   };
   const [currentOrderAssignment, setCurrentOrderAssignment] = useState<OrderAssignment | null>(null);
+  const [activeOfferCleanPay, setActiveOfferCleanPay] = useState<FeederCleanPaySummary | null>(null);
   const [orderTimeLeft, setOrderTimeLeft] = useState<number>(33);
   const [activeDelivery, setActiveDelivery] = useState<any>(null);
   const [todayEarnings, setTodayEarnings] = useState(0);
@@ -800,6 +806,20 @@ export const MobileDriverDashboard: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [showOrderModal, currentOrderAssignment]);
+
+  useEffect(() => {
+    if (!currentOrderAssignment?.order_id) {
+      setActiveOfferCleanPay(null);
+      return;
+    }
+    let cancelled = false;
+    void getFeederCleanPaySummary(currentOrderAssignment.order_id, 'offered').then((s) => {
+      if (!cancelled) setActiveOfferCleanPay(s);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentOrderAssignment?.order_id]);
 
   // Check session persistence and onboarding on component mount
   useEffect(() => {
@@ -1977,7 +1997,12 @@ export const MobileDriverDashboard: React.FC = () => {
                 showRoute={true}
               />
             }
+            cleanPaySummary={activeOfferCleanPay}
             onAccept={async () => {
+              const cp = await saveFeederCleanPayOfferAcceptance(currentOrderAssignment.order_id);
+              if (!cp.ok) {
+                console.warn('saveFeederCleanPayOfferAcceptance', currentOrderAssignment.order_id, cp.error);
+              }
               // Fetch order details including items when accepting
               const { data: orderData } = await supabase
                 .from('orders')

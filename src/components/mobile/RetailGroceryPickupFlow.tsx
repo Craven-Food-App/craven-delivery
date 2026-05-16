@@ -61,6 +61,8 @@ export interface RetailGroceryPickupFlowProps {
    * When provided (e.g. from API), the bar reflects this; otherwise uses internal state.
    */
   orderStatusStep?: number;
+  /** Optional compact Clean Pay card (non-blocking). */
+  cleanPaySlot?: React.ReactNode;
 }
 
 type PickupStep = 'arrival' | 'spot_and_qr' | 'scan' | 'stops_summary' | 'stops_list';
@@ -85,6 +87,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   onQrConfirmed,
   onStartScanning,
   orderStatusStep: orderStatusStepProp,
+  cleanPaySlot,
 }) => {
   const [step, setStep] = useState<PickupStep>('arrival');
   const [selectedSpot, setSelectedSpot] = useState<number | null>(null);
@@ -620,6 +623,10 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                 })}
               </div>
             </div>
+
+            {cleanPaySlot ? (
+              <div style={{ marginTop: 12, pointerEvents: 'auto' }}>{cleanPaySlot}</div>
+            ) : null}
           </div>
         )}
 

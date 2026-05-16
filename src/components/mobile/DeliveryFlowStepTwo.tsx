@@ -264,6 +264,7 @@ export interface DeliveryFlowStepTwoProps {
   onConfirmPickup: () => void;
   /** When >1, this leg is part of a multi-stop batch — remind to verify each order at the store. */
   batchRouteStopCount?: number;
+  cleanPaySlot?: React.ReactNode;
 }
 
 export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
@@ -282,6 +283,7 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
   onNavigate,
   onConfirmPickup,
   batchRouteStopCount,
+  cleanPaySlot,
 }) => {
   const [sheetTranslatePct, setSheetTranslatePct] = useState(SNAP_HALF);
   const [dragging, setDragging] = useState(false);
@@ -516,6 +518,7 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
                 <div className="dfl-step-two-pay-value">${typeof estimatedPay === 'number' ? estimatedPay.toFixed(2) : '0.00'}</div>
               </div>
             </div>
+            {cleanPaySlot ? <div style={{ marginTop: 10 }}>{cleanPaySlot}</div> : null}
             <div style={{ height: 20 }} />
           </div>
 

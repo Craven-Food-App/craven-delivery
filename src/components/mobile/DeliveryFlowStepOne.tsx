@@ -170,6 +170,7 @@ export interface DeliveryFlowStepOneProps {
   estArrivalMin?: number;
   onNavigate: () => void;
   onArrived: () => void;
+  cleanPaySlot?: React.ReactNode;
 }
 
 export const DeliveryFlowStepOne: React.FC<DeliveryFlowStepOneProps> = ({
@@ -185,6 +186,7 @@ export const DeliveryFlowStepOne: React.FC<DeliveryFlowStepOneProps> = ({
   estArrivalMin = 4,
   onNavigate,
   onArrived,
+  cleanPaySlot,
 }) => {
   const [sheetTranslatePct, setSheetTranslatePct] = useState(SNAP_HALF);
   const [dragging, setDragging] = useState(false);
@@ -391,6 +393,7 @@ export const DeliveryFlowStepOne: React.FC<DeliveryFlowStepOneProps> = ({
                 </div>
               </div>
             </div>
+            {cleanPaySlot ? <div style={{ marginTop: 10 }}>{cleanPaySlot}</div> : null}
             <div style={{ height: 20 }} />
           </div>
 
