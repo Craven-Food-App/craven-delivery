@@ -9,6 +9,7 @@ import { Store, MapPin, Zap, Send, Clock, CheckCircle, AlertTriangle, Car } from
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { fetchActiveOnlineFeeders, type OnlineFeederRow } from '@/lib/activeOnlineFeeders';
+import { TestingCleanPayOrderPreview } from '@/components/testing/TestingCleanPayOrderPreview';
 
 type RestaurantRow = {
   id: string;
@@ -27,6 +28,7 @@ export const LiveMerchantTesting = () => {
   const [orderType, setOrderType] = useState<'restaurant' | 'retail'>('restaurant');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [previewOrderId, setPreviewOrderId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -78,11 +80,13 @@ export const LiveMerchantTesting = () => {
       if (fnError || !result) {
         throw new Error((fnError as { message?: string })?.message || 'Failed to create merchant test order');
       }
-      const { notificationPayload, restaurant, assignment } = result as {
+      const { notificationPayload, restaurant, order, assignment } = result as {
         notificationPayload: Record<string, unknown>;
         restaurant: { name?: string };
         assignment: { id: string } | null;
+        order: { id: string };
       };
+      setPreviewOrderId(order?.id ?? null);
 
       if (driverId && assignment) {
         const driverChannel = supabase.channel(`driver_${driverId}`);
@@ -246,6 +250,12 @@ export const LiveMerchantTesting = () => {
               updates in real time.
             </AlertDescription>
           </Alert>
+
+          <TestingCleanPayOrderPreview
+            orderId={previewOrderId}
+            title="Itemized feeder earnings (Clean Pay RPC)"
+            description="You are the test customer on merchant test orders. Refresh while the feeder progresses through pickup and delivery."
+          />
         </CardContent>
       </Card>
     </div>

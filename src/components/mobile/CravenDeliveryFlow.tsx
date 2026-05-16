@@ -442,8 +442,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
 
   useEffect(() => {
     const oid = orderDetails?.order_id;
-    const test = orderDetails?.isTestOrder;
-    if (!oid || test || status === DRIVER_STATUS.COMPLETE) return;
+    if (!oid || status === DRIVER_STATUS.COMPLETE) return;
     let cancelled = false;
     const stage = driverStatusToCleanPayStage(status);
     void getFeederCleanPaySummary(oid, stage).then((s) => {
@@ -452,12 +451,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [orderDetails?.order_id, orderDetails?.isTestOrder, status]);
+  }, [orderDetails?.order_id, status]);
 
   useEffect(() => {
     const oid = orderDetails?.order_id;
-    const test = orderDetails?.isTestOrder;
-    if (!oid || test || status !== DRIVER_STATUS.COMPLETE) return;
+    if (!oid || status !== DRIVER_STATUS.COMPLETE) return;
     let cancelled = false;
     const run = async () => {
       for (let i = 0; i < 16; i++) {
@@ -473,7 +471,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [orderDetails?.order_id, orderDetails?.isTestOrder, status]);
+  }, [orderDetails?.order_id, status]);
 
   // GPS tracking - watch driver location continuously
   useEffect(() => {
@@ -910,7 +908,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       
       // Wait for animation, then transition to next step
       setTimeout(async () => {
-        if (!isTestOrder && orderDetails.order_id) {
+        if (orderDetails.order_id) {
           const sync = await syncFeederCleanPayAdjustmentAtPickup(orderDetails.order_id);
           if (!sync.ok) console.warn('syncFeederCleanPayAdjustmentAtPickup', sync.error);
         }
@@ -1504,7 +1502,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     const payAmount = typeof currentOrder.pay === 'number' ? currentOrder.pay : parseFloat(String(currentOrder.pay || 0));
     const isToStore = currentFlow?.isPickup ?? true;
     const cleanPayCompact =
-      !isTestOrder && cleanPaySummary ? (
+      cleanPaySummary ? (
         <FeederCleanPayCard variant="compact" orderEarnings={cleanPaySummary} showAdjustment />
       ) : null;
 
@@ -1851,7 +1849,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               : undefined
           }
           beforeCompleteDeliverySlot={
-            !isTestOrder && cleanPaySummary ? (
+            cleanPaySummary ? (
               <Card withBorder p="sm" radius="md" bg="orange.0" style={{ borderColor: '#FED7AA' }}>
                 <Text size="sm" fw={700} mb={8}>
                   After completion, your final earnings receipt will be generated.
@@ -2305,7 +2303,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             Order Complete
           </Title>
 
-          {!isTestOrder && (completeCleanPaySummary || cleanPaySummary) ? (
+          {(completeCleanPaySummary || cleanPaySummary) ? (
             <Box ref={receiptRef} w="100%" maw={420}>
               <FeederCleanPayCard
                 variant="full"
@@ -2436,7 +2434,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             </Stack>
           </Card>
 
-          {(isTestOrder || (!completeCleanPaySummary && !cleanPaySummary)) ? (
+          {(!completeCleanPaySummary && !cleanPaySummary) ? (
           <Button
             onClick={onCompleteDelivery}
             size="md"
@@ -2457,7 +2455,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             RESUME FEEDING
           </Button>
           ) : null}
-          {!isTestOrder && (completeCleanPaySummary || cleanPaySummary) ? (
+          {(completeCleanPaySummary || cleanPaySummary) ? (
             <Button variant="light" color="gray" fullWidth maw={420} onClick={onCompleteDelivery}>
               Continue feeding
             </Button>

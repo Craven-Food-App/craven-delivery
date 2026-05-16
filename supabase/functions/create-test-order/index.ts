@@ -266,7 +266,8 @@ serve(async (req) => {
         subtotal_cents: subtotalCents,
         tax_cents: taxCents,
         tip_cents: tipCents,
-        delivery_fee_cents: 0,
+        delivery_fee_cents: 399,
+        driver_base_pay_cents: 500,
         mileage_pay_cents: mileagePayCents,
         distance_km: distanceKm, // Set distance_km so it shows in earnings
         delivery_address,

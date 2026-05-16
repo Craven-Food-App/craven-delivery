@@ -10,6 +10,7 @@ import { Car, MapPin, Zap, Send, Clock, CheckCircle, AlertTriangle, Users } from
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { fetchActiveOnlineFeeders, type OnlineFeederRow } from '@/lib/activeOnlineFeeders';
+import { TestingCleanPayOrderPreview } from '@/components/testing/TestingCleanPayOrderPreview';
 
 type OnlineDriver = OnlineFeederRow;
 
@@ -19,6 +20,7 @@ export const LiveDriverTesting = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [orderType, setOrderType] = useState<'restaurant' | 'retail'>('restaurant');
+  const [previewOrderId, setPreviewOrderId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Fixed useEffect with async function inside
@@ -94,6 +96,7 @@ export const LiveDriverTesting = () => {
       }
 
       const { notificationPayload, restaurant } = result as any;
+      setPreviewOrderId(typeof notificationPayload?.order_id === 'string' ? notificationPayload.order_id : null);
 
       // Step 2: Set up channels in parallel
       const driverChannel = supabase.channel(`driver_${selectedDriver}`);
@@ -303,6 +306,12 @@ export const LiveDriverTesting = () => {
               The selected feeder will receive a push notification and see a test order assignment modal.
             </AlertDescription>
           </Alert>
+
+          <TestingCleanPayOrderPreview
+            orderId={previewOrderId}
+            title="Itemized earnings (same data as feeder Clean Pay)"
+            description="Uses your admin session: you are the test customer on this order, so you can preview the live RPC summary. Refresh after the feeder accepts to see locked offer / pickup states."
+          />
         </CardContent>
       </Card>
     </div>
