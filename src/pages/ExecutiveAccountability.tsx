@@ -23,10 +23,8 @@ const ExecutiveAccountability: React.FC = () => {
     const checkAccess = async () => {
       if (loading) return;
       
-      // TORRANCE STROMAN: UNIVERSAL ACCESS - NO RESTRICTIONS - CHECK FIRST
-      const email = user?.email?.toLowerCase() || '';
-      if (hasFullAccess(user?.email) || email === 'tstroman.ceo@cravenusa.com' || email.includes('torrance') || email.includes('tstroman')) {
-        console.log('✅ TORRANCE ACCESS GRANTED - UNIVERSAL ACCESS:', user?.email);
+      // Use exact-match helper from torranceAccess (no partial email matching).
+      if (hasFullAccess(user?.email)) {
         setHasAccess(true);
         return;
       }

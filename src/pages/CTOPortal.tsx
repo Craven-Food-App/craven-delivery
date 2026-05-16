@@ -97,9 +97,9 @@ function CTOPortalContent() {
   useActivityTracking('cto');
   useAutoLogout('cto');
 
-  const email = user?.email?.toLowerCase() || '';
-  const isTorrance = email === 'tstroman.ceo@cravenusa.com' || email.includes('torrance') || email.includes('tstroman');
-  const finalIsAuthorized = isAuthorized || isTorrance;
+  // Authoritative authorization comes from useExecAuth (server-side exec_users).
+  // Hardcoded email partial-match bypasses removed (security).
+  const finalIsAuthorized = isAuthorized;
 
   useEffect(() => {
     if (!finalIsAuthorized) return;

@@ -24,32 +24,18 @@ export const MarketingAccessGuard: React.FC<MarketingAccessGuardProps> = ({
   const isCEO = async (userId: string, email: string): Promise<boolean> => {
     try {
       // Check multiple ways to identify CEO
-      const checks = await Promise.all([
-        // Check ceo_access_credentials
-        supabase
-          .from('ceo_access_credentials')
-          .select('id')
-          .eq('user_email', email)
-          .single(),
-        // Check exec_users
-        supabase
-          .from('exec_users')
-          .select('role, access_level')
-          .eq('user_id', userId)
-          .eq('role', 'ceo')
-          .eq('access_level', 1)
-          .single(),
-        // Check known CEO email
-        Promise.resolve(email === 'craven@usa.com' || email.toLowerCase().includes('torrance'))
-      ]);
-
-      return checks[0].data !== null || 
-             checks[1].data !== null || 
-             checks[2] === true;
+      // Server-side authoritative check via exec_users only.
+      // Hardcoded email bypasses removed (security).
+      const { data: execRow } = await supabase
+        .from('exec_users')
+        .select('role, access_level')
+        .eq('user_id', userId)
+        .eq('role', 'ceo')
+        .maybeSingle();
+      return !!execRow;
     } catch (error) {
       console.error('Error checking CEO status:', error);
-      // Fallback to email check
-      return email === 'craven@usa.com' || email.toLowerCase().includes('torrance');
+      return false;
     }
   };
 

@@ -313,7 +313,7 @@ serve(async (req) => {
         success: true,
         userId: userId,
         email: email,
-        tempPassword: password, // Return password for display
+        message: 'User created. Send credentials via secure email; passwords are no longer returned in responses.',
         portals: portals,
         message: userWasExisting ? 'Existing user password updated successfully' : 'User account created successfully',
         userWasExisting: userWasExisting,
