@@ -22043,6 +22043,7 @@ export type Database = {
           diamond_only_until: string | null
           distance_fee_cents: number
           distance_km: number | null
+          driver_arrived_at: string | null
           driver_base_pay_cents: number
           driver_delivery_fee_share_bps: number
           driver_fee_share_cents: number
@@ -22057,6 +22058,18 @@ export type Database = {
           estimated_distance_meters: number | null
           estimated_duration_seconds: number | null
           exclusive_type: string | null
+          feeder_adjustment_cents: number
+          feeder_adjustment_reason: string | null
+          feeder_cancellation_pay_cents: number
+          feeder_clean_pay_offer_snapshot: Json
+          feeder_clean_pay_verified: boolean
+          feeder_delivery_completed_at: string | null
+          feeder_final_payout_cents: number | null
+          feeder_offer_accepted_at: string | null
+          feeder_offer_locked_at: string | null
+          feeder_payout_status: string | null
+          feeder_tip_status: string | null
+          feeder_total_guaranteed_offer_cents: number | null
           food_subtotal_cents: number | null
           id: string
           is_stacked: boolean | null
@@ -22078,6 +22091,7 @@ export type Database = {
           pickup_code: string | null
           pickup_confirmed_at: string | null
           pickup_location: Json | null
+          pickup_parking_spot: string | null
           pickup_photo_url: string | null
           platform_delivery_share_cents: number
           platform_fee_cents: number | null
@@ -22138,6 +22152,7 @@ export type Database = {
           diamond_only_until?: string | null
           distance_fee_cents?: number
           distance_km?: number | null
+          driver_arrived_at?: string | null
           driver_base_pay_cents?: number
           driver_delivery_fee_share_bps?: number
           driver_fee_share_cents?: number
@@ -22152,6 +22167,18 @@ export type Database = {
           estimated_distance_meters?: number | null
           estimated_duration_seconds?: number | null
           exclusive_type?: string | null
+          feeder_adjustment_cents?: number
+          feeder_adjustment_reason?: string | null
+          feeder_cancellation_pay_cents?: number
+          feeder_clean_pay_offer_snapshot?: Json
+          feeder_clean_pay_verified?: boolean
+          feeder_delivery_completed_at?: string | null
+          feeder_final_payout_cents?: number | null
+          feeder_offer_accepted_at?: string | null
+          feeder_offer_locked_at?: string | null
+          feeder_payout_status?: string | null
+          feeder_tip_status?: string | null
+          feeder_total_guaranteed_offer_cents?: number | null
           food_subtotal_cents?: number | null
           id?: string
           is_stacked?: boolean | null
@@ -22173,6 +22200,7 @@ export type Database = {
           pickup_code?: string | null
           pickup_confirmed_at?: string | null
           pickup_location?: Json | null
+          pickup_parking_spot?: string | null
           pickup_photo_url?: string | null
           platform_delivery_share_cents?: number
           platform_fee_cents?: number | null
@@ -22233,6 +22261,7 @@ export type Database = {
           diamond_only_until?: string | null
           distance_fee_cents?: number
           distance_km?: number | null
+          driver_arrived_at?: string | null
           driver_base_pay_cents?: number
           driver_delivery_fee_share_bps?: number
           driver_fee_share_cents?: number
@@ -22247,6 +22276,18 @@ export type Database = {
           estimated_distance_meters?: number | null
           estimated_duration_seconds?: number | null
           exclusive_type?: string | null
+          feeder_adjustment_cents?: number
+          feeder_adjustment_reason?: string | null
+          feeder_cancellation_pay_cents?: number
+          feeder_clean_pay_offer_snapshot?: Json
+          feeder_clean_pay_verified?: boolean
+          feeder_delivery_completed_at?: string | null
+          feeder_final_payout_cents?: number | null
+          feeder_offer_accepted_at?: string | null
+          feeder_offer_locked_at?: string | null
+          feeder_payout_status?: string | null
+          feeder_tip_status?: string | null
+          feeder_total_guaranteed_offer_cents?: number | null
           food_subtotal_cents?: number | null
           id?: string
           is_stacked?: boolean | null
@@ -22268,6 +22309,7 @@ export type Database = {
           pickup_code?: string | null
           pickup_confirmed_at?: string | null
           pickup_location?: Json | null
+          pickup_parking_spot?: string | null
           pickup_photo_url?: string | null
           platform_delivery_share_cents?: number
           platform_fee_cents?: number | null
@@ -31505,6 +31547,10 @@ export type Database = {
       }
     }
     Functions: {
+      _build_clean_pay_snapshot_from_order: {
+        Args: { o: Database["public"]["Tables"]["orders"]["Row"] }
+        Returns: Json
+      }
       _postgis_deprecate: {
         Args: { newname: string; oldname: string; version: string }
         Returns: undefined
@@ -31856,6 +31902,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      claim_order_assignment: {
+        Args: { p_assignment_id: string }
+        Returns: Json
+      }
+      claim_order_assignments_batch: {
+        Args: { p_assignment_ids: string[] }
+        Returns: Json
       }
       cleanup_expired_sessions: { Args: never; Returns: undefined }
       cleanup_expired_verifications: { Args: never; Returns: undefined }
@@ -32372,6 +32426,10 @@ export type Database = {
           feature_name: string
           total_attempts: number
         }[]
+      }
+      get_feeder_clean_pay_summary: {
+        Args: { p_flow_stage?: string; p_order_id: string }
+        Returns: Json
       }
       get_marketplace_map_pins: {
         Args: {
@@ -32893,6 +32951,10 @@ export type Database = {
       rpc_has_finance_permission: {
         Args: { p_entity_id?: string; p_permission_code: string }
         Returns: boolean
+      }
+      save_feeder_clean_pay_offer_acceptance: {
+        Args: { p_order_id: string }
+        Returns: Json
       }
       soundex: { Args: { "": string }; Returns: string }
       st_3dclosestpoint: {
@@ -33542,6 +33604,10 @@ export type Database = {
         Returns: Json
       }
       sync_executive_file_system_from_records: { Args: never; Returns: Json }
+      sync_feeder_clean_pay_adjustment_at_pickup: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       sync_user_roles_for_employee: {
         Args: {
           p_employee_id: string
