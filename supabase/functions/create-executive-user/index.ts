@@ -21,10 +21,48 @@ serve(async (req: Request) => {
   }
 
   try {
+    // SECURITY: Require authenticated caller with admin/CEO privileges
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const anonClient = createClient(
+      supabaseUrl,
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: userData, error: userErr } = await anonClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
     const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
+      supabaseUrl,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "" // Service role key for admin operations
     );
+
+    // Authorization: caller must be CEO or admin in exec_users
+    const { data: callerExec } = await supabaseClient
+      .from('exec_users')
+      .select('role, access_level')
+      .eq('user_id', userData.user.id)
+      .maybeSingle();
+    const callerRole = (callerExec?.role || '').toLowerCase();
+    const isAuthorized = callerRole === 'ceo' || callerRole === 'admin' || (callerExec?.access_level ?? 99) <= 1;
+    if (!isAuthorized) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: requires CEO/admin role' }),
+        { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
 
     const requestBody: CreateExecutiveUserRequest = await req.json();
     const { firstName, lastName, email, position, department, role, password, employeeId } = requestBody;
@@ -91,7 +129,7 @@ serve(async (req: Request) => {
         success: true, 
         userId: authData.user.id,
         execUserId: execUser.id,
-        tempPassword: tempPassword // Send password for emailing
+        message: 'Executive user created. A password reset link should be sent via email; passwords are no longer returned in responses.'
       }),
       {
         status: 200,
