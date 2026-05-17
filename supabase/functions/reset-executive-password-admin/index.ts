@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { requireAdmin } from "../_shared/adminAuth.ts";
 
 interface ResetPasswordRequest {
   email: string;
@@ -33,6 +34,14 @@ serve(async (req: Request) => {
 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const gate = await requireAdmin(req, ["admin", "ceo", "chro"]);
+  if (!gate.ok) {
+    return new Response(JSON.stringify({ error: gate.error }), {
+      status: gate.status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {
