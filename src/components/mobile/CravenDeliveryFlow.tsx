@@ -39,6 +39,7 @@ import {
   Checkbox,
   Image,
   Avatar,
+  Modal,
 } from '@mantine/core';
 
 // ===== TYPES =====
@@ -429,6 +430,8 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [cleanPaySummary, setCleanPaySummary] = useState<FeederCleanPaySummary | null>(null);
   const [completeCleanPaySummary, setCompleteCleanPaySummary] = useState<FeederCleanPaySummary | null>(null);
   const receiptRef = useRef<HTMLDivElement | null>(null);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
 
   // Navigation hook for external map app deep linking
   const { openExternalNavigation } = useNavigation();
@@ -550,8 +553,19 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   useEffect(() => {
     if (status !== DRIVER_STATUS.COMPLETE || !orderDetails) return;
     
-    // Calculate total once
-    const totalEarned = orderDetails?.payout_cents ? (orderDetails.payout_cents / 100) : (orderDetails?.pay || orderDetails?.total || 16.25);
+    // Unified earnings total (matches renderComplete calculation)
+    const tipC = deliveryStops?.length
+      ? deliveryStops.reduce((sum: number, s: any) => sum + (s.tip_cents ?? 0), 0)
+      : (orderDetails?.tip_cents ?? 0);
+    const deliveryC = deliveryStops?.length
+      ? deliveryStops.reduce((sum: number, s: any) => sum + (s.payout_cents ?? 0), 0)
+      : (orderDetails?.payout_cents ?? 0);
+    const mileageC = orderDetails?.mileage_pay_cents ?? 0;
+    const sum = completeCleanPaySummary || cleanPaySummary;
+    const customerTipC = sum?.customerTipCents ?? tipC;
+    const promoC = sum?.promoBonusCents ?? 0;
+    const adjC = sum?.adjustmentCents ?? 0;
+    const totalEarned = (deliveryC + mileageC + customerTipC + promoC + adjC) / 100;
     
     // Reset animation state
     setAnimatedTotal(0);
@@ -2213,17 +2227,41 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     const tipCentsTotal = deliveryStops?.length
       ? deliveryStops.reduce((sum: number, s: any) => sum + (s.tip_cents ?? 0), 0)
       : (orderDetails?.tip_cents ?? 0);
-    const tipAmount = tipCentsTotal / 100;
     // Use canonical order ID (same as merchant and customer) – full id, not derived
     const displayOrderId = orderDetails?.order_id ?? orderDetails?.id ?? currentOrder.id ?? '';
     const totalMiles = currentOrder.totalDistance || 0;
     const mileagePayCents = orderDetails?.mileage_pay_cents ?? 0;
-    const mileagePay = mileagePayCents / 100;
     const deliveryPayCents = deliveryStops?.length
       ? deliveryStops.reduce((sum: number, s: any) => sum + (s.payout_cents ?? 0), 0)
       : (orderDetails?.payout_cents ?? 0);
+
+    // ===== UNIFIED EARNINGS CALCULATION =====
+    // Single source for the Order Complete screen, Earnings Receipt, and Order Details.
+    // Driver-facing legacy fields (deliveryPay + mileagePay) are authoritative for
+    // delivery/mileage; Clean Pay summary supplies tip, promo, adjustment, status,
+    // verification, and timestamps.
+    const summary = completeCleanPaySummary || cleanPaySummary;
+    const customerTipCents = summary?.customerTipCents ?? tipCentsTotal;
+    const promoBonusCents = summary?.promoBonusCents ?? 0;
+    const adjustmentCents = summary?.adjustmentCents ?? 0;
+    const finalPayoutCents =
+      deliveryPayCents + mileagePayCents + customerTipCents + promoBonusCents + adjustmentCents;
+    const originalOfferCents = summary?.totalGuaranteedCents ?? 0;
+    const showOriginalOffer =
+      originalOfferCents > 0 && Math.abs(originalOfferCents - finalPayoutCents) > 1;
+
     const deliveryPay = deliveryPayCents / 100;
-    const totalEarned = deliveryPay + mileagePay + tipAmount;
+    const mileagePay = mileagePayCents / 100;
+    const tipAmount = customerTipCents / 100;
+    const promoAmount = promoBonusCents / 100;
+    const adjustmentAmount = adjustmentCents / 100;
+    const totalEarned = finalPayoutCents / 100;
+    const originalOffer = originalOfferCents / 100;
+
+    const fmtTs = (iso?: string | null) =>
+      iso
+        ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
+        : '—';
 
     // Calculate elapsed time
     let elapsedTime = '0 min';
@@ -2237,6 +2275,17 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         elapsedTime = minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
       }
     }
+
+    const merchantName =
+      orderDetails?.restaurant_name ||
+      orderDetails?.restaurant?.name ||
+      orderDetails?.merchant_name ||
+      '—';
+    const orderItems: Array<{ name?: string; quantity?: number }> = Array.isArray(orderDetails?.order_items)
+      ? orderDetails.order_items
+      : Array.isArray(orderDetails?.items)
+        ? orderDetails.items
+        : [];
 
     return (
       <Box
@@ -2303,30 +2352,6 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             Order Complete
           </Title>
 
-          {(completeCleanPaySummary || cleanPaySummary) ? (
-            <Box ref={receiptRef} w="100%" maw={420}>
-              <FeederCleanPayCard
-                variant="full"
-                orderEarnings={(completeCleanPaySummary || cleanPaySummary)!}
-                orderStatus={orderDetails?.order_status}
-                showTimestamps
-                showVerificationBadge
-                showAdjustment
-                onViewOrderDetails={() =>
-                  notifications.show({
-                    title: 'Order details',
-                    message: `Order ID: ${displayOrderId}`,
-                    color: 'dark',
-                  })
-                }
-                onViewEarningsReceipt={() =>
-                  receiptRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }
-                onReturnToMap={onCompleteDelivery}
-              />
-            </Box>
-          ) : null}
-
           {/* Animated Total Earned */}
           <Box mt="xs" mb="sm">
             <Text 
@@ -2353,7 +2378,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             </Text>
           </Box>
 
-          {/* Order Summary Card */}
+          {/* Earnings Summary Card (unified) */}
           <Card 
             w="100%" 
             maw={420} 
@@ -2375,18 +2400,9 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               ta="left"
               style={{ letterSpacing: '0.05em' }}
             >
-              Order Summary
+              Earnings Summary
             </Text>
             <Stack gap="sm" align="stretch">
-              <Group justify="space-between" align="center">
-                <Text size="sm" fw={500} c="dimmed">
-                  Order ID
-                </Text>
-                <Text size="sm" fw={600} c="dark" style={{ fontFamily: 'monospace' }}>
-                  {displayOrderId}
-                </Text>
-              </Group>
-              <Divider />
               <Group justify="space-between" align="center">
                 <Text size="sm" fw={500} c="dimmed">
                   Delivery pay{deliveryStops && deliveryStops.length > 1 ? ` (${deliveryStops.length} stops)` : ''}
@@ -2407,59 +2423,178 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               <Divider />
               <Group justify="space-between" align="center">
                 <Text size="sm" fw={500} c="dimmed">
-                  Total Miles
-                </Text>
-                <Text size="sm" fw={600} c="dark">
-                  {totalMiles.toFixed(1)} mi
-                </Text>
-              </Group>
-              <Divider />
-              <Group justify="space-between" align="center">
-                <Text size="sm" fw={500} c="dimmed">
-                  Total Time
-                </Text>
-                <Text size="sm" fw={600} c="dark">
-                  {elapsedTime}
-                </Text>
-              </Group>
-              <Divider />
-              <Group justify="space-between" align="center">
-                <Text size="sm" fw={500} c="dimmed">
-                  Total Tip
+                  Customer Tip
                 </Text>
                 <Text size="sm" fw={600} c="orange.6">
                   ${tipAmount.toFixed(2)}
                 </Text>
               </Group>
+              <Divider />
+              <Group justify="space-between" align="center">
+                <Text size="sm" fw={500} c="dimmed">Promo or Bonus</Text>
+                <Text size="sm" fw={600} c="dark">${promoAmount.toFixed(2)}</Text>
+              </Group>
+              <Divider />
+              <Group justify="space-between" align="center">
+                <Text size="sm" fw={500} c="dimmed">Adjustment</Text>
+                <Text size="sm" fw={600} c={adjustmentCents < 0 ? 'red' : 'dark'}>
+                  ${adjustmentAmount.toFixed(2)}
+                </Text>
+              </Group>
+              <Divider />
+              <Group justify="space-between" align="center">
+                <Text size="sm" fw={700} c="dark">Total Earned</Text>
+                <Text size="md" fw={800} c="green.7">${totalEarned.toFixed(2)}</Text>
+              </Group>
+              {showOriginalOffer ? (
+                <Group justify="space-between" align="center">
+                  <Text size="xs" c="dimmed">Original Accepted Offer</Text>
+                  <Text size="xs" c="dimmed">${originalOffer.toFixed(2)}</Text>
+                </Group>
+              ) : null}
             </Stack>
           </Card>
 
-          {(!completeCleanPaySummary && !cleanPaySummary) ? (
-          <Button
-            onClick={onCompleteDelivery}
-            size="md"
-            fullWidth
-            maw={420}
-            h={44}
-            style={{
-              background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%)',
-              color: 'white',
-              fontSize: '14px',
-              fontWeight: 600,
-              letterSpacing: '0.02em',
-              borderRadius: '8px',
-              border: 'none',
-              boxShadow: '0 4px 14px rgba(234, 88, 12, 0.4)',
-            }}
-          >
-            RESUME FEEDING
-          </Button>
-          ) : null}
-          {(completeCleanPaySummary || cleanPaySummary) ? (
-            <Button variant="light" color="gray" fullWidth maw={420} onClick={onCompleteDelivery}>
-              Continue feeding
+          {/* Status Section */}
+          <Card w="100%" maw={420} withBorder p="md" radius={12} style={{ borderColor: '#e5e7eb' }}>
+            <Stack gap={6}>
+              {summary?.cleanPayVerified ? (
+                <Group gap={6}>
+                  <Badge color="teal" variant="filled" size="sm">Clean Pay Verified</Badge>
+                </Group>
+              ) : null}
+              <Group justify="space-between">
+                <Text size="xs" c="dimmed">Tip Status</Text>
+                <Text size="xs" fw={600}>{summary?.tipStatus || 'Paid to Feeder'}</Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="xs" c="dimmed">Payout Status</Text>
+                <Text size="xs" fw={600}>{summary?.payoutStatus || summary?.cleanPayStatusLabel || 'Ready'}</Text>
+              </Group>
+              <Divider my={4} />
+              <Group justify="space-between">
+                <Text size="xs" c="dimmed">Offer Accepted</Text>
+                <Text size="xs">{fmtTs(summary?.offerAcceptedAt || summary?.offerLockedAt)}</Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="xs" c="dimmed">Pickup Confirmed</Text>
+                <Text size="xs">{fmtTs(summary?.pickupConfirmedAt)}</Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="xs" c="dimmed">Delivery Completed</Text>
+                <Text size="xs">{fmtTs(summary?.deliveryCompletedAt)}</Text>
+              </Group>
+            </Stack>
+          </Card>
+
+          {/* Action Buttons */}
+          <Stack gap="xs" w="100%" maw={420}>
+            <Button variant="outline" color="gray" fullWidth onClick={() => setReceiptOpen(true)}>
+              View Earnings Receipt
             </Button>
-          ) : null}
+            <Button variant="light" color="orange" fullWidth onClick={() => setOrderDetailsOpen(true)}>
+              View Order Details
+            </Button>
+            <Button
+              onClick={onCompleteDelivery}
+              size="md"
+              fullWidth
+              h={44}
+              style={{
+                background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%)',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: 700,
+                letterSpacing: '0.02em',
+                borderRadius: '8px',
+                border: 'none',
+                boxShadow: '0 4px 14px rgba(234, 88, 12, 0.4)',
+              }}
+            >
+              RETURN TO MAP
+            </Button>
+          </Stack>
+
+          {/* Earnings Receipt Modal (POS-style) */}
+          <Modal
+            opened={receiptOpen}
+            onClose={() => setReceiptOpen(false)}
+            title={null}
+            withCloseButton
+            centered
+            size="sm"
+            radius="md"
+            padding="lg"
+          >
+            <Stack gap={6} align="stretch">
+              <Text ta="center" fw={800} size="lg" style={{ letterSpacing: '0.08em' }}>
+                CRAVE&apos;N
+              </Text>
+              <Text ta="center" size="sm" c="dimmed" mb="xs">Final Earnings Receipt</Text>
+              <Divider />
+              <Group justify="space-between"><Text size="xs" c="dimmed">Order ID</Text><Text size="xs" style={{ fontFamily: 'monospace' }}>{displayOrderId}</Text></Group>
+              <Group justify="space-between"><Text size="xs" c="dimmed">Completed</Text><Text size="xs">{fmtTs(summary?.deliveryCompletedAt) || '—'}</Text></Group>
+              <Divider my={6} />
+              <Group justify="space-between"><Text size="sm">Delivery Pay</Text><Text size="sm">${deliveryPay.toFixed(2)}</Text></Group>
+              <Group justify="space-between"><Text size="sm">Mileage Pay</Text><Text size="sm">${mileagePay.toFixed(2)}</Text></Group>
+              <Group justify="space-between"><Text size="sm">Customer Tip</Text><Text size="sm">${tipAmount.toFixed(2)}</Text></Group>
+              <Group justify="space-between"><Text size="sm">Promo / Bonus</Text><Text size="sm">${promoAmount.toFixed(2)}</Text></Group>
+              <Group justify="space-between"><Text size="sm">Adjustment</Text><Text size="sm">${adjustmentAmount.toFixed(2)}</Text></Group>
+              <Divider variant="dashed" my={6} />
+              <Group justify="space-between">
+                <Text fw={800}>Total Earned</Text>
+                <Text fw={800} c="green.7">${totalEarned.toFixed(2)}</Text>
+              </Group>
+              <Divider my={6} />
+              <Group justify="space-between"><Text size="xs" c="dimmed">Tip Status</Text><Text size="xs">{summary?.tipStatus || 'Paid to Feeder'}</Text></Group>
+              <Group justify="space-between"><Text size="xs" c="dimmed">Payout Status</Text><Text size="xs">{summary?.payoutStatus || 'Ready'}</Text></Group>
+              {summary?.cleanPayVerified ? (
+                <Badge color="teal" variant="filled" size="sm" mt={4} mx="auto">Clean Pay Verified</Badge>
+              ) : null}
+              <Text size="xs" c="dimmed" ta="center" mt="sm" style={{ lineHeight: 1.35 }}>
+                Your earnings were itemized from offer acceptance through delivery completion.
+              </Text>
+            </Stack>
+          </Modal>
+
+          {/* Order Details Modal (operational, no customer address) */}
+          <Modal
+            opened={orderDetailsOpen}
+            onClose={() => setOrderDetailsOpen(false)}
+            title="Order Details"
+            centered
+            size="sm"
+            radius="md"
+            padding="lg"
+          >
+            <Stack gap={6}>
+              <Group justify="space-between"><Text size="xs" c="dimmed">Order ID</Text><Text size="xs" style={{ fontFamily: 'monospace' }}>{displayOrderId}</Text></Group>
+              <Group justify="space-between"><Text size="xs" c="dimmed">Merchant</Text><Text size="xs" fw={600}>{merchantName}</Text></Group>
+              <Group justify="space-between"><Text size="xs" c="dimmed">Pickup Address</Text><Text size="xs" ta="right" style={{ maxWidth: 200 }}>{orderDetails?.pickup_address || '—'}</Text></Group>
+              <Group justify="space-between"><Text size="xs" c="dimmed">Pickup Time</Text><Text size="xs">{fmtTs(summary?.pickupConfirmedAt)}</Text></Group>
+              <Group justify="space-between"><Text size="xs" c="dimmed">Delivery Completed</Text><Text size="xs">{fmtTs(summary?.deliveryCompletedAt)}</Text></Group>
+              <Group justify="space-between"><Text size="xs" c="dimmed">Total Miles</Text><Text size="xs">{totalMiles.toFixed(1)} mi</Text></Group>
+              <Group justify="space-between"><Text size="xs" c="dimmed">Total Time</Text><Text size="xs">{elapsedTime}</Text></Group>
+              <Group justify="space-between"><Text size="xs" c="dimmed">Delivery Area</Text><Text size="xs">Customer address hidden after completion</Text></Group>
+              <Divider my={4} />
+              <Text size="xs" fw={700} c="dimmed" tt="uppercase">Items Delivered</Text>
+              {orderItems.length === 0 ? (
+                <Text size="xs" c="dimmed">No items recorded.</Text>
+              ) : (
+                orderItems.map((it, idx) => (
+                  <Group key={idx} justify="space-between">
+                    <Text size="xs">{it.name || 'Item'}</Text>
+                    <Text size="xs" c="dimmed">×{it.quantity ?? 1}</Text>
+                  </Group>
+                ))
+              )}
+              <Divider my={4} />
+              <Group justify="space-between">
+                <Text size="xs" c="dimmed">Status</Text>
+                <Badge color="green" variant="light" size="sm">Delivered</Badge>
+              </Group>
+            </Stack>
+          </Modal>
         </Stack>
       </Box>
     );
