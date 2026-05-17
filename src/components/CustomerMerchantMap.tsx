@@ -489,7 +489,7 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
 
     const runFit = () => {
       if (isDegenerate) {
-        m.jumpTo({ center: [sw[0], sw[1]], zoom: SINGLE_POINT_ZOOM, duration: 500 });
+        m.jumpTo({ center: [sw[0], sw[1]], zoom: SINGLE_POINT_ZOOM });
         return;
       }
       m.fitBounds([sw, ne], {

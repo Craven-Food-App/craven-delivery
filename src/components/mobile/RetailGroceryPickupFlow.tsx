@@ -122,10 +122,11 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
     { key: 2, label: 'Packaging order' },
     { key: 3, label: 'Ready' },
   ] as const;
+  const [orderStatusStepLocal, setOrderStatusStepLocal] = useState<number>(0);
   const orderStatusStep =
     typeof orderStatusStepProp === 'number' && orderStatusStepProp >= 0 && orderStatusStepProp <= 3
       ? orderStatusStepProp
-      : 0;
+      : orderStatusStepLocal;
 
   const safeSpotCount = useMemo(() => {
     const n = parkingSpotCount ?? 6;
