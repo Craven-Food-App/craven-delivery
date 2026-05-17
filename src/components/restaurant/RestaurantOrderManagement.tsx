@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { formatAddress } from '@/lib/formatAddress';
 import {
   Card,
   Badge,

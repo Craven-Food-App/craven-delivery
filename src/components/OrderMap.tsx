@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatAddress } from '@/lib/formatAddress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';

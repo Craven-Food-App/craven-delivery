@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { formatAddress } from '@/lib/formatAddress';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { MapPin, Package, CheckCircle } from 'lucide-react';
