@@ -39,6 +39,7 @@ import {
   Checkbox,
   Image,
   Avatar,
+  Modal,
 } from '@mantine/core';
 
 // ===== TYPES =====
