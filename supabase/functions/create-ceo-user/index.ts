@@ -1,12 +1,21 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { requireAdmin } from "../_shared/adminAuth.ts";
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req.headers.get('origin'));
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const gate = await requireAdmin(req, ["admin", "ceo"]);
+  if (!gate.ok) {
+    return new Response(JSON.stringify({ error: gate.error }), {
+      status: gate.status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {
@@ -198,7 +207,6 @@ serve(async (req) => {
         message: userCreated ? 'CEO user created successfully' : 'CEO user already exists, updated',
         userId: userId,
         email: ceoEmail,
-        password: ceoPassword,
         userCreated: userCreated,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
