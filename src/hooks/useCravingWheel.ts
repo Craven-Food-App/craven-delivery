@@ -74,7 +74,7 @@ export const useCravingWheel = (userId: string) => {
         }));
       }
 
-      if (settings?.on_fire_game_enabled) {
+      if (settings?.on_fire_game_enabled && speedDetectionService.isSupported()) {
         startSpeedMonitoring();
       }
     };
@@ -89,6 +89,10 @@ export const useCravingWheel = (userId: string) => {
   }, [userId]);
 
   const startSpeedMonitoring = () => {
+    if (!userId || !speedDetectionService.isSupported()) {
+      return;
+    }
+
     speedDetectionService.startMonitoring(userId, {
       onSpeedUpdate: (speedData) => {
         console.log('Current speed:', speedData.currentSpeed, 'MPH');

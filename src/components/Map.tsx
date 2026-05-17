@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { formatAddress } from '@/lib/formatAddress';
 
 interface Order {
   id: string;
@@ -174,7 +175,7 @@ const Map: React.FC<MapProps> = ({ orders, activeOrder, onOrderClick }) => {
           new mapboxgl.Popup().setHTML(`
             <div class="p-3">
               <h3 class="font-semibold text-green-600">${order.pickup_name}</h3>
-              <p class="text-sm">${order.pickup_address}</p>
+              <p class="text-sm">${formatAddress(order.pickup_address)}</p>
               <p class="text-lg font-bold text-green-600">$${(order.payout_cents / 100).toFixed(2)}</p>
               <p class="text-xs text-gray-600">${order.distance_km} km</p>
               <button onclick="acceptOrder('${order.id}')" class="mt-2 px-3 py-1 bg-green-600 text-white rounded text-sm">
