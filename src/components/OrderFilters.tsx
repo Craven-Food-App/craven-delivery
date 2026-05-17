@@ -8,6 +8,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { formatAddress } from '@/lib/formatAddress';
 import { Filter, Search, MapPin, DollarSign, Clock, X } from 'lucide-react';
 
 interface Order {
@@ -80,9 +81,9 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({
       const searchLower = newFilters.searchTerm.toLowerCase();
       filteredOrders = filteredOrders.filter(order =>
         order.pickup_name.toLowerCase().includes(searchLower) ||
-        order.pickup_address.toLowerCase().includes(searchLower) ||
+        formatAddress(order.pickup_address).toLowerCase().includes(searchLower) ||
         order.dropoff_name.toLowerCase().includes(searchLower) ||
-        order.dropoff_address.toLowerCase().includes(searchLower)
+        formatAddress(order.dropoff_address).toLowerCase().includes(searchLower)
       );
     }
 
