@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatAddress } from '@/lib/formatAddress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -68,7 +69,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, variant, onAccept, onStatu
             <MapPin className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm">
               <p className="font-medium">Pickup</p>
-              <p className="text-muted-foreground">{order.pickup_address}</p>
+              <p className="text-muted-foreground">{formatAddress(order.pickup_address)}</p>
             </div>
           </div>
           
@@ -76,7 +77,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, variant, onAccept, onStatu
             <Navigation className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm">
               <p className="font-medium">Dropoff</p>
-              <p className="text-muted-foreground">{order.dropoff_address}</p>
+              <p className="text-muted-foreground">{formatAddress(order.dropoff_address)}</p>
             </div>
           </div>
         </div>

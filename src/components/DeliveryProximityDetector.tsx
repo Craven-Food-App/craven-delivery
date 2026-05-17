@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { formatAddress } from '@/lib/formatAddress';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { MapPin, Package, CheckCircle } from 'lucide-react';
@@ -148,7 +149,7 @@ const DeliveryProximityDetector: React.FC<DeliveryProximityDetectorProps> = ({
               <p>You've arrived at the delivery location:</p>
               <div className="bg-muted p-3 rounded-lg">
                 <p className="font-medium">{activeOrder.dropoff_name}</p>
-                <p className="text-sm text-muted-foreground">{activeOrder.dropoff_address}</p>
+                <p className="text-sm text-muted-foreground">{formatAddress(activeOrder.dropoff_address)}</p>
               </div>
               <p>Have you successfully delivered the order to the customer?</p>
             </AlertDialogDescription>
