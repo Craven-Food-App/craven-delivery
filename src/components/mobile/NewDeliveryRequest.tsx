@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { TimerRing } from './TimerRing';
+import { formatAddress } from '@/lib/formatAddress';
 
 // ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
 const C = {
@@ -26,11 +27,11 @@ interface DeliveryRequestProps {
   totalSeconds: number;
   merchant: {
     name: string;
-    address: string;
+    address: string | any;
   };
   customer: {
     name: string;
-    address: string;
+    address: string | any;
   };
   distance: number;       // miles
   eta: number;           // minutes
@@ -361,7 +362,7 @@ export const NewDeliveryRequest: React.FC<DeliveryRequestProps> = ({
                   textOverflow: 'ellipsis',
                 }}
               >
-                {merchant.address}
+                {formatAddress(merchant.address)}
               </div>
             </div>
           </div>
@@ -424,7 +425,7 @@ export const NewDeliveryRequest: React.FC<DeliveryRequestProps> = ({
                   textOverflow: 'ellipsis',
                 }}
               >
-                {customer.address}
+                {formatAddress(customer.address)}
               </div>
             </div>
           </div>

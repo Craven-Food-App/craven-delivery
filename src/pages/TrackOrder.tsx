@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin, Clock, Phone, CheckCircle, Truck, Utensils, Navigation } from 'lucide-react';
+import { formatAddress } from '@/lib/formatAddress';
 
 const TrackOrder: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -429,12 +430,12 @@ const TrackOrder: React.FC = () => {
                 <div>
                   <h3 className="font-semibold text-gray-900">Delivery Address</h3>
                   <p className="text-sm text-gray-600">
-                    {order.delivery_address?.name}<br />
-                    {order.delivery_address?.address}
+                    {typeof order.delivery_address?.name === 'string' ? order.delivery_address.name : ''}<br />
+                    {formatAddress(order.delivery_address?.address ?? order.delivery_address)}
                   </p>
                   {order.delivery_address?.special_instructions && (
                     <p className="text-sm text-gray-500 mt-1">
-                      Note: {order.delivery_address.special_instructions}
+                      Note: {typeof order.delivery_address.special_instructions === 'string' ? order.delivery_address.special_instructions : ''}
                     </p>
                   )}
                 </div>

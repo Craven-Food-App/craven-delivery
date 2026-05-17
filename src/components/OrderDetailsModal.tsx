@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Clock, MapPin, Package, Star, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatAddress } from "@/lib/formatAddress";
 
 interface OrderDetailsModalProps {
   isOpen: boolean;
@@ -243,10 +244,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
                     <div>
                       <p className="text-sm font-medium">Delivery Address</p>
                       <p className="text-sm text-muted-foreground">
-                        {typeof order.delivery_address === 'string' 
-                          ? order.delivery_address 
-                          : `${order.delivery_address.street}, ${order.delivery_address.city}`
-                        }
+                        {formatAddress(order.delivery_address)}
                       </p>
                     </div>
                   </div>

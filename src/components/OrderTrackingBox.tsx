@@ -7,6 +7,7 @@ import { Clock, MapPin, Truck, CheckCircle, Phone, MessageCircle, Package, ChefH
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import DriverTrackingModal from "./DriverTrackingModal";
+import { formatAddress } from "@/lib/formatAddress";
 
 interface OrderTrackingBoxProps {
   orderId: string;
@@ -421,10 +422,7 @@ const OrderTrackingBox: React.FC<OrderTrackingBoxProps> = ({ orderId, onClose })
                         <div>
                           <p className="text-sm text-gray-600 mb-1">Delivery Address</p>
                           <p className="font-medium text-sm">
-                            {typeof order.delivery_address === 'string' 
-                              ? order.delivery_address 
-                              : `${order.delivery_address.street}, ${order.delivery_address.city}`
-                            }
+                            {formatAddress(order.delivery_address)}
                           </p>
                         </div>
                       )}
