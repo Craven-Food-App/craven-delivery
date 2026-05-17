@@ -42,25 +42,26 @@ serve(async (req) => {
       throw new Error("Unauthorized");
     }
 
-    // Check for full access (Torrance Stroman, owner, or admin)
-    const hasFullAccess = user.email === 'torrancestroman@gmail.com' || 
-                         user.email === 'craven@usa.com';
-    
+    // Check admin role (no hardcoded email allow-list)
     let permissions = { can_read: false, can_write: false, can_merge: false };
-    
-    if (hasFullAccess) {
-      // Grant full permissions to admins/owners
-      permissions = { can_read: true, can_write: true, can_merge: true };
-    } else {
-      // Check for admin role
+    {
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
-        .eq("role", "admin")
+        .in("role", ["admin", "ceo"])
         .maybeSingle();
-      
-      if (roleData?.role === "admin") {
+
+      // Also accept approved CEO/CTO via exec_users
+      const { data: execRow } = await supabase
+        .from("exec_users")
+        .select("role, is_approved")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const execRole = String(execRow?.role || "").toLowerCase();
+      const isExecAdmin = execRow?.is_approved !== false && ["ceo", "cto", "admin"].includes(execRole);
+
+      if (roleData || isExecAdmin) {
         permissions = { can_read: true, can_write: true, can_merge: true };
       } else {
         // Check developer permissions table

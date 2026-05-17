@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { requireAdmin } from "../_shared/adminAuth.ts";
 
 async function archiveRevocationLetter(
   admin: any,
@@ -116,6 +117,15 @@ serve(async (req) => {
     if (authError || !authData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Role gate: only admin/CEO/COO/CHRO may revoke access
+    const gate = await requireAdmin(req, ["admin", "ceo", "coo", "chro"]);
+    if (!gate.ok) {
+      return new Response(JSON.stringify({ error: gate.error }), {
+        status: gate.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

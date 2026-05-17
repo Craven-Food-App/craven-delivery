@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
 
 import { getCorsHeaders } from '../_shared/cors.ts';
+import { requireAdmin } from '../_shared/adminAuth.ts';
 
 interface ActivateDriversRequest {
   driver_ids: string[]; // Array of craver_application IDs
@@ -12,6 +13,14 @@ Deno.serve(async (req) => {
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const gate = await requireAdmin(req, ["admin", "ceo", "coo", "chro"]);
+  if (!gate.ok) {
+    return new Response(JSON.stringify({ error: gate.error }), {
+      status: gate.status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {
