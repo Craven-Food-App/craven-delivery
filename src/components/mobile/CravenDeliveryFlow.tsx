@@ -430,6 +430,8 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [cleanPaySummary, setCleanPaySummary] = useState<FeederCleanPaySummary | null>(null);
   const [completeCleanPaySummary, setCompleteCleanPaySummary] = useState<FeederCleanPaySummary | null>(null);
   const receiptRef = useRef<HTMLDivElement | null>(null);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
 
   // Navigation hook for external map app deep linking
   const { openExternalNavigation } = useNavigation();
