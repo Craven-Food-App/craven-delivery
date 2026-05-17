@@ -553,8 +553,19 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   useEffect(() => {
     if (status !== DRIVER_STATUS.COMPLETE || !orderDetails) return;
     
-    // Calculate total once
-    const totalEarned = orderDetails?.payout_cents ? (orderDetails.payout_cents / 100) : (orderDetails?.pay || orderDetails?.total || 16.25);
+    // Unified earnings total (matches renderComplete calculation)
+    const tipC = deliveryStops?.length
+      ? deliveryStops.reduce((sum: number, s: any) => sum + (s.tip_cents ?? 0), 0)
+      : (orderDetails?.tip_cents ?? 0);
+    const deliveryC = deliveryStops?.length
+      ? deliveryStops.reduce((sum: number, s: any) => sum + (s.payout_cents ?? 0), 0)
+      : (orderDetails?.payout_cents ?? 0);
+    const mileageC = orderDetails?.mileage_pay_cents ?? 0;
+    const sum = completeCleanPaySummary || cleanPaySummary;
+    const customerTipC = sum?.customerTipCents ?? tipC;
+    const promoC = sum?.promoBonusCents ?? 0;
+    const adjC = sum?.adjustmentCents ?? 0;
+    const totalEarned = (deliveryC + mileageC + customerTipC + promoC + adjC) / 100;
     
     // Reset animation state
     setAnimatedTotal(0);
