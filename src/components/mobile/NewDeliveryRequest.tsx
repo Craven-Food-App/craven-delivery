@@ -362,7 +362,7 @@ export const NewDeliveryRequest: React.FC<DeliveryRequestProps> = ({
                   textOverflow: 'ellipsis',
                 }}
               >
-                {merchant.address}
+                {formatAddress(merchant.address)}
               </div>
             </div>
           </div>
@@ -425,7 +425,7 @@ export const NewDeliveryRequest: React.FC<DeliveryRequestProps> = ({
                   textOverflow: 'ellipsis',
                 }}
               >
-                {customer.address}
+                {formatAddress(customer.address)}
               </div>
             </div>
           </div>
