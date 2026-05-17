@@ -2570,7 +2570,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             <Stack gap={6}>
               <Group justify="space-between"><Text size="xs" c="dimmed">Order ID</Text><Text size="xs" style={{ fontFamily: 'monospace' }}>{displayOrderId}</Text></Group>
               <Group justify="space-between"><Text size="xs" c="dimmed">Merchant</Text><Text size="xs" fw={600}>{merchantName}</Text></Group>
-              <Group justify="space-between"><Text size="xs" c="dimmed">Pickup Address</Text><Text size="xs" ta="right" style={{ maxWidth: 200 }}>{orderDetails?.pickup_address || '—'}</Text></Group>
+              <Group justify="space-between"><Text size="xs" c="dimmed">Pickup Address</Text><Text size="xs" ta="right" style={{ maxWidth: 200 }}>{formatAddress(orderDetails?.pickup_address) || '—'}</Text></Group>
               <Group justify="space-between"><Text size="xs" c="dimmed">Pickup Time</Text><Text size="xs">{fmtTs(summary?.pickupConfirmedAt)}</Text></Group>
               <Group justify="space-between"><Text size="xs" c="dimmed">Delivery Completed</Text><Text size="xs">{fmtTs(summary?.deliveryCompletedAt)}</Text></Group>
               <Group justify="space-between"><Text size="xs" c="dimmed">Total Miles</Text><Text size="xs">{totalMiles.toFixed(1)} mi</Text></Group>
