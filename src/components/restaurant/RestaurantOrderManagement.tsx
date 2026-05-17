@@ -378,7 +378,7 @@ export const RestaurantOrderManagement = ({ restaurantId }: RestaurantOrderManag
                             </Group>
                             <Box pl="xl">
                               <Text fw={500}>{order.pickup_name}</Text>
-                              <Text size="sm" c="dimmed">{order.pickup_address}</Text>
+                              <Text size="sm" c="dimmed">{formatAddress(order.pickup_address)}</Text>
                             </Box>
                           </Stack>
                         </Grid.Col>
@@ -391,7 +391,7 @@ export const RestaurantOrderManagement = ({ restaurantId }: RestaurantOrderManag
                             </Group>
                             <Box pl="xl">
                               <Text fw={500}>{order.dropoff_name}</Text>
-                              <Text size="sm" c="dimmed">{order.dropoff_address}</Text>
+                              <Text size="sm" c="dimmed">{formatAddress(order.dropoff_address)}</Text>
                             </Box>
                           </Stack>
                         </Grid.Col>

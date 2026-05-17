@@ -111,7 +111,7 @@ const OrderMap: React.FC<OrderMapProps> = ({ orders, activeOrder, onOrderClick }
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1">
                         <h4 className="font-medium text-sm">{order.pickup_name}</h4>
-                        <p className="text-xs text-muted-foreground">{order.pickup_address}</p>
+                        <p className="text-xs text-muted-foreground">{formatAddress(order.pickup_address)}</p>
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-green-600">

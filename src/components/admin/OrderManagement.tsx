@@ -484,7 +484,7 @@ const OrderManagement: React.FC = () => {
                             <MapPin className="h-4 w-4 text-red-500 mt-0.5" />
                             <div>
                               <p className="font-medium text-sm">{order.pickup_name}</p>
-                              <p className="text-xs text-muted-foreground">{order.pickup_address}</p>
+                              <p className="text-xs text-muted-foreground">{formatAddress(order.pickup_address)}</p>
                             </div>
                           </div>
                         </div>
@@ -494,7 +494,7 @@ const OrderManagement: React.FC = () => {
                             <MapPin className="h-4 w-4 text-green-500 mt-0.5" />
                             <div>
                               <p className="font-medium text-sm">{order.dropoff_name}</p>
-                              <p className="text-xs text-muted-foreground">{order.dropoff_address}</p>
+                              <p className="text-xs text-muted-foreground">{formatAddress(order.dropoff_address)}</p>
                             </div>
                           </div>
                         </div>
