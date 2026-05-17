@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { Geolocation } from '@capacitor/geolocation';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SpeedData {
@@ -30,6 +31,11 @@ class SpeedDetectionService {
   private onSpeedUpdate?: (data: SpeedData) => void;
   private onViolation?: (violation: SpeedViolation) => void;
   private userId = '';
+  private warnedUnsupportedPlatform = false;
+
+  isSupported() {
+    return Capacitor.isNativePlatform();
+  }
 
   async startMonitoring(
     userId: string,
@@ -38,6 +44,19 @@ class SpeedDetectionService {
       onViolation?: (violation: SpeedViolation) => void;
     }
   ) {
+    if (!this.isSupported()) {
+      if (!this.warnedUnsupportedPlatform) {
+        console.info('Speed monitoring is disabled on web previews.');
+        this.warnedUnsupportedPlatform = true;
+      }
+      this.isMonitoring = false;
+      return false;
+    }
+
+    if (this.isMonitoring) {
+      return true;
+    }
+
     this.userId = userId;
     this.onSpeedUpdate = callbacks.onSpeedUpdate;
     this.onViolation = callbacks.onViolation;
@@ -69,13 +88,20 @@ class SpeedDetectionService {
       );
 
       console.log('✅ Speed monitoring started');
+      return true;
     } catch (error) {
       console.error('Failed to start speed monitoring:', error);
       this.isMonitoring = false;
+      return false;
     }
   }
 
   async stopMonitoring() {
+    if (!this.isSupported()) {
+      this.isMonitoring = false;
+      return;
+    }
+
     if (this.watchId) {
       await Geolocation.clearWatch({ id: this.watchId });
       this.watchId = null;
