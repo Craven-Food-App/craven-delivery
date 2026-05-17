@@ -55,6 +55,7 @@ import type { OrderAssignment } from '@/components/mobile/feederOrderTypes';
 import FeederPendingOffersPanel from '@/components/mobile/FeederPendingOffersPanel';
 import { claimOrderAssignment, claimOrderAssignmentsBatch } from '@/lib/claimOrderAssignment';
 import { formatPickupKey } from '@/lib/deliveryRouteKeys';
+import { formatAddress } from '@/lib/formatAddress';
 import { setOrderDriverArrivedAtStore, setOrderPickupParkingSpot } from '@/lib/orderDriverPresence';
 import { DEFAULT_MAX_BATCH_DROPOFF_MILES, sumPayoutCents } from '@/lib/feederOfferBatching';
 import FeederCleanPayCard from '@/components/mobile/FeederCleanPayCard';
@@ -723,7 +724,7 @@ export const MobileDriverDashboard: React.FC = () => {
     const orders = (activeDelivery as any).ordersForPickup;
     const dropoffCount = (activeDelivery as any).dropoff_count ?? (activeDelivery as any).dropoffCount ?? 0;
     const baseAddress = activeDelivery.dropoff_address || 'Delivery Address';
-    const addressStr = typeof baseAddress === 'string' ? baseAddress : (baseAddress?.address || [baseAddress?.street, baseAddress?.city, baseAddress?.state, baseAddress?.zip_code].filter(Boolean).join(', '));
+    const addressStr = formatAddress(baseAddress) || 'Delivery Address';
     if (Array.isArray(orders) && orders.length > 0) {
       const list = orders.map((o: any, i: number) => ({
         order_id: o.id || `${activeDelivery.order_id}-${i}`,

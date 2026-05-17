@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatAddress } from '@/lib/formatAddress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +27,7 @@ interface ActiveOrderCardProps {
 }
 
 const ActiveOrderCard: React.FC<ActiveOrderCardProps> = ({ order, onStatusUpdate }) => {
-  const openNavigation = (lat: number, lng: number, address: string) => {
+  const openNavigation = (lat: number, lng: number, address: unknown) => {
     const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const isAndroid = /Android/i.test(navigator.userAgent);
@@ -117,7 +118,7 @@ const ActiveOrderCard: React.FC<ActiveOrderCardProps> = ({ order, onStatusUpdate
                 {order.status === 'assigned' ? order.pickup_name : order.dropoff_name}
               </h4>
               <p className="text-sm text-muted-foreground">
-                {order.status === 'assigned' ? order.pickup_address : order.dropoff_address}
+                {formatAddress(order.status === 'assigned' ? order.pickup_address : order.dropoff_address)}
               </p>
             </div>
           </div>
