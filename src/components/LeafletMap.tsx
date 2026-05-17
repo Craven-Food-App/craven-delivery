@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { DollarSign } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { formatAddress } from '@/lib/formatAddress';
 
 // Fix for default markers in Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -274,7 +275,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ orders, activeOrder, onOrderCli
       marker.bindPopup(`
         <div class="p-2">
           <h3 class="font-semibold text-sm">${order.pickup_name}</h3>
-          <p class="text-xs text-gray-600">${order.pickup_address}</p>
+          <p class="text-xs text-gray-600">${formatAddress(order.pickup_address)}</p>
           <p class="text-sm font-medium text-green-600 mt-1">$${payoutAmount} • ${(order.distance_km * 0.621371).toFixed(1)}mi</p>
         </div>
       `);
