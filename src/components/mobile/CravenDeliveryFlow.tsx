@@ -1114,6 +1114,20 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     );
   }
 
+  if (showDeliveryPhotoGuide) {
+    return (
+      <DeliveryPhotoGuide
+        onClose={() => setShowDeliveryPhotoGuide(false)}
+        onComplete={() => {
+          setShowDeliveryPhotoGuide(false);
+          setPhotoType('delivery');
+          setShowCamera(true);
+          onCameraStateChange?.(true);
+        }}
+      />
+    );
+  }
+
   // In-app order chat (messages stored for customer service / security lookup)
   if (showOrderChat && orderDetails?.order_id) {
     return (
