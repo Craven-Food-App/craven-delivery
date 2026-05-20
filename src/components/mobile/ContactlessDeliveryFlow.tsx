@@ -245,6 +245,21 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
   }
 
   // —— Photo camera ——
+  if (showPhotoGuide) {
+    return (
+      <DeliveryPhotoGuide
+        onClose={() => setShowPhotoGuide(false)}
+        onComplete={() => {
+          setShowPhotoGuide(false);
+          if (orderId) {
+            try { localStorage.setItem(`craven:delivery-photo-guide:${orderId}`, '1'); } catch {}
+          }
+          setShowPhotoCamera(true);
+        }}
+      />
+    );
+  }
+
   if (showPhotoCamera) {
     return (
       <FullscreenCamera
