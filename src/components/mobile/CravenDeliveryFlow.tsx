@@ -965,7 +965,23 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     }, 4000);
   };
   
+  const openDeliveryCameraDirect = () => {
+    setPhotoType('delivery');
+    setShowCamera(true);
+    onCameraStateChange?.(true);
+  };
+
   const handleStartDeliveryVerification = () => {
+    const orderKey = orderDetails?.order_id || orderDetails?.id;
+    const seenKey = orderKey ? `craven:delivery-photo-guide:${orderKey}` : null;
+    if (seenKey) {
+      try {
+        if (localStorage.getItem(seenKey) === '1') {
+          openDeliveryCameraDirect();
+          return;
+        }
+      } catch {}
+    }
     setShowDeliveryPhotoGuide(true);
   };
   
