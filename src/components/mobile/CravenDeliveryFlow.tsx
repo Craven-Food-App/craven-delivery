@@ -370,6 +370,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [showCamera, setShowCamera] = useState(false);
   const [showOrderChat, setShowOrderChat] = useState(false);
   const [photoType, setPhotoType] = useState<'pickup' | 'delivery'>('pickup');
+  const [showDeliveryPhotoGuide, setShowDeliveryPhotoGuide] = useState(false);
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [restaurantLogo, setRestaurantLogo] = useState<string | null>(null);
@@ -965,9 +966,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   };
   
   const handleStartDeliveryVerification = () => {
-    setPhotoType('delivery');
-    setShowCamera(true);
-    onCameraStateChange?.(true);
+    setShowDeliveryPhotoGuide(true);
   };
   
   const handleConfirmDeliveryPhoto = async (photoUrl: string) => {
