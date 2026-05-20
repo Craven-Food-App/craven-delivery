@@ -11,6 +11,7 @@ import { Box, Text, Button, Stack, Group, ActionIcon } from '@mantine/core';
 import { IconX, IconNavigation, IconPhone, IconFileText, IconMapPin, IconCamera, IconBarcode } from '@tabler/icons-react';
 import SlideToConfirm from '@/components/SlideToConfirm';
 import FullscreenCamera from './FullscreenCamera';
+import DeliveryPhotoGuide from './DeliveryPhotoGuide';
 
 // Ensure BarcodeDetector is available; pre-load WASM when using polyfill.
 async function getBarcodeDetector(): Promise<any> {
@@ -84,6 +85,20 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
   const [selectedLocationValue, setSelectedLocationValue] = useState<string | null>(null);
   const [deliveryPhotoUrl, setDeliveryPhotoUrl] = useState<string | null>(null);
   const [showPhotoCamera, setShowPhotoCamera] = useState(false);
+  const [showPhotoGuide, setShowPhotoGuide] = useState(false);
+
+  const requestOpenCamera = () => {
+    const key = orderId ? `craven:delivery-photo-guide:${orderId}` : null;
+    if (key) {
+      try {
+        if (localStorage.getItem(key) === '1') {
+          setShowPhotoCamera(true);
+          return;
+        }
+      } catch {}
+    }
+    setShowPhotoGuide(true);
+  };
 
   const currentStep: StepIndex =
     step1Scanned < step1Total
