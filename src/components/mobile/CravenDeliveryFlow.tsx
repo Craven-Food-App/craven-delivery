@@ -1136,9 +1136,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         onClose={() => setShowDeliveryPhotoGuide(false)}
         onComplete={() => {
           setShowDeliveryPhotoGuide(false);
-          setPhotoType('delivery');
-          setShowCamera(true);
-          onCameraStateChange?.(true);
+          const orderKey = orderDetails?.order_id || orderDetails?.id;
+          if (orderKey) {
+            try { localStorage.setItem(`craven:delivery-photo-guide:${orderKey}`, '1'); } catch {}
+          }
+          openDeliveryCameraDirect();
         }}
       />
     );
