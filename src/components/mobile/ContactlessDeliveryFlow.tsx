@@ -487,7 +487,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                     Customers appreciate including the address number or the front of the home/apt in the delivery photo.
                   </Text>
                   {!deliveryPhotoUrl ? (
-                    <Button fullWidth mt="md" color="orange" onClick={() => setShowPhotoCamera(true)}>
+                    <Button fullWidth mt="md" color="orange" onClick={requestOpenCamera}>
                       TAKE PHOTO
                     </Button>
                   ) : (
@@ -508,7 +508,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                         variant="light"
                         size="xs"
                         mt="xs"
-                        onClick={() => setShowPhotoCamera(true)}
+                        onClick={requestOpenCamera}
                       >
                         Retake
                       </Button>
