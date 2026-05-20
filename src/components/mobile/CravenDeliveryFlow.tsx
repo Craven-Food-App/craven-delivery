@@ -965,7 +965,23 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     }, 4000);
   };
   
+  const openDeliveryCameraDirect = () => {
+    setPhotoType('delivery');
+    setShowCamera(true);
+    onCameraStateChange?.(true);
+  };
+
   const handleStartDeliveryVerification = () => {
+    const orderKey = orderDetails?.order_id || orderDetails?.id;
+    const seenKey = orderKey ? `craven:delivery-photo-guide:${orderKey}` : null;
+    if (seenKey) {
+      try {
+        if (localStorage.getItem(seenKey) === '1') {
+          openDeliveryCameraDirect();
+          return;
+        }
+      } catch {}
+    }
     setShowDeliveryPhotoGuide(true);
   };
   
@@ -1120,9 +1136,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         onClose={() => setShowDeliveryPhotoGuide(false)}
         onComplete={() => {
           setShowDeliveryPhotoGuide(false);
-          setPhotoType('delivery');
-          setShowCamera(true);
-          onCameraStateChange?.(true);
+          const orderKey = orderDetails?.order_id || orderDetails?.id;
+          if (orderKey) {
+            try { localStorage.setItem(`craven:delivery-photo-guide:${orderKey}`, '1'); } catch {}
+          }
+          openDeliveryCameraDirect();
         }}
       />
     );
