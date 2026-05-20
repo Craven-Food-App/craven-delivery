@@ -11,6 +11,7 @@ import { Box, Text, Button, Stack, Group, ActionIcon } from '@mantine/core';
 import { IconX, IconNavigation, IconPhone, IconFileText, IconMapPin, IconCamera, IconBarcode } from '@tabler/icons-react';
 import SlideToConfirm from '@/components/SlideToConfirm';
 import FullscreenCamera from './FullscreenCamera';
+import DeliveryPhotoGuide from './DeliveryPhotoGuide';
 
 // Ensure BarcodeDetector is available; pre-load WASM when using polyfill.
 async function getBarcodeDetector(): Promise<any> {
@@ -84,6 +85,20 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
   const [selectedLocationValue, setSelectedLocationValue] = useState<string | null>(null);
   const [deliveryPhotoUrl, setDeliveryPhotoUrl] = useState<string | null>(null);
   const [showPhotoCamera, setShowPhotoCamera] = useState(false);
+  const [showPhotoGuide, setShowPhotoGuide] = useState(false);
+
+  const requestOpenCamera = () => {
+    const key = orderId ? `craven:delivery-photo-guide:${orderId}` : null;
+    if (key) {
+      try {
+        if (localStorage.getItem(key) === '1') {
+          setShowPhotoCamera(true);
+          return;
+        }
+      } catch {}
+    }
+    setShowPhotoGuide(true);
+  };
 
   const currentStep: StepIndex =
     step1Scanned < step1Total
@@ -230,6 +245,21 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
   }
 
   // —— Photo camera ——
+  if (showPhotoGuide) {
+    return (
+      <DeliveryPhotoGuide
+        onClose={() => setShowPhotoGuide(false)}
+        onComplete={() => {
+          setShowPhotoGuide(false);
+          if (orderId) {
+            try { localStorage.setItem(`craven:delivery-photo-guide:${orderId}`, '1'); } catch {}
+          }
+          setShowPhotoCamera(true);
+        }}
+      />
+    );
+  }
+
   if (showPhotoCamera) {
     return (
       <FullscreenCamera
@@ -472,7 +502,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                     Customers appreciate including the address number or the front of the home/apt in the delivery photo.
                   </Text>
                   {!deliveryPhotoUrl ? (
-                    <Button fullWidth mt="md" color="orange" onClick={() => setShowPhotoCamera(true)}>
+                    <Button fullWidth mt="md" color="orange" onClick={requestOpenCamera}>
                       TAKE PHOTO
                     </Button>
                   ) : (
@@ -493,7 +523,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                         variant="light"
                         size="xs"
                         mt="xs"
-                        onClick={() => setShowPhotoCamera(true)}
+                        onClick={requestOpenCamera}
                       >
                         Retake
                       </Button>
