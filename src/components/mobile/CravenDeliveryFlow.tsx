@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCustomerNameForDriver } from '@/utils/nameFormatting';
 import { notifications } from '@mantine/notifications';
 import FullscreenCamera from './FullscreenCamera';
+import DeliveryPhotoGuide from './DeliveryPhotoGuide';
 import ContactlessDeliveryFlow from './ContactlessDeliveryFlow';
 import { DeliveryFlowStepOne } from './DeliveryFlowStepOne';
 import { DeliveryFlowStepTwo } from './DeliveryFlowStepTwo';
@@ -369,6 +370,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [showCamera, setShowCamera] = useState(false);
   const [showOrderChat, setShowOrderChat] = useState(false);
   const [photoType, setPhotoType] = useState<'pickup' | 'delivery'>('pickup');
+  const [showDeliveryPhotoGuide, setShowDeliveryPhotoGuide] = useState(false);
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [restaurantLogo, setRestaurantLogo] = useState<string | null>(null);
@@ -964,9 +966,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   };
   
   const handleStartDeliveryVerification = () => {
-    setPhotoType('delivery');
-    setShowCamera(true);
-    onCameraStateChange?.(true);
+    setShowDeliveryPhotoGuide(true);
   };
   
   const handleConfirmDeliveryPhoto = async (photoUrl: string) => {
@@ -1110,6 +1110,20 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           "Take a photo showing the delivered bag at the customer's preferred drop-off location."}
         type={photoType}
         onVisibilityChange={onCameraStateChange}
+      />
+    );
+  }
+
+  if (showDeliveryPhotoGuide) {
+    return (
+      <DeliveryPhotoGuide
+        onClose={() => setShowDeliveryPhotoGuide(false)}
+        onComplete={() => {
+          setShowDeliveryPhotoGuide(false);
+          setPhotoType('delivery');
+          setShowCamera(true);
+          onCameraStateChange?.(true);
+        }}
       />
     );
   }
