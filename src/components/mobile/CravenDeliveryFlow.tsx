@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCustomerNameForDriver } from '@/utils/nameFormatting';
 import { notifications } from '@mantine/notifications';
 import FullscreenCamera from './FullscreenCamera';
+import DeliveryPhotoGuide from './DeliveryPhotoGuide';
 import ContactlessDeliveryFlow from './ContactlessDeliveryFlow';
 import { DeliveryFlowStepOne } from './DeliveryFlowStepOne';
 import { DeliveryFlowStepTwo } from './DeliveryFlowStepTwo';
