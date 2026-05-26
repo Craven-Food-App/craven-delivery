@@ -138,9 +138,9 @@ serve(async (req) => {
         is_peak_hour: isPeakHour,
         cravemore_delivery_fee_waived: cravemore_delivery_fee_waived,
         // Expose processing fee configuration so front-end can calculate
-        processing_fee_percent_card: settings.moov_card_processing_percent ?? null,
-        processing_fee_percent_ach: settings.moov_ach_processing_percent ?? null,
-        processing_fee_applies_to_full_amount: settings.moov_processing_applies_to_full_amount ?? true,
+        processing_fee_percent_card: settings.stripe_fee_percent ?? null,
+        processing_fee_percent_ach: null,
+        processing_fee_applies_to_full_amount: true,
         fee_breakdown: {
           base_delivery_fee: settings.delivery_fee_base_cents,
           distance_fee: Math.round(distance * settings.delivery_fee_per_mile_cents),
