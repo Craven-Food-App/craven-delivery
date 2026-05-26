@@ -43,6 +43,7 @@ interface Transaction {
   id: string;
   date: string;
   time: string;
+  earnedAt: string;
   orderId: string;
   fullOrderId: string;
   restaurantName: string;
@@ -612,6 +613,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
           id: earning.id,
           date: earnedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           time: earnedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+          earnedAt: earnedDate.toISOString(),
           orderId: earning.order_id?.substring(0, 8) || 'N/A',
           fullOrderId: earning.order_id || '',
           restaurantName: restaurant.name || 'Restaurant',
