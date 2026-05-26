@@ -147,16 +147,16 @@ serve(async (req) => {
       ? plan.promo_price_cents
       : plan.price_cents;
 
-    // Load processing fee configuration (Moov-style) from commission_settings
+    // Load Stripe processing fee configuration from commission_settings
     let processingFeeCents = 0;
     try {
       const { data: feeSettings } = await supabase
         .from("commission_settings")
-        .select("moov_card_processing_percent")
+        .select("stripe_fee_percent")
         .eq("is_active", true)
         .single();
 
-      const percent = feeSettings?.moov_card_processing_percent as number | null;
+      const percent = feeSettings?.stripe_fee_percent as number | null;
       if (typeof percent === "number" && percent > 0) {
         processingFeeCents = Math.round(priceCents * (percent / 100));
       }

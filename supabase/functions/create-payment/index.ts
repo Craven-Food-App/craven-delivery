@@ -41,7 +41,7 @@ serve(async (req) => {
   }
 
   try {
-    const { orderTotal, customerInfo, orderId, paymentMethodId, paymentMethodType, provider } = await req.json();
+    const { orderTotal, customerInfo, orderId, paymentMethodId } = await req.json();
 
     if (!orderTotal || !customerInfo || !orderId) {
       throw new Error("Missing required parameters: orderTotal, customerInfo, orderId");
@@ -51,22 +51,14 @@ serve(async (req) => {
       throw new Error("Missing payment method: paymentMethodId required");
     }
 
-    // Default to Stripe, but support Moov during migration
-    const paymentProvider = provider || 'stripe';
-
-    if (paymentProvider === 'stripe') {
-      // Create payment using Stripe
-      return await createStripePaymentHandler(
-        orderTotal,
-        customerInfo,
-        orderId,
-        paymentMethodId,
-        corsHeaders
-      );
-    } else {
-      // Legacy Moov support (deprecated)
-      throw new Error("Moov payment processing is deprecated. Please use Stripe.");
-    }
+    // Create payment using Stripe
+    return await createStripePaymentHandler(
+      orderTotal,
+      customerInfo,
+      orderId,
+      paymentMethodId,
+      corsHeaders
+    );
   } catch (error) {
     console.error("Payment creation error:", error);
     return new Response(

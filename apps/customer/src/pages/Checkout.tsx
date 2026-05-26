@@ -621,7 +621,7 @@ const Checkout: React.FC = () => {
           .eq('is_default', true)
           .single();
 
-        // Load payment methods (both Stripe and Moov)
+        // Load payment methods (Stripe)
         const { data: paymentMethods, error: pmError } = await supabase
           .from('payment_methods')
           .select('*')
@@ -644,7 +644,6 @@ const Checkout: React.FC = () => {
               id: defaultMethod.id,
               type: (defaultMethod as any).type || 'card',
               stripe_payment_method_id: (defaultMethod as any).stripe_payment_method_id,
-              moov_payment_method_id: (defaultMethod as any).moov_payment_method_id,
               brand: defaultMethod.brand,
               last4: defaultMethod.last4,
               is_default: defaultMethod.is_default
@@ -1100,7 +1099,7 @@ const Checkout: React.FC = () => {
           email: formData.email,
           phone: formData.phone,
         },
-        payment_method_id: selectedPaymentMethod.stripe_payment_method_id || selectedPaymentMethod.moov_payment_method_id,
+        payment_method_id: selectedPaymentMethod.stripe_payment_method_id,
       };
       
       // Add delivery_address only if delivery method and all fields are valid

@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, RateLimitPresets, addRateLimitHeaders } from '../_shared/rateLimit.ts';
-import { createMoovTransfer } from '../_shared/moov.ts';
+import { createPayoutToConnectedAccount } from '../_shared/stripe.ts';
 import { requireAdmin } from "../_shared/adminAuth.ts";
 
 serve(async (req) => {
@@ -53,7 +53,7 @@ serve(async (req) => {
     // Get payment method details
     const { data: paymentMethod, error: pmError } = await supabase
       .from('driver_payment_methods')
-      .select('*, moov_payment_method_id, moov_account_id')
+      .select('*')
       .eq('id', payment_method_id)
       .eq('driver_id', driver_id)
       .single();
@@ -99,36 +99,27 @@ serve(async (req) => {
       throw new Error(`Failed to create payout record: ${payoutError.message}`);
     }
 
-    // Process the payment using Moov
-    if (!paymentMethod.moov_payment_method_id) {
-      throw new Error("Moov payment method ID not found. Driver needs to set up Moov payment method.");
+    // Look up the driver's Stripe Connect account
+    const { data: stripeAccount, error: stripeAcctError } = await supabase
+      .from('stripe_accounts')
+      .select('stripe_account_id, payouts_enabled')
+      .eq('owner_type', 'driver')
+      .eq('owner_id', driver_id)
+      .maybeSingle();
+
+    if (stripeAcctError || !stripeAccount?.stripe_account_id) {
+      throw new Error("Driver has not completed Stripe Connect onboarding.");
     }
 
-    // Determine Moov transfer type
-    let moovTransferType: "ach-credit-fund-source" | "rtp-credit-fund-source" | "card-fund-source";
-    
-    switch (paymentMethod.payment_type) {
-      case 'bank_account':
-        moovTransferType = "ach-credit-fund-source";
-        break;
-      case 'instant_rtp':
-        moovTransferType = "rtp-credit-fund-source";
-        break;
-      case 'card':
-        moovTransferType = "card-fund-source";
-        break;
-      default:
-        throw new Error(`Unsupported payment method type: ${paymentMethod.payment_type}`);
+    if (!stripeAccount.payouts_enabled) {
+      throw new Error("Driver's Stripe Connect account is not payouts-enabled.");
     }
 
-    // Create Moov transfer
-    const transfer = await createMoovTransfer({
-      amount: Math.round(amount * 100), // Convert to cents
+    // Create Stripe Connect transfer
+    const transfer = await createPayoutToConnectedAccount({
+      amount: Math.round(amount * 100),
       currency: "USD",
-      destination: {
-        paymentMethodID: paymentMethod.moov_payment_method_id,
-        paymentMethodType: moovTransferType,
-      },
+      connectedAccountId: stripeAccount.stripe_account_id,
       description: `Manual driver payout for ${driver_id}`,
       metadata: {
         driver_id: driver_id,
@@ -137,9 +128,9 @@ serve(async (req) => {
       },
     });
 
-    const paymentResult = {
+    const paymentResult: { success: boolean; transactionId?: string; error?: string } = {
       success: transfer.status === 'pending' || transfer.status === 'completed',
-      transactionId: transfer.transferID,
+      transactionId: transfer.id,
     };
 
     // Update payout record with result

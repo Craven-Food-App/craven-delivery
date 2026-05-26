@@ -7,9 +7,6 @@ import { CheckCircle2, AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
 import { toast } from "sonner";
-import { MoovOnboardingCard } from "./MoovOnboardingCard";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
 interface StripeConnectStatus {
   hasAccount: boolean;
@@ -30,7 +27,6 @@ const BankAccountDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [creatingLink, setCreatingLink] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const [showStripeSection, setShowStripeSection] = useState(false);
 
   useEffect(() => {
     const fetchStripeStatus = async () => {
@@ -168,20 +164,8 @@ const BankAccountDashboard = () => {
     <div className="space-y-6 pb-8">
       {/* Description */}
       <p className="text-muted-foreground">
-        Here is where you will find a summary of your banking information. Crave'n uses Moov to securely manage your payouts.
+        Here is where you will find a summary of your banking information. Crave'n uses Stripe Connect to securely manage your payouts.
       </p>
-
-      {/* Toggle for Stripe section */}
-      <div className="flex items-center space-x-2 pb-4 border-b">
-        <Switch
-          id="show-stripe"
-          checked={showStripeSection}
-          onCheckedChange={setShowStripeSection}
-        />
-        <Label htmlFor="show-stripe" className="text-sm font-medium cursor-pointer">
-          Show legacy Stripe Connect section
-        </Label>
-      </div>
 
       {error && (
         <Alert variant="destructive">
@@ -190,9 +174,8 @@ const BankAccountDashboard = () => {
         </Alert>
       )}
 
-      {/* Bank Account Information - Stripe Section (Hidden by default) */}
-      {showStripeSection && (
-        <Card>
+      {/* Bank Account Information - Stripe Connect */}
+      <Card>
         <CardContent className="p-6">
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -266,11 +249,9 @@ const BankAccountDashboard = () => {
           </div>
         </CardContent>
       </Card>
-      )}
 
-      {/* Business Information - Stripe Section (Hidden by default) */}
-      {showStripeSection && (
-        <Card>
+      {/* Business Information - Stripe Connect */}
+      <Card>
         <CardContent className="p-6">
           <h2 className="text-xl font-semibold mb-4">Business information</h2>
           <div className="space-y-4">
@@ -317,14 +298,6 @@ const BankAccountDashboard = () => {
           </div>
         </CardContent>
       </Card>
-      )}
-
-      {/* Moov Onboarding - FIXED: Now passing restaurantId prop */}
-      {restaurant?.id && (
-        <div className="mt-6">
-          <MoovOnboardingCard restaurantId={restaurant.id} />
-        </div>
-      )}
     </div>
   );
 };

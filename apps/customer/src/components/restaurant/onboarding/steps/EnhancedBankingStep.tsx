@@ -42,7 +42,7 @@ export function EnhancedBankingStep({ data, updateData, onNext, onBack }: Enhanc
         </button>
         <h2 className="text-2xl sm:text-3xl font-bold mb-2">Last step — verify your payout info</h2>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Add your business and bank account info. You'll complete payment setup with Moov after approval.
+          Add your business and bank account info. You'll complete payment setup with Stripe Connect after approval.
         </p>
       </div>
 
@@ -51,7 +51,7 @@ export function EnhancedBankingStep({ data, updateData, onNext, onBack }: Enhanc
         <div className="space-y-3 sm:space-y-4">
           <h3 className="text-base sm:text-lg font-semibold">Bank account information</h3>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            This information will be used for payouts. You'll complete secure payment setup with Moov after your account is approved.
+            This information will be used for payouts. You'll complete secure payment setup with Stripe Connect after your account is approved.
           </p>
           
           <div className="border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-4">

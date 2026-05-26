@@ -21232,64 +21232,6 @@ export type Database = {
           },
         ]
       }
-      moov_invites: {
-        Row: {
-          completed_at: string | null
-          created_at: string | null
-          id: string
-          invite_link: string
-          metadata: Json | null
-          moov_account_id: string | null
-          restaurant_id: string
-          status: string | null
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string | null
-          id?: string
-          invite_link: string
-          metadata?: Json | null
-          moov_account_id?: string | null
-          restaurant_id: string
-          status?: string | null
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string | null
-          id?: string
-          invite_link?: string
-          metadata?: Json | null
-          moov_account_id?: string | null
-          restaurant_id?: string
-          status?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "moov_invites_restaurant_id_fkey"
-            columns: ["restaurant_id"]
-            isOneToOne: false
-            referencedRelation: "inventory_health_by_category"
-            referencedColumns: ["restaurant_id"]
-          },
-          {
-            foreignKeyName: "moov_invites_restaurant_id_fkey"
-            columns: ["restaurant_id"]
-            isOneToOne: false
-            referencedRelation: "restaurants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "moov_invites_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "effective_permissions"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
       ms365_email_accounts: {
         Row: {
           access_level: number | null
@@ -26995,12 +26937,6 @@ export type Database = {
           merchant_welcome_shown_at: string | null
           min_delivery_time: number | null
           minimum_order_cents: number | null
-          moov_account_id: string | null
-          moov_capabilities: Json | null
-          moov_fee_plan_codes: string[] | null
-          moov_onboarding_complete: boolean | null
-          moov_onboarding_invite_code: string | null
-          moov_onboarding_status: string | null
           name: string
           onboarding_status: string | null
           owner_id: string | null
@@ -27077,12 +27013,6 @@ export type Database = {
           merchant_welcome_shown_at?: string | null
           min_delivery_time?: number | null
           minimum_order_cents?: number | null
-          moov_account_id?: string | null
-          moov_capabilities?: Json | null
-          moov_fee_plan_codes?: string[] | null
-          moov_onboarding_complete?: boolean | null
-          moov_onboarding_invite_code?: string | null
-          moov_onboarding_status?: string | null
           name: string
           onboarding_status?: string | null
           owner_id?: string | null
@@ -27159,12 +27089,6 @@ export type Database = {
           merchant_welcome_shown_at?: string | null
           min_delivery_time?: number | null
           minimum_order_cents?: number | null
-          moov_account_id?: string | null
-          moov_capabilities?: Json | null
-          moov_fee_plan_codes?: string[] | null
-          moov_onboarding_complete?: boolean | null
-          moov_onboarding_invite_code?: string | null
-          moov_onboarding_status?: string | null
           name?: string
           onboarding_status?: string | null
           owner_id?: string | null

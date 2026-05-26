@@ -157,9 +157,6 @@ verify_jwt = false
 [functions.verify-payment]
 verify_jwt = false
 
-[functions.moov-webhook]
-verify_jwt = false
-
 [functions.document-templates]
 verify_jwt = false
 

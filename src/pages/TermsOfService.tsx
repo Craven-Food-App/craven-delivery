@@ -210,7 +210,7 @@ const TermsOfService = () => {
                 Marketplace visibility statuses (ACTIVE, COMING_SOON, REQUESTABLE) are determined by the
                 merchant's signed status and onboarding state. Tablet apps (Merchant and Orders) are provided
                 for in-store order management and are subject to these Terms and the separate Merchant Terms of
-                Service. Payouts are processed through Stripe Connect and, in certain onboarding flows, Moov.
+                Service. Payouts are processed through Stripe Connect.
               </p>
             </section>
 

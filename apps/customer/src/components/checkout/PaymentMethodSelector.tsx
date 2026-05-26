@@ -4,9 +4,9 @@ import { CreditCard, Building2 } from 'lucide-react';
 
 interface PaymentMethod {
   id: string;
-  moov_payment_method_id: string;
-  provider: 'moov';
-  type: 'card' | 'ach-debit-fund-source';
+  stripe_payment_method_id: string;
+  provider: 'stripe';
+  type: 'card' | 'us_bank_account';
   last4: string | null;
   brand?: string | null;
   bank_name?: string | null;
@@ -36,7 +36,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({ on
       .from('payment_methods')
       .select('*')
       .eq('user_id', user.id)
-      .eq('provider', 'moov')
+      .eq('provider', 'stripe')
       .order('created_at', { ascending: false });
 
     if (!error && data) {
