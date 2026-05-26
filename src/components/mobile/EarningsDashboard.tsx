@@ -43,6 +43,7 @@ interface Transaction {
   id: string;
   date: string;
   time: string;
+  earnedAt: string;
   orderId: string;
   fullOrderId: string;
   restaurantName: string;
@@ -99,6 +100,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'completed' | 'in_progress' | 'adjusted' | 'cancelled'>('all');
   const [historySearch, setHistorySearch] = useState('');
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [selectedCleanPay, setSelectedCleanPay] = useState<FeederCleanPaySummary | null>(null);
   const [cleanPayLoading, setCleanPayLoading] = useState(false);
   
@@ -612,6 +614,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
           id: earning.id,
           date: earnedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           time: earnedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+          earnedAt: earnedDate.toISOString(),
           orderId: earning.order_id?.substring(0, 8) || 'N/A',
           fullOrderId: earning.order_id || '',
           restaurantName: restaurant.name || 'Restaurant',
@@ -1285,7 +1288,96 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                   cancelled: 'Cancelled',
                   refunded: 'Refunded',
                 };
-                return filtered.map((transaction) => (
+                // Group by Year > Month > Week (Sun–Sat)
+                const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                const startOfWeek = (d: Date) => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - x.getDay()); return x; };
+                const fmtMD = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                type WeekBucket = { key: string; label: string; weekStart: Date; items: Transaction[]; total: number };
+                type MonthBucket = { key: string; label: string; monthIdx: number; weeks: Map<string, WeekBucket>; total: number };
+                type YearBucket = { key: string; label: string; year: number; months: Map<number, MonthBucket>; total: number };
+                const years = new Map<number, YearBucket>();
+                for (const t of filtered) {
+                  const d = new Date(t.earnedAt);
+                  const y = d.getFullYear();
+                  const m = d.getMonth();
+                  const ws = startOfWeek(d);
+                  const we = new Date(ws); we.setDate(ws.getDate() + 6);
+                  const yKey = String(y);
+                  const mKey = `${y}-${m}`;
+                  const wKey = `${y}-${m}-${ws.getTime()}`;
+                  let yb = years.get(y);
+                  if (!yb) { yb = { key: yKey, label: yKey, year: y, months: new Map(), total: 0 }; years.set(y, yb); }
+                  let mb = yb.months.get(m);
+                  if (!mb) { mb = { key: mKey, label: MONTHS[m], monthIdx: m, weeks: new Map(), total: 0 }; yb.months.set(m, mb); }
+                  let wb = mb.weeks.get(wKey);
+                  if (!wb) { wb = { key: wKey, label: `${fmtMD(ws)} – ${fmtMD(we)}`, weekStart: ws, items: [], total: 0 }; mb.weeks.set(wKey, wb); }
+                  wb.items.push(t);
+                  wb.total += t.netEarnings;
+                  mb.total += t.netEarnings;
+                  yb.total += t.netEarnings;
+                }
+                const yearList = Array.from(years.values()).sort((a, b) => b.year - a.year);
+                const isCollapsed = (k: string, defaultCollapsed: boolean) => {
+                  const v = collapsedGroups[k];
+                  return v === undefined ? defaultCollapsed : v;
+                };
+                const toggle = (k: string, defaultCollapsed: boolean) => {
+                  setCollapsedGroups((prev) => ({ ...prev, [k]: !(prev[k] === undefined ? defaultCollapsed : prev[k]) }));
+                };
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth();
+                const currentWeekKey = `${currentYear}-${currentMonth}-${startOfWeek(now).getTime()}`;
+                return yearList.map((yb) => {
+                  const yCollapsed = isCollapsed(`y:${yb.key}`, yb.year !== currentYear);
+                  return (
+                    <div key={yb.key} className="border-b border-gray-200 last:border-0">
+                      <button
+                        onClick={() => toggle(`y:${yb.key}`, yb.year !== currentYear)}
+                        className="w-full flex items-center justify-between py-2.5 text-left"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          {yCollapsed ? <ChevronRight className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+                          <span className="text-sm font-bold text-gray-900">{yb.label}</span>
+                        </div>
+                        <span className="text-xs font-semibold text-gray-700 tabular-nums">{formatCurrency(yb.total)}</span>
+                      </button>
+                      {!yCollapsed && (
+                        <div className="pl-3">
+                          {Array.from(yb.months.values()).sort((a, b) => b.monthIdx - a.monthIdx).map((mb) => {
+                            const mCollapsed = isCollapsed(`m:${mb.key}`, !(yb.year === currentYear && mb.monthIdx === currentMonth));
+                            return (
+                              <div key={mb.key} className="border-t border-gray-100">
+                                <button
+                                  onClick={() => toggle(`m:${mb.key}`, !(yb.year === currentYear && mb.monthIdx === currentMonth))}
+                                  className="w-full flex items-center justify-between py-2 text-left"
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    {mCollapsed ? <ChevronRight className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
+                                    <span className="text-[13px] font-semibold text-gray-800">{mb.label}</span>
+                                  </div>
+                                  <span className="text-[11px] font-medium text-gray-600 tabular-nums">{formatCurrency(mb.total)}</span>
+                                </button>
+                                {!mCollapsed && (
+                                  <div className="pl-3">
+                                    {Array.from(mb.weeks.values()).sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime()).map((wb) => {
+                                      const wCollapsed = isCollapsed(`w:${wb.key}`, wb.key !== currentWeekKey);
+                                      return (
+                                        <div key={wb.key} className="border-t border-gray-100">
+                                          <button
+                                            onClick={() => toggle(`w:${wb.key}`, wb.key !== currentWeekKey)}
+                                            className="w-full flex items-center justify-between py-1.5 text-left"
+                                          >
+                                            <div className="flex items-center gap-1.5">
+                                              {wCollapsed ? <ChevronRight className="w-3 h-3 text-gray-400" /> : <ChevronDown className="w-3 h-3 text-gray-400" />}
+                                              <span className="text-[11px] font-medium text-gray-600 uppercase tracking-wide">{wb.label}</span>
+                                              <span className="text-[10px] text-gray-400 tabular-nums">({wb.items.length})</span>
+                                            </div>
+                                            <span className="text-[11px] font-semibold text-gray-700 tabular-nums">{formatCurrency(wb.total)}</span>
+                                          </button>
+                                          {!wCollapsed && (
+                                            <div className="pl-2">
+                                              {wb.items.map((transaction) => (
                   <button
                     key={transaction.id}
                     onClick={() => handleTransactionClick(transaction)}
@@ -1324,7 +1416,22 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                       </div>
                     </div>
                   </button>
-                ));
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
               })()}
             </div>
           </div>
