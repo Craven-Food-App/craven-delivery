@@ -314,8 +314,8 @@ const PrivacyPolicy = () => {
               <h2 className="text-2xl font-semibold mb-4">9e. Payments, Payouts &amp; Sensitive Financial Data</h2>
               <p className="text-muted-foreground mb-4">
                 Customer payments are processed by Stripe. Feeder and Restaurant Partner payouts are processed via
-                Stripe Connect and, in certain merchant onboarding flows, Moov. We do not store full card numbers
-                or full bank account numbers in plain text on our servers.
+                Stripe Connect. We do not store full card numbers or full bank account numbers in plain text on our
+                servers.
               </p>
               <p className="text-muted-foreground">
                 For executive onboarding and finance workflows that require full Social Security Numbers or full
