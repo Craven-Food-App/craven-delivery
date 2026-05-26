@@ -29,11 +29,11 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
   const [peakMultiplier, setPeakMultiplier] = useState<number>(
     settings?.peak_hour_multiplier || 1.5
   );
-  const [moovCardPct, setMoovCardPct] = useState<number>(
-    settings?.moov_card_processing_percent ?? 2.7
+  const [stripeCardPct, setStripeCardPct] = useState<number>(
+    settings?.stripe_fee_percent ?? 2.9
   );
-  const [moovAchPct, setMoovAchPct] = useState<number>(
-    settings?.moov_ach_processing_percent ?? 0.5
+  const [stripeFixedCents, setStripeFixedCents] = useState<number>(
+    settings?.stripe_fee_fixed_cents ?? 30
   );
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -57,8 +57,8 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
           delivery_fee_base_cents: Math.round(deliveryFeeBase * 100),
           delivery_fee_per_mile_cents: Math.round(deliveryFeePerMile * 100),
           peak_hour_multiplier: peakMultiplier,
-          moov_card_processing_percent: moovCardPct,
-          moov_ach_processing_percent: moovAchPct,
+          stripe_fee_percent: stripeCardPct,
+          stripe_fee_fixed_cents: Math.round(stripeFixedCents),
           is_active: true,
           updated_by: userData?.user?.id || null,
         });
@@ -80,11 +80,11 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
   const serviceFee = exampleSubtotal * (serviceFeePct / 100);
   const deliveryFee = exampleSubtotal * 0 + (deliveryFeeBase + (exampleMiles * deliveryFeePerMile)); // keep existing units
   const total = exampleSubtotal + serviceFee + deliveryFee;
-  const moovFee = total * (moovCardPct / 100);
+  const stripeFee = total * (stripeCardPct / 100) + (stripeFixedCents / 100);
   const restaurantGets = exampleSubtotal * (1 - (restaurantCommission / 100));
   const cravenCommission = exampleSubtotal * (restaurantCommission / 100);
   const cravenGrossRevenue = cravenCommission + serviceFee + deliveryFee;
-  const cravenNetRevenue = cravenGrossRevenue - moovFee;
+  const cravenNetRevenue = cravenGrossRevenue - stripeFee;
 
   return (
     <div className="space-y-6">
