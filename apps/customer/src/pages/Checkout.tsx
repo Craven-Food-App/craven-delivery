@@ -1099,7 +1099,7 @@ const Checkout: React.FC = () => {
           email: formData.email,
           phone: formData.phone,
         },
-        payment_method_id: selectedPaymentMethod.stripe_payment_method_id || selectedPaymentMethod.moov_payment_method_id,
+        payment_method_id: selectedPaymentMethod.stripe_payment_method_id,
       };
       
       // Add delivery_address only if delivery method and all fields are valid
