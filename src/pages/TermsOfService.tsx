@@ -17,7 +17,7 @@ const TermsOfService = () => {
             <div className="text-center space-y-1">
               <p className="text-muted-foreground">Effective: October 29, 2025</p>
               <p className="text-muted-foreground">Toledo, Ohio</p>
-              <p className="text-muted-foreground font-semibold">Last Updated: March 2026</p>
+              <p className="text-muted-foreground font-semibold">Last Updated: May 2026</p>
             </div>
           </CardHeader>
           
@@ -25,7 +25,7 @@ const TermsOfService = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
               <p className="text-muted-foreground mb-4">
-                By accessing or using Crave'n's food delivery platform, including the Crave'n App, Crave'n Feeder App, and Partner Portal (collectively, the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the Service.
+                By accessing or using Crave'n's food delivery platform, including the Crave'n Customer App and website, the Crave'n Feeder App, the Crave'n Partner Portal, and the Crave'n Merchant, Admin, Corporate, and Orders Tablet Apps (collectively, the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the Service.
               </p>
               <p className="text-muted-foreground mb-4">
                 These Terms form a binding agreement between you and Crave'n Inc., 1121 W Sylvania Ave., Toledo, OH 43612 ("Crave'n," "we," "us," or "our"). These Terms incorporate by reference our Privacy Policy and any other policies posted on the Service.
@@ -158,6 +158,45 @@ const TermsOfService = () => {
             </section>
 
             <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">7a. Clean Pay, Mileage Pay &amp; Order History</h2>
+              <p className="text-muted-foreground mb-4">
+                Crave'n provides Feeders with "Clean Pay" — a fully itemized pay breakdown shown before accepting
+                and after completing every delivery. The breakdown includes Base Pay, Delivery Fee Share, Customer
+                Tip, Promo and Peak Bonuses, Mileage Pay, Adjustments, and the Total Guaranteed Pay.
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-muted-foreground">
+                <li>During Live Driver Testing and where applicable, Mileage Pay is calculated at the prevailing IRS standard mileage rate and accrues to the Feeder's Gas Money bucket.</li>
+                <li>Customer tips are passed through 100% to the Feeder.</li>
+                <li>Earnings, payouts, and rolling 60-day performance metrics (used for Feeder tiers and dispatch weighting) are visible to the Feeder in the Earnings dashboard, with Order History grouped by Year, Month, and Week for personal recordkeeping and tax preparation.</li>
+                <li>Payouts are made via Stripe Connect; manual debit card entry is disabled.</li>
+              </ul>
+              <p className="text-muted-foreground">
+                Pay figures shown prior to acceptance are guaranteed for that offer; post-trip adjustments (e.g.,
+                customer tip changes within the allowed window, mileage corrections) will be reflected in the
+                final itemized receipt.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">7b. Delivery Photo Proof</h2>
+              <p className="text-muted-foreground">
+                For all delivery flows — including retail, restaurants, and Live Driver Testing — Feeders are
+                required to follow the on-screen photo guide and capture a clear drop-off photo as proof of
+                delivery. Failure to provide an acceptable proof photo may result in delivery rejection, pay
+                adjustment, or account review.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">7c. Location Services &amp; Notifications</h2>
+              <p className="text-muted-foreground">
+                The Feeder App requires location services (including background location while on shift) to
+                dispatch offers, compute mileage, and provide live ETAs. Push notifications are delivered via FCM
+                (Android) and APNs (iOS). Disabling these permissions may prevent you from receiving deliveries.
+              </p>
+            </section>
+
+            <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">8. Restaurant Partner Terms</h2>
               <p className="text-muted-foreground mb-4">Restaurant partners agree to:</p>
               <ul className="list-disc pl-6 mb-4 text-muted-foreground">
@@ -167,6 +206,12 @@ const TermsOfService = () => {
                 <li>Pay applicable commission or service fees to Crave'n.</li>
                 <li>Ensure food quality, correct packaging, and compliance with delivery handoff requirements.</li>
               </ul>
+              <p className="text-muted-foreground mb-4">
+                Marketplace visibility statuses (ACTIVE, COMING_SOON, REQUESTABLE) are determined by the
+                merchant's signed status and onboarding state. Tablet apps (Merchant and Orders) are provided
+                for in-store order management and are subject to these Terms and the separate Merchant Terms of
+                Service. Payouts are processed through Stripe Connect and, in certain onboarding flows, Moov.
+              </p>
             </section>
 
             <section className="mb-8">
@@ -277,7 +322,7 @@ const TermsOfService = () => {
                 <p className="mb-2"><strong>Crave'n Inc.</strong></p>
                 <p className="mb-2">1121 W Sylvania Ave.</p>
                 <p className="mb-4">Toledo, OH 43612</p>
-                <p className="mb-2"><strong>Support & Privacy requests:</strong> support@cravenusa.com</p>
+                <p className="mb-2"><strong>Support & Privacy requests:</strong> help@cravenusa.com</p>
                 <p><strong>Phone:</strong> 216-435-0821</p>
               </div>
             </section>

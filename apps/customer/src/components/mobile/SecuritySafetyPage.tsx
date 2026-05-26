@@ -579,7 +579,7 @@ const SecuritySafetyPage: React.FC<SecuritySafetyPageProps> = ({ onBack }) => {
 
     notifications.show({
       title: 'Account deletion',
-      message: 'Please contact support at support@cravenusa.com to delete your account',
+      message: 'Please contact support at help@cravenusa.com to delete your account',
       color: 'orange',
     });
   };

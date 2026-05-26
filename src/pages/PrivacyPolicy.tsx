@@ -16,7 +16,7 @@ const PrivacyPolicy = () => {
               <div className="text-lg font-normal mt-2">(Master Version – U.S. & International)</div>
               <div className="text-base font-normal mt-1">(for Customers, Feeders, and Restaurant Partners)</div>
             </CardTitle>
-            <p className="text-center text-muted-foreground">Last Updated: March 2026</p>
+            <p className="text-center text-muted-foreground">Last Updated: May 2026</p>
           </CardHeader>
           
           <CardContent className="prose prose-slate max-w-none">
@@ -29,7 +29,8 @@ const PrivacyPolicy = () => {
               <ul className="list-disc pl-6 mb-4 text-muted-foreground">
                 <li>The Crave'n App and website for customers;</li>
                 <li>The Crave'n Feeder App for delivery drivers ("Feeders"); and</li>
-                <li>The Crave'n Partner Portal for restaurants and merchants.</li>
+                <li>The Crave'n Partner Portal for restaurants and merchants; and</li>
+                <li>The Crave'n Merchant, Admin, Corporate, and Orders Tablet Apps used at partner locations and internal operations.</li>
               </ul>
               <p className="text-muted-foreground">
                 This Policy applies to all Crave'n users across the United States and, where applicable, internationally through Crave'n Europe Ltd.
@@ -194,7 +195,7 @@ const PrivacyPolicy = () => {
               </ul>
               <p className="text-muted-foreground mb-4">To exercise these rights:</p>
               <ul className="list-none mb-4 text-muted-foreground">
-                <li>Contact <strong>support@cravenusa.com</strong> (privacy and data requests)</li>
+                <li>Contact <strong>help@cravenusa.com</strong> (privacy and data requests)</li>
                 <li>Or call <strong>216-435-0821</strong> (general account help)</li>
               </ul>
             </section>
@@ -219,7 +220,7 @@ const PrivacyPolicy = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">8. Children's Privacy</h2>
               <p className="text-muted-foreground mb-4">
-                The Services are not intended for children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected information from a child under 13, please contact us at support@cravenusa.com so we can delete it.
+                The Services are not intended for children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected information from a child under 13, please contact us at help@cravenusa.com so we can delete it.
               </p>
             </section>
 
@@ -228,6 +229,120 @@ const PrivacyPolicy = () => {
               <p className="text-muted-foreground mb-4">
                 Feeders may be asked to provide a live photo or ID scan for fraud prevention and identity confirmation.
                 Biometric data (e.g., facial geometry) is securely processed and deleted after three (3) years of inactivity or once verification needs are met.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">9a. Clean Pay Transparency &amp; Earnings Records (Feeders)</h2>
+              <p className="text-muted-foreground mb-4">
+                To support our Clean Pay commitment, the Feeder App records and displays an itemized breakdown
+                for every delivery, including Base Pay, Delivery Fee Share, Customer Tip, Promo and Peak Bonuses,
+                Mileage Pay (paid at the prevailing IRS standard mileage rate during Live Driver Testing and where
+                applicable), Gas Money bucket accruals, and Adjustments. These records are stored against your
+                Feeder account so you can review them in real time and in the Order History (organized by Year,
+                Month, and Week) for tax preparation, dispute resolution, and personal recordkeeping.
+              </p>
+              <p className="text-muted-foreground">
+                Earnings, payout, and tier-performance data (rolling 60-day metrics used to compute Feeder tiers
+                and dispatch weights) are processed to operate the platform, calculate payouts via Stripe Connect,
+                and meet IRS 1099 reporting obligations.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">9b. Delivery Photo Proof &amp; Order Media</h2>
+              <p className="text-muted-foreground mb-4">
+                Feeders are prompted, through an on-screen guide, to capture a clear photo of the package at the
+                drop-off location as proof of delivery. Customers may also be asked to upload photos in support
+                tickets (e.g., missing or incorrect items). These photos, along with associated metadata
+                (timestamp, approximate GPS coordinates, order ID), are stored to:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-muted-foreground">
+                <li>Confirm completion of delivery and resolve disputes between customers, Feeders, and merchants;</li>
+                <li>Detect fraud and policy violations;</li>
+                <li>Train and evaluate Feeders during Live Driver Testing.</li>
+              </ul>
+              <p className="text-muted-foreground">
+                Photos are retained for the period required to resolve potential disputes and meet tax/audit
+                obligations, and are accessible only to authorized Crave'n personnel, the involved customer/merchant,
+                and, where required, law enforcement.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">9c. Location, Background Location &amp; Push Notifications</h2>
+              <p className="text-muted-foreground mb-4">
+                The Crave'n Customer App uses your location to find nearby restaurants, calculate delivery
+                eligibility (including our 25-mile geofence and national-chain bypass rules), and provide accurate
+                ETAs. The Feeder App uses foreground and, where permitted, background location services to:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-muted-foreground">
+                <li>Show your live position on the dispatch map and to customers/merchants for the active delivery only;</li>
+                <li>Compute mileage for Mileage Pay and Gas Money;</li>
+                <li>Detect unsafe speeds and trigger safety prompts;</li>
+                <li>Determine on-shift availability (online/offline status).</li>
+              </ul>
+              <p className="text-muted-foreground mb-4">
+                Background location is only collected while you are actively on shift in the Feeder App and stops
+                when you go offline or close the app. You may revoke location permissions at any time in your
+                device settings; doing so may limit your ability to receive deliveries.
+              </p>
+              <p className="text-muted-foreground">
+                We use Firebase Cloud Messaging (FCM) and Apple Push Notification service (APNs) to deliver order,
+                dispatch, internal communications (C Comms), and safety notifications. You can manage notification
+                preferences in your device settings.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">9d. Tablet Apps (Merchant, Admin, Corporate, Orders)</h2>
+              <p className="text-muted-foreground mb-4">
+                Crave'n provides dedicated tablet applications used at merchant locations and within Crave'n
+                operations. These apps process information needed to receive and prepare orders, manage menus,
+                run shift and time-clock activity, view dispatch status, and (for corporate/admin devices) access
+                internal dashboards and Internal Communications (C Comms). Time-clock entries that remain open for
+                more than 24 hours are automatically closed by a system safeguard.
+              </p>
+              <p className="text-muted-foreground">
+                Access to tablet apps is controlled by role-based permissions, executive-officer permissions
+                (where applicable), and, for sensitive actions, a per-user PIN (executives use the last four
+                hexadecimal characters of their account UUID).
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">9e. Payments, Payouts &amp; Sensitive Financial Data</h2>
+              <p className="text-muted-foreground mb-4">
+                Customer payments are processed by Stripe. Feeder and Restaurant Partner payouts are processed via
+                Stripe Connect and, in certain merchant onboarding flows, Moov. We do not store full card numbers
+                or full bank account numbers in plain text on our servers.
+              </p>
+              <p className="text-muted-foreground">
+                For executive onboarding and finance workflows that require full Social Security Numbers or full
+                bank account numbers, those values are encrypted using PGP symmetric encryption; only the last
+                four digits are stored in plain text for display. Invoice documents uploaded for AP/AR may be
+                analyzed by our AI invoice scanning workflow (powered by Lovable AI Gateway with Google Gemini)
+                solely to extract structured fields (vendor, amount, line items) for accounting purposes.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">9f. Internal Communications (C Comms)</h2>
+              <p className="text-muted-foreground">
+                Crave'n personnel and authorized partners may use the C Comms internal messaging system. Messages,
+                attachments, and read receipts are stored in private storage with row-level security so that only
+                participants in a thread can access its contents. Audio notification chimes and badge counts are
+                generated locally on your device.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">9g. Governance, Equity &amp; Executive Records</h2>
+              <p className="text-muted-foreground">
+                For users in officer, board, or executive roles, we process appointment records, signed governance
+                documents (board resolutions, bylaws, equity grants under the 70M-share plan and 14.7M option
+                pool), cap-table entries, and e-signatures. Cap-table visibility is restricted: only the CEO and
+                CFO can view the full cap table; other executives can view only their own equity row.
               </p>
             </section>
 
@@ -249,7 +364,7 @@ const PrivacyPolicy = () => {
                 <li>Designate an authorized agent to exercise rights on their behalf</li>
               </ul>
               <p className="text-muted-foreground mb-4">
-                Submit requests via <strong>support@cravenusa.com</strong> with verification information.
+                Submit requests via <strong>help@cravenusa.com</strong> with verification information.
                 Crave'n will not discriminate against users who exercise these rights.
               </p>
             </section>
@@ -285,7 +400,7 @@ const PrivacyPolicy = () => {
                 <p className="mb-2"><strong>Crave'n Inc.</strong></p>
                 <p className="mb-2">1121 W Sylvania Ave.</p>
                 <p className="mb-4">Toledo, Ohio 43612</p>
-                <p className="mb-2"><strong>Privacy & Data Requests:</strong> support@cravenusa.com</p>
+                <p className="mb-2"><strong>Privacy & Data Requests:</strong> help@cravenusa.com</p>
                 <p><strong>Phone:</strong> 216-435-0821</p>
               </div>
             </section>
