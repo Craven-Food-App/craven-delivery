@@ -117,16 +117,31 @@ const Hero = () => {
             <h2 className="text-3xl md:text-4xl font-bold mb-8 text-foreground">Who We Are</h2>
             <div className="text-lg text-muted-foreground max-w-4xl mx-auto space-y-6 text-left">
               <p>
-                Crave'n is a next-generation food delivery company built on a simple principle: when local businesses succeed, entire communities benefit. We are redefining the delivery landscape by prioritizing fairness, transparency, and sustainable growth for restaurants, drivers, and customers.
+                Crave'n is a next-generation delivery platform built on a simple belief: when local businesses are treated fairly, entire communities grow stronger.
               </p>
               <p>
-                Crave'n was created with a mission to restore balance in an industry that often disadvantages small businesses. Our platform uses advanced logistics and modern technology to empower independent restaurants with the tools, insights, and operational support they need to compete at scale. We believe every neighborhood kitchen deserves the opportunity to thrive without sacrificing profits to excessive fees or restrictive practices.
+                We created Crave'n after experiencing the realities of the delivery industry from both sides. From merchants being forced to sacrifice margins just to stay competitive, to drivers working under systems that promised independence while limiting real flexibility and opportunity, it became clear that the industry needed a better balance.
               </p>
               <p>
-                Our commitment reaches far beyond convenience. We focus on strengthening merchant relationships, improving delivery infrastructure, and creating meaningful earning opportunities for drivers. For customers, we deliver an elevated experience centered on reliability, speed, accuracy, and trust.
+                Crave'n was built to challenge that model.
               </p>
               <p>
-                Crave'n is not just delivering meals. We are reshaping the future of local commerce by championing equitable economics, community driven innovation, and uncompromising service quality. Our goal is to build a platform where every participant benefits, from the restaurant to the driver to the customer.
+                Founded by entrepreneur Torrance Stroman, Crave'n was created with a focus on honesty, transparency, opportunity, and long-term sustainability for everyone involved in the delivery ecosystem. Our platform combines modern technology, advanced logistics, and community-focused operations to help restaurants expand their reach without excessive commission structures or unfair practices that damage profitability.
+              </p>
+              <p>
+                For drivers, we believe effort, time, and performance should be respected with transparent earnings and a system built around fairness. For customers, we focus on reliability, accuracy, speed, and trust while supporting the local businesses that keep communities thriving.
+              </p>
+              <p>
+                But Crave'n represents more than food delivery.
+              </p>
+              <p>
+                It represents opportunity. It represents ownership. It represents building something meaningful for the people and businesses that are often overlooked by larger platforms focused purely on extraction and scale.
+              </p>
+              <p>
+                Our mission is to create a platform where merchants grow, drivers succeed, customers feel valued, and communities benefit from stronger local commerce.
+              </p>
+              <p>
+                That is the future we are building.
               </p>
             </div>
           </div>
