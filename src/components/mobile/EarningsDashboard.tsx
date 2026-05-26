@@ -6,6 +6,8 @@ import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Cloc
 import feederCardBackground from '@/assets/feeder-card-background.png';
 import feederCardImage from '@/assets/feeder-card-image.png';
 import { Box, Stack, Text, Title, Group } from '@mantine/core';
+import FeederCleanPayCard from './FeederCleanPayCard';
+import { getFeederCleanPaySummary, type FeederCleanPaySummary } from '@/lib/feederCleanPaySummary';
 
 type EarningsDashboardProps = {
   onOpenMenu?: () => void;
@@ -42,11 +44,14 @@ interface Transaction {
   date: string;
   time: string;
   orderId: string;
+  fullOrderId: string;
   restaurantName: string;
   grossEarnings: number;
   tipAmount: number;
   netEarnings: number;
-  status: 'completed' | 'refunded' | 'paid';
+  status: 'completed' | 'refunded' | 'paid' | 'in_progress' | 'cancelled' | 'adjusted';
+  cleanPayVerified?: boolean;
+  adjustmentCents?: number;
   orderData?: any; // Full order data for detail view
 }
 
