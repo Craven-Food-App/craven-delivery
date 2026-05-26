@@ -7,10 +7,55 @@ import cravemoreIcon from "@/assets/cravemore-icon.png";
 import mainHeroImage from "@/assets/main-hero-image.png";
 import { CraveMoreText } from "@/components/ui/cravemore-text";
 import { useCraveMoreOffer } from "@/hooks/useCraveMoreOffer";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { analytics } from "@/utils/cravemoreAnalytics";
 
 const Hero = () => {
   const navigate = useNavigate();
   const { offer, loading: offerLoading } = useCraveMoreOffer();
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+
+  const handlePlanCheckout = async (planKey?: string) => {
+    if (!planKey) {
+      navigate('/cravemore');
+      return;
+    }
+    try {
+      setCheckoutLoading(planKey);
+      analytics.planSelected(planKey);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate(`/login?redirect=/cravemore`);
+        return;
+      }
+
+      analytics.checkoutStarted(planKey);
+      const { data, error } = await supabase.functions.invoke('create-cravemore-checkout', {
+        body: { planKey },
+      });
+
+      if (error) {
+        console.error('CraveMore checkout error:', error);
+        toast.error('Unable to start checkout. Please try again.');
+        return;
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else if (data?.error) {
+        toast.error(data.error);
+      } else {
+        toast.error('No checkout URL returned. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('CraveMore checkout exception:', err);
+      toast.error(err?.message || 'Failed to start checkout.');
+    } finally {
+      setCheckoutLoading(null);
+    }
+  };
 
   const benefits = [
     { icon: Zap, text: "Zero delivery fees with", highlight: true },
