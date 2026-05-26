@@ -636,8 +636,23 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
   const handleTransactionClick = async (transaction: Transaction) => {
     setSelectedTransaction(transaction);
-    
-    // Fetch detailed transaction data
+    setSelectedCleanPay(null);
+    setShowDetailModal(true);
+
+    // Fetch Clean Pay summary for full transparency
+    if (transaction.fullOrderId) {
+      setCleanPayLoading(true);
+      try {
+        const summary = await getFeederCleanPaySummary(transaction.fullOrderId);
+        setSelectedCleanPay(summary);
+      } catch (e) {
+        console.warn('clean pay summary fetch failed', e);
+      } finally {
+        setCleanPayLoading(false);
+      }
+    }
+
+    // Also fetch legacy payout info (Stripe reference) for the footer
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !transaction.orderData) return;
@@ -675,8 +690,6 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         stripePayoutId,
         payoutDate,
       });
-
-      setShowDetailModal(true);
     } catch (error) {
       console.error('Error fetching transaction detail:', error);
     }
