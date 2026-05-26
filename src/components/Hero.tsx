@@ -214,14 +214,10 @@ const Hero = () => {
 
                 <Button 
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 text-sm mt-auto"
-                  onClick={() => handlePlanCheckout(tier.planKey)}
-                  disabled={tier.lifetimeAvailable === false || checkoutLoading !== null}
+                  onClick={() => navigate('/cravemore')}
+                  disabled={tier.lifetimeAvailable === false}
                 >
-                  {tier.lifetimeAvailable === false
-                    ? 'Sold Out'
-                    : checkoutLoading === tier.planKey
-                      ? 'Starting checkout…'
-                      : 'Get Started'}
+                  {tier.lifetimeAvailable === false ? 'Sold Out' : 'Get Started'}
                 </Button>
               </Card>
             ))}
