@@ -25,9 +25,10 @@ const Hero = () => {
       setCheckoutLoading(planKey);
       analytics.planSelected(planKey);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate(`/login?redirect=/cravemore`);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Please sign in to continue.');
+        navigate('/auth?redirect=/cravemore');
         return;
       }
 
