@@ -1100,7 +1100,13 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
           {/* Earnings Breakdown Card */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Earnings Breakdown</h3>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-bold text-gray-900">Clean Pay Breakdown</h3>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">Clean Pay</span>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Every dollar shown is guaranteed at offer time and reconciled per delivery. Tap any delivery below to view its full Clean Pay receipt.
+            </p>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Base Pay</span>
@@ -1108,27 +1114,27 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               </div>
               <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Distance Pay</span>
+                <span className="text-gray-600">Delivery Fee Share / Distance Pay</span>
                 <span className="font-semibold text-gray-900">{formatCurrency(breakdown.distancePay)}</span>
               </div>
               <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Tips</span>
+                <span className="text-gray-600">Customer Tips</span>
                 <span className="font-semibold text-gray-900">{formatCurrency(breakdown.tips)}</span>
               </div>
               <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Bonuses</span>
+                <span className="text-gray-600">Promo &amp; Peak Bonuses</span>
                 <span className="font-semibold text-gray-900">{formatCurrency(breakdown.bonuses)}</span>
               </div>
               <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Adjustments</span>
+                <span className="text-gray-600">Clean Pay Adjustments</span>
                 <span className="font-semibold text-gray-900">{formatCurrency(breakdown.adjustments)}</span>
               </div>
               <div className="h-px bg-gray-300 my-2"></div>
               <div className="flex justify-between items-center">
-                <span className="text-lg font-bold text-gray-900">Total Earned</span>
+                <span className="text-lg font-bold text-gray-900">Total Guaranteed</span>
                 <span className="text-lg font-bold text-gray-900">{formatCurrency(breakdown.totalEarned)}</span>
               </div>
             </div>
