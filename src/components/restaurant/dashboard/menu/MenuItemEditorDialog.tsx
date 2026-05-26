@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Check, MoreVertical, X, Upload } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { Badge } from "@/components/ui/badge";
+import InlineModifierBuilder, {
+  DraftModifierGroup,
+} from "./InlineModifierBuilder";
 
 interface MenuItem {
   id?: string;
@@ -41,8 +42,8 @@ export default function MenuItemEditorDialog({
   const [imagePreview, setImagePreview] = useState<string | null>(item?.image_url || null);
   const [isUploading, setIsUploading] = useState(false);
   const [availability, setAvailability] = useState(item?.is_available ?? true);
-  const [modifierGroups, setModifierGroups] = useState<any[]>([]);
-  const [selectedModifierGroups, setSelectedModifierGroups] = useState<string[]>([]);
+  const [library, setLibrary] = useState<DraftModifierGroup[]>([]);
+  const [draftGroups, setDraftGroups] = useState<DraftModifierGroup[]>([]);
 
   const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm<MenuItem>({
     defaultValues: item || {
@@ -54,61 +55,73 @@ export default function MenuItemEditorDialog({
   });
 
   useEffect(() => {
-    fetchAllModifierGroups();
+    if (!isOpen) return;
+    loadModifiers();
     if (item) {
       reset(item);
       setImagePreview(item.image_url || null);
       setAvailability(item.is_available);
-      fetchModifierGroupsForItem();
     } else {
-      setSelectedModifierGroups([]);
+      setDraftGroups([]);
+      setImagePreview(null);
+      setImageFile(null);
     }
-  }, [item, reset, restaurantId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item, isOpen, restaurantId]);
 
-  const fetchAllModifierGroups = async () => {
+  const loadModifiers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: groupsData, error: gErr } = await supabase
         .from("modifier_groups")
-        .select("*")
+        .select("*, modifier_group_items(*)")
         .eq("restaurant_id", restaurantId)
-        .eq("is_active", true)
         .order("display_order", { ascending: true });
+      if (gErr) throw gErr;
 
-      if (error) throw error;
-      setModifierGroups(data || []);
-    } catch (error) {
-      console.error("Error fetching modifier groups:", error);
-    }
-  };
+      const lib: DraftModifierGroup[] = (groupsData || []).map((g: any) => ({
+        id: g.id,
+        tempId: g.id,
+        name: g.name,
+        description: g.description || "",
+        is_required: g.is_required,
+        min_selections: g.min_selections ?? 0,
+        max_selections: g.max_selections ?? null,
+        display_order: g.display_order ?? 0,
+        is_active: g.is_active,
+        items: (g.modifier_group_items || [])
+          .sort((a: any, b: any) => a.display_order - b.display_order)
+          .map((it: any) => ({
+            id: it.id,
+            tempId: it.id,
+            name: it.name,
+            description: it.description || "",
+            price_cents: it.price_cents,
+            is_available: it.is_available,
+            display_order: it.display_order,
+          })),
+      }));
+      setLibrary(lib);
 
-  const fetchModifierGroupsForItem = async () => {
-    if (!item?.id) return;
-
-    try {
-      // Fetch all available modifier groups
-      const { data: allGroups, error: groupsError } = await supabase
-        .from("modifier_groups")
-        .select("*")
-        .eq("restaurant_id", restaurantId)
-        .eq("is_active", true)
-        .order("display_order", { ascending: true });
-
-      if (groupsError) throw groupsError;
-
-      // Fetch modifier groups associated with this menu item
-      const { data: associatedGroups, error: associatedError } = await supabase
-        .from("menu_item_modifier_groups")
-        .select("modifier_group_id")
-        .eq("menu_item_id", item.id);
-
-      if (associatedError) throw associatedError;
-
-      setModifierGroups(allGroups || []);
-      setSelectedModifierGroups(
-        associatedGroups?.map((g) => g.modifier_group_id) || []
-      );
-    } catch (error) {
-      console.error("Error fetching modifier groups for item:", error);
+      if (item?.id) {
+        const { data: assoc, error: aErr } = await supabase
+          .from("menu_item_modifier_groups")
+          .select("modifier_group_id, display_order")
+          .eq("menu_item_id", item.id)
+          .order("display_order", { ascending: true });
+        if (aErr) throw aErr;
+        const ids = (assoc || []).map((a: any) => a.modifier_group_id);
+        const attached = ids
+          .map((id, idx) => {
+            const g = lib.find((l) => l.id === id);
+            return g ? { ...g, display_order: idx } : null;
+          })
+          .filter(Boolean) as DraftModifierGroup[];
+        setDraftGroups(attached);
+      } else {
+        setDraftGroups([]);
+      }
+    } catch (e) {
+      console.error("Error loading modifiers:", e);
     }
   };
 
@@ -192,31 +205,9 @@ export default function MenuItemEditorDialog({
         });
       }
 
-      // Update modifier group associations
+      // Persist modifier groups + items
       if (menuItemId) {
-        // Delete existing associations
-        await supabase
-          .from("menu_item_modifier_groups")
-          .delete()
-          .eq("menu_item_id", menuItemId);
-
-        // Insert new associations
-        if (selectedModifierGroups.length > 0) {
-          const associations = selectedModifierGroups.map((groupId, index) => ({
-            menu_item_id: menuItemId,
-            modifier_group_id: groupId,
-            display_order: index,
-          }));
-
-          const { error: assocError } = await supabase
-            .from("menu_item_modifier_groups")
-            .insert(associations);
-
-          if (assocError) {
-            console.error("Error saving modifier group associations:", assocError);
-            // Don't fail the whole operation, just log the error
-          }
-        }
+        await persistModifierGroups(menuItemId);
       }
 
       onSave();
@@ -224,6 +215,7 @@ export default function MenuItemEditorDialog({
       reset();
       setImageFile(null);
       setImagePreview(null);
+      setDraftGroups([]);
     } catch (error) {
       console.error("Error saving item:", error);
       toast({
@@ -233,6 +225,120 @@ export default function MenuItemEditorDialog({
       });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const persistModifierGroups = async (menuItemId: string) => {
+    // Validate
+    for (const g of draftGroups) {
+      if (!g.name.trim()) {
+        throw new Error("All modifier groups need a name");
+      }
+      const visible = g.items.filter((i) => !i._deleted);
+      if (visible.length === 0) {
+        throw new Error(`Group "${g.name}" needs at least one option`);
+      }
+      if (visible.some((i) => !i.name.trim())) {
+        throw new Error(`Group "${g.name}" has an option missing a name`);
+      }
+      if (
+        g.max_selections != null &&
+        g.max_selections < (g.min_selections || 0)
+      ) {
+        throw new Error(`Group "${g.name}" max must be ≥ min`);
+      }
+    }
+
+    const associationRows: { menu_item_id: string; modifier_group_id: string; display_order: number }[] = [];
+
+    for (let gi = 0; gi < draftGroups.length; gi++) {
+      const g = draftGroups[gi];
+      let groupId = g.id;
+
+      const groupPayload = {
+        restaurant_id: restaurantId,
+        name: g.name.trim(),
+        description: g.description?.trim() || null,
+        is_required: g.is_required,
+        min_selections: g.is_required
+          ? Math.max(1, g.min_selections || 1)
+          : g.min_selections || 0,
+        max_selections: g.max_selections ?? null,
+        display_order: gi,
+        is_active: g.is_active,
+      };
+
+      if (!groupId) {
+        const { data: ins, error } = await supabase
+          .from("modifier_groups")
+          .insert(groupPayload)
+          .select("id")
+          .single();
+        if (error) throw error;
+        groupId = ins.id;
+      } else {
+        const { error } = await supabase
+          .from("modifier_groups")
+          .update(groupPayload)
+          .eq("id", groupId);
+        if (error) throw error;
+      }
+
+      // Items: delete flagged, upsert rest
+      const toDelete = g.items.filter((i) => i._deleted && i.id).map((i) => i.id!);
+      if (toDelete.length > 0) {
+        await supabase
+          .from("modifier_group_items")
+          .delete()
+          .in("id", toDelete);
+      }
+
+      const visible = g.items.filter((i) => !i._deleted);
+      const inserts: any[] = [];
+      for (let ii = 0; ii < visible.length; ii++) {
+        const it = visible[ii];
+        const payload = {
+          modifier_group_id: groupId,
+          name: it.name.trim(),
+          description: it.description?.trim() || null,
+          price_cents: Math.round(it.price_cents),
+          is_available: it.is_available,
+          display_order: ii,
+        };
+        if (it.id) {
+          const { error } = await supabase
+            .from("modifier_group_items")
+            .update(payload)
+            .eq("id", it.id);
+          if (error) throw error;
+        } else {
+          inserts.push(payload);
+        }
+      }
+      if (inserts.length > 0) {
+        const { error } = await supabase
+          .from("modifier_group_items")
+          .insert(inserts);
+        if (error) throw error;
+      }
+
+      associationRows.push({
+        menu_item_id: menuItemId,
+        modifier_group_id: groupId!,
+        display_order: gi,
+      });
+    }
+
+    // Replace associations
+    await supabase
+      .from("menu_item_modifier_groups")
+      .delete()
+      .eq("menu_item_id", menuItemId);
+    if (associationRows.length > 0) {
+      const { error } = await supabase
+        .from("menu_item_modifier_groups")
+        .insert(associationRows);
+      if (error) throw error;
     }
   };
 
@@ -378,72 +484,14 @@ export default function MenuItemEditorDialog({
             </div>
           </div>
 
-          {/* Modifier Groups Section */}
-          {modifierGroups.length > 0 && (
-            <div className="space-y-4 pt-4 border-t">
-              <div>
-                <Label className="text-base font-semibold">Modifier Groups</Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Select which modifier groups customers can choose from when ordering this item
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-3 max-h-64 overflow-y-auto p-4 border rounded-lg bg-muted/50">
-                {modifierGroups.map((group) => (
-                  <div
-                    key={group.id}
-                    className="flex items-start space-x-3 p-3 rounded-lg border bg-background hover:bg-muted/50 transition-colors"
-                  >
-                    <Checkbox
-                      id={`modifier-${group.id}`}
-                      checked={selectedModifierGroups.includes(group.id)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedModifierGroups([...selectedModifierGroups, group.id]);
-                        } else {
-                          setSelectedModifierGroups(
-                            selectedModifierGroups.filter((id) => id !== group.id)
-                          );
-                        }
-                      }}
-                    />
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Label
-                          htmlFor={`modifier-${group.id}`}
-                          className="font-medium cursor-pointer"
-                        >
-                          {group.name}
-                        </Label>
-                        {group.is_required && (
-                          <Badge variant="destructive" className="text-xs">
-                            Required
-                          </Badge>
-                        )}
-                        {!group.is_required && (
-                          <Badge variant="secondary" className="text-xs">
-                            Optional
-                          </Badge>
-                        )}
-                      </div>
-                      {group.description && (
-                        <p className="text-sm text-muted-foreground">
-                          {group.description}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        Min: {group.min_selections} | Max: {group.max_selections || "∞"}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {modifierGroups.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No modifier groups available. Create modifier groups in the "Modifier Groups" tab.
-                </p>
-              )}
-            </div>
-          )}
+          {/* Inline Modifier Builder */}
+          <div className="pt-4 border-t">
+            <InlineModifierBuilder
+              groups={draftGroups}
+              onChange={setDraftGroups}
+              existingLibrary={library}
+            />
+          </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button type="button" variant="ghost" onClick={onClose}>
