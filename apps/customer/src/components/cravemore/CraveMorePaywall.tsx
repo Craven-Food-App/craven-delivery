@@ -45,7 +45,7 @@ export const CraveMorePaywall: React.FC<CraveMorePaywallProps> = ({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast.error('Please sign in to continue');
-        navigate('/login?redirect=/cravemore');
+        navigate('/auth?redirect=/cravemore');
         setLoading(false);
         setSelectedPlan(null);
         return;
@@ -115,7 +115,7 @@ export const CraveMorePaywall: React.FC<CraveMorePaywallProps> = ({
           });
         } else if (displayError.includes('Unauthorized') || displayError.includes('401')) {
           toast.error('Please sign in to continue');
-          navigate('/login?redirect=/cravemore');
+          navigate('/auth?redirect=/cravemore');
         } else if (displayError.includes('sold out')) {
           toast.error('This plan is currently sold out. Please select another plan.');
         } else if (displayError.includes('Database migration required') || displayError.includes('cravemore_payment_sessions') || displayError.includes('does not exist') || displayError.includes('relation')) {
