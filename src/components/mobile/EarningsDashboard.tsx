@@ -601,17 +601,26 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         const earnedDate = new Date(earning.earned_at || earning.created_at);
         const order = earning.orders || {};
         const restaurant = order.restaurants || {};
-        
+        const orderStatus = order.order_status || '';
+        const adjustmentCents = Number(earning.adjustment_cents || 0);
+        let status: Transaction['status'] = 'in_progress';
+        if (orderStatus === 'delivered') status = adjustmentCents !== 0 ? 'adjusted' : 'completed';
+        else if (orderStatus === 'cancelled' || orderStatus === 'canceled') status = 'cancelled';
+        else if (orderStatus === 'refunded') status = 'refunded';
+
         return {
           id: earning.id,
           date: earnedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           time: earnedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
           orderId: earning.order_id?.substring(0, 8) || 'N/A',
+          fullOrderId: earning.order_id || '',
           restaurantName: restaurant.name || 'Restaurant',
           grossEarnings: (earning.amount_cents || 0) / 100,
           tipAmount: (earning.tip_cents || 0) / 100,
           netEarnings: ((earning.amount_cents || 0) + (earning.tip_cents || 0)) / 100,
-          status: order.order_status === 'delivered' ? 'completed' : 'pending',
+          status,
+          adjustmentCents,
+          cleanPayVerified: Boolean(earning.clean_pay_verified),
           orderData: order,
         };
       });
