@@ -97,6 +97,10 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [transactionDetail, setTransactionDetail] = useState<TransactionDetail | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'completed' | 'in_progress' | 'adjusted' | 'cancelled'>('all');
+  const [historySearch, setHistorySearch] = useState('');
+  const [selectedCleanPay, setSelectedCleanPay] = useState<FeederCleanPaySummary | null>(null);
+  const [cleanPayLoading, setCleanPayLoading] = useState(false);
   
   // Feeder Card state
   const [cardExpanded, setCardExpanded] = useState(false); // Start collapsed (peeking)
