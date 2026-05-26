@@ -123,25 +123,10 @@ const Hero = () => {
                 We created Crave'n after experiencing the realities of the delivery industry from both sides. From merchants being forced to sacrifice margins just to stay competitive, to drivers working under systems that promised independence while limiting real flexibility and opportunity, it became clear that the industry needed a better balance.
               </p>
               <p>
-                Crave'n was built to challenge that model.
+                Founded by entrepreneur Torrance Stroman, Crave'n was built around honesty, transparency, opportunity, and long-term sustainability for everyone involved in the delivery ecosystem. Our platform helps restaurants expand their reach without excessive commission structures while creating fairer opportunities for drivers and a better experience for customers.
               </p>
               <p>
-                Founded by entrepreneur Torrance Stroman, Crave'n was created with a focus on honesty, transparency, opportunity, and long-term sustainability for everyone involved in the delivery ecosystem. Our platform combines modern technology, advanced logistics, and community-focused operations to help restaurants expand their reach without excessive commission structures or unfair practices that damage profitability.
-              </p>
-              <p>
-                For drivers, we believe effort, time, and performance should be respected with transparent earnings and a system built around fairness. For customers, we focus on reliability, accuracy, speed, and trust while supporting the local businesses that keep communities thriving.
-              </p>
-              <p>
-                But Crave'n represents more than food delivery.
-              </p>
-              <p>
-                It represents opportunity. It represents ownership. It represents building something meaningful for the people and businesses that are often overlooked by larger platforms focused purely on extraction and scale.
-              </p>
-              <p>
-                Our mission is to create a platform where merchants grow, drivers succeed, customers feel valued, and communities benefit from stronger local commerce.
-              </p>
-              <p>
-                That is the future we are building.
+                Crave'n represents more than food delivery. It represents community, fairness, and building a platform where merchants grow, drivers succeed, customers feel valued, and local economies become stronger.
               </p>
             </div>
           </div>
