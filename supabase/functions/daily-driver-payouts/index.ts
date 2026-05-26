@@ -2,8 +2,14 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, RateLimitPresets, addRateLimitHeaders } from '../_shared/rateLimit.ts';
-import { createMoovTransfer } from '../_shared/moov.ts';
+import { createPayoutToConnectedAccount } from '../_shared/stripe.ts';
 import { requireAdmin } from "../_shared/adminAuth.ts";
+
+// Service-role client used inside processPayout to look up Stripe Connect accounts
+const adminSupabase = createClient(
+  Deno.env.get("SUPABASE_URL") ?? "",
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+);
 
 interface DriverEarning {
   driver_id: string;
@@ -12,8 +18,6 @@ interface DriverEarning {
     id: string;
     payment_type: string;
     account_identifier: string;
-    moov_payment_method_id?: string;
-    moov_account_id?: string;
   };
 }
 
@@ -92,9 +96,7 @@ serve(async (req) => {
           id,
           payment_type,
           account_identifier,
-          is_primary,
-          moov_payment_method_id,
-          moov_account_id
+          is_primary
         )
       `)
       .gte('created_at', `${payoutDate}T00:00:00Z`)
@@ -234,45 +236,33 @@ serve(async (req) => {
   }
 });
 
-// Process payout using Moov transfers
+// Process payout using Stripe Connect transfers
 async function processPayout(earning: DriverEarning): Promise<{ success: boolean; transactionId?: string; error?: string }> {
   try {
     const paymentType = earning.payment_method.payment_type;
     const amount = earning.amount;
-    const moovPaymentMethodId = earning.payment_method.moov_payment_method_id;
 
-    if (!moovPaymentMethodId) {
-      throw new Error("Moov payment method ID not found. Driver needs to set up Moov payment method.");
+    const { data: stripeAccount, error: stripeAcctError } = await adminSupabase
+      .from('stripe_accounts')
+      .select('stripe_account_id, payouts_enabled')
+      .eq('owner_type', 'driver')
+      .eq('owner_id', earning.driver_id)
+      .maybeSingle();
+
+    if (stripeAcctError || !stripeAccount?.stripe_account_id) {
+      throw new Error("Driver has not completed Stripe Connect onboarding.");
     }
 
-    console.log(`Processing ${paymentType} payout via Moov: $${amount} using payment method ${moovPaymentMethodId}`);
-
-    // Determine Moov transfer type based on payment method
-    let moovTransferType: "ach-credit-fund-source" | "rtp-credit-fund-source" | "card-fund-source";
-    
-    switch (paymentType) {
-      case 'bank_account':
-        // Default to ACH credit (next-day), can be upgraded to RTP for instant
-        moovTransferType = "ach-credit-fund-source";
-        break;
-      case 'instant_rtp':
-        moovTransferType = "rtp-credit-fund-source";
-        break;
-      case 'card':
-        moovTransferType = "card-fund-source";
-        break;
-      default:
-        throw new Error(`Unsupported payment method type: ${paymentType}`);
+    if (!stripeAccount.payouts_enabled) {
+      throw new Error("Driver's Stripe Connect account is not payouts-enabled.");
     }
 
-    // Create Moov transfer
-    const transfer = await createMoovTransfer({
-      amount: Math.round(amount * 100), // Convert to cents
+    console.log(`Processing ${paymentType} payout via Stripe Connect: $${amount} to ${stripeAccount.stripe_account_id}`);
+
+    const transfer = await createPayoutToConnectedAccount({
+      amount: Math.round(amount * 100),
       currency: "USD",
-      destination: {
-        paymentMethodID: moovPaymentMethodId,
-        paymentMethodType: moovTransferType,
-      },
+      connectedAccountId: stripeAccount.stripe_account_id,
       description: `Driver payout for ${earning.driver_id}`,
       metadata: {
         driver_id: earning.driver_id,
@@ -282,10 +272,10 @@ async function processPayout(earning: DriverEarning): Promise<{ success: boolean
 
     return {
       success: transfer.status === 'pending' || transfer.status === 'completed',
-      transactionId: transfer.transferID,
+      transactionId: transfer.id,
     };
   } catch (error) {
-    console.error("Moov payout processing error:", error);
+    console.error("Stripe Connect payout processing error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
