@@ -123,7 +123,7 @@ const TermsOfServicePage: React.FC = () => {
 
         <h2 className="text-lg font-semibold mt-6 mb-2">12. Contact Us</h2>
         <p className="text-sm mb-1 font-medium">Crave’n Inc.</p>
-        <p className="text-sm">Email: support@cravenusa.com</p>
+        <p className="text-sm">Email: help@cravenusa.com</p>
         <p className="text-sm">Phone: 216-435-0821</p>
       </div>
     </div>

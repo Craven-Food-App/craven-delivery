@@ -277,7 +277,7 @@ const TermsOfService = () => {
                 <p className="mb-2"><strong>Crave'n Inc.</strong></p>
                 <p className="mb-2">1121 W Sylvania Ave.</p>
                 <p className="mb-4">Toledo, OH 43612</p>
-                <p className="mb-2"><strong>Support & Privacy requests:</strong> support@cravenusa.com</p>
+                <p className="mb-2"><strong>Support & Privacy requests:</strong> help@cravenusa.com</p>
                 <p><strong>Phone:</strong> 216-435-0821</p>
               </div>
             </section>

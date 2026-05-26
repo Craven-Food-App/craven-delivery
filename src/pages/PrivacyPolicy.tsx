@@ -194,7 +194,7 @@ const PrivacyPolicy = () => {
               </ul>
               <p className="text-muted-foreground mb-4">To exercise these rights:</p>
               <ul className="list-none mb-4 text-muted-foreground">
-                <li>Contact <strong>support@cravenusa.com</strong> (privacy and data requests)</li>
+                <li>Contact <strong>help@cravenusa.com</strong> (privacy and data requests)</li>
                 <li>Or call <strong>216-435-0821</strong> (general account help)</li>
               </ul>
             </section>
@@ -219,7 +219,7 @@ const PrivacyPolicy = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">8. Children's Privacy</h2>
               <p className="text-muted-foreground mb-4">
-                The Services are not intended for children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected information from a child under 13, please contact us at support@cravenusa.com so we can delete it.
+                The Services are not intended for children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected information from a child under 13, please contact us at help@cravenusa.com so we can delete it.
               </p>
             </section>
 
@@ -249,7 +249,7 @@ const PrivacyPolicy = () => {
                 <li>Designate an authorized agent to exercise rights on their behalf</li>
               </ul>
               <p className="text-muted-foreground mb-4">
-                Submit requests via <strong>support@cravenusa.com</strong> with verification information.
+                Submit requests via <strong>help@cravenusa.com</strong> with verification information.
                 Crave'n will not discriminate against users who exercise these rights.
               </p>
             </section>
@@ -285,7 +285,7 @@ const PrivacyPolicy = () => {
                 <p className="mb-2"><strong>Crave'n Inc.</strong></p>
                 <p className="mb-2">1121 W Sylvania Ave.</p>
                 <p className="mb-4">Toledo, Ohio 43612</p>
-                <p className="mb-2"><strong>Privacy & Data Requests:</strong> support@cravenusa.com</p>
+                <p className="mb-2"><strong>Privacy & Data Requests:</strong> help@cravenusa.com</p>
                 <p><strong>Phone:</strong> 216-435-0821</p>
               </div>
             </section>

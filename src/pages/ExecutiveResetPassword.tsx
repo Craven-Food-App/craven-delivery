@@ -260,7 +260,7 @@ const ExecutiveResetPassword: React.FC = () => {
               description="Use a unique password for your executive account. Contact IT if you did not request this reset."
             />
             <Text type="secondary" style={{ textAlign: 'center' }}>
-              Need help? Reach out to support@cravenusa.com.
+              Need help? Reach out to help@cravenusa.com.
             </Text>
             <Button onClick={handleBackToLogin} block>
               Return to Executive Sign-In

@@ -303,7 +303,7 @@ export function generateICAPDF(data: ICAData): Blob {
   doc.setFontSize(8);
   doc.setTextColor(128, 128, 128);
   doc.text('This document was electronically generated and signed.', margin, 10.5);
-  doc.text('For questions, contact support@cravenusa.com | 216-435-0821', margin, 10.65);
+  doc.text('For questions, contact help@cravenusa.com | 216-435-0821', margin, 10.65);
 
   // Convert to blob
   const pdfBlob = doc.output('blob');

@@ -162,8 +162,8 @@ export default function Support() {
         <div className="text-center text-sm text-muted-foreground">
           <p>
             Have questions? Please contact us directly at{" "}
-            <a href="mailto:support@cravenusa.com" className="font-medium text-[hsl(var(--primary))] hover:underline">
-              support@cravenusa.com
+            <a href="mailto:help@cravenusa.com" className="font-medium text-[hsl(var(--primary))] hover:underline">
+              help@cravenusa.com
             </a>
           </p>
         </div>

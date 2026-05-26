@@ -59,7 +59,7 @@ const CraveMoreTermsPage: React.FC = () => {
         <p className="text-sm mb-4">
           You can cancel CraveMore at any time in the app under{" "}
           <span className="font-medium">Account → CraveMore</span>, or by emailing{" "}
-          <span className="font-medium">support@cravenusa.com</span>. After cancellation, your Subscription
+          <span className="font-medium">help@cravenusa.com</span>. After cancellation, your Subscription
           will remain active until the end of your current billing period. You will not receive a refund or
           credit for partial billing periods, except where required by law.
         </p>
@@ -74,7 +74,7 @@ const CraveMoreTermsPage: React.FC = () => {
 
         <h2 className="text-lg font-semibold mt-6 mb-2">7. Contact</h2>
         <p className="text-sm mb-1 font-medium">Crave’n Inc. Support</p>
-        <p className="text-sm">Email: support@cravenusa.com</p>
+        <p className="text-sm">Email: help@cravenusa.com</p>
       </div>
     </div>
   );

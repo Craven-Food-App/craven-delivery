@@ -72,7 +72,7 @@ const PrivacyPolicyPage: React.FC = () => {
           <li>Opt out of marketing communications while still receiving essential order updates.</li>
           <li>
             Request access, correction, or deletion of your data, subject to applicable law, by emailing{" "}
-            <span className="font-medium">support@cravenusa.com</span>.
+            <span className="font-medium">help@cravenusa.com</span>.
           </li>
         </ul>
 
@@ -91,7 +91,7 @@ const PrivacyPolicyPage: React.FC = () => {
 
         <h2 className="text-lg font-semibold mt-6 mb-2">7a. California Residents</h2>
         <p className="text-sm mb-4">
-          California residents may have additional rights (e.g., access, deletion, opt-out of sale of personal information). To exercise these rights, contact support@cravenusa.com.
+          California residents may have additional rights (e.g., access, deletion, opt-out of sale of personal information). To exercise these rights, contact help@cravenusa.com.
         </p>
 
         <h2 className="text-lg font-semibold mt-6 mb-2">8. International Use</h2>
@@ -108,7 +108,7 @@ const PrivacyPolicyPage: React.FC = () => {
 
         <h2 className="text-lg font-semibold mt-6 mb-2">10. Contact Us</h2>
         <p className="text-sm mb-1 font-medium">Crave’n Inc.</p>
-        <p className="text-sm">Privacy & data requests: support@cravenusa.com</p>
+        <p className="text-sm">Privacy & data requests: help@cravenusa.com</p>
         <p className="text-sm">Phone: 216-435-0821</p>
       </div>
     </div>

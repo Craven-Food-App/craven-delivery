@@ -713,7 +713,7 @@ const BusinessAuth: React.FC = () => {
                   e.preventDefault();
                   toast({
                     title: "Support",
-                    description: "Contact IT support at support@cravenusa.com",
+                    description: "Contact IT support at help@cravenusa.com",
                   });
                 }}
                 className="font-medium text-gray-300 hover:text-[#ff7a45] transition duration-150 block sm:inline mt-2 sm:mt-0"

@@ -28,7 +28,7 @@ const MarketingSettings: React.FC = () => {
     // Email Settings
     senderName: 'Crave\'N Delivery',
     senderEmail: 'noreply@cravenusa.com',
-    replyToEmail: 'support@cravenusa.com',
+    replyToEmail: 'help@cravenusa.com',
     
     // SMS Settings
     smsSenderName: 'Craven',
