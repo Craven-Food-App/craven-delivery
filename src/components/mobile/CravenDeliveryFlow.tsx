@@ -21,9 +21,12 @@ import {
   getFeederCleanPaySummary,
   syncFeederCleanPayAdjustmentAtPickup,
   formatCleanPayMoney,
+  calculateFinalFeederEarnings,
   type FeederCleanPayFlowStage,
   type FeederCleanPaySummary,
 } from '@/lib/feederCleanPaySummary';
+import FeederOrderCompleteScreen from '@/components/mobile/FeederOrderCompleteScreen';
+import type { CompletedOrderDetailsInput } from '@/components/mobile/FeederCompletedOrderDetailsModal';
 import feederAppIcon from '@/assets/feeder_app_icon.png';
 import {
   Box,
@@ -431,9 +434,6 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [hasSpokenInstructions, setHasSpokenInstructions] = useState(false);
   const [cleanPaySummary, setCleanPaySummary] = useState<FeederCleanPaySummary | null>(null);
   const [completeCleanPaySummary, setCompleteCleanPaySummary] = useState<FeederCleanPaySummary | null>(null);
-  const receiptRef = useRef<HTMLDivElement | null>(null);
-  const [receiptOpen, setReceiptOpen] = useState(false);
-  const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
 
   // Navigation hook for external map app deep linking
   const { openExternalNavigation } = useNavigation();
@@ -2256,46 +2256,15 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   };
 
   const renderComplete = () => {
-    const tipCentsTotal = deliveryStops?.length
-      ? deliveryStops.reduce((sum: number, s: any) => sum + (s.tip_cents ?? 0), 0)
-      : (orderDetails?.tip_cents ?? 0);
-    // Use canonical order ID (same as merchant and customer) – full id, not derived
     const displayOrderId = orderDetails?.order_id ?? orderDetails?.id ?? currentOrder.id ?? '';
-    const totalMiles = currentOrder.totalDistance || 0;
-    const mileagePayCents = orderDetails?.mileage_pay_cents ?? 0;
-    const deliveryPayCents = deliveryStops?.length
-      ? deliveryStops.reduce((sum: number, s: any) => sum + (s.payout_cents ?? 0), 0)
-      : (orderDetails?.payout_cents ?? 0);
-
-    // ===== UNIFIED EARNINGS CALCULATION =====
-    // Single source for the Order Complete screen, Earnings Receipt, and Order Details.
-    // Driver-facing legacy fields (deliveryPay + mileagePay) are authoritative for
-    // delivery/mileage; Clean Pay summary supplies tip, promo, adjustment, status,
-    // verification, and timestamps.
     const summary = completeCleanPaySummary || cleanPaySummary;
-    const customerTipCents = summary?.customerTipCents ?? tipCentsTotal;
-    const promoBonusCents = summary?.promoBonusCents ?? 0;
-    const adjustmentCents = summary?.adjustmentCents ?? 0;
-    const finalPayoutCents =
-      deliveryPayCents + mileagePayCents + customerTipCents + promoBonusCents + adjustmentCents;
-    const originalOfferCents = summary?.totalGuaranteedCents ?? 0;
-    const showOriginalOffer =
-      originalOfferCents > 0 && Math.abs(originalOfferCents - finalPayoutCents) > 1;
 
-    const deliveryPay = deliveryPayCents / 100;
-    const mileagePay = mileagePayCents / 100;
-    const tipAmount = customerTipCents / 100;
-    const promoAmount = promoBonusCents / 100;
-    const adjustmentAmount = adjustmentCents / 100;
-    const totalEarned = finalPayoutCents / 100;
-    const originalOffer = originalOfferCents / 100;
+    const finalEarnings = calculateFinalFeederEarnings(summary, {
+      mileage_pay_cents: orderDetails?.mileage_pay_cents,
+      tip_cents: orderDetails?.tip_cents,
+      payout_cents: orderDetails?.payout_cents,
+    });
 
-    const fmtTs = (iso?: string | null) =>
-      iso
-        ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
-        : '—';
-
-    // Calculate elapsed time
     let elapsedTime = '0 min';
     if (orderStartTime) {
       const elapsed = Math.floor((Date.now() - orderStartTime.getTime()) / 1000 / 60);
@@ -2308,327 +2277,60 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       }
     }
 
-    const merchantName =
-      orderDetails?.restaurant_name ||
-      orderDetails?.restaurant?.name ||
-      orderDetails?.merchant_name ||
-      '—';
-    const orderItems: Array<{ name?: string; quantity?: number }> = Array.isArray(orderDetails?.order_items)
-      ? orderDetails.order_items
-      : Array.isArray(orderDetails?.items)
-        ? orderDetails.items
-        : [];
+    const orderItems: Array<{ name?: string; quantity?: number; special_instructions?: string }> =
+      Array.isArray(orderDetails?.order_items)
+        ? orderDetails.order_items
+        : Array.isArray(orderDetails?.items)
+          ? orderDetails.items
+          : [];
+
+    const completedDetails: CompletedOrderDetailsInput = {
+      displayOrderId,
+      restaurantName: currentOrder.store.name,
+      pickupAddress: currentOrder.store.address,
+      dropoffAddress: orderDetails?.dropoff_address,
+      totalMiles: currentOrder.totalDistance || 0,
+      elapsedTime,
+      deliveryCompletedAt: summary?.deliveryCompletedAt ?? null,
+      offerAcceptedAt: summary?.offerAcceptedAt ?? null,
+      pickupConfirmedAt: summary?.pickupConfirmedAt ?? null,
+      orderStatus: orderDetails?.order_status ?? 'delivered',
+      items: orderItems.map((item: any) => ({
+        name: item.name || 'Item',
+        quantity: item.quantity ?? 1,
+        special_instructions: item.special_instructions,
+      })),
+      stopCount: deliveryStops?.length,
+    };
+
+    const fallbackFinalPayoutCents =
+      (orderDetails?.payout_cents ?? 0) + (orderDetails?.mileage_pay_cents ?? 0) + (orderDetails?.tip_cents ?? 0);
 
     return (
-      <Box
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 9999,
-          backgroundColor: '#ffffff',
-          overflowY: 'auto',
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        }}
-      >
-        <Stack
-          align="center"
-          justify="flex-start"
-          p="md"
-          gap="md"
-          style={{
-            minHeight: '100vh',
-            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
-            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)',
-          }}
-        >
-          {/* Feeder Icon with animated checkmark */}
-          <Box mt="sm" style={{ position: 'relative', width: '72px', height: '72px', margin: '0 auto' }}>
-            <img 
-              src={feederAppIcon} 
-              alt="Feeder" 
-              style={{ 
-                width: '72px', 
-                height: '72px', 
-                objectFit: 'contain',
-              }} 
-            />
-            {/* Animated green check overlay */}
-            <Box
-              style={{
-                position: 'absolute',
-                bottom: '-6px',
-                right: '-6px',
-                width: '28px',
-                height: '28px',
-                borderRadius: '50%',
-                backgroundColor: '#22c55e',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(34, 197, 94, 0.4)',
-                opacity: isAnimating ? 0 : 1,
-                transform: isAnimating ? 'scale(0)' : 'scale(1)',
-                transition: 'opacity 0.3s ease, transform 0.3s ease',
-              }}
-            >
-              <IconCheck size={16} color="white" strokeWidth={3} />
-            </Box>
-          </Box>
-
-          {/* Title */}
-          <Title order={2} fw={700} c="dark" mb={0} style={{ letterSpacing: '0.01em' }}>
-            Order Complete
-          </Title>
-
-          {/* Animated Total Earned */}
-          <Box mt="xs" mb="sm">
-            <Text 
-              size="xs" 
-              fw={500} 
-              c="dimmed" 
-              mb={2}
-              style={{ letterSpacing: '0.05em', textTransform: 'uppercase' }}
-            >
-              Total Earned
-            </Text>
-            <Text
-              fw={800}
-              c={isAnimating ? 'dark' : '#22c55e'}
-              style={{
-                fontSize: '48px',
-                lineHeight: '1',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                letterSpacing: '-0.02em',
-                transition: 'color 0.3s ease',
-              }}
-            >
-              ${isAnimating ? animatedTotal.toFixed(2) : totalEarned.toFixed(2)}
-            </Text>
-          </Box>
-
-          {/* Earnings Summary Card (unified) */}
-          <Card 
-            w="100%" 
-            maw={420} 
-            withBorder 
-            bg="white" 
-            p="md" 
-            style={{ 
-              borderRadius: '12px',
-              borderColor: '#e5e7eb',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            <Text 
-              size="sm" 
-              fw={600} 
-              c="dimmed" 
-              tt="uppercase" 
-              mb="sm" 
-              ta="left"
-              style={{ letterSpacing: '0.05em' }}
-            >
-              Earnings Summary
-            </Text>
-            <Stack gap="sm" align="stretch">
-              <Group justify="space-between" align="center">
-                <Text size="sm" fw={500} c="dimmed">
-                  Delivery pay{deliveryStops && deliveryStops.length > 1 ? ` (${deliveryStops.length} stops)` : ''}
-                </Text>
-                <Text size="sm" fw={600} c="dark">
-                  ${deliveryPay.toFixed(2)}
-                </Text>
-              </Group>
-              <Divider />
-              <Group justify="space-between" align="center">
-                <Text size="sm" fw={500} c="dimmed">
-                  Mileage pay
-                </Text>
-                <Text size="sm" fw={600} c="dark">
-                  ${mileagePay.toFixed(2)}
-                </Text>
-              </Group>
-              <Divider />
-              <Group justify="space-between" align="center">
-                <Text size="sm" fw={500} c="dimmed">
-                  Customer Tip
-                </Text>
-                <Text size="sm" fw={600} c="orange.6">
-                  ${tipAmount.toFixed(2)}
-                </Text>
-              </Group>
-              <Divider />
-              <Group justify="space-between" align="center">
-                <Text size="sm" fw={500} c="dimmed">Promo or Bonus</Text>
-                <Text size="sm" fw={600} c="dark">${promoAmount.toFixed(2)}</Text>
-              </Group>
-              <Divider />
-              <Group justify="space-between" align="center">
-                <Text size="sm" fw={500} c="dimmed">Adjustment</Text>
-                <Text size="sm" fw={600} c={adjustmentCents < 0 ? 'red' : 'dark'}>
-                  ${adjustmentAmount.toFixed(2)}
-                </Text>
-              </Group>
-              <Divider />
-              <Group justify="space-between" align="center">
-                <Text size="sm" fw={700} c="dark">Total Earned</Text>
-                <Text size="md" fw={800} c="green.7">${totalEarned.toFixed(2)}</Text>
-              </Group>
-              {showOriginalOffer ? (
-                <Group justify="space-between" align="center">
-                  <Text size="xs" c="dimmed">Original Accepted Offer</Text>
-                  <Text size="xs" c="dimmed">${originalOffer.toFixed(2)}</Text>
-                </Group>
-              ) : null}
-            </Stack>
-          </Card>
-
-          {/* Status Section */}
-          <Card w="100%" maw={420} withBorder p="md" radius={12} style={{ borderColor: '#e5e7eb' }}>
-            <Stack gap={6}>
-              {summary?.cleanPayVerified ? (
-                <Group gap={6}>
-                  <Badge color="teal" variant="filled" size="sm">Clean Pay Verified</Badge>
-                </Group>
-              ) : null}
-              <Group justify="space-between">
-                <Text size="xs" c="dimmed">Tip Status</Text>
-                <Text size="xs" fw={600}>{summary?.tipStatus || 'Paid to Feeder'}</Text>
-              </Group>
-              <Group justify="space-between">
-                <Text size="xs" c="dimmed">Payout Status</Text>
-                <Text size="xs" fw={600}>{summary?.payoutStatus || summary?.cleanPayStatusLabel || 'Ready'}</Text>
-              </Group>
-              <Divider my={4} />
-              <Group justify="space-between">
-                <Text size="xs" c="dimmed">Offer Accepted</Text>
-                <Text size="xs">{fmtTs(summary?.offerAcceptedAt || summary?.offerLockedAt)}</Text>
-              </Group>
-              <Group justify="space-between">
-                <Text size="xs" c="dimmed">Pickup Confirmed</Text>
-                <Text size="xs">{fmtTs(summary?.pickupConfirmedAt)}</Text>
-              </Group>
-              <Group justify="space-between">
-                <Text size="xs" c="dimmed">Delivery Completed</Text>
-                <Text size="xs">{fmtTs(summary?.deliveryCompletedAt)}</Text>
-              </Group>
-            </Stack>
-          </Card>
-
-          {/* Action Buttons */}
-          <Stack gap="xs" w="100%" maw={420}>
-            <Button variant="outline" color="gray" fullWidth onClick={() => setReceiptOpen(true)}>
-              View Earnings Receipt
-            </Button>
-            <Button variant="light" color="orange" fullWidth onClick={() => setOrderDetailsOpen(true)}>
-              View Order Details
-            </Button>
-            <Button
-              onClick={onCompleteDelivery}
-              size="md"
-              fullWidth
-              h={44}
-              style={{
-                background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%)',
-                color: 'white',
-                fontSize: '14px',
-                fontWeight: 700,
-                letterSpacing: '0.02em',
-                borderRadius: '8px',
-                border: 'none',
-                boxShadow: '0 4px 14px rgba(234, 88, 12, 0.4)',
-              }}
-            >
-              RETURN TO MAP
-            </Button>
-          </Stack>
-
-          {/* Earnings Receipt Modal (POS-style) */}
-          <Modal
-            opened={receiptOpen}
-            onClose={() => setReceiptOpen(false)}
-            title={null}
-            withCloseButton
-            centered
-            size="sm"
-            radius="md"
-            padding="lg"
-          >
-            <Stack gap={6} align="stretch">
-              <Text ta="center" fw={800} size="lg" style={{ letterSpacing: '0.08em' }}>
-                CRAVE&apos;N
-              </Text>
-              <Text ta="center" size="sm" c="dimmed" mb="xs">Final Earnings Receipt</Text>
-              <Divider />
-              <Group justify="space-between"><Text size="xs" c="dimmed">Order ID</Text><Text size="xs" style={{ fontFamily: 'monospace' }}>{displayOrderId}</Text></Group>
-              <Group justify="space-between"><Text size="xs" c="dimmed">Completed</Text><Text size="xs">{fmtTs(summary?.deliveryCompletedAt) || '—'}</Text></Group>
-              <Divider my={6} />
-              <Group justify="space-between"><Text size="sm">Delivery Pay</Text><Text size="sm">${deliveryPay.toFixed(2)}</Text></Group>
-              <Group justify="space-between"><Text size="sm">Mileage Pay</Text><Text size="sm">${mileagePay.toFixed(2)}</Text></Group>
-              <Group justify="space-between"><Text size="sm">Customer Tip</Text><Text size="sm">${tipAmount.toFixed(2)}</Text></Group>
-              <Group justify="space-between"><Text size="sm">Promo / Bonus</Text><Text size="sm">${promoAmount.toFixed(2)}</Text></Group>
-              <Group justify="space-between"><Text size="sm">Adjustment</Text><Text size="sm">${adjustmentAmount.toFixed(2)}</Text></Group>
-              <Divider variant="dashed" my={6} />
-              <Group justify="space-between">
-                <Text fw={800}>Total Earned</Text>
-                <Text fw={800} c="green.7">${totalEarned.toFixed(2)}</Text>
-              </Group>
-              <Divider my={6} />
-              <Group justify="space-between"><Text size="xs" c="dimmed">Tip Status</Text><Text size="xs">{summary?.tipStatus || 'Paid to Feeder'}</Text></Group>
-              <Group justify="space-between"><Text size="xs" c="dimmed">Payout Status</Text><Text size="xs">{summary?.payoutStatus || 'Ready'}</Text></Group>
-              {summary?.cleanPayVerified ? (
-                <Badge color="teal" variant="filled" size="sm" mt={4} mx="auto">Clean Pay Verified</Badge>
-              ) : null}
-              <Text size="xs" c="dimmed" ta="center" mt="sm" style={{ lineHeight: 1.35 }}>
-                Your earnings were itemized from offer acceptance through delivery completion.
-              </Text>
-            </Stack>
-          </Modal>
-
-          {/* Order Details Modal (operational, no customer address) */}
-          <Modal
-            opened={orderDetailsOpen}
-            onClose={() => setOrderDetailsOpen(false)}
-            title="Order Details"
-            centered
-            size="sm"
-            radius="md"
-            padding="lg"
-          >
-            <Stack gap={6}>
-              <Group justify="space-between"><Text size="xs" c="dimmed">Order ID</Text><Text size="xs" style={{ fontFamily: 'monospace' }}>{displayOrderId}</Text></Group>
-              <Group justify="space-between"><Text size="xs" c="dimmed">Merchant</Text><Text size="xs" fw={600}>{merchantName}</Text></Group>
-              <Group justify="space-between"><Text size="xs" c="dimmed">Pickup Address</Text><Text size="xs" ta="right" style={{ maxWidth: 200 }}>{formatAddress(orderDetails?.pickup_address) || '—'}</Text></Group>
-              <Group justify="space-between"><Text size="xs" c="dimmed">Pickup Time</Text><Text size="xs">{fmtTs(summary?.pickupConfirmedAt)}</Text></Group>
-              <Group justify="space-between"><Text size="xs" c="dimmed">Delivery Completed</Text><Text size="xs">{fmtTs(summary?.deliveryCompletedAt)}</Text></Group>
-              <Group justify="space-between"><Text size="xs" c="dimmed">Total Miles</Text><Text size="xs">{totalMiles.toFixed(1)} mi</Text></Group>
-              <Group justify="space-between"><Text size="xs" c="dimmed">Total Time</Text><Text size="xs">{elapsedTime}</Text></Group>
-              <Group justify="space-between"><Text size="xs" c="dimmed">Delivery Area</Text><Text size="xs">Customer address hidden after completion</Text></Group>
-              <Divider my={4} />
-              <Text size="xs" fw={700} c="dimmed" tt="uppercase">Items Delivered</Text>
-              {orderItems.length === 0 ? (
-                <Text size="xs" c="dimmed">No items recorded.</Text>
-              ) : (
-                orderItems.map((it, idx) => (
-                  <Group key={idx} justify="space-between">
-                    <Text size="xs">{it.name || 'Item'}</Text>
-                    <Text size="xs" c="dimmed">×{it.quantity ?? 1}</Text>
-                  </Group>
-                ))
-              )}
-              <Divider my={4} />
-              <Group justify="space-between">
-                <Text size="xs" c="dimmed">Status</Text>
-                <Badge color="green" variant="light" size="sm">Delivered</Badge>
-              </Group>
-            </Stack>
-          </Modal>
-        </Stack>
-      </Box>
+      <FeederOrderCompleteScreen
+        earnings={
+          finalEarnings ?? {
+            orderId: displayOrderId,
+            deliveryPayCents: orderDetails?.payout_cents ?? 0,
+            mileagePayCents: orderDetails?.mileage_pay_cents ?? 0,
+            customerTipCents: orderDetails?.tip_cents ?? 0,
+            promoBonusCents: 0,
+            adjustmentCents: 0,
+            finalPayoutCents: fallbackFinalPayoutCents,
+            originalAcceptedOfferCents: null,
+            cleanPayVerified: false,
+            tipStatus: 'Paid to Feeder',
+            payoutStatus: 'ready',
+            offerAcceptedAt: null,
+            pickupConfirmedAt: null,
+            deliveryCompletedAt: null,
+            adjustmentReason: null,
+          }
+        }
+        displayOrderId={displayOrderId}
+        orderDetails={completedDetails}
+        onContinue={onCompleteDelivery}
+      />
     );
   };
 

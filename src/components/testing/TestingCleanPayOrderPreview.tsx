@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import FeederCleanPayCard from '@/components/mobile/FeederCleanPayCard';
 import {
   getFeederCleanPaySummary,
-  type FeederCleanPaySummary,
+  calculateFinalFeederEarnings,
 } from '@/lib/feederCleanPaySummary';
+import FeederOrderCompleteScreen from '@/components/mobile/FeederOrderCompleteScreen';
 
 /**
  * Admin Testing Portal: shows the same Clean Pay itemization feeders see, using the
@@ -15,7 +15,7 @@ export const TestingCleanPayOrderPreview: React.FC<{
   title?: string;
   description?: string;
 }> = ({ orderId, title = 'Clean Pay (feeder earnings preview)', description }) => {
-  const [summary, setSummary] = useState<FeederCleanPaySummary | null>(null);
+  const [summary, setSummary] = useState<Awaited<ReturnType<typeof getFeederCleanPaySummary>>>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,8 +60,24 @@ export const TestingCleanPayOrderPreview: React.FC<{
         </Button>
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {summary && !summary.error ? (
-        <FeederCleanPayCard variant="full" orderEarnings={summary} showTimestamps showAdjustment showVerificationBadge />
+      {summary && !summary.error && calculateFinalFeederEarnings(summary) ? (
+        <FeederOrderCompleteScreen
+          earnings={calculateFinalFeederEarnings(summary)!}
+          displayOrderId={orderId}
+          orderDetails={{
+            displayOrderId: orderId,
+            restaurantName: 'Test order',
+            pickupAddress: '—',
+            dropoffAddress: { city: 'Test', state: 'OH' },
+            totalMiles: 0,
+            elapsedTime: '—',
+            deliveryCompletedAt: summary.deliveryCompletedAt,
+            offerAcceptedAt: summary.offerAcceptedAt,
+            pickupConfirmedAt: summary.pickupConfirmedAt,
+            items: [],
+          }}
+          onContinue={() => {}}
+        />
       ) : summary?.error ? (
         <p className="text-sm text-muted-foreground">Summary error: {summary.error}</p>
       ) : !error && !loading ? (

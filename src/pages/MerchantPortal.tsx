@@ -42,6 +42,7 @@ import {
   IconBarcode,
   IconTags,
   IconLogout,
+  IconBolt,
 } from "@tabler/icons-react";
 import { useRestaurantSelector } from "@/hooks/useRestaurantSelector";
 
@@ -60,6 +61,7 @@ import { RestaurantCustomerOrderManagement } from "@/components/restaurant/Resta
 import StoreAvailabilityDashboard from "@/components/restaurant/dashboard/StoreAvailabilityDashboard";
 import RequestDeliveryDashboard from "@/components/restaurant/dashboard/RequestDeliveryDashboard";
 import { HomeDashboard } from "@/components/merchant/HomeDashboard";
+import { MerchantLiveOrders } from "@/components/merchant/live-orders/MerchantLiveOrders";
 import MerchantWelcomeConfetti from "@/components/merchant/MerchantWelcomeConfetti";
 import { getMerchantGroup } from "@/utils/merchantCategoryLabels";
 import RetailHomeDashboard from "@/components/retail/RetailHomeDashboard";
@@ -103,14 +105,14 @@ const formatRestaurantType = (type: string | null | undefined): string => {
   ).join(' ');
 };
 
-const VALID_TABS = ['home','insights','reports','customers','orders','menu','products','inventory','availability','financials','settings','request-delivery'] as const;
+const VALID_TABS = ['home','live-orders','insights','reports','customers','orders','menu','products','inventory','availability','financials','settings','request-delivery'] as const;
 
 const RestaurantSetup = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const sectionParam = searchParams.get('section') ?? searchParams.get('subtab');
-  const [activeTab, setActiveTab] = useState<'home' | 'insights' | 'reports' | 'customers' | 'orders' | 'menu' | 'products' | 'inventory' | 'availability' | 'financials' | 'settings' | 'request-delivery'>(
+  const [activeTab, setActiveTab] = useState<'home' | 'live-orders' | 'insights' | 'reports' | 'customers' | 'orders' | 'menu' | 'products' | 'inventory' | 'availability' | 'financials' | 'settings' | 'request-delivery'>(
     (tabParam && VALID_TABS.includes(tabParam as any)) ? (tabParam as any) : 'home'
   );
   const [settingsTab, setSettingsTab] = useState<string>(
@@ -173,7 +175,7 @@ const RestaurantSetup = () => {
   useEffect(() => {
     const tab = searchParams.get('tab');
     const section = searchParams.get('section') ?? searchParams.get('subtab');
-    if (tab && ['home','insights','reports','customers','orders','menu','products','inventory','availability','financials','settings','request-delivery'].includes(tab)) {
+    if (tab && VALID_TABS.includes(tab as (typeof VALID_TABS)[number])) {
       setActiveTab(tab as any);
     }
     if (section && tab === 'settings') {
@@ -197,6 +199,14 @@ const RestaurantSetup = () => {
   const merchantGroup = getMerchantGroup(restaurant?.restaurant_type);
   const isRetail = merchantGroup === 'retail' || merchantGroup === 'grocery';
   const isGrocery = merchantGroup === 'grocery';
+  /** Merchants without a delivered Crave'n tablet use the portal live-order board. */
+  const showLiveOrdersTab = !progress?.tablet_delivered_at;
+
+  useEffect(() => {
+    if (!showLiveOrdersTab && activeTab === "live-orders") {
+      setActiveTab("orders");
+    }
+  }, [showLiveOrdersTab, activeTab]);
 
   // Tablet-first: lock to landscape only — request lock when portal loads, show overlay if portrait
   const [isPortrait, setIsPortrait] = useState(() =>
@@ -341,7 +351,9 @@ const RestaurantSetup = () => {
     );
   }
 
+  const liveOrdersNavItem = { tab: 'live-orders' as const, icon: IconBolt, label: 'Live' };
   const navItemsRestaurant: { tab: typeof activeTab; icon: React.ElementType; label: string }[] = [
+    ...(showLiveOrdersTab ? [liveOrdersNavItem] : []),
     { tab: 'insights', icon: IconTrendingUp, label: 'Insights' },
     { tab: 'reports', icon: IconFileText, label: 'Reports' },
     { tab: 'customers', icon: IconUsers, label: 'Customers' },
@@ -353,6 +365,7 @@ const RestaurantSetup = () => {
     { tab: 'request-delivery', icon: IconDeviceTablet, label: 'Delivery' },
   ];
   const navItemsRetail: { tab: typeof activeTab; icon: React.ElementType; label: string }[] = [
+    ...(showLiveOrdersTab ? [liveOrdersNavItem] : []),
     { tab: 'orders', icon: IconPackage, label: 'Orders' },
     { tab: 'customers', icon: IconUsers, label: 'Customers' },
     { tab: 'products', icon: IconShoppingBag, label: 'Products' },
@@ -412,6 +425,11 @@ const RestaurantSetup = () => {
           <Button variant={activeTab === 'home' ? 'light' : 'subtle'} color={activeTab === 'home' ? 'orange' : 'gray'} size="compact-xs" leftSection={<IconHome size={16} />} onClick={() => setActiveTab('home')}>
             Home
           </Button>
+          {showLiveOrdersTab && (
+            <Button variant={activeTab === 'live-orders' ? 'light' : 'subtle'} color={activeTab === 'live-orders' ? 'orange' : 'gray'} size="compact-xs" leftSection={<IconBolt size={16} />} onClick={() => setActiveTab('live-orders')}>
+              Live
+            </Button>
+          )}
         </Group>
         <Menu width={240} position="bottom-start">
           <Menu.Target>
@@ -530,7 +548,16 @@ const RestaurantSetup = () => {
             <div className="p-6 text-center">
               <p className="text-muted-foreground">Please select a store to continue.</p>
             </div>
-          ) : activeTab === 'insights' ? <InsightsDashboard restaurantId={restaurant?.id} />
+          ) : activeTab === 'live-orders' && showLiveOrdersTab ? (
+              <MerchantLiveOrders
+                restaurantId={restaurant.id}
+                restaurantName={restaurant.name ?? undefined}
+                playSoundForNewOrders={
+                  ((restaurant as { verification_notes?: Record<string, boolean> })?.verification_notes)?.notif_newOrderSound !== false
+                }
+              />
+            )
+            : activeTab === 'insights' ? <InsightsDashboard restaurantId={restaurant?.id} />
             : activeTab === 'reports' ? <ReportsDashboard restaurantId={restaurant?.id} />
             : activeTab === 'customers' ? <CustomersDashboard restaurantId={restaurant?.id} />
             : activeTab === 'orders' ? (

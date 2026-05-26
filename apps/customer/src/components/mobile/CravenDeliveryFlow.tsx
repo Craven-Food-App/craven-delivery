@@ -10,9 +10,12 @@ import FeederCleanPayCard from '@/components/mobile/FeederCleanPayCard';
 import {
   getFeederCleanPaySummary,
   syncFeederCleanPayAdjustmentAtPickup,
+  calculateFinalFeederEarnings,
   type FeederCleanPayFlowStage,
   type FeederCleanPaySummary,
 } from '@/lib/feederCleanPaySummary';
+import FeederOrderCompleteScreen from '@/components/mobile/FeederOrderCompleteScreen';
+import type { CompletedOrderDetailsInput } from '@/components/mobile/FeederCompletedOrderDetailsModal';
 import {
   Box,
   Stack,
@@ -363,7 +366,6 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [orderStartTime, setOrderStartTime] = useState<Date | null>(null);
   const [animatedTotal, setAnimatedTotal] = useState(0);
   const [isAnimating, setIsAnimating] = useState(true);
-  const receiptRef = useRef<HTMLDivElement | null>(null);
   const [cleanPaySummary, setCleanPaySummary] = useState<FeederCleanPaySummary | null>(null);
   const [completeCleanPaySummary, setCompleteCleanPaySummary] = useState<FeederCleanPaySummary | null>(null);
 
@@ -1632,13 +1634,14 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   };
 
   const renderComplete = () => {
-    const totalEarned = typeof currentOrder.pay === 'number' ? currentOrder.pay : parseFloat(String(currentOrder.pay || 0));
-    const tipAmount = (orderDetails?.tip_cents || 0) / 100;
-    const orderId = currentOrder.id.split('-')[1] || currentOrder.id.slice(-8);
-    const displayOrderId = orderDetails?.order_id || orderId;
-    const totalMiles = currentOrder.totalDistance || 0;
-    
-    // Calculate elapsed time
+    const displayOrderId = orderDetails?.order_id ?? orderDetails?.id ?? currentOrder.id ?? '';
+    const summary = completeCleanPaySummary || cleanPaySummary;
+    const finalEarnings = calculateFinalFeederEarnings(summary, {
+      mileage_pay_cents: orderDetails?.mileage_pay_cents,
+      tip_cents: orderDetails?.tip_cents,
+      payout_cents: orderDetails?.payout_cents,
+    });
+
     let elapsedTime = '0 min';
     if (orderStartTime) {
       const elapsed = Math.floor((Date.now() - orderStartTime.getTime()) / 1000 / 60);
@@ -1651,213 +1654,63 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       }
     }
 
+    const completedDetails: CompletedOrderDetailsInput = {
+      displayOrderId,
+      restaurantName: currentOrder.store.name,
+      pickupAddress: currentOrder.store.address,
+      dropoffAddress: orderDetails?.dropoff_address,
+      totalMiles: currentOrder.totalDistance || 0,
+      elapsedTime,
+      deliveryCompletedAt: summary?.deliveryCompletedAt ?? null,
+      offerAcceptedAt: summary?.offerAcceptedAt ?? null,
+      pickupConfirmedAt: summary?.pickupConfirmedAt ?? null,
+      orderStatus: orderDetails?.order_status ?? 'delivered',
+      items: (orderItems.length > 0 ? orderItems : orderDetails?.items ?? []).map((item: any) => ({
+        name: item.name || 'Item',
+        quantity: item.quantity ?? 1,
+        special_instructions: item.special_instructions,
+      })),
+    };
+
+    if (finalEarnings) {
+      return (
+        <FeederOrderCompleteScreen
+          earnings={finalEarnings}
+          displayOrderId={displayOrderId}
+          orderDetails={completedDetails}
+          onContinue={onCompleteDelivery}
+        />
+      );
+    }
+
+    const fallbackTotal =
+      (orderDetails?.payout_cents ?? 0) / 100 +
+      (orderDetails?.mileage_pay_cents ?? 0) / 100 +
+      (orderDetails?.tip_cents ?? 0) / 100;
+
     return (
-      <Box
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 9999,
-          backgroundColor: '#ffffff',
-          overflowY: 'auto',
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      <FeederOrderCompleteScreen
+        earnings={{
+          orderId: displayOrderId,
+          deliveryPayCents: orderDetails?.payout_cents ?? 0,
+          mileagePayCents: orderDetails?.mileage_pay_cents ?? 0,
+          customerTipCents: orderDetails?.tip_cents ?? 0,
+          promoBonusCents: 0,
+          adjustmentCents: 0,
+          finalPayoutCents: Math.round(fallbackTotal * 100),
+          originalAcceptedOfferCents: null,
+          cleanPayVerified: false,
+          tipStatus: 'Paid to Feeder',
+          payoutStatus: 'ready',
+          offerAcceptedAt: null,
+          pickupConfirmedAt: null,
+          deliveryCompletedAt: null,
+          adjustmentReason: null,
         }}
-      >
-        <Stack
-          align="center"
-          justify="flex-start"
-          p="md"
-          gap="md"
-          style={{
-            minHeight: '100vh',
-            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
-            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)',
-          }}
-        >
-          {/* Feeder Icon with animated checkmark */}
-          <Box mt="sm" style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto' }}>
-            <img 
-              src={feederAppIcon} 
-              alt="Feeder" 
-              style={{ 
-                width: '120px', 
-                height: '120px', 
-                objectFit: 'contain',
-              }} 
-            />
-            {/* Animated green check overlay - appears when animation completes */}
-            <Box
-              style={{
-                position: 'absolute',
-                bottom: '-8px',
-                right: '-8px',
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                backgroundColor: '#22c55e',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(34, 197, 94, 0.4)',
-                opacity: isAnimating ? 0 : 1,
-                transform: isAnimating ? 'scale(0)' : 'scale(1)',
-                transition: 'opacity 0.3s ease, transform 0.3s ease',
-              }}
-            >
-              <IconCheck size={24} color="white" strokeWidth={3} />
-            </Box>
-          </Box>
-
-          {/* Title */}
-          <Title order={2} fw={700} c="dark" mb={0} style={{ letterSpacing: '0.01em' }}>
-            Delivery Complete
-          </Title>
-
-          {(completeCleanPaySummary || cleanPaySummary) ? (
-            <Box ref={receiptRef} w="100%" maw={420}>
-              <FeederCleanPayCard
-                variant="full"
-                orderEarnings={(completeCleanPaySummary || cleanPaySummary)!}
-                orderStatus={orderDetails?.order_status}
-                showTimestamps
-                showVerificationBadge
-                showAdjustment
-                onViewOrderDetails={() =>
-                  notifications.show({
-                    title: 'Order details',
-                    message: `Order ID: ${displayOrderId}`,
-                    color: 'dark',
-                  })
-                }
-                onViewEarningsReceipt={() =>
-                  receiptRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }
-                onReturnToMap={onCompleteDelivery}
-              />
-            </Box>
-          ) : null}
-
-          {/* Animated Total Earned */}
-          <Box mt="xs" mb="sm">
-            <Text 
-              size="xs" 
-              fw={500} 
-              c="dimmed" 
-              mb={2}
-              style={{ letterSpacing: '0.05em', textTransform: 'uppercase' }}
-            >
-              Total Earned
-            </Text>
-            <Text
-              fw={800}
-              c={isAnimating ? 'dark' : '#22c55e'}
-              style={{
-                fontSize:
-                  (completeCleanPaySummary || cleanPaySummary) ? '48px' : '100px',
-                lineHeight: '1',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                letterSpacing: '-0.02em',
-                transition: 'color 0.3s ease',
-              }}
-            >
-              ${isAnimating ? animatedTotal.toFixed(2) : totalEarned.toFixed(2)}
-            </Text>
-          </Box>
-
-          {/* Order Summary Card */}
-          <Card 
-            w="100%" 
-            maw={420} 
-            withBorder 
-            bg="white" 
-            p="lg" 
-            style={{ 
-              borderRadius: '12px',
-              borderColor: '#e5e7eb',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            <Text 
-              size="sm" 
-              fw={600} 
-              c="dimmed" 
-              tt="uppercase" 
-              mb="sm" 
-              ta="left"
-              style={{ letterSpacing: '0.05em' }}
-            >
-              Order Summary
-            </Text>
-            <Stack gap="sm" align="stretch">
-              <Group justify="space-between" align="center">
-                <Text size="sm" fw={500} c="dimmed">
-                  Order ID
-                </Text>
-                <Text size="sm" fw={600} c="dark" style={{ fontFamily: 'monospace' }}>
-                  {orderId}
-                </Text>
-              </Group>
-              <Divider />
-              <Group justify="space-between" align="center">
-                <Text size="sm" fw={500} c="dimmed">
-                  Total Miles
-                </Text>
-                <Text size="sm" fw={600} c="dark">
-                  {totalMiles.toFixed(1)} mi
-                </Text>
-              </Group>
-              <Divider />
-              <Group justify="space-between" align="center">
-                <Text size="sm" fw={500} c="dimmed">
-                  Total Time
-                </Text>
-                <Text size="sm" fw={600} c="dark">
-                  {elapsedTime}
-                </Text>
-              </Group>
-              <Divider />
-              <Group justify="space-between" align="center">
-                <Text size="sm" fw={500} c="dimmed">
-                  Total Tip
-                </Text>
-                <Text size="sm" fw={600} c="orange.6">
-                  ${tipAmount.toFixed(2)}
-                </Text>
-              </Group>
-            </Stack>
-          </Card>
-
-          {(!completeCleanPaySummary && !cleanPaySummary) ? (
-            <Button
-              onClick={onCompleteDelivery}
-              size="lg"
-              fullWidth
-              maw={420}
-              h={56}
-              style={{
-                background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%)',
-                color: 'white',
-                fontSize: '16px',
-                fontWeight: 600,
-                letterSpacing: '0.02em',
-                borderRadius: '12px',
-                border: 'none',
-                boxShadow: '0 4px 14px rgba(234, 88, 12, 0.4)',
-              }}
-            >
-              RESUME FEEDING
-            </Button>
-          ) : null}
-          {(completeCleanPaySummary || cleanPaySummary) ? (
-            <Button variant="light" color="gray" fullWidth maw={420} size="md" onClick={onCompleteDelivery}>
-              Continue feeding
-            </Button>
-          ) : null}
-        </Stack>
-      </Box>
+        displayOrderId={displayOrderId}
+        orderDetails={completedDetails}
+        onContinue={onCompleteDelivery}
+      />
     );
   };
 

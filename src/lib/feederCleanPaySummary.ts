@@ -20,12 +20,17 @@ export interface FeederCleanPaySummary {
   error?: string;
   basePayCents: number;
   deliveryFeeShareCents: number;
+  /** Driver delivery pay (before tip): max(base, fee share) or earnings amount — not base + fee share. */
+  deliveryPayCents?: number;
+  mileagePayCents?: number;
   customerTipCents: number;
   promoBonusCents: number;
   adjustmentCents: number;
   totalGuaranteedCents: number;
+  originalAcceptedOfferCents?: number | null;
   expectedFinalPayoutCents: number;
   finalPayoutCents: number | null;
+  unifiedFinalPayoutCents?: number;
   tipStatus: string;
   payoutStatus: string;
   cleanPayStatusLabel: string;
@@ -41,6 +46,25 @@ export interface FeederCleanPaySummary {
   snapshot?: Record<string, unknown> | null;
 }
 
+/** Unified completed-order earnings (single source for Order Complete + receipt + admin). */
+export interface FinalFeederEarnings {
+  orderId: string;
+  deliveryPayCents: number;
+  mileagePayCents: number;
+  customerTipCents: number;
+  promoBonusCents: number;
+  adjustmentCents: number;
+  finalPayoutCents: number;
+  originalAcceptedOfferCents: number | null;
+  cleanPayVerified: boolean;
+  tipStatus: string;
+  payoutStatus: string;
+  offerAcceptedAt: string | null;
+  pickupConfirmedAt: string | null;
+  deliveryCompletedAt: string | null;
+  adjustmentReason: string | null;
+}
+
 function parseSummaryRow(data: unknown): FeederCleanPaySummary | null {
   if (!data || typeof data !== 'object') return null;
   const r = data as Record<string, unknown>;
@@ -52,12 +76,18 @@ function parseSummaryRow(data: unknown): FeederCleanPaySummary | null {
     error: r.error as string | undefined,
     basePayCents: Number(r.basePayCents ?? 0),
     deliveryFeeShareCents: Number(r.deliveryFeeShareCents ?? 0),
+    deliveryPayCents: r.deliveryPayCents != null ? Number(r.deliveryPayCents) : undefined,
+    mileagePayCents: r.mileagePayCents != null ? Number(r.mileagePayCents) : undefined,
     customerTipCents: Number(r.customerTipCents ?? 0),
     promoBonusCents: Number(r.promoBonusCents ?? 0),
     adjustmentCents: Number(r.adjustmentCents ?? 0),
     totalGuaranteedCents: Number(r.totalGuaranteedCents ?? 0),
+    originalAcceptedOfferCents:
+      r.originalAcceptedOfferCents != null ? Number(r.originalAcceptedOfferCents) : undefined,
     expectedFinalPayoutCents: Number(r.expectedFinalPayoutCents ?? 0),
     finalPayoutCents: r.finalPayoutCents != null ? Number(r.finalPayoutCents) : null,
+    unifiedFinalPayoutCents:
+      r.unifiedFinalPayoutCents != null ? Number(r.unifiedFinalPayoutCents) : undefined,
     tipStatus: String(r.tipStatus ?? ''),
     payoutStatus: String(r.payoutStatus ?? ''),
     cleanPayStatusLabel: String(r.cleanPayStatusLabel ?? ''),
@@ -114,6 +144,86 @@ export async function syncFeederCleanPayAdjustmentAtPickup(orderId: string): Pro
 
 export function formatCleanPayMoney(cents: number): string {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
+}
+
+/**
+ * Maps RPC / order fields into one final earnings breakdown.
+ * finalPayoutCents = delivery + mileage + tip + promo + adjustment.
+ */
+export function calculateFinalFeederEarnings(
+  summary: FeederCleanPaySummary | null,
+  orderExtras?: {
+    mileage_pay_cents?: number;
+    tip_cents?: number;
+    payout_cents?: number;
+  } | null
+): FinalFeederEarnings | null {
+  if (!summary || summary.error) return null;
+
+  const mileagePayCents =
+    summary.mileagePayCents ?? Number(orderExtras?.mileage_pay_cents ?? 0);
+  const customerTipCents =
+    Number(orderExtras?.tip_cents ?? summary.customerTipCents ?? 0);
+  const promoBonusCents = summary.promoBonusCents ?? 0;
+  const adjustmentCents = summary.adjustmentCents ?? 0;
+
+  let deliveryPayCents = summary.deliveryPayCents;
+  if (deliveryPayCents == null || deliveryPayCents === 0) {
+    deliveryPayCents = Math.max(summary.basePayCents, summary.deliveryFeeShareCents);
+  }
+  if (
+    (deliveryPayCents == null || deliveryPayCents === 0) &&
+    orderExtras?.payout_cents != null &&
+    mileagePayCents > 0
+  ) {
+    const legacyPayout = Number(orderExtras.payout_cents);
+    if (legacyPayout > mileagePayCents + customerTipCents) {
+      deliveryPayCents = legacyPayout - mileagePayCents;
+    } else {
+      deliveryPayCents = legacyPayout;
+    }
+  }
+
+  const componentSum =
+    deliveryPayCents + mileagePayCents + customerTipCents + promoBonusCents + adjustmentCents;
+
+  const finalPayoutCents =
+    summary.unifiedFinalPayoutCents != null && summary.unifiedFinalPayoutCents > 0
+      ? summary.unifiedFinalPayoutCents
+      : summary.finalPayoutCents != null &&
+          summary.orderStatus === 'delivered' &&
+          Math.abs(summary.finalPayoutCents - componentSum) > 2
+        ? componentSum
+        : summary.finalPayoutCents != null && summary.finalPayoutCents > 0
+          ? summary.finalPayoutCents
+          : componentSum;
+
+  const unified =
+    summary.unifiedFinalPayoutCents != null && summary.unifiedFinalPayoutCents > 0
+      ? summary.unifiedFinalPayoutCents
+      : componentSum;
+
+  const verified =
+    summary.cleanPayVerified && Math.abs(finalPayoutCents - unified) <= 2;
+
+  return {
+    orderId: summary.orderId,
+    deliveryPayCents,
+    mileagePayCents,
+    customerTipCents,
+    promoBonusCents,
+    adjustmentCents,
+    finalPayoutCents: unified,
+    originalAcceptedOfferCents:
+      summary.originalAcceptedOfferCents ?? summary.totalGuaranteedCents ?? null,
+    cleanPayVerified: verified,
+    tipStatus: summary.tipStatus,
+    payoutStatus: summary.payoutStatus,
+    offerAcceptedAt: summary.offerAcceptedAt,
+    pickupConfirmedAt: summary.pickupConfirmedAt,
+    deliveryCompletedAt: summary.deliveryCompletedAt,
+    adjustmentReason: summary.adjustmentReason,
+  };
 }
 
 /** Sum multiple live previews (e.g. batch offer) for display on a single offer card. */
