@@ -361,7 +361,7 @@ export const CraveMorePaywall: React.FC<CraveMorePaywallProps> = ({
           {[
             {
               q: 'What is CraveMore?',
-              a: 'CraveMore is Crave\u2019N\u2019s membership program that gives you $0 delivery fees, reduced service fees, exclusive member-only deals, and 5% back in credits on eligible pickup orders.',
+              a: "CraveMore is Crave\u2019N\u2019s membership program that gives you $0 delivery fees, reduced service fees, exclusive member-only deals, and 5% back in credits on eligible pickup orders.",
             },
             {
               q: 'Can I cancel anytime?',
@@ -392,7 +392,7 @@ export const CraveMorePaywall: React.FC<CraveMorePaywallProps> = ({
 
       {/* Fine print */}
       <p className="text-xs text-muted-foreground text-center mt-8 max-w-3xl mx-auto leading-relaxed">
-        By joining <CraveMoreText />, you agree to our Terms and authorize Crave\u2019N to charge your
+        By joining <CraveMoreText />, you agree to our Terms and authorize Crave’N to charge your
         payment method on a recurring basis until you cancel. Cancel anytime in your account settings
         to avoid future charges. Lifetime memberships are non-recurring, one-time purchases.
       </p>
