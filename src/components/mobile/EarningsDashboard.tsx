@@ -1330,16 +1330,17 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       )}
 
       {/* Transaction Detail Modal */}
-      {showDetailModal && selectedTransaction && transactionDetail && (
+      {showDetailModal && selectedTransaction && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Transaction Details</h2>
+              <h2 className="text-xl font-bold text-gray-900">Clean Pay Receipt</h2>
               <button
                 onClick={() => {
                   setShowDetailModal(false);
                   setSelectedTransaction(null);
                   setTransactionDetail(null);
+                  setSelectedCleanPay(null);
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -1355,8 +1356,30 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Order ID</p>
-                <p className="font-semibold text-gray-900">{selectedTransaction.orderId}</p>
+                <p className="font-mono text-xs text-gray-700 break-all">{selectedTransaction.fullOrderId || selectedTransaction.orderId}</p>
               </div>
+
+              {/* Clean Pay full receipt */}
+              {cleanPayLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
+                </div>
+              ) : selectedCleanPay ? (
+                <FeederCleanPayCard
+                  variant="full"
+                  orderEarnings={selectedCleanPay}
+                  orderStatus={selectedTransaction.status}
+                  showTimestamps
+                  showVerificationBadge
+                />
+              ) : (
+                <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
+                  Clean Pay receipt unavailable for this delivery.
+                </div>
+              )}
+
+              {transactionDetail && (
+                <>
               <div className="h-px bg-gray-200"></div>
               <div className="space-y-2">
                 <div className="flex justify-between">
@@ -1392,6 +1415,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                       </p>
                     </div>
                   )}
+                </>
+              )}
                 </>
               )}
             </div>
