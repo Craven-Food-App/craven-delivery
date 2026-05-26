@@ -218,9 +218,11 @@ export default function MenuItemEditorDialog({
       setDraftGroups([]);
     } catch (error) {
       console.error("Error saving item:", error);
+      const msg =
+        error instanceof Error ? error.message : "Failed to save menu item. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to save menu item. Please try again.",
+        description: msg,
         variant: "destructive",
       });
     } finally {
