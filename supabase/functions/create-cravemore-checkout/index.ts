@@ -235,7 +235,7 @@ serve(async (req) => {
         cancel_url: cancelUrl,
         metadata,
         subscription_data: {
-          trial_period_days: startTrial ? 30 : 0,
+          ...(startTrial ? { trial_period_days: 30 } : {}),
           metadata: { user_id: user.id, plan_key: planKey },
         },
         line_items: [
