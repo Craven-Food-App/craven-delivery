@@ -216,7 +216,7 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
 
           <div className="pt-4 border-t">
             <h4 className="font-medium mb-4 text-sm text-muted-foreground">
-              Payment Processing Fees (Moov)
+              Payment Processing Fees (Stripe)
             </h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -227,33 +227,33 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
                     min={0}
                     max={10}
                     step={0.1}
-                    value={moovCardPct}
-                    onChange={(e) => setMoovCardPct(Number(e.target.value))}
+                    value={stripeCardPct}
+                    onChange={(e) => setStripeCardPct(Number(e.target.value))}
                     className="w-32"
                   />
                   <span className="text-sm text-muted-foreground">%</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Effective all-in Moov card processing percentage.
+                  Effective Stripe card processing percentage.
                 </p>
               </div>
 
               <div>
-                <Label className="mb-2 block">ACH Processing Fee (%)</Label>
+                <Label className="mb-2 block">Fixed Per-Transaction Fee (¢)</Label>
                 <div className="flex items-center gap-4">
                   <Input
                     type="number"
                     min={0}
-                    max={5}
-                    step={0.1}
-                    value={moovAchPct}
-                    onChange={(e) => setMoovAchPct(Number(e.target.value))}
+                    max={100}
+                    step={1}
+                    value={stripeFixedCents}
+                    onChange={(e) => setStripeFixedCents(Number(e.target.value))}
                     className="w-32"
                   />
-                  <span className="text-sm text-muted-foreground">%</span>
+                  <span className="text-sm text-muted-foreground">¢</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Effective Moov ACH processing percentage.
+                  Fixed Stripe fee added per transaction.
                 </p>
               </div>
             </div>
