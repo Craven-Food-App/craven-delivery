@@ -6,7 +6,7 @@ const PrivacyPolicyPage: React.FC = () => {
       <div className="max-w-xl mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold mb-4">Crave’n Privacy Policy</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Last updated: March 2026
+          Last updated: May 2026
         </p>
 
         <p className="mb-4 text-sm">
