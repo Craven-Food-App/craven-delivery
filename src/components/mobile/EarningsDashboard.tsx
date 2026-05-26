@@ -1205,8 +1205,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               Every delivery shows its full Clean Pay receipt — tap any row.
             </p>
 
-            {/* Filter chips */}
-            <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
+            {/* Filter tabs */}
+            <div className="flex gap-0.5 overflow-x-auto pb-1 -mx-1 px-1">
               {([
                 { k: 'all', label: 'All' },
                 { k: 'completed', label: 'Completed' },
@@ -1222,12 +1222,14 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                   <button
                     key={f.k}
                     onClick={() => setHistoryFilter(f.k)}
-                    className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      active ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    className={`shrink-0 px-2 py-1 rounded text-[11px] font-semibold transition-colors border-b-2 ${
+                      active
+                        ? 'bg-orange-50 text-orange-700 border-orange-500'
+                        : 'bg-transparent text-gray-500 border-transparent hover:bg-gray-50 hover:text-gray-700'
                     }`}
                   >
-                    {f.label}{' '}
-                    <span className={`ml-1 tabular-nums ${active ? 'text-white/80' : 'text-gray-400'}`}>{count}</span>
+                    {f.label}
+                    <span className={`ml-1 tabular-nums ${active ? 'text-orange-500/80' : 'text-gray-400'}`}>{count}</span>
                   </button>
                 );
               })}
