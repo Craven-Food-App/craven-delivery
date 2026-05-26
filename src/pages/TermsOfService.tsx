@@ -17,7 +17,7 @@ const TermsOfService = () => {
             <div className="text-center space-y-1">
               <p className="text-muted-foreground">Effective: October 29, 2025</p>
               <p className="text-muted-foreground">Toledo, Ohio</p>
-              <p className="text-muted-foreground font-semibold">Last Updated: March 2026</p>
+              <p className="text-muted-foreground font-semibold">Last Updated: May 2026</p>
             </div>
           </CardHeader>
           
@@ -25,7 +25,7 @@ const TermsOfService = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
               <p className="text-muted-foreground mb-4">
-                By accessing or using Crave'n's food delivery platform, including the Crave'n App, Crave'n Feeder App, and Partner Portal (collectively, the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the Service.
+                By accessing or using Crave'n's food delivery platform, including the Crave'n Customer App and website, the Crave'n Feeder App, the Crave'n Partner Portal, and the Crave'n Merchant, Admin, Corporate, and Orders Tablet Apps (collectively, the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the Service.
               </p>
               <p className="text-muted-foreground mb-4">
                 These Terms form a binding agreement between you and Crave'n Inc., 1121 W Sylvania Ave., Toledo, OH 43612 ("Crave'n," "we," "us," or "our"). These Terms incorporate by reference our Privacy Policy and any other policies posted on the Service.
