@@ -16,7 +16,7 @@ const PrivacyPolicy = () => {
               <div className="text-lg font-normal mt-2">(Master Version – U.S. & International)</div>
               <div className="text-base font-normal mt-1">(for Customers, Feeders, and Restaurant Partners)</div>
             </CardTitle>
-            <p className="text-center text-muted-foreground">Last Updated: March 2026</p>
+            <p className="text-center text-muted-foreground">Last Updated: May 2026</p>
           </CardHeader>
           
           <CardContent className="prose prose-slate max-w-none">
@@ -29,7 +29,8 @@ const PrivacyPolicy = () => {
               <ul className="list-disc pl-6 mb-4 text-muted-foreground">
                 <li>The Crave'n App and website for customers;</li>
                 <li>The Crave'n Feeder App for delivery drivers ("Feeders"); and</li>
-                <li>The Crave'n Partner Portal for restaurants and merchants.</li>
+                <li>The Crave'n Partner Portal for restaurants and merchants; and</li>
+                <li>The Crave'n Merchant, Admin, Corporate, and Orders Tablet Apps used at partner locations and internal operations.</li>
               </ul>
               <p className="text-muted-foreground">
                 This Policy applies to all Crave'n users across the United States and, where applicable, internationally through Crave'n Europe Ltd.
