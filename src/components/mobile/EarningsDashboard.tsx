@@ -6,6 +6,8 @@ import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Cloc
 import feederCardBackground from '@/assets/feeder-card-background.png';
 import feederCardImage from '@/assets/feeder-card-image.png';
 import { Box, Stack, Text, Title, Group } from '@mantine/core';
+import FeederCleanPayCard from './FeederCleanPayCard';
+import { getFeederCleanPaySummary, type FeederCleanPaySummary } from '@/lib/feederCleanPaySummary';
 
 type EarningsDashboardProps = {
   onOpenMenu?: () => void;
@@ -42,11 +44,14 @@ interface Transaction {
   date: string;
   time: string;
   orderId: string;
+  fullOrderId: string;
   restaurantName: string;
   grossEarnings: number;
   tipAmount: number;
   netEarnings: number;
-  status: 'completed' | 'refunded' | 'paid';
+  status: 'completed' | 'refunded' | 'paid' | 'in_progress' | 'cancelled' | 'adjusted';
+  cleanPayVerified?: boolean;
+  adjustmentCents?: number;
   orderData?: any; // Full order data for detail view
 }
 
@@ -92,6 +97,10 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [transactionDetail, setTransactionDetail] = useState<TransactionDetail | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'completed' | 'in_progress' | 'adjusted' | 'cancelled'>('all');
+  const [historySearch, setHistorySearch] = useState('');
+  const [selectedCleanPay, setSelectedCleanPay] = useState<FeederCleanPaySummary | null>(null);
+  const [cleanPayLoading, setCleanPayLoading] = useState(false);
   
   // Feeder Card state
   const [cardExpanded, setCardExpanded] = useState(false); // Start collapsed (peeking)
@@ -592,17 +601,26 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         const earnedDate = new Date(earning.earned_at || earning.created_at);
         const order = earning.orders || {};
         const restaurant = order.restaurants || {};
-        
+        const orderStatus = order.order_status || '';
+        const adjustmentCents = Number(earning.adjustment_cents || 0);
+        let status: Transaction['status'] = 'in_progress';
+        if (orderStatus === 'delivered') status = adjustmentCents !== 0 ? 'adjusted' : 'completed';
+        else if (orderStatus === 'cancelled' || orderStatus === 'canceled') status = 'cancelled';
+        else if (orderStatus === 'refunded') status = 'refunded';
+
         return {
           id: earning.id,
           date: earnedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           time: earnedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
           orderId: earning.order_id?.substring(0, 8) || 'N/A',
+          fullOrderId: earning.order_id || '',
           restaurantName: restaurant.name || 'Restaurant',
           grossEarnings: (earning.amount_cents || 0) / 100,
           tipAmount: (earning.tip_cents || 0) / 100,
           netEarnings: ((earning.amount_cents || 0) + (earning.tip_cents || 0)) / 100,
-          status: order.order_status === 'delivered' ? 'completed' : 'pending',
+          status,
+          adjustmentCents,
+          cleanPayVerified: Boolean(earning.clean_pay_verified),
           orderData: order,
         };
       });
@@ -618,8 +636,23 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
   const handleTransactionClick = async (transaction: Transaction) => {
     setSelectedTransaction(transaction);
-    
-    // Fetch detailed transaction data
+    setSelectedCleanPay(null);
+    setShowDetailModal(true);
+
+    // Fetch Clean Pay summary for full transparency
+    if (transaction.fullOrderId) {
+      setCleanPayLoading(true);
+      try {
+        const summary = await getFeederCleanPaySummary(transaction.fullOrderId);
+        setSelectedCleanPay(summary);
+      } catch (e) {
+        console.warn('clean pay summary fetch failed', e);
+      } finally {
+        setCleanPayLoading(false);
+      }
+    }
+
+    // Also fetch legacy payout info (Stripe reference) for the footer
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !transaction.orderData) return;
@@ -657,8 +690,6 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         stripePayoutId,
         payoutDate,
       });
-
-      setShowDetailModal(true);
     } catch (error) {
       console.error('Error fetching transaction detail:', error);
     }
@@ -1069,7 +1100,13 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
           {/* Earnings Breakdown Card */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Earnings Breakdown</h3>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-bold text-gray-900">Clean Pay Breakdown</h3>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">Clean Pay</span>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Every dollar shown is guaranteed at offer time and reconciled per delivery. Tap any delivery below to view its full Clean Pay receipt.
+            </p>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Base Pay</span>
@@ -1077,27 +1114,27 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               </div>
               <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Distance Pay</span>
+                <span className="text-gray-600">Delivery Fee Share / Distance Pay</span>
                 <span className="font-semibold text-gray-900">{formatCurrency(breakdown.distancePay)}</span>
               </div>
               <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Tips</span>
+                <span className="text-gray-600">Customer Tips</span>
                 <span className="font-semibold text-gray-900">{formatCurrency(breakdown.tips)}</span>
               </div>
               <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Bonuses</span>
+                <span className="text-gray-600">Promo &amp; Peak Bonuses</span>
                 <span className="font-semibold text-gray-900">{formatCurrency(breakdown.bonuses)}</span>
               </div>
               <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Adjustments</span>
+                <span className="text-gray-600">Clean Pay Adjustments</span>
                 <span className="font-semibold text-gray-900">{formatCurrency(breakdown.adjustments)}</span>
               </div>
               <div className="h-px bg-gray-300 my-2"></div>
               <div className="flex justify-between items-center">
-                <span className="text-lg font-bold text-gray-900">Total Earned</span>
+                <span className="text-lg font-bold text-gray-900">Total Guaranteed</span>
                 <span className="text-lg font-bold text-gray-900">{formatCurrency(breakdown.totalEarned)}</span>
               </div>
             </div>
@@ -1158,63 +1195,152 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
           {/* Transaction Ledger */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Earnings History</h3>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-bold text-gray-900">Delivery History</h3>
+              <span className="text-xs text-gray-500 tabular-nums">
+                {transactions.length} {transactions.length === 1 ? 'delivery' : 'deliveries'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              Every delivery shows its full Clean Pay receipt — tap any row.
+            </p>
+
+            {/* Filter chips */}
+            <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
+              {([
+                { k: 'all', label: 'All' },
+                { k: 'completed', label: 'Completed' },
+                { k: 'adjusted', label: 'Adjusted' },
+                { k: 'in_progress', label: 'In Progress' },
+                { k: 'cancelled', label: 'Cancelled' },
+              ] as const).map((f) => {
+                const count = f.k === 'all'
+                  ? transactions.length
+                  : transactions.filter((t) => t.status === f.k).length;
+                const active = historyFilter === f.k;
+                return (
+                  <button
+                    key={f.k}
+                    onClick={() => setHistoryFilter(f.k)}
+                    className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      active ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {f.label}{' '}
+                    <span className={`ml-1 tabular-nums ${active ? 'text-white/80' : 'text-gray-400'}`}>{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search */}
+            <div className="mt-2 mb-1">
+              <input
+                type="text"
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                placeholder="Search restaurant or order ID"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-orange-500 focus:outline-none"
+              />
+            </div>
+
             <div className="space-y-0">
-              {transactions.length === 0 ? (
-                <p className="text-center text-gray-400 py-8">No transactions found</p>
-              ) : (
-                transactions.map((transaction) => (
+              {(() => {
+                const filtered = transactions.filter((t) => {
+                  if (historyFilter !== 'all' && t.status !== historyFilter) return false;
+                  if (historySearch.trim()) {
+                    const q = historySearch.trim().toLowerCase();
+                    return (
+                      t.restaurantName.toLowerCase().includes(q) ||
+                      t.orderId.toLowerCase().includes(q) ||
+                      t.fullOrderId.toLowerCase().includes(q)
+                    );
+                  }
+                  return true;
+                });
+                if (filtered.length === 0) {
+                  return (
+                    <p className="text-center text-gray-400 py-8 text-sm">
+                      {transactions.length === 0
+                        ? 'No deliveries yet for this period'
+                        : 'No deliveries match your filters'}
+                    </p>
+                  );
+                }
+                const statusStyles: Record<string, string> = {
+                  completed: 'bg-green-100 text-green-700',
+                  paid: 'bg-blue-100 text-blue-700',
+                  adjusted: 'bg-amber-100 text-amber-700',
+                  in_progress: 'bg-gray-100 text-gray-700',
+                  cancelled: 'bg-red-100 text-red-700',
+                  refunded: 'bg-red-100 text-red-700',
+                };
+                const statusLabel: Record<string, string> = {
+                  completed: 'Completed',
+                  paid: 'Paid',
+                  adjusted: 'Adjusted',
+                  in_progress: 'In Progress',
+                  cancelled: 'Cancelled',
+                  refunded: 'Refunded',
+                };
+                return filtered.map((transaction) => (
                   <button
                     key={transaction.id}
                     onClick={() => handleTransactionClick(transaction)}
                     className="w-full py-4 border-b border-gray-100 last:border-0 text-left hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-semibold text-gray-900">{transaction.restaurantName}</span>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded ${
-                            transaction.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            transaction.status === 'paid' ? 'bg-blue-100 text-blue-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {transaction.status}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                          <span className="text-sm font-semibold text-gray-900 truncate">{transaction.restaurantName}</span>
+                          <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${statusStyles[transaction.status] || 'bg-gray-100 text-gray-700'}`}>
+                            {statusLabel[transaction.status] || transaction.status}
                           </span>
+                          {transaction.cleanPayVerified && (
+                            <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-teal-100 text-teal-700">Clean Pay ✓</span>
+                          )}
                         </div>
                         <p className="text-xs text-gray-500 mb-1">
-                          {transaction.date} • {transaction.time} • Order #{transaction.orderId}
+                          {transaction.date} • {transaction.time} • #{transaction.orderId}
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-600">
+                        <div className="flex items-center gap-3 text-xs text-gray-600 flex-wrap">
                           <span>Gross: {formatCurrency(transaction.grossEarnings)}</span>
-                          {transaction.tipAmount > 0 && (
-                            <span>Tip: {formatCurrency(transaction.tipAmount)}</span>
+                          {transaction.tipAmount > 0 && <span>Tip: {formatCurrency(transaction.tipAmount)}</span>}
+                          {transaction.adjustmentCents != null && transaction.adjustmentCents !== 0 && (
+                            <span className={transaction.adjustmentCents > 0 ? 'text-green-600' : 'text-red-600'}>
+                              Adj: {transaction.adjustmentCents > 0 ? '+' : ''}
+                              {formatCurrency(transaction.adjustmentCents / 100)}
+                            </span>
                           )}
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0 ml-2">
                         <p className="text-lg font-bold text-gray-900">{formatCurrency(transaction.netEarnings)}</p>
-                        <ChevronRight className="w-5 h-5 text-gray-400 mt-1" />
+                        <div className="flex items-center justify-end gap-0.5 mt-1 text-[10px] text-orange-600 font-semibold">
+                          Receipt <ChevronRight className="w-3 h-3" />
+                        </div>
                       </div>
                     </div>
                   </button>
-                ))
-              )}
+                ));
+              })()}
             </div>
           </div>
         </div>
       )}
 
       {/* Transaction Detail Modal */}
-      {showDetailModal && selectedTransaction && transactionDetail && (
+      {showDetailModal && selectedTransaction && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Transaction Details</h2>
+              <h2 className="text-xl font-bold text-gray-900">Clean Pay Receipt</h2>
               <button
                 onClick={() => {
                   setShowDetailModal(false);
                   setSelectedTransaction(null);
                   setTransactionDetail(null);
+                  setSelectedCleanPay(null);
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -1230,8 +1356,30 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Order ID</p>
-                <p className="font-semibold text-gray-900">{selectedTransaction.orderId}</p>
+                <p className="font-mono text-xs text-gray-700 break-all">{selectedTransaction.fullOrderId || selectedTransaction.orderId}</p>
               </div>
+
+              {/* Clean Pay full receipt */}
+              {cleanPayLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
+                </div>
+              ) : selectedCleanPay ? (
+                <FeederCleanPayCard
+                  variant="full"
+                  orderEarnings={selectedCleanPay}
+                  orderStatus={selectedTransaction.status}
+                  showTimestamps
+                  showVerificationBadge
+                />
+              ) : (
+                <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
+                  Clean Pay receipt unavailable for this delivery.
+                </div>
+              )}
+
+              {transactionDetail && (
+                <>
               <div className="h-px bg-gray-200"></div>
               <div className="space-y-2">
                 <div className="flex justify-between">
@@ -1267,6 +1415,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                       </p>
                     </div>
                   )}
+                </>
+              )}
                 </>
               )}
             </div>
