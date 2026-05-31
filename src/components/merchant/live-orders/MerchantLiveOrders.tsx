@@ -12,7 +12,6 @@ import {
   Stack,
   Switch,
   Text,
-  Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
@@ -40,22 +39,28 @@ const ACTIVE_STATUSES = new Set(["pending", "confirmed", "preparing", "ready"]);
 
 const COLUMN_META: Record<
   KanbanColumn,
-  { title: string; subtitle: string; empty: string }
+  { title: string; subtitle: string; empty: string; accent: string; tint: string }
 > = {
   new: {
     title: "New",
-    subtitle: "Confirm to start prep",
+    subtitle: "Awaiting confirm",
     empty: "No orders waiting for confirmation",
+    accent: "#ef4444",
+    tint: "rgba(239,68,68,0.06)",
   },
   preparing: {
     title: "Preparing",
-    subtitle: "In the kitchen",
+    subtitle: "In kitchen",
     empty: "Nothing cooking right now",
+    accent: "#f97316",
+    tint: "rgba(249,115,22,0.06)",
   },
   ready: {
     title: "Ready",
-    subtitle: "Waiting for pickup",
+    subtitle: "Awaiting pickup",
     empty: "No orders ready yet",
+    accent: "#16a34a",
+    tint: "rgba(34,197,94,0.06)",
   },
 };
 
@@ -409,47 +414,67 @@ export function MerchantLiveOrders({
   const renderOrderCard = (order: LiveOrder) => {
     const flash = getCardFlashVariant(order);
     const behind = isRunningBehind(order);
-    const itemPreview = order.order_items
-      .slice(0, 3)
-      .map((i) => `${i.quantity}× ${i.name}`)
-      .join(", ");
+    const itemCount = order.order_items.reduce((sum, i) => sum + i.quantity, 0);
+    const status = order.order_status || "pending";
+    const ageMin = minutesSince(order.created_at);
+    let etaLabel: string | null = null;
+    if (order.estimated_delivery_time) {
+      const diffMs = new Date(order.estimated_delivery_time).getTime() - Date.now();
+      const diffMin = Math.round(diffMs / 60000);
+      etaLabel = diffMin >= 0 ? `${diffMin}m left` : `${Math.abs(diffMin)}m over`;
+    }
 
     return (
       <Card
         key={order.id}
         withBorder
-        radius="md"
-        p="sm"
+        radius="sm"
+        p={8}
         className={`merchant-live-order-card merchant-live-order-card--${flash}`}
         onClick={() => setSelectedOrderId(order.id)}
-        style={{ cursor: "pointer", background: "#fff" }}
+        style={{
+          cursor: "pointer",
+          background: "#fff",
+          fontVariantNumeric: "tabular-nums",
+        }}
       >
-        <Group justify="space-between" align="flex-start" wrap="nowrap">
-          <Text fw={800} size="lg">
-            #{order.order_number || order.id.slice(-4).toUpperCase()}
-          </Text>
-          <Text size="xs" c="dimmed">
-            {formatTime(order.created_at)}
+        <Group justify="space-between" align="center" wrap="nowrap" gap={6}>
+          <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+            <Text fw={700} size="sm" style={{ letterSpacing: "-0.01em" }}>
+              #{order.order_number || order.id.slice(-4).toUpperCase()}
+            </Text>
+            <Text size="xs" c="dimmed">·</Text>
+            <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
+              {ageMin}m ago
+            </Text>
+          </Group>
+          <Text fw={700} size="sm" style={{ whiteSpace: "nowrap" }}>
+            {formatMoney(order.total_cents)}
           </Text>
         </Group>
-        <Text fw={600} size="sm" mt={4} lineClamp={1}>
-          {order.customer_name || "Customer"}
-        </Text>
-        <Text size="xs" c="dimmed" mt={2} lineClamp={2}>
-          {itemPreview || "Loading items…"}
-        </Text>
-        <Group justify="space-between" mt="sm">
-          <Text fw={700}>{formatMoney(order.total_cents)}</Text>
-          {behind && (
-            <Badge color="red" variant="filled" size="sm">
-              Behind
-            </Badge>
+        <Group justify="space-between" wrap="nowrap" mt={2} gap={6}>
+          <Text size="xs" c="dimmed" lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
+            {order.customer_name || "Customer"} · {itemCount} item{itemCount === 1 ? "" : "s"}
+          </Text>
+          {etaLabel && (status === "preparing" || status === "confirmed") && (
+            <Text size="xs" fw={600} c={behind ? "red" : "dimmed"} style={{ whiteSpace: "nowrap" }}>
+              {etaLabel}
+            </Text>
           )}
         </Group>
-        {order.driver_arrived_at && (
-          <Badge mt={6} color="red" variant="light" fullWidth>
-            Driver waiting {minutesSince(order.driver_arrived_at)} min
-          </Badge>
+        {(behind || order.driver_arrived_at) && (
+          <Group gap={4} mt={6} wrap="nowrap">
+            {order.driver_arrived_at && (
+              <Badge color="red" variant="filled" size="xs" radius="sm">
+                Driver {minutesSince(order.driver_arrived_at)}m
+              </Badge>
+            )}
+            {behind && !order.driver_arrived_at && (
+              <Badge color="red" variant="filled" size="xs" radius="sm">
+                Behind
+              </Badge>
+            )}
+          </Group>
         )}
       </Card>
     );
@@ -467,33 +492,78 @@ export function MerchantLiveOrders({
   }
 
   return (
-    <Stack gap="md">
-      <Group justify="space-between" align="flex-start" wrap="wrap">
-        <Box>
-          <Title order={2}>Live Orders</Title>
-          <Text size="sm" c="dimmed">
-            {restaurantName ? `${restaurantName} · ` : ""}
-            Real-time kitchen board{pendingCount > 0 ? ` · ${pendingCount} need confirmation` : ""}
-          </Text>
-        </Box>
-        <Group gap="sm">
+    <Stack gap="xs" style={{ fontVariantNumeric: "tabular-nums" }}>
+      <Group
+        justify="space-between"
+        align="center"
+        wrap="nowrap"
+        gap="sm"
+        style={{
+          padding: "8px 12px",
+          background: "#fff",
+          border: "1px solid #e5e7eb",
+          borderRadius: 8,
+        }}
+      >
+        <Group gap="md" wrap="nowrap" style={{ minWidth: 0 }}>
+          <Box>
+            <Text fw={700} size="sm" style={{ letterSpacing: "-0.01em", lineHeight: 1.1 }}>
+              Live Orders
+            </Text>
+            <Text size="xs" c="dimmed" lineClamp={1}>
+              {restaurantName || "Kitchen board"}
+            </Text>
+          </Box>
+          <Box style={{ width: 1, height: 28, background: "#e5e7eb" }} />
+          <Group gap="lg" wrap="nowrap">
+            <Box>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={600} style={{ fontSize: 10, letterSpacing: "0.04em" }}>
+                Pending
+              </Text>
+              <Text fw={700} size="md" c={pendingCount > 0 ? "red" : undefined}>
+                {pendingCount}
+              </Text>
+            </Box>
+            <Box>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={600} style={{ fontSize: 10, letterSpacing: "0.04em" }}>
+                Active
+              </Text>
+              <Text fw={700} size="md">{orders.length}</Text>
+            </Box>
+            <Box>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={600} style={{ fontSize: 10, letterSpacing: "0.04em" }}>
+                Behind
+              </Text>
+              <Text fw={700} size="md" c={orders.some(isRunningBehind) ? "red" : undefined}>
+                {orders.filter(isRunningBehind).length}
+              </Text>
+            </Box>
+          </Group>
+        </Group>
+        <Group gap={6} wrap="nowrap">
           <Badge
-            leftSection={<IconWifi size={12} />}
+            leftSection={<IconWifi size={11} />}
             color={realtimeStatus === "connected" ? "teal" : realtimeStatus === "connecting" ? "gray" : "red"}
             variant="light"
+            size="sm"
+            radius="sm"
           >
             {realtimeStatus}
           </Badge>
-          <Group gap={6}>
-            <IconBell size={16} />
-            <Text size="sm">Alerts</Text>
-            <Switch checked={soundEnabled} onChange={(e) => setSoundEnabled(e.currentTarget.checked)} color="orange" />
+          <Group gap={4} wrap="nowrap">
+            <IconBell size={14} />
+            <Switch
+              size="xs"
+              checked={soundEnabled}
+              onChange={(e) => setSoundEnabled(e.currentTarget.checked)}
+              color="orange"
+            />
           </Group>
           <Button
             variant="light"
             color="orange"
-            size="compact-sm"
-            leftSection={<IconRefresh size={16} />}
+            size="compact-xs"
+            leftSection={<IconRefresh size={12} />}
             loading={refreshing}
             onClick={() => void fetchOrders(true)}
           >
@@ -526,27 +596,54 @@ export function MerchantLiveOrders({
         </Card>
       )}
 
-      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="xs">
         {(Object.keys(COLUMN_META) as KanbanColumn[]).map((column) => {
           const meta = COLUMN_META[column];
           const columnOrders = ordersByColumn[column];
           return (
-            <Card key={column} withBorder radius="md" p="sm" style={{ background: "#fafafa", minHeight: 280 }}>
-              <Group justify="space-between" mb="xs">
-                <Box>
-                  <Text fw={700}>{meta.title}</Text>
-                  <Text size="xs" c="dimmed">
-                    {meta.subtitle}
+            <Card
+              key={column}
+              withBorder
+              radius="sm"
+              p={0}
+              style={{
+                background: meta.tint,
+                minHeight: 280,
+                borderTop: `2px solid ${meta.accent}`,
+                overflow: "hidden",
+              }}
+            >
+              <Group
+                justify="space-between"
+                align="center"
+                wrap="nowrap"
+                px="xs"
+                py={6}
+                style={{
+                  background: "#fff",
+                  borderBottom: "1px solid #e5e7eb",
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 1,
+                }}
+              >
+                <Group gap={6} wrap="nowrap">
+                  <Box style={{ width: 6, height: 6, borderRadius: 999, background: meta.accent }} />
+                  <Text fw={700} size="xs" tt="uppercase" style={{ letterSpacing: "0.04em" }}>
+                    {meta.title}
                   </Text>
-                </Box>
-                <Badge color="orange" variant="light" size="lg">
+                  <Text size="xs" c="dimmed">
+                    · {meta.subtitle}
+                  </Text>
+                </Group>
+                <Badge color="gray" variant="filled" size="sm" radius="sm" style={{ background: meta.accent }}>
                   {columnOrders.length}
                 </Badge>
               </Group>
-              <ScrollArea h={420} offsetScrollbars type="auto">
-                <Stack gap="sm">
+              <ScrollArea h={460} offsetScrollbars type="auto">
+                <Stack gap={6} p={6}>
                   {columnOrders.length === 0 ? (
-                    <Text size="sm" c="dimmed" py="md" ta="center">
+                    <Text size="xs" c="dimmed" py="lg" ta="center">
                       {meta.empty}
                     </Text>
                   ) : (
