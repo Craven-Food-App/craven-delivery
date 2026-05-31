@@ -199,8 +199,8 @@ const RestaurantSetup = () => {
   const merchantGroup = getMerchantGroup(restaurant?.restaurant_type);
   const isRetail = merchantGroup === 'retail' || merchantGroup === 'grocery';
   const isGrocery = merchantGroup === 'grocery';
-  /** Merchants without a delivered Crave'n tablet use the portal live-order board. */
-  const showLiveOrdersTab = !progress?.tablet_delivered_at;
+  /** Live Orders Kanban board is always available in the merchant portal. */
+  const showLiveOrdersTab = true;
 
   useEffect(() => {
     if (!showLiveOrdersTab && activeTab === "live-orders") {

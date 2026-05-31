@@ -188,7 +188,7 @@ export function MerchantLiveOrders({
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id, order_number, customer_name, order_status, created_at, total_cents, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time, special_instructions"
+          "id, order_number, customer_name, order_status, created_at, total_cents, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time"
         )
         .eq("restaurant_id", restaurantId)
         .in("order_status", Array.from(ACTIVE_STATUSES))
@@ -197,7 +197,7 @@ export function MerchantLiveOrders({
 
       if (error) throw error;
 
-      const rows = (data || []) as LiveOrder[];
+      const rows = (data || []) as unknown as LiveOrder[];
       const orderIds = rows.map((r) => r.id);
       let itemsByOrder: Record<string, LiveOrder["order_items"]> = {};
 
