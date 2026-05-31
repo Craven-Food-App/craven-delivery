@@ -12,7 +12,6 @@ import {
   Stack,
   Switch,
   Text,
-  Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
