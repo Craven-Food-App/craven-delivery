@@ -21,7 +21,7 @@ interface Earnings {
 interface Props {
   earnings: Earnings;
   displayOrderId: string;
-  orderDetails: Record<string, unknown>;
+  orderDetails: unknown;
   onContinue: () => void;
 }
 
