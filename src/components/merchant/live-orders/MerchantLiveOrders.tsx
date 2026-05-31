@@ -40,22 +40,28 @@ const ACTIVE_STATUSES = new Set(["pending", "confirmed", "preparing", "ready"]);
 
 const COLUMN_META: Record<
   KanbanColumn,
-  { title: string; subtitle: string; empty: string }
+  { title: string; subtitle: string; empty: string; accent: string; tint: string }
 > = {
   new: {
     title: "New",
-    subtitle: "Confirm to start prep",
+    subtitle: "Awaiting confirm",
     empty: "No orders waiting for confirmation",
+    accent: "#ef4444",
+    tint: "rgba(239,68,68,0.06)",
   },
   preparing: {
     title: "Preparing",
-    subtitle: "In the kitchen",
+    subtitle: "In kitchen",
     empty: "Nothing cooking right now",
+    accent: "#f97316",
+    tint: "rgba(249,115,22,0.06)",
   },
   ready: {
     title: "Ready",
-    subtitle: "Waiting for pickup",
+    subtitle: "Awaiting pickup",
     empty: "No orders ready yet",
+    accent: "#16a34a",
+    tint: "rgba(34,197,94,0.06)",
   },
 };
 
