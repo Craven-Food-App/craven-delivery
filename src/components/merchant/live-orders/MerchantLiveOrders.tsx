@@ -765,8 +765,8 @@ export function MerchantLiveOrders({
                   {columnOrders.length}
                 </Badge>
               </Group>
-              <ScrollArea h={460} offsetScrollbars type="auto">
-                <Stack gap={6} p={6}>
+              <ScrollArea h={620} offsetScrollbars type="auto">
+                <Stack gap={10} p={10}>
                   {columnOrders.length === 0 ? (
                     <Text size="xs" c="dimmed" py="lg" ta="center">
                       {meta.empty}
