@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import {
   Badge,
   Box,
   Button,
   Card,
-  Drawer,
+  Modal,
   Group,
   Loader,
   ScrollArea,
@@ -12,6 +12,7 @@ import {
   Stack,
   Switch,
   Text,
+  UnstyledButton,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
@@ -86,6 +87,19 @@ const COLUMN_META: Record<
 };
 
 const NEW_ORDER_SOUND_VOLUME = 1;
+
+const pillButtonStyle: CSSProperties = {
+  background: "rgba(255,255,255,0.18)",
+  color: "#fff",
+  borderRadius: 999,
+  width: 44,
+  height: 32,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontWeight: 700,
+  fontSize: 14,
+};
 
 interface MerchantLiveOrdersProps {
   restaurantId: string;
@@ -781,115 +795,317 @@ export function MerchantLiveOrders({
         })}
       </SimpleGrid>
 
-      <Drawer
+      <Modal
         opened={selectedOrder != null}
         onClose={() => setSelectedOrderId(null)}
-        position="right"
-        size="md"
-        title={
-          selectedOrder ? (
-            <Text fw={700}>Order #{selectedOrder.order_number || selectedOrder.id.slice(-4)}</Text>
-          ) : null
-        }
+        size="900px"
+        padding={0}
+        radius="lg"
+        withCloseButton={false}
+        centered
+        overlayProps={{ backgroundOpacity: 0.55, blur: 2 }}
+        styles={{ body: { padding: 0 }, content: { overflow: "hidden" } }}
       >
-        {selectedOrder && (
-          <Stack gap="md">
-            <Group gap="xs">
-              <IconPackage size={18} />
-              <Text fw={600}>{selectedOrder.customer_name || "Customer"}</Text>
-            </Group>
-            <Text size="sm" c="dimmed">
-              Placed {formatTime(selectedOrder.created_at)} · {formatMoney(selectedOrder.total_cents)}
-            </Text>
-            {isRunningBehind(selectedOrder) && (
-              <Badge color="red" variant="filled" leftSection={<IconAlertTriangle size={14} />}>
-                Running behind — prioritize this order
-              </Badge>
-            )}
-
-            <Text fw={700} size="sm">
-              Items
-            </Text>
-            {selectedOrder.order_items.map((item) => (
-              <Group key={item.id} justify="space-between" align="flex-start">
-                <Box style={{ flex: 1 }}>
-                  <Text size="sm" fw={600}>
-                    {item.quantity}× {item.name}
-                  </Text>
-                  {item.special_instructions && (
-                    <Text size="xs" c="dimmed">
-                      {item.special_instructions}
-                    </Text>
-                  )}
-                </Box>
-                <Text size="sm">{formatMoney(item.price_cents * item.quantity)}</Text>
-              </Group>
-            ))}
-
-            {selectedOrder.special_instructions && (
-              <Card withBorder p="sm" bg="orange.0">
-                <Text size="xs" fw={600}>
-                  Order notes
-                </Text>
-                <Text size="sm">{selectedOrder.special_instructions}</Text>
-              </Card>
-            )}
-
-            {(selectedOrder.order_status === "pending" || !selectedOrder.order_status) && (
-              <>
-                <Text fw={700} size="sm">
-                  Prep time
-                </Text>
-                <Group gap={6}>
-                  {[10, 15, 20, 25, 30, 45].map((m) => (
-                    <Button
-                      key={m}
-                      size="compact-sm"
-                      variant={prepMinutes === m ? "filled" : "light"}
-                      color="orange"
-                      onClick={() => setPrepMinutes(m)}
-                    >
-                      {m}m
-                    </Button>
-                  ))}
-                </Group>
-                <Button color="orange" size="lg" fullWidth onClick={() => void confirmOrder(selectedOrder)}>
-                  Confirm order
-                </Button>
-              </>
-            )}
-
-            {(selectedOrder.order_status === "confirmed" || selectedOrder.order_status === "preparing") && (
-              <>
-                <Button
-                  variant="light"
-                  leftSection={<IconClock size={16} />}
-                  onClick={async () => {
-                    const base = selectedOrder.estimated_delivery_time
-                      ? new Date(selectedOrder.estimated_delivery_time).getTime()
-                      : Date.now();
-                    await updateOrder(selectedOrder.id, {
-                      estimated_delivery_time: new Date(base + 5 * 60 * 1000).toISOString(),
-                    });
-                    notifications.show({ title: "+5 min", message: "Prep time extended", color: "blue" });
+        {selectedOrder && (() => {
+          const status = (selectedOrder.order_status || "pending") as string;
+          const column: KanbanColumn =
+            status === "pending" ? "new" : status === "ready" ? "ready" : "preparing";
+          const meta = COLUMN_META[column];
+          const behind = isRunningBehind(selectedOrder);
+          const headerBg = behind ? "#b91c1c" : meta.headerBg;
+          const etaMin = selectedOrder.estimated_delivery_time
+            ? Math.max(0, Math.round((new Date(selectedOrder.estimated_delivery_time).getTime() - Date.now()) / 60000))
+            : null;
+          const orderNo = selectedOrder.order_number || selectedOrder.id.slice(-6).toUpperCase();
+          const itemCount = selectedOrder.order_items.reduce((s, i) => s + i.quantity, 0);
+          const deliveryMethod = (selectedOrder.delivery_method || "delivery").toString();
+          const pickupTime = selectedOrder.estimated_delivery_time
+            ? formatTime(selectedOrder.estimated_delivery_time)
+            : "—";
+          return (
+            <Box style={{ background: "#f1f5f9", fontVariantNumeric: "tabular-nums" }}>
+              {/* Colored status header */}
+              <Box
+                style={{
+                  background: headerBg,
+                  color: "#fff",
+                  padding: "16px 20px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                }}
+              >
+                <UnstyledButton
+                  onClick={() => setSelectedOrderId(null)}
+                  aria-label="Close"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    background: "rgba(255,255,255,0.18)",
+                    color: "#fff",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    lineHeight: 1,
+                    flexShrink: 0,
                   }}
                 >
-                  Add 5 minutes
-                </Button>
-                <Button color="orange" size="lg" fullWidth onClick={() => void markReady(selectedOrder)}>
-                  Mark ready for pickup
-                </Button>
-              </>
-            )}
+                  ×
+                </UnstyledButton>
+                <Box style={{ flex: 1, minWidth: 0 }}>
+                  <Text size="xs" fw={600} style={{ opacity: 0.9, letterSpacing: "0.04em" }}>
+                    {behind ? "BEHIND" : meta.statusLabel.toUpperCase()} · #{orderNo}
+                  </Text>
+                  <Text fw={700} size="xl" style={{ lineHeight: 1.15, marginTop: 2 }}>
+                    {selectedOrder.customer_name || "Customer"}
+                  </Text>
+                </Box>
+                {status !== "pending" && (
+                  <Group gap={8} wrap="nowrap">
+                    <UnstyledButton
+                      onClick={async () => {
+                        const base = selectedOrder.estimated_delivery_time
+                          ? new Date(selectedOrder.estimated_delivery_time).getTime()
+                          : Date.now();
+                        const next = new Date(Math.max(Date.now(), base - 5 * 60 * 1000)).toISOString();
+                        await updateOrder(selectedOrder.id, { estimated_delivery_time: next });
+                      }}
+                      style={pillButtonStyle}
+                      title="Subtract 5 minutes"
+                    >
+                      −5
+                    </UnstyledButton>
+                    <Box style={{ textAlign: "center", padding: "0 4px" }}>
+                      <Text size="xs" style={{ opacity: 0.85 }}>
+                        Ready in
+                      </Text>
+                      <Text fw={700} size="lg" style={{ lineHeight: 1 }}>
+                        {etaMin != null ? `${etaMin}m` : "—"}
+                      </Text>
+                    </Box>
+                    <UnstyledButton
+                      onClick={async () => {
+                        const base = selectedOrder.estimated_delivery_time
+                          ? new Date(selectedOrder.estimated_delivery_time).getTime()
+                          : Date.now();
+                        await updateOrder(selectedOrder.id, {
+                          estimated_delivery_time: new Date(base + 5 * 60 * 1000).toISOString(),
+                        });
+                      }}
+                      style={pillButtonStyle}
+                      title="Add 5 minutes"
+                    >
+                      +5
+                    </UnstyledButton>
+                  </Group>
+                )}
+              </Box>
 
-            {selectedOrder.order_status === "ready" && (
-              <Badge color="green" size="lg" variant="light" fullWidth>
-                Waiting for Feeder pickup
-              </Badge>
-            )}
-          </Stack>
-        )}
-      </Drawer>
+              {/* Body: two-column layout */}
+              <Box
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) 280px",
+                  gap: 16,
+                  padding: 16,
+                  background: "#f1f5f9",
+                }}
+              >
+                {/* Items list */}
+                <Box
+                  style={{
+                    background: "#fff",
+                    borderRadius: 10,
+                    border: "1px solid #e5e7eb",
+                    maxHeight: 460,
+                    overflowY: "auto",
+                  }}
+                >
+                  {selectedOrder.order_items.map((item, idx) => {
+                    const mods = (item.special_instructions || "")
+                      .split(/\n|,/)
+                      .map((s) => s.trim())
+                      .filter(Boolean);
+                    return (
+                      <Box
+                        key={item.id}
+                        style={{
+                          padding: "14px 18px",
+                          borderTop: idx === 0 ? "none" : "1px solid #f1f5f9",
+                        }}
+                      >
+                        <Group justify="space-between" align="flex-start" wrap="nowrap">
+                          <Group gap={14} align="flex-start" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+                            <Text fw={700} size="md" style={{ width: 18 }}>
+                              {item.quantity}
+                            </Text>
+                            <Text fw={600} size="md" style={{ flex: 1 }}>
+                              {item.name}
+                            </Text>
+                          </Group>
+                          <Group gap={14} wrap="nowrap">
+                            <Text fw={600} size="md">
+                              {formatMoney(item.price_cents * item.quantity)}
+                            </Text>
+                            <Text size="sm" c="dimmed">
+                              Edit
+                            </Text>
+                          </Group>
+                        </Group>
+                        {mods.length > 0 && (
+                          <Stack gap={4} mt={8} pl={32}>
+                            {mods.map((m, i) => (
+                              <Group key={i} justify="space-between" wrap="nowrap">
+                                <Text size="sm" c="dimmed">
+                                  {m}
+                                </Text>
+                                <Text size="sm" c="dimmed">
+                                  Edit
+                                </Text>
+                              </Group>
+                            ))}
+                          </Stack>
+                        )}
+                      </Box>
+                    );
+                  })}
+                </Box>
+
+                {/* Info side panel */}
+                <Stack gap={12}>
+                  <Box
+                    style={{
+                      background: "#fff",
+                      borderRadius: 10,
+                      border: "1px solid #e5e7eb",
+                      padding: 14,
+                    }}
+                  >
+                    <Stack gap={10}>
+                      <Group gap={10} wrap="nowrap">
+                        <IconClock size={16} color="#475569" />
+                        <Text size="sm">Pickup at {pickupTime}</Text>
+                      </Group>
+                      <Group gap={10} wrap="nowrap">
+                        <IconPackage size={16} color="#475569" />
+                        <Text size="sm">
+                          {itemCount} {itemCount === 1 ? "item" : "items"} · {formatMoney(selectedOrder.total_cents)}
+                        </Text>
+                      </Group>
+                      <Group gap={10} wrap="nowrap">
+                        <IconBell size={16} color="#475569" />
+                        <Text size="sm" style={{ textTransform: "capitalize" }}>
+                          {deliveryMethod}
+                        </Text>
+                      </Group>
+                    </Stack>
+                  </Box>
+
+                  <Box
+                    style={{
+                      background: "#fff",
+                      borderRadius: 10,
+                      border: "1px solid #e5e7eb",
+                      padding: 14,
+                    }}
+                  >
+                    <Text size="xs" c="dimmed" fw={600} style={{ letterSpacing: "0.04em" }}>
+                      CUSTOMER
+                    </Text>
+                    <Text fw={700} size="md" mt={4}>
+                      {selectedOrder.customer_name || "Customer"}
+                    </Text>
+                  </Box>
+
+                  {selectedOrder.special_instructions && (
+                    <Box
+                      style={{
+                        background: "#fff7ed",
+                        borderRadius: 10,
+                        border: "1px solid #fed7aa",
+                        padding: 14,
+                      }}
+                    >
+                      <Text size="xs" fw={700} c="orange.7" style={{ letterSpacing: "0.04em" }}>
+                        ORDER NOTES
+                      </Text>
+                      <Text size="sm" mt={4}>
+                        {selectedOrder.special_instructions}
+                      </Text>
+                    </Box>
+                  )}
+                </Stack>
+              </Box>
+
+              {/* Footer action bar */}
+              <Box
+                style={{
+                  borderTop: "1px solid #e5e7eb",
+                  background: "#fff",
+                  padding: 14,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                {status === "pending" && (
+                  <Group gap={6} wrap="nowrap" style={{ flexShrink: 0 }}>
+                    {[10, 15, 20, 25, 30, 45].map((m) => (
+                      <Button
+                        key={m}
+                        size="compact-sm"
+                        variant={prepMinutes === m ? "filled" : "light"}
+                        color="orange"
+                        onClick={() => setPrepMinutes(m)}
+                      >
+                        {m}m
+                      </Button>
+                    ))}
+                  </Group>
+                )}
+                <Box style={{ flex: 1 }} />
+                {status === "pending" && (
+                  <Button
+                    size="lg"
+                    color="orange"
+                    onClick={() => void confirmOrder(selectedOrder)}
+                    style={{ minWidth: 200, fontWeight: 700 }}
+                  >
+                    Confirm order
+                  </Button>
+                )}
+                {(status === "confirmed" || status === "preparing") && (
+                  <Button
+                    size="lg"
+                    color="orange"
+                    onClick={() => void markReady(selectedOrder)}
+                    style={{ minWidth: 240, fontWeight: 700 }}
+                  >
+                    Mark ready for pickup
+                  </Button>
+                )}
+                {status === "ready" && (
+                  <Badge color="green" size="lg" variant="light">
+                    Waiting for Feeder pickup
+                  </Badge>
+                )}
+              </Box>
+              {behind && (
+                <Box style={{ background: "#fef2f2", padding: "8px 16px", borderTop: "1px solid #fecaca" }}>
+                  <Group gap={8}>
+                    <IconAlertTriangle size={14} color="#b91c1c" />
+                    <Text size="xs" fw={600} c="red.7">
+                      Running behind — prioritize this order
+                    </Text>
+                  </Group>
+                </Box>
+              )}
+            </Box>
+          );
+        })()}
+      </Modal>
     </Stack>
   );
 }
