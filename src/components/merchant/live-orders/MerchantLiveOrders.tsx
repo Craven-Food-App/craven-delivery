@@ -469,7 +469,7 @@ export function MerchantLiveOrders({
     const headerBg = behind ? "#b42318" : meta.headerBg;
     const statusText = behind ? "Behind" : meta.statusLabel;
 
-    const handlePrimaryAction = async (e: React.MouseEvent) => {
+    const handlePrimaryAction = async (e: MouseEvent) => {
       e.stopPropagation();
       if (column === "new") await confirmOrder(order);
       else if (column === "preparing") await markReady(order);
