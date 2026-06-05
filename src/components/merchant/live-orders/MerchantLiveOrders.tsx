@@ -798,13 +798,17 @@ export function MerchantLiveOrders({
       <Modal
         opened={selectedOrder != null}
         onClose={() => setSelectedOrderId(null)}
-        size="900px"
+        size="1280px"
         padding={0}
         radius="lg"
         withCloseButton={false}
         centered
         overlayProps={{ backgroundOpacity: 0.55, blur: 2 }}
-        styles={{ body: { padding: 0 }, content: { overflow: "hidden" } }}
+        styles={{
+          body: { padding: 0 },
+          content: { overflow: "hidden", maxHeight: "92vh" },
+          inner: { padding: 16 },
+        }}
       >
         {selectedOrder && (() => {
           const status = (selectedOrder.order_status || "pending") as string;
