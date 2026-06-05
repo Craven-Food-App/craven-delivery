@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import {
   Badge,
   Box,
@@ -28,7 +28,6 @@ import {
   type LiveOrder,
   formatMoney,
   formatTime,
-  getCardFlashVariant,
   getKanbanColumn,
   isRunningBehind,
   minutesSince,
