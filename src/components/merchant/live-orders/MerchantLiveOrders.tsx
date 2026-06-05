@@ -732,7 +732,7 @@ export function MerchantLiveOrders({
               radius="sm"
               p={0}
               style={{
-                background: meta.tint,
+                background: "#f8fafc",
                 minHeight: 280,
                 borderTop: `2px solid ${meta.accent}`,
                 overflow: "hidden",
