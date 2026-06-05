@@ -826,6 +826,28 @@ export function MerchantLiveOrders({
           const pickupTime = selectedOrder.estimated_delivery_time
             ? formatTime(selectedOrder.estimated_delivery_time)
             : "—";
+          const placedTime = formatTime(selectedOrder.created_at);
+          const acceptedTime = selectedOrder.accepted_at ? formatTime(selectedOrder.accepted_at) : null;
+          const driverArrivedTime = selectedOrder.driver_arrived_at
+            ? formatTime(selectedOrder.driver_arrived_at)
+            : null;
+          const ageMin = minutesSince(selectedOrder.created_at);
+          const subtotalCents = selectedOrder.order_items.reduce(
+            (s, i) => s + i.price_cents * i.quantity,
+            0,
+          );
+          const feesCents = Math.max(0, (selectedOrder.total_cents || 0) - subtotalCents);
+          const addr = selectedOrder.delivery_address as
+            | { street?: string; address?: string; line1?: string; city?: string; state?: string; zip?: string; postal_code?: string }
+            | string
+            | null;
+          const addressLine = typeof addr === "string"
+            ? addr
+            : addr
+              ? [addr.street || addr.address || addr.line1, [addr.city, addr.state].filter(Boolean).join(", "), addr.zip || addr.postal_code]
+                  .filter(Boolean)
+                  .join(" · ")
+              : null;
           return (
             <Box style={{ background: "#f1f5f9", fontVariantNumeric: "tabular-nums" }}>
               {/* Colored status header */}
@@ -911,7 +933,7 @@ export function MerchantLiveOrders({
               <Box
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "minmax(0, 1fr) 280px",
+                  gridTemplateColumns: "minmax(0, 1fr) 340px",
                   gap: 16,
                   padding: 16,
                   background: "#f1f5f9",
@@ -923,10 +945,12 @@ export function MerchantLiveOrders({
                     background: "#fff",
                     borderRadius: 10,
                     border: "1px solid #e5e7eb",
-                    maxHeight: 460,
-                    overflowY: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    maxHeight: "62vh",
                   }}
                 >
+                  <Box style={{ flex: 1, overflowY: "auto" }}>
                   {selectedOrder.order_items.map((item, idx) => {
                     const mods = (item.special_instructions || "")
                       .split(/\n|,/)
@@ -975,10 +999,28 @@ export function MerchantLiveOrders({
                       </Box>
                     );
                   })}
+                  </Box>
+                  {/* Totals */}
+                  <Box style={{ borderTop: "1px solid #e5e7eb", padding: "12px 18px", background: "#f8fafc" }}>
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Subtotal</Text>
+                      <Text size="sm" fw={600}>{formatMoney(subtotalCents)}</Text>
+                    </Group>
+                    {feesCents > 0 && (
+                      <Group justify="space-between" mt={4}>
+                        <Text size="sm" c="dimmed">Fees, tax & tip</Text>
+                        <Text size="sm" fw={600}>{formatMoney(feesCents)}</Text>
+                      </Group>
+                    )}
+                    <Group justify="space-between" mt={6}>
+                      <Text size="md" fw={700}>Total</Text>
+                      <Text size="md" fw={700}>{formatMoney(selectedOrder.total_cents)}</Text>
+                    </Group>
+                  </Box>
                 </Box>
 
                 {/* Info side panel */}
-                <Stack gap={12}>
+                <Stack gap={12} style={{ maxHeight: "62vh", overflowY: "auto" }}>
                   <Box
                     style={{
                       background: "#fff",
@@ -1007,6 +1049,51 @@ export function MerchantLiveOrders({
                     </Stack>
                   </Box>
 
+                  {/* Timeline */}
+                  <Box style={{ background: "#fff", borderRadius: 10, border: "1px solid #e5e7eb", padding: 14 }}>
+                    <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>
+                      TIMELINE
+                    </Text>
+                    <Stack gap={6} mt={8}>
+                      <Group justify="space-between">
+                        <Text size="sm" c="dimmed">Placed</Text>
+                        <Text size="sm" fw={600}>{placedTime} · {ageMin}m ago</Text>
+                      </Group>
+                      {acceptedTime && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="dimmed">Confirmed</Text>
+                          <Text size="sm" fw={600}>{acceptedTime}</Text>
+                        </Group>
+                      )}
+                      <Group justify="space-between">
+                        <Text size="sm" c="dimmed">Ready by</Text>
+                        <Text size="sm" fw={600}>{pickupTime}{etaMin != null ? ` · in ${etaMin}m` : ""}</Text>
+                      </Group>
+                      {driverArrivedTime && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="orange.7">Driver arrived</Text>
+                          <Text size="sm" fw={700} c="orange.7">{driverArrivedTime}</Text>
+                        </Group>
+                      )}
+                    </Stack>
+                  </Box>
+
+                  {/* Order ID & parking */}
+                  <Box style={{ background: "#fff", borderRadius: 10, border: "1px solid #e5e7eb", padding: 14 }}>
+                    <Stack gap={8}>
+                      <Group justify="space-between">
+                        <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>ORDER ID</Text>
+                        <Text size="sm" fw={700}>#{orderNo}</Text>
+                      </Group>
+                      {selectedOrder.pickup_parking_spot && (
+                        <Group justify="space-between">
+                          <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>PARKING</Text>
+                          <Text size="sm" fw={700}>{selectedOrder.pickup_parking_spot}</Text>
+                        </Group>
+                      )}
+                    </Stack>
+                  </Box>
+
                   <Box
                     style={{
                       background: "#fff",
@@ -1021,6 +1108,11 @@ export function MerchantLiveOrders({
                     <Text fw={700} size="md" mt={4}>
                       {selectedOrder.customer_name || "Customer"}
                     </Text>
+                    {addressLine && (
+                      <Text size="sm" c="dimmed" mt={4}>
+                        {addressLine}
+                      </Text>
+                    )}
                   </Box>
 
                   {selectedOrder.special_instructions && (
