@@ -433,7 +433,6 @@ export function MerchantLiveOrders({
     }
   };
 
-  const renderOrderCard = (order: LiveOrder) => {
   const renderOrderCard = (order: LiveOrder, column: KanbanColumn) => {
     const meta = COLUMN_META[column];
     const behind = isRunningBehind(order);
@@ -774,7 +773,7 @@ export function MerchantLiveOrders({
                       {meta.empty}
                     </Text>
                   ) : (
-                    columnOrders.map(renderOrderCard)
+                    columnOrders.map((o) => renderOrderCard(o, column))
                   )}
                 </Stack>
               </ScrollArea>
