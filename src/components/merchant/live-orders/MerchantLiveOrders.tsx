@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import {
   Badge,
   Box,
@@ -28,7 +28,6 @@ import {
   type LiveOrder,
   formatMoney,
   formatTime,
-  getCardFlashVariant,
   getKanbanColumn,
   isRunningBehind,
   minutesSince,
@@ -39,7 +38,17 @@ const ACTIVE_STATUSES = new Set(["pending", "confirmed", "preparing", "ready"]);
 
 const COLUMN_META: Record<
   KanbanColumn,
-  { title: string; subtitle: string; empty: string; accent: string; tint: string }
+  {
+    title: string;
+    subtitle: string;
+    empty: string;
+    accent: string;
+    tint: string;
+    headerBg: string;
+    headerFg: string;
+    actionLabel: string;
+    statusLabel: string;
+  }
 > = {
   new: {
     title: "New",
@@ -47,6 +56,10 @@ const COLUMN_META: Record<
     empty: "No orders waiting for confirmation",
     accent: "#ef4444",
     tint: "rgba(239,68,68,0.06)",
+    headerBg: "#1f7a3a",
+    headerFg: "#ffffff",
+    actionLabel: "Confirm order",
+    statusLabel: "New",
   },
   preparing: {
     title: "Preparing",
@@ -54,6 +67,10 @@ const COLUMN_META: Record<
     empty: "Nothing cooking right now",
     accent: "#f97316",
     tint: "rgba(249,115,22,0.06)",
+    headerBg: "#1f4e8a",
+    headerFg: "#ffffff",
+    actionLabel: "Ready for pickup",
+    statusLabel: "In progress",
   },
   ready: {
     title: "Ready",
@@ -61,6 +78,10 @@ const COLUMN_META: Record<
     empty: "No orders ready yet",
     accent: "#16a34a",
     tint: "rgba(34,197,94,0.06)",
+    headerBg: "#6b2150",
+    headerFg: "#ffffff",
+    actionLabel: "Mark picked up",
+    statusLabel: "Ready",
   },
 };
 
@@ -411,71 +432,175 @@ export function MerchantLiveOrders({
     }
   };
 
-  const renderOrderCard = (order: LiveOrder) => {
-    const flash = getCardFlashVariant(order);
+  const renderOrderCard = (order: LiveOrder, column: KanbanColumn) => {
+    const meta = COLUMN_META[column];
     const behind = isRunningBehind(order);
     const itemCount = order.order_items.reduce((sum, i) => sum + i.quantity, 0);
     const status = order.order_status || "pending";
-    const ageMin = minutesSince(order.created_at);
-    let etaLabel: string | null = null;
-    if (order.estimated_delivery_time) {
-      const diffMs = new Date(order.estimated_delivery_time).getTime() - Date.now();
-      const diffMin = Math.round(diffMs / 60000);
-      etaLabel = diffMin >= 0 ? `${diffMin}m left` : `${Math.abs(diffMin)}m over`;
+    const orderRef = order.order_number || order.id.slice(-6).toUpperCase();
+
+    // Time meta shown in the colored header (right side)
+    let timeLabel: string | null = null;
+    let timeCaption: string | null = null;
+    if (column === "new") {
+      timeLabel = `${prepMinutes}m`;
+      timeCaption = "Prep time";
+    } else if (column === "preparing") {
+      if (order.estimated_delivery_time) {
+        const diffMin = Math.round(
+          (new Date(order.estimated_delivery_time).getTime() - Date.now()) / 60000
+        );
+        timeLabel = diffMin >= 0 ? `${diffMin}m` : `${Math.abs(diffMin)}m`;
+        timeCaption = diffMin >= 0 ? "Ready in" : "Overdue";
+      } else {
+        timeLabel = `${minutesSince(order.accepted_at || order.created_at)}m`;
+        timeCaption = "In kitchen";
+      }
+    } else if (column === "ready") {
+      timeLabel = order.driver_arrived_at
+        ? `${minutesSince(order.driver_arrived_at)}m`
+        : formatTime(order.estimated_delivery_time || order.created_at);
+      timeCaption = order.driver_arrived_at ? "Driver waiting" : "Pickup";
     }
+
+    const itemsPreview = order.order_items.slice(0, 4);
+    const moreCount = Math.max(0, order.order_items.length - itemsPreview.length);
+
+    const headerBg = behind ? "#b42318" : meta.headerBg;
+    const statusText = behind ? "Behind" : meta.statusLabel;
+
+    const handlePrimaryAction = async (e: MouseEvent) => {
+      e.stopPropagation();
+      if (column === "new") await confirmOrder(order);
+      else if (column === "preparing") await markReady(order);
+      else setSelectedOrderId(order.id);
+    };
 
     return (
       <Card
         key={order.id}
         withBorder
-        radius="sm"
-        p={8}
-        className={`merchant-live-order-card merchant-live-order-card--${flash}`}
+        radius="md"
+        p={0}
         onClick={() => setSelectedOrderId(order.id)}
+        className={behind ? "merchant-live-order-card merchant-live-order-card--behind" : undefined}
         style={{
           cursor: "pointer",
           background: "#fff",
           fontVariantNumeric: "tabular-nums",
+          overflow: "hidden",
+          borderColor: behind ? "#fecaca" : "#e5e7eb",
+          boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
         }}
       >
-        <Group justify="space-between" align="center" wrap="nowrap" gap={6}>
-          <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
-            <Text fw={700} size="sm" style={{ letterSpacing: "-0.01em" }}>
-              #{order.order_number || order.id.slice(-4).toUpperCase()}
-            </Text>
-            <Text size="xs" c="dimmed">·</Text>
-            <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
-              {ageMin}m ago
-            </Text>
+        {/* Colored header strip — matches DoorDash tablet card */}
+        <Box style={{ background: headerBg, color: meta.headerFg, padding: "10px 12px" }}>
+          <Group justify="space-between" align="flex-start" wrap="nowrap" gap={8}>
+            <Box style={{ minWidth: 0, flex: 1 }}>
+              <Group gap={6} wrap="nowrap">
+                <Text size="xs" fw={600} style={{ opacity: 0.85, letterSpacing: "0.02em" }}>
+                  {statusText}
+                </Text>
+                <Text size="xs" style={{ opacity: 0.6 }}>·</Text>
+                <Text size="xs" style={{ opacity: 0.7, fontFamily: "ui-monospace, monospace" }}>
+                  #{orderRef}
+                </Text>
+              </Group>
+              <Text
+                fw={700}
+                size="lg"
+                style={{ color: meta.headerFg, letterSpacing: "-0.01em", lineHeight: 1.15 }}
+                lineClamp={1}
+              >
+                {order.customer_name || "Customer"}
+              </Text>
+            </Box>
+            {timeLabel && (
+              <Box style={{ textAlign: "right" }}>
+                {timeCaption && (
+                  <Text size="xs" style={{ opacity: 0.8, lineHeight: 1.1 }}>
+                    {timeCaption}
+                  </Text>
+                )}
+                <Text fw={700} size="lg" style={{ color: meta.headerFg, lineHeight: 1.15 }}>
+                  {timeLabel}
+                </Text>
+              </Box>
+            )}
           </Group>
-          <Text fw={700} size="sm" style={{ whiteSpace: "nowrap" }}>
-            {formatMoney(order.total_cents)}
-          </Text>
-        </Group>
-        <Group justify="space-between" wrap="nowrap" mt={2} gap={6}>
-          <Text size="xs" c="dimmed" lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
-            {order.customer_name || "Customer"} · {itemCount} item{itemCount === 1 ? "" : "s"}
-          </Text>
-          {etaLabel && (status === "preparing" || status === "confirmed") && (
-            <Text size="xs" fw={600} c={behind ? "red" : "dimmed"} style={{ whiteSpace: "nowrap" }}>
-              {etaLabel}
+        </Box>
+
+        {/* Body — item list, mimics DoorDash row layout */}
+        <Box p={12}>
+          {itemsPreview.length === 0 ? (
+            <Text size="xs" c="dimmed">
+              {itemCount} item{itemCount === 1 ? "" : "s"} · {formatMoney(order.total_cents)}
             </Text>
+          ) : (
+            <Stack gap={6}>
+              {itemsPreview.map((item) => (
+                <Group key={item.id} justify="space-between" wrap="nowrap" gap={8} align="flex-start">
+                  <Group gap={8} wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
+                    <Text fw={700} size="sm" style={{ width: 16, color: "#111827" }}>
+                      {item.quantity}
+                    </Text>
+                    <Box style={{ minWidth: 0, flex: 1 }}>
+                      <Text size="sm" fw={500} lineClamp={1} style={{ color: "#111827" }}>
+                        {item.name}
+                      </Text>
+                      {item.special_instructions && (
+                        <Text size="xs" c="dimmed" lineClamp={1}>
+                          {item.special_instructions}
+                        </Text>
+                      )}
+                    </Box>
+                  </Group>
+                  <Text size="sm" c="dimmed" style={{ whiteSpace: "nowrap" }}>
+                    {formatMoney(item.price_cents * item.quantity)}
+                  </Text>
+                </Group>
+              ))}
+              {moreCount > 0 && (
+                <Text size="xs" c="dimmed">
+                  +{moreCount} more item{moreCount === 1 ? "" : "s"}
+                </Text>
+              )}
+            </Stack>
           )}
-        </Group>
-        {(behind || order.driver_arrived_at) && (
-          <Group gap={4} mt={6} wrap="nowrap">
-            {order.driver_arrived_at && (
-              <Badge color="red" variant="filled" size="xs" radius="sm">
-                Driver {minutesSince(order.driver_arrived_at)}m
-              </Badge>
-            )}
-            {behind && !order.driver_arrived_at && (
-              <Badge color="red" variant="filled" size="xs" radius="sm">
-                Behind
-              </Badge>
+
+          <Group justify="space-between" mt={10} gap={6} wrap="nowrap">
+            <Text size="xs" c="dimmed" lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
+              {itemCount} item{itemCount === 1 ? "" : "s"} · {formatMoney(order.total_cents)}
+            </Text>
+            {order.delivery_method && (
+              <Text size="xs" c="dimmed" tt="capitalize" style={{ whiteSpace: "nowrap" }}>
+                {order.delivery_method}
+              </Text>
             )}
           </Group>
-        )}
+        </Box>
+
+        {/* Primary action button — DoorDash-style full-width CTA */}
+        <Box px={12} pb={12}>
+          <Button
+            fullWidth
+            radius="md"
+            size="sm"
+            color={column === "ready" ? "gray" : "orange"}
+            variant={column === "ready" ? "light" : "filled"}
+            onClick={handlePrimaryAction}
+            styles={{
+              root: {
+                fontWeight: 700,
+                height: 38,
+              },
+            }}
+          >
+            {status === "ready" && order.driver_arrived_at
+              ? "Hand to driver"
+              : meta.actionLabel}
+          </Button>
+        </Box>
       </Card>
     );
   };
@@ -607,7 +732,7 @@ export function MerchantLiveOrders({
               radius="sm"
               p={0}
               style={{
-                background: meta.tint,
+                background: "#f8fafc",
                 minHeight: 280,
                 borderTop: `2px solid ${meta.accent}`,
                 overflow: "hidden",
@@ -640,14 +765,14 @@ export function MerchantLiveOrders({
                   {columnOrders.length}
                 </Badge>
               </Group>
-              <ScrollArea h={460} offsetScrollbars type="auto">
-                <Stack gap={6} p={6}>
+              <ScrollArea h={620} offsetScrollbars type="auto">
+                <Stack gap={10} p={10}>
                   {columnOrders.length === 0 ? (
                     <Text size="xs" c="dimmed" py="lg" ta="center">
                       {meta.empty}
                     </Text>
                   ) : (
-                    columnOrders.map(renderOrderCard)
+                    columnOrders.map((o) => renderOrderCard(o, column))
                   )}
                 </Stack>
               </ScrollArea>
