@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import {
   Badge,
   Box,
@@ -88,7 +88,7 @@ const COLUMN_META: Record<
 
 const NEW_ORDER_SOUND_VOLUME = 1;
 
-const pillButtonStyle: React.CSSProperties = {
+const pillButtonStyle: CSSProperties = {
   background: "rgba(255,255,255,0.18)",
   color: "#fff",
   borderRadius: 999,
