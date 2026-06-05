@@ -88,6 +88,19 @@ const COLUMN_META: Record<
 
 const NEW_ORDER_SOUND_VOLUME = 1;
 
+const pillButtonStyle: React.CSSProperties = {
+  background: "rgba(255,255,255,0.18)",
+  color: "#fff",
+  borderRadius: 999,
+  width: 44,
+  height: 32,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontWeight: 700,
+  fontSize: 14,
+};
+
 interface MerchantLiveOrdersProps {
   restaurantId: string;
   restaurantName?: string;
