@@ -4,7 +4,7 @@ import {
   Box,
   Button,
   Card,
-  Drawer,
+  Modal,
   Group,
   Loader,
   ScrollArea,
@@ -12,6 +12,7 @@ import {
   Stack,
   Switch,
   Text,
+  UnstyledButton,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
