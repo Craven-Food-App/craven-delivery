@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
+import { QUICK_REPLIES, SUPPORT_DEPARTMENTS } from "./supportQuickReplies";
 
 type Channel = "call" | "message";
 type Role = "merchant" | "support" | "customer" | "driver" | "system";
@@ -82,6 +83,7 @@ export default function SupportConversationsInbox() {
   const [scope, setScope] = useState<ScopeFilter>("all");
   const [party, setParty] = useState<PartyFilter>("all");
   const [search, setSearch] = useState("");
+  const [matchedThreadIds, setMatchedThreadIds] = useState<Set<string> | null>(null);
   const [me, setMe] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -101,6 +103,24 @@ export default function SupportConversationsInbox() {
   }, []);
 
   useEffect(() => { loadThreads(); }, [loadThreads]);
+
+  // Full-text lookup across message bodies (kicks in when search has 3+ chars)
+  useEffect(() => {
+    const q = search.trim();
+    if (q.length < 3) { setMatchedThreadIds(null); return; }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("order_support_messages")
+        .select("thread_id")
+        .ilike("body", `%${q}%`)
+        .limit(500);
+      if (!cancelled) {
+        setMatchedThreadIds(new Set(((data as any[]) || []).map((r) => r.thread_id)));
+      }
+    }, 250);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [search]);
 
   // Realtime: any change to threads or messages refreshes inbox / active thread
   useEffect(() => {
@@ -160,11 +180,15 @@ export default function SupportConversationsInbox() {
       if (party === "driver" && !t.driver_id) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
-        if (!(t.subject ?? "").toLowerCase().includes(q) && !t.order_id.toLowerCase().includes(q)) return false;
+        const hitsMeta =
+          (t.subject ?? "").toLowerCase().includes(q) ||
+          t.order_id.toLowerCase().includes(q);
+        const hitsBody = matchedThreadIds?.has(t.id) ?? false;
+        if (!hitsMeta && !hitsBody) return false;
       }
       return true;
     });
-  }, [threads, scope, party, search]);
+  }, [threads, scope, party, search, matchedThreadIds]);
 
   const totalUnread = useMemo(() => threads.reduce((s, t) => s + (t.unread_for_support || 0), 0), [threads]);
 
@@ -218,6 +242,31 @@ export default function SupportConversationsInbox() {
     });
   }, [activeId]);
 
+  const routeToDepartment = useCallback(async (deptId: string, deptLabel: string) => {
+    if (!activeId) return;
+    const cur = threads.find((t) => t.id === activeId);
+    const nextSubject = `[${deptLabel}] ${(cur?.subject ?? "").replace(/^\[[^\]]+\]\s*/, "")}`.trim();
+    await supabase.from("order_support_threads").update({
+      subject: nextSubject,
+      priority: deptId === "safety" ? "urgent" : (cur?.priority ?? "normal"),
+    }).eq("id", activeId);
+    await supabase.from("order_support_messages").insert({
+      thread_id: activeId,
+      sender_role: "system",
+      body: `Conversation routed to ${deptLabel}.`,
+    });
+  }, [activeId, threads]);
+
+  const sendCanned = useCallback(async (text: string) => {
+    if (!activeId || !text) return;
+    await supabase.from("order_support_messages").insert({
+      thread_id: activeId,
+      sender_role: "support",
+      sender_user_id: me,
+      body: text,
+    });
+  }, [activeId, me]);
+
   const active = threads.find((t) => t.id === activeId);
 
   return (
@@ -239,7 +288,7 @@ export default function SupportConversationsInbox() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search order # or subject"
+              placeholder="Search order #, subject, or message text"
               className="w-full rounded-md border border-border bg-background py-1.5 pl-7 pr-2 text-xs outline-none focus:ring-1 focus:ring-orange-500"
             />
           </div>
@@ -353,6 +402,41 @@ export default function SupportConversationsInbox() {
             </div>
 
             <footer className="border-t border-border bg-background p-3">
+              {/* Department routing */}
+              <div className="mb-2 flex flex-wrap items-center gap-1">
+                <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Route to:</span>
+                {SUPPORT_DEPARTMENTS.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => routeToDepartment(d.id, d.label)}
+                    title={d.description}
+                    className="rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium text-foreground hover:bg-accent"
+                    style={{ borderColor: d.color, color: d.color }}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+              {/* Quick replies */}
+              <div className="mb-2 flex flex-wrap items-center gap-1">
+                <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Quick reply:</span>
+                {QUICK_REPLIES.support.map((q) => (
+                  <button
+                    key={q.label}
+                    onClick={() => sendCanned(q.body)}
+                    title={q.body}
+                    className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-medium text-orange-700 hover:bg-orange-100"
+                  >
+                    {q.label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setDraft(QUICK_REPLIES.support[0].body)}
+                  className="ml-1 rounded-full border border-dashed border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:text-foreground"
+                >
+                  Edit before send →
+                </button>
+              </div>
               <div className="flex items-end gap-2">
                 <textarea
                   value={draft}
