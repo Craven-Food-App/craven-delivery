@@ -22099,7 +22099,13 @@ export type Database = {
           base_pay: number | null
           batch_id: string | null
           broadcast_started_at: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string | null
+          cs_bonus_cents: number
+          cs_incentive_cents: number
+          cs_notes: string | null
           currency: string | null
           customer_boost_required: boolean
           customer_id: string | null
@@ -22145,6 +22151,9 @@ export type Database = {
           id: string
           is_stacked: boolean | null
           is_test: boolean | null
+          merchant_adjust_authorized: boolean
+          merchant_adjust_authorized_at: string | null
+          merchant_adjust_authorized_by: string | null
           merchant_commission_cents: number
           merchant_payout_cents: number
           mileage_pay_cents: number | null
@@ -22208,7 +22217,13 @@ export type Database = {
           base_pay?: number | null
           batch_id?: string | null
           broadcast_started_at?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string | null
+          cs_bonus_cents?: number
+          cs_incentive_cents?: number
+          cs_notes?: string | null
           currency?: string | null
           customer_boost_required?: boolean
           customer_id?: string | null
@@ -22254,6 +22269,9 @@ export type Database = {
           id?: string
           is_stacked?: boolean | null
           is_test?: boolean | null
+          merchant_adjust_authorized?: boolean
+          merchant_adjust_authorized_at?: string | null
+          merchant_adjust_authorized_by?: string | null
           merchant_commission_cents?: number
           merchant_payout_cents?: number
           mileage_pay_cents?: number | null
@@ -22317,7 +22335,13 @@ export type Database = {
           base_pay?: number | null
           batch_id?: string | null
           broadcast_started_at?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string | null
+          cs_bonus_cents?: number
+          cs_incentive_cents?: number
+          cs_notes?: string | null
           currency?: string | null
           customer_boost_required?: boolean
           customer_id?: string | null
@@ -22363,6 +22387,9 @@ export type Database = {
           id?: string
           is_stacked?: boolean | null
           is_test?: boolean | null
+          merchant_adjust_authorized?: boolean
+          merchant_adjust_authorized_at?: string | null
+          merchant_adjust_authorized_by?: string | null
           merchant_commission_cents?: number
           merchant_payout_cents?: number
           mileage_pay_cents?: number | null
@@ -28480,6 +28507,45 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      support_order_actions: {
+        Row: {
+          action_type: string
+          amount_cents: number | null
+          created_at: string
+          id: string
+          metadata: Json
+          order_id: string
+          performed_by: string | null
+          performed_by_email: string | null
+          reason: string | null
+          thread_id: string | null
+        }
+        Insert: {
+          action_type: string
+          amount_cents?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          order_id: string
+          performed_by?: string | null
+          performed_by_email?: string | null
+          reason?: string | null
+          thread_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          amount_cents?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          order_id?: string
+          performed_by?: string | null
+          performed_by_email?: string | null
+          reason?: string | null
+          thread_id?: string | null
+        }
+        Relationships: []
       }
       support_staff: {
         Row: {
