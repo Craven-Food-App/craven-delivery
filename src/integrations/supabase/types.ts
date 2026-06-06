@@ -22375,6 +22375,7 @@ export type Database = {
           feeder_offer_accepted_at: string | null
           feeder_offer_locked_at: string | null
           feeder_payout_status: string | null
+          feeder_route_started_at: string | null
           feeder_tip_status: string | null
           feeder_total_guaranteed_offer_cents: number | null
           food_subtotal_cents: number | null
@@ -22507,6 +22508,7 @@ export type Database = {
           feeder_offer_accepted_at?: string | null
           feeder_offer_locked_at?: string | null
           feeder_payout_status?: string | null
+          feeder_route_started_at?: string | null
           feeder_tip_status?: string | null
           feeder_total_guaranteed_offer_cents?: number | null
           food_subtotal_cents?: number | null
@@ -22639,6 +22641,7 @@ export type Database = {
           feeder_offer_accepted_at?: string | null
           feeder_offer_locked_at?: string | null
           feeder_payout_status?: string | null
+          feeder_route_started_at?: string | null
           feeder_tip_status?: string | null
           feeder_total_guaranteed_offer_cents?: number | null
           food_subtotal_cents?: number | null
