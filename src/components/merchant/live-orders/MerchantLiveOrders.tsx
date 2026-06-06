@@ -613,7 +613,7 @@ export function MerchantLiveOrders({
           .from("order_support_threads")
           .select("id")
           .eq("order_id", order.id)
-          .eq("channel", "support")
+          .eq("channel", "message")
           .maybeSingle();
 
         let threadId: string | null = existing?.id ?? null;
@@ -623,12 +623,10 @@ export function MerchantLiveOrders({
             .insert({
               order_id: order.id,
               restaurant_id: restaurantId,
-              channel: "support",
-              merchant_included: true,
-              support_included: true,
+              channel: "message",
               subject,
               priority: reportReason === "stolen" ? "urgent" : "high",
-              opened_by: user?.id ?? null,
+              created_by: user?.id ?? null,
             })
             .select("id")
             .maybeSingle();
