@@ -547,6 +547,121 @@ export function MerchantLiveOrders({
     }
   };
 
+  const confirmMerchantPickup = async (order: LiveOrder) => {
+    setPickupConfirming(true);
+    try {
+      const now = new Date().toISOString();
+      const ok = await updateOrder(order.id, {
+        order_status: "picked_up",
+        pickup_confirmed_at: order.pickup_confirmed_at || now,
+        merchant_pickup_confirmed_at: now,
+      } as Record<string, unknown>);
+      if (ok) {
+        await logOrderEvent({
+          orderId: order.id,
+          eventType: "order_picked_up",
+          actorRole: "merchant",
+          notes: "Merchant confirmed Feeder pickup",
+          metadata: {
+            assigned_driver_id: order.driver_id || order.accepted_driver_id || null,
+            driver_name: order.driver?.full_name || null,
+          },
+        });
+        notifications.show({
+          title: "Pickup confirmed",
+          message: "Order marked as picked up by Feeder",
+          color: "green",
+        });
+        setSelectedOrderId(null);
+      }
+    } finally {
+      setPickupConfirming(false);
+    }
+  };
+
+  const submitPickupIssue = async (order: LiveOrder) => {
+    if (!reportReason) {
+      notifications.show({ title: "Pick a reason", message: "Select a reason for the report", color: "orange" });
+      return;
+    }
+    setReportSubmitting(true);
+    try {
+      // Log forensic event
+      await logOrderEvent({
+        orderId: order.id,
+        eventType: "support_action",
+        actorRole: "merchant",
+        notes: reportNotes || `Merchant reported pickup issue: ${reportReason}`,
+        metadata: {
+          report_type: "pickup_issue",
+          reason: reportReason,
+          assigned_driver_id: order.driver_id || order.accepted_driver_id || null,
+          driver_name: order.driver?.full_name || null,
+          reported_at: new Date().toISOString(),
+        },
+      });
+
+      // Open / append to a support thread so customer service is notified
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const subject = `Pickup issue · #${order.order_number || order.id.slice(-6).toUpperCase()}`;
+        const body =
+          `Merchant report — ${reportReason}\n` +
+          (reportNotes ? `Notes: ${reportNotes}\n` : "") +
+          `Assigned feeder: ${order.driver?.full_name || "(unknown)"}`;
+
+        const { data: existing } = await (supabase as any)
+          .from("order_support_threads")
+          .select("id")
+          .eq("order_id", order.id)
+          .eq("channel", "support")
+          .maybeSingle();
+
+        let threadId: string | null = existing?.id ?? null;
+        if (!threadId) {
+          const { data: created } = await (supabase as any)
+            .from("order_support_threads")
+            .insert({
+              order_id: order.id,
+              restaurant_id: restaurantId,
+              channel: "support",
+              merchant_included: true,
+              support_included: true,
+              subject,
+              priority: reportReason === "stolen" ? "urgent" : "high",
+              opened_by: user?.id ?? null,
+            })
+            .select("id")
+            .maybeSingle();
+          threadId = created?.id ?? null;
+        }
+
+        if (threadId) {
+          await (supabase as any).from("order_support_messages").insert({
+            thread_id: threadId,
+            sender_user_id: user?.id ?? null,
+            sender_role: "merchant",
+            body,
+            metadata: { report_type: "pickup_issue", reason: reportReason },
+          });
+        }
+      } catch (err) {
+        console.warn("[merchant] support thread create failed", err);
+      }
+
+      notifications.show({
+        title: "Report sent to Crave'N support",
+        message: "Customer service has been notified and will investigate.",
+        color: "orange",
+      });
+      setReportIssueOpen(false);
+      setReportReason(null);
+      setReportNotes("");
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
   const renderOrderCard = (order: LiveOrder, column: KanbanColumn) => {
     const meta = COLUMN_META[column];
     const behind = isRunningBehind(order);
