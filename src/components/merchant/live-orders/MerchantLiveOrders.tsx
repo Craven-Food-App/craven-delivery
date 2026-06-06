@@ -1360,9 +1360,12 @@ export function MerchantLiveOrders({
                           </Group>
                         )}
                         {selectedOrder.pickup_confirmed_at && (
-                          <Group justify="space-between">
-                            <Text size="xs" c="dimmed">Picked up</Text>
-                            <Text size="xs" fw={600}>{formatTime(selectedOrder.pickup_confirmed_at)}</Text>
+                          <Group justify="space-between" align="flex-start">
+                            <Box>
+                              <Text size="xs" c="dimmed">Handoff to feeder</Text>
+                              <Text size="xs" c="dimmed">Merchant / customer service scanned code</Text>
+                            </Box>
+                            <Text size="xs" fw={700} c="teal.7">{formatTime(selectedOrder.pickup_confirmed_at)}</Text>
                           </Group>
                         )}
                       </Stack>
