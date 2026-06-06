@@ -315,6 +315,15 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
   const [sheetTranslatePct, setSheetTranslatePct] = useState(SNAP_HALF);
   const [dragging, setDragging] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!handoffCode) { setQrDataUrl(null); return; }
+    QRCode.toDataURL(`craven-handoff:${handoffCode}`, { margin: 1, width: 220 })
+      .then((url) => { if (!cancelled) setQrDataUrl(url); })
+      .catch(() => { if (!cancelled) setQrDataUrl(null); });
+    return () => { cancelled = true; };
+  }, [handoffCode]);
   const handleRefresh = useCallback(async () => {
     if (!onRefreshStatus || refreshing) return;
     setRefreshing(true);
