@@ -4,7 +4,7 @@
  */
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Box } from '@mantine/core';
-import { IconMapPin, IconNavigation } from '@tabler/icons-react';
+import { IconMapPin, IconNavigation, IconRefresh } from '@tabler/icons-react';
 import { StepOneMap } from './StepOneMap';
 
 const STEP_TWO_CSS = `
@@ -59,6 +59,19 @@ const STEP_TWO_CSS = `
     color: rgba(28,28,30,0.5); margin-bottom: 1px;
   }
   .dfl-step-two-status-name { font-size: 13px; font-weight: 500; color: #1c1c1e; }
+  .dfl-step-two-status-refresh {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid rgba(242,100,25,0.28);
+    background: #fff7f2; color: #f26419;
+    cursor: pointer; padding: 0; margin-right: 8px;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .dfl-step-two-status-refresh:active { background: #ffe6d6; transform: scale(0.94); }
+  .dfl-step-two-status-refresh:disabled { opacity: 0.6; cursor: default; }
+  .dfl-step-two-status-refresh .dfl-spin { animation: dfl-spin 0.9s linear infinite; }
+  @keyframes dfl-spin { to { transform: rotate(360deg); } }
   .dfl-step-two-dist-chip {
     font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.08em;
     color: #f26419; background: #fff7f2; border: 1px solid rgba(242,100,25,0.18);
