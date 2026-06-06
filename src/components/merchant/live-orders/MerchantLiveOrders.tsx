@@ -558,10 +558,16 @@ export function MerchantLiveOrders({
         timeCaption = "In kitchen";
       }
     } else if (column === "ready") {
-      timeLabel = order.driver_arrived_at
-        ? `${minutesSince(order.driver_arrived_at)}m`
-        : formatTime(order.estimated_delivery_time || order.created_at);
-      timeCaption = order.driver_arrived_at ? "Driver waiting" : "Pickup";
+      timeLabel = order.pickup_confirmed_at
+        ? `${minutesSince(order.pickup_confirmed_at)}m`
+        : order.driver_arrived_at
+          ? `${minutesSince(order.driver_arrived_at)}m`
+          : formatTime(order.estimated_delivery_time || order.created_at);
+      timeCaption = order.pickup_confirmed_at
+        ? "Handoff done"
+        : order.driver_arrived_at
+          ? "Driver waiting"
+          : "Pickup";
     }
 
     const itemsPreview = order.order_items.slice(0, 4);
@@ -707,6 +713,11 @@ export function MerchantLiveOrders({
                   </Box>
                 </Group>
                 <Stack gap={2} align="flex-end" style={{ flexShrink: 0 }}>
+                  {order.pickup_confirmed_at && (
+                    <Badge size="sm" color="teal" variant="filled" radius="sm">
+                      Code verified
+                    </Badge>
+                  )}
                   {order.pickup_parking_spot && (
                     <Badge size="sm" color="orange" variant="filled" radius="sm">
                       Spot {order.pickup_parking_spot}
