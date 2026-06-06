@@ -971,6 +971,9 @@ export function MerchantLiveOrders({
           const driverArrivedTime = selectedOrder.driver_arrived_at
             ? formatTime(selectedOrder.driver_arrived_at)
             : null;
+          const handoffVerifiedTime = selectedOrder.pickup_confirmed_at
+            ? formatTime(selectedOrder.pickup_confirmed_at)
+            : null;
           const ageMin = minutesSince(selectedOrder.created_at);
           const subtotalCents = selectedOrder.order_items.reduce(
             (s, i) => s + i.price_cents * i.quantity,
@@ -1022,7 +1025,11 @@ export function MerchantLiveOrders({
                 </UnstyledButton>
                 <Box style={{ flex: 1, minWidth: 0 }}>
                   <Text size="xs" fw={600} style={{ opacity: 0.9, letterSpacing: "0.04em" }}>
-                    {behind ? "BEHIND" : meta.statusLabel.toUpperCase()} · #{orderNo}
+                    {behind
+                      ? "BEHIND"
+                      : selectedOrder.pickup_confirmed_at
+                        ? "HANDOFF VERIFIED"
+                        : meta.statusLabel.toUpperCase()} · #{orderNo}
                   </Text>
                   <Text fw={700} size="xl" style={{ lineHeight: 1.15, marginTop: 2 }}>
                     {selectedOrder.customer_name || "Customer"}
@@ -1215,6 +1222,12 @@ export function MerchantLiveOrders({
                           <Text size="sm" fw={700} c="orange.7">{driverArrivedTime}</Text>
                         </Group>
                       )}
+                      {handoffVerifiedTime && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="teal.7">Handoff code verified</Text>
+                          <Text size="sm" fw={700} c="teal.7">{handoffVerifiedTime}</Text>
+                        </Group>
+                      )}
                     </Stack>
                   </Box>
 
@@ -1232,9 +1245,21 @@ export function MerchantLiveOrders({
                         </Group>
                       )}
                       {selectedOrder.pickup_code && (
-                        <Group justify="space-between">
-                          <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>HANDOFF CODE</Text>
-                          <Text size="md" fw={800} ff="monospace" c="orange.7">{selectedOrder.pickup_code}</Text>
+                        <Group justify="space-between" align="flex-start">
+                          <Box>
+                            <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>HANDOFF CODE</Text>
+                            {selectedOrder.pickup_confirmed_at && (
+                              <Text size="xs" c="teal.7" fw={700} mt={2}>Merchant / support verified</Text>
+                            )}
+                          </Box>
+                          <Box style={{ textAlign: "right" }}>
+                            <Text size="md" fw={800} ff="monospace" c={selectedOrder.pickup_confirmed_at ? "teal.7" : "orange.7"}>
+                              {selectedOrder.pickup_code}
+                            </Text>
+                            {handoffVerifiedTime && (
+                              <Text size="xs" c="dimmed" mt={2}>{handoffVerifiedTime}</Text>
+                            )}
+                          </Box>
                         </Group>
                       )}
                     </Stack>
