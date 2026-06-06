@@ -727,51 +727,45 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     }
   }, [orderDetails.items]);
 
-  // Fetch from database when driver arrives at restaurant (for more complete data)
-  useEffect(() => {
-    if (status === DRIVER_STATUS.AT_STORE && orderDetails.order_id && !isTestOrder) {
-      const fetchOrderItems = async () => {
-        try {
-          const { data: items, error } = await supabase
-            .from('order_items')
-            .select(`
-              id,
-              quantity,
-              price_cents,
-              special_instructions,
-              menu_items (
-                name,
-                image_url
-              )
-            `)
-            .eq('order_id', orderDetails.order_id);
-          
-          if (error) {
-            console.warn('Error fetching order items from DB:', error);
-            // Keep existing items from orderDetails
-            return;
-          }
-          
-          if (items && items.length > 0) {
-            const formattedItems = items.map((item: any) => ({
-              id: item.id,
-              name: item.menu_items?.name || 'Unknown Item',
-              quantity: item.quantity,
-              price_cents: item.price_cents,
-              special_instructions: item.special_instructions,
-              image_url: item.menu_items?.image_url,
-            }));
-            setOrderItems(formattedItems);
-          }
-        } catch (error) {
-          console.error('Error fetching order items:', error);
-          // Keep existing items from orderDetails if fetch fails
-        }
-      };
-      
-      fetchOrderItems();
+  // Fetch order items + latest order status from DB (also exposed for manual refresh).
+  const refreshOrderFromDb = useCallback(async () => {
+    if (!orderDetails.order_id || isTestOrder) return;
+    try {
+      const [{ data: items, error: itemsErr }, { data: ord }] = await Promise.all([
+        supabase
+          .from('order_items')
+          .select(`id, quantity, price_cents, special_instructions, menu_items ( name, image_url )`)
+          .eq('order_id', orderDetails.order_id),
+        supabase
+          .from('orders')
+          .select('order_status, merchant_status')
+          .eq('id', orderDetails.order_id)
+          .maybeSingle(),
+      ]);
+      if (!itemsErr && items && items.length > 0) {
+        setOrderItems(items.map((item: any) => ({
+          id: item.id,
+          name: item.menu_items?.name || 'Unknown Item',
+          quantity: item.quantity,
+          price_cents: item.price_cents,
+          special_instructions: item.special_instructions,
+          image_url: item.menu_items?.image_url,
+        })));
+      }
+      if (ord && (ord.order_status === 'ready_for_pickup' || ord.merchant_status === 'ready')) {
+        // Surface ready state — keep the feeder in AT_STORE but allow them to proceed.
+        // No status mutation here; the UI button enables once items are checked.
+      }
+    } catch (error) {
+      console.error('Error refreshing order from DB:', error);
     }
-  }, [status, orderDetails.order_id, isTestOrder]);
+  }, [orderDetails.order_id, isTestOrder]);
+
+  useEffect(() => {
+    if (status === DRIVER_STATUS.AT_STORE) {
+      refreshOrderFromDb();
+    }
+  }, [status, refreshOrderFromDb]);
 
   const handleItemCheck = (itemId: string) => {
     setCheckedItems(prev => {
