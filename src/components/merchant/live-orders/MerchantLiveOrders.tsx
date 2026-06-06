@@ -14,6 +14,7 @@ import {
   Text,
   Textarea,
   Select,
+  TextInput,
   UnstyledButton,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
@@ -29,6 +30,8 @@ import {
   IconMapPin,
   IconCheck,
   IconFlag,
+  IconShieldCheck,
+  IconLock,
 } from "@tabler/icons-react";
 import { supabase } from "@/integrations/supabase/client";
 import { logOrderEvent } from "@/lib/orderTracking";
