@@ -278,6 +278,8 @@ export interface DeliveryFlowStepTwoProps {
   /** When >1, this leg is part of a multi-stop batch — remind to verify each order at the store. */
   batchRouteStopCount?: number;
   cleanPaySlot?: React.ReactNode;
+  /** Refresh order status from the database (re-pulls items + merchant status). */
+  onRefreshStatus?: () => Promise<void> | void;
 }
 
 export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
@@ -297,9 +299,18 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
   onConfirmPickup,
   batchRouteStopCount,
   cleanPaySlot,
+  onRefreshStatus,
 }) => {
   const [sheetTranslatePct, setSheetTranslatePct] = useState(SNAP_HALF);
   const [dragging, setDragging] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    if (!onRefreshStatus || refreshing) return;
+    setRefreshing(true);
+    try { await onRefreshStatus(); } finally {
+      setTimeout(() => setRefreshing(false), 500);
+    }
+  }, [onRefreshStatus, refreshing]);
   const startYRef = useRef(0);
   const startTranslateRef = useRef(0);
   const velocityRef = useRef(0);
