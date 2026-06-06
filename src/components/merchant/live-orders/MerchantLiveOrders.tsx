@@ -1220,8 +1220,118 @@ export function MerchantLiveOrders({
                           <Text size="sm" fw={700}>{selectedOrder.pickup_parking_spot}</Text>
                         </Group>
                       )}
+                      {selectedOrder.pickup_code && (
+                        <Group justify="space-between">
+                          <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>HANDOFF CODE</Text>
+                          <Text size="md" fw={800} ff="monospace" c="orange.7">{selectedOrder.pickup_code}</Text>
+                        </Group>
+                      )}
                     </Stack>
                   </Box>
+
+                  {/* Feeder / Driver */}
+                  {(selectedOrder.driver || selectedOrder.driver_id || selectedOrder.accepted_driver_id) && (
+                    <Box
+                      style={{
+                        background: "#fff",
+                        borderRadius: 10,
+                        border: `1px solid ${selectedOrder.driver_arrived_at ? "#a7f3d0" : "#e5e7eb"}`,
+                        padding: 14,
+                      }}
+                    >
+                      <Group justify="space-between" mb={6}>
+                        <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>
+                          FEEDER
+                        </Text>
+                        <Badge
+                          size="sm"
+                          color={selectedOrder.driver_arrived_at ? "teal" : selectedOrder.pickup_confirmed_at ? "gray" : "blue"}
+                          variant="filled"
+                        >
+                          {selectedOrder.pickup_confirmed_at
+                            ? "Picked up"
+                            : selectedOrder.driver_arrived_at
+                              ? "At store"
+                              : "En route"}
+                        </Badge>
+                      </Group>
+                      <Group gap={10} wrap="nowrap" align="flex-start">
+                        <Box
+                          style={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: "50%",
+                            background: "#f1f5f9",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            overflow: "hidden",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {selectedOrder.driver?.avatar_url ? (
+                            <img
+                              src={selectedOrder.driver.avatar_url}
+                              alt=""
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                          ) : (
+                            <IconUser size={20} color="#475569" />
+                          )}
+                        </Box>
+                        <Box style={{ flex: 1, minWidth: 0 }}>
+                          <Text fw={700} size="sm" lineClamp={1}>
+                            {selectedOrder.driver?.full_name || "Feeder assigned"}
+                          </Text>
+                          {selectedOrder.driver?.phone && (
+                            <Text size="xs" c="dimmed">{selectedOrder.driver.phone}</Text>
+                          )}
+                          {(selectedOrder.driver?.vehicle_make || selectedOrder.driver?.vehicle_model) && (
+                            <Group gap={4} mt={2} wrap="nowrap">
+                              <IconCar size={12} color="#64748b" />
+                              <Text size="xs" c="dimmed" lineClamp={1}>
+                                {[selectedOrder.driver?.vehicle_make, selectedOrder.driver?.vehicle_model].filter(Boolean).join(" ")}
+                                {selectedOrder.driver?.license_plate ? ` · ${selectedOrder.driver.license_plate}` : ""}
+                              </Text>
+                            </Group>
+                          )}
+                        </Box>
+                      </Group>
+                      <Stack gap={4} mt={10}>
+                        {selectedOrder.feeder_offer_accepted_at && (
+                          <Group justify="space-between">
+                            <Text size="xs" c="dimmed">Accepted</Text>
+                            <Text size="xs" fw={600}>{formatTime(selectedOrder.feeder_offer_accepted_at)}</Text>
+                          </Group>
+                        )}
+                        {selectedOrder.driver_arrived_at && (
+                          <Group justify="space-between">
+                            <Text size="xs" c="dimmed">Arrived at store</Text>
+                            <Text size="xs" fw={700} c="teal.7">
+                              {formatTime(selectedOrder.driver_arrived_at)} · {minutesSince(selectedOrder.driver_arrived_at)}m ago
+                            </Text>
+                          </Group>
+                        )}
+                        {selectedOrder.pickup_parking_spot && (
+                          <Group justify="space-between">
+                            <Text size="xs" c="dimmed">Parking spot</Text>
+                            <Badge size="sm" color="orange" variant="filled">
+                              <Group gap={4} wrap="nowrap">
+                                <IconMapPin size={10} />
+                                {selectedOrder.pickup_parking_spot}
+                              </Group>
+                            </Badge>
+                          </Group>
+                        )}
+                        {selectedOrder.pickup_confirmed_at && (
+                          <Group justify="space-between">
+                            <Text size="xs" c="dimmed">Picked up</Text>
+                            <Text size="xs" fw={600}>{formatTime(selectedOrder.pickup_confirmed_at)}</Text>
+                          </Group>
+                        )}
+                      </Stack>
+                    </Box>
+                  )}
 
                   <Box
                     style={{
