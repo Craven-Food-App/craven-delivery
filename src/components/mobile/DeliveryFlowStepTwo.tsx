@@ -61,12 +61,16 @@ const STEP_TWO_CSS = `
   .dfl-step-two-status-name { font-size: 13px; font-weight: 500; color: #1c1c1e; }
   .dfl-step-two-status-refresh {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 28px; height: 28px; border-radius: 50%;
-    border: 1px solid rgba(242,100,25,0.28);
+    gap: 6px;
+    height: 32px; border-radius: 999px;
+    border: 1.5px solid #f26419;
     background: #fff7f2; color: #f26419;
-    cursor: pointer; padding: 0; margin-right: 8px;
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em;
+    font-weight: 700; text-transform: uppercase;
+    cursor: pointer; padding: 0 12px; margin-right: 8px;
     -webkit-tap-highlight-color: transparent;
-    transition: background 0.15s, transform 0.15s;
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 1px 3px rgba(242,100,25,0.25);
   }
   .dfl-step-two-status-refresh:active { background: #ffe6d6; transform: scale(0.94); }
   .dfl-step-two-status-refresh:disabled { opacity: 0.6; cursor: default; }
