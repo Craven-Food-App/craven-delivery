@@ -315,6 +315,25 @@ const OrderForensicsViewer: React.FC = () => {
                 </div>
               </div>
 
+              {/* Legacy-order notice */}
+              {!selected.pickup_photo_url &&
+                !selected.delivery_photo_url &&
+                events.length === 0 &&
+                breadcrumbs.length === 0 && (
+                  <div className="rounded-md border border-amber-500/40 bg-amber-50 text-amber-800 px-3 py-2 text-xs flex items-start gap-2">
+                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="font-semibold">No forensic capture for this order.</div>
+                      <div>
+                        This order was completed before the GPS / photo audit system
+                        was active for this Feeder, or the Feeder app did not upload
+                        proof. All future orders capture pickup photo, delivery photo,
+                        GPS breadcrumbs, route deviations, and a full event timeline.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
               {/* Pin summary */}
               <div className="grid sm:grid-cols-2 gap-3">
                 <Card className="p-3">
