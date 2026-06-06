@@ -679,6 +679,48 @@ export function MerchantLiveOrders({
               </Text>
             )}
           </Group>
+
+          {(order.driver || order.driver_id || order.accepted_driver_id) && (
+            <Box
+              mt={10}
+              p={8}
+              style={{
+                background: order.driver_arrived_at ? "#ecfdf5" : "#eff6ff",
+                border: `1px solid ${order.driver_arrived_at ? "#a7f3d0" : "#bfdbfe"}`,
+                borderRadius: 8,
+              }}
+            >
+              <Group justify="space-between" gap={6} wrap="nowrap" align="flex-start">
+                <Group gap={6} wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
+                  <IconCar size={14} color={order.driver_arrived_at ? "#047857" : "#1d4ed8"} />
+                  <Box style={{ minWidth: 0 }}>
+                    <Text size="xs" fw={700} lineClamp={1} c={order.driver_arrived_at ? "teal.8" : "blue.8"}>
+                      {order.driver?.full_name || "Feeder assigned"}
+                      {order.driver_arrived_at ? " · Arrived" : " · En route"}
+                    </Text>
+                    {(order.driver?.vehicle_make || order.driver?.license_plate) && (
+                      <Text size="xs" c="dimmed" lineClamp={1}>
+                        {[order.driver?.vehicle_make, order.driver?.vehicle_model].filter(Boolean).join(" ")}
+                        {order.driver?.license_plate ? ` · ${order.driver.license_plate}` : ""}
+                      </Text>
+                    )}
+                  </Box>
+                </Group>
+                <Stack gap={2} align="flex-end" style={{ flexShrink: 0 }}>
+                  {order.pickup_parking_spot && (
+                    <Badge size="sm" color="orange" variant="filled" radius="sm">
+                      Spot {order.pickup_parking_spot}
+                    </Badge>
+                  )}
+                  {order.pickup_code && (
+                    <Text size="xs" fw={700} ff="monospace" c="dark.6">
+                      Code {order.pickup_code}
+                    </Text>
+                  )}
+                </Stack>
+              </Group>
+            </Box>
+          )}
         </Box>
 
         {/* Primary action button — DoorDash-style full-width CTA */}
