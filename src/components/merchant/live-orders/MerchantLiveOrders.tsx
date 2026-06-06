@@ -1377,12 +1377,28 @@ export function MerchantLiveOrders({
                       CUSTOMER
                     </Text>
                     <Text fw={700} size="md" mt={4}>
-                      {selectedOrder.customer_name || "Customer"}
+                      {formatCustomerNameForMerchant(selectedOrder.customer_name)}
                     </Text>
                     {addressLine && (
                       <Text size="sm" c="dimmed" mt={4}>
                         {addressLine}
                       </Text>
+                    )}
+                    <Text size="xs" c="dimmed" mt={6} style={{ fontStyle: "italic" }}>
+                      Customer privacy: full name, street address, and phone are hidden.
+                    </Text>
+                    {selectedOrder.customer_phone && (
+                      <Button
+                        component="a"
+                        href={`tel:${selectedOrder.customer_phone}`}
+                        variant="light"
+                        color="orange"
+                        size="xs"
+                        mt={10}
+                        fullWidth
+                      >
+                        Contact customer
+                      </Button>
                     )}
                   </Box>
 
