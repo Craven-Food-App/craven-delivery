@@ -444,6 +444,47 @@ const OrderForensicsViewer: React.FC = () => {
 
               {/* Breadcrumbs */}
               <Card className="p-3">
+                <div className="flex items-center gap-2 text-xs font-semibold mb-3">
+                  <MessageSquare className="h-3.5 w-3.5" /> CONVERSATION TRANSCRIPT ({conversation.length})
+                </div>
+                {conversation.length === 0 ? (
+                  <p className="text-xs text-muted-foreground mb-3">
+                    No messages between feeder, customer, merchant, or support for this order.
+                  </p>
+                ) : (
+                  <ScrollArea className="h-64 border rounded mb-3">
+                    <div className="divide-y">
+                      {conversation.map((m) => {
+                        const tone =
+                          m.sender_role === 'driver'   ? 'bg-orange-50 border-l-2 border-orange-500'  :
+                          m.sender_role === 'customer' ? 'bg-emerald-50 border-l-2 border-emerald-500' :
+                          m.sender_role === 'merchant' ? 'bg-amber-50 border-l-2 border-amber-500'    :
+                          m.sender_role === 'support'  ? 'bg-blue-50 border-l-2 border-blue-500'      :
+                                                          'bg-muted/40 border-l-2 border-border';
+                        return (
+                          <div key={m.id} className={`px-2 py-1.5 ${tone}`}>
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                              <span className="font-semibold uppercase">{m.sender_role}</span>
+                              <span>{format(new Date(m.created_at), 'MMM d, h:mm:ss a')}</span>
+                            </div>
+                            <div className="text-xs mt-0.5 whitespace-pre-wrap">{m.body}</div>
+                            {m.attachment_url && (
+                              <a
+                                href={m.attachment_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] text-primary hover:underline"
+                              >
+                                View attachment
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                )}
+
                 <div className="flex items-center gap-2 text-xs font-semibold mb-2">
                   <Navigation className="h-3.5 w-3.5" /> FEEDER GPS TRAIL ({breadcrumbs.length})
                 </div>
