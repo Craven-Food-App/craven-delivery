@@ -5,17 +5,20 @@ import RefundManagement from '@/components/admin/RefundManagement';
 import DisputeResolution from '@/components/admin/DisputeResolution';
 import SupportTickets from '@/components/admin/SupportTickets';
 import AuditLogs from '@/components/admin/AuditLogs';
+import SupportConversationsInbox from '@/components/support/SupportConversationsInbox';
 import {
   IconCurrencyDollar,
   IconAlertTriangle,
   IconLifebuoy,
   IconFileText,
+  IconMessageCircle2,
 } from '@tabler/icons-react';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { UnifiedPortalShell, PortalTab } from '@/components/portal/UnifiedPortalShell';
 
 const TABS: PortalTab[] = [
+  { id: 'conversations', label: 'Live Conversations', description: 'Active merchant, customer, and Feeder support threads.', section: 'Operations', icon: IconMessageCircle2 },
   { id: 'refunds', label: 'Refund Management', description: 'Process and track customer refund requests.', section: 'Operations', icon: IconCurrencyDollar },
   { id: 'disputes', label: 'Dispute Resolution', description: 'Manage payment disputes and chargebacks.', section: 'Operations', icon: IconAlertTriangle },
   { id: 'support-tickets', label: 'Support Tickets', description: 'Customer support ticket queue and triage.', section: 'Operations', icon: IconLifebuoy },
@@ -25,17 +28,18 @@ const TABS: PortalTab[] = [
 const SECTIONS = ['Operations', 'Compliance'];
 
 const SupportOperationsPortal: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('refunds');
+  const [activeTab, setActiveTab] = useState('conversations');
   useActivityTracking('support-operations');
   useAutoLogout('support-operations');
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'conversations': return <SupportConversationsInbox />;
       case 'refunds': return <RefundManagement />;
       case 'disputes': return <DisputeResolution />;
       case 'support-tickets': return <SupportTickets />;
       case 'audit-logs': return <AuditLogs />;
-      default: return <RefundManagement />;
+      default: return <SupportConversationsInbox />;
     }
   };
 
