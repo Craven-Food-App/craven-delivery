@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageSquare, Send, Loader2, HelpCircle } from "lucide-react";
+import { QUICK_REPLIES } from "@/components/support/supportQuickReplies";
 
 type Role = "merchant" | "support" | "customer" | "driver" | "system";
 
@@ -155,6 +156,18 @@ export default function DriverSupportThread({ orderId, restaurantId }: Props) {
           {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
           Send
         </button>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1">
+        {QUICK_REPLIES.driver.map((q) => (
+          <button
+            key={q.label}
+            onClick={() => setDraft(q.body)}
+            title={q.body}
+            className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-medium text-orange-700 hover:bg-orange-100"
+          >
+            {q.label}
+          </button>
+        ))}
       </div>
     </div>
   );
