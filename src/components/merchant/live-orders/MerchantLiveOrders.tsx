@@ -869,8 +869,8 @@ export function MerchantLiveOrders({
             fullWidth
             radius="md"
             size="sm"
-            color={column === "ready" ? "gray" : "orange"}
-            variant={column === "ready" ? "light" : "filled"}
+            color="orange"
+            variant="filled"
             onClick={handlePrimaryAction}
             styles={{
               root: {
