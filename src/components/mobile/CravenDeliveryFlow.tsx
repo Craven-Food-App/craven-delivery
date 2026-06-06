@@ -2104,22 +2104,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             });
           }}
           onContact={
-            orderDetails?.order_id
-              ? async () => {
-                  try {
-                    notifications.show({ id: 'masked-call', message: 'Connecting…', loading: true });
-                    const { data, error } = await supabase.functions.invoke('start-masked-call', {
-                      body: { order_id: orderDetails.order_id, caller_role: 'driver' },
-                    });
-                    notifications.hide('masked-call');
-                    if (error) throw error;
-                    if (data?.error) throw new Error(data.error);
-                    notifications.show({ message: 'Your phone will ring.', color: 'green' });
-                  } catch (e) {
-                    notifications.show({ message: (e as Error)?.message ?? 'Could not start call.', color: 'red' });
-                  }
-                }
-              : undefined
+            orderDetails?.order_id ? () => { setShowOrderChat(true); } : undefined
           }
           beforeCompleteDeliverySlot={
             cleanPaySummary ? (
