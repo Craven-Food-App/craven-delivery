@@ -639,7 +639,6 @@ export function MerchantLiveOrders({
             sender_user_id: user?.id ?? null,
             sender_role: "merchant",
             body,
-            metadata: { report_type: "pickup_issue", reason: reportReason },
           });
         }
       } catch (err) {
