@@ -1589,8 +1589,32 @@ export function MerchantLiveOrders({
                   </Button>
                 )}
                 {status === "ready" && (
-                  <Badge color="green" size="lg" variant="light">
-                    Waiting for Feeder pickup
+                  <Group gap={8} wrap="nowrap">
+                    <Button
+                      size="lg"
+                      color="red"
+                      variant="outline"
+                      leftSection={<IconFlag size={16} />}
+                      onClick={() => setReportIssueOpen(true)}
+                      style={{ fontWeight: 700 }}
+                    >
+                      Report issue
+                    </Button>
+                    <Button
+                      size="lg"
+                      color="orange"
+                      leftSection={<IconCheck size={18} />}
+                      loading={pickupConfirming}
+                      onClick={() => void confirmMerchantPickup(selectedOrder)}
+                      style={{ minWidth: 260, fontWeight: 700 }}
+                    >
+                      Confirm Feeder pickup
+                    </Button>
+                  </Group>
+                )}
+                {status === "picked_up" && (
+                  <Badge color="teal" size="lg" variant="filled">
+                    Pickup confirmed by merchant
                   </Badge>
                 )}
               </Box>
