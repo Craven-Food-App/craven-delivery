@@ -16,6 +16,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { QUICK_REPLIES, SUPPORT_DEPARTMENTS } from "./supportQuickReplies";
+import SupportOrderActionsPanel from "./SupportOrderActionsPanel";
 
 type Channel = "call" | "message";
 type Role = "merchant" | "support" | "customer" | "driver" | "system";
