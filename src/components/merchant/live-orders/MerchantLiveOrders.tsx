@@ -39,7 +39,7 @@ import {
 } from "./liveOrderUtils";
 import "./merchant-live-orders.css";
 
-const ACTIVE_STATUSES = new Set(["pending", "confirmed", "preparing", "ready"]);
+const ACTIVE_STATUSES = new Set(["pending", "confirmed", "preparing", "ready", "picked_up", "out_for_delivery"]);
 
 const COLUMN_META: Record<
   KanbanColumn,
@@ -86,7 +86,7 @@ const COLUMN_META: Record<
     headerBg: "#6b2150",
     headerFg: "#ffffff",
     actionLabel: "Mark picked up",
-    statusLabel: "Ready",
+    statusLabel: "Ready / handoff",
   },
 };
 
