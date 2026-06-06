@@ -982,17 +982,8 @@ export function MerchantLiveOrders({
             0,
           );
           const feesCents = Math.max(0, (selectedOrder.total_cents || 0) - subtotalCents);
-          const addr = selectedOrder.delivery_address as
-            | { street?: string; address?: string; line1?: string; city?: string; state?: string; zip?: string; postal_code?: string }
-            | string
-            | null;
-          const addressLine = typeof addr === "string"
-            ? addr
-            : addr
-              ? [addr.street || addr.address || addr.line1, [addr.city, addr.state].filter(Boolean).join(", "), addr.zip || addr.postal_code]
-                  .filter(Boolean)
-                  .join(" · ")
-              : null;
+          // Privacy: merchants never see street address — only city/state/zip.
+          const addressLine = formatCustomerAreaForMerchant(selectedOrder.delivery_address);
           return (
             <Box style={{ background: "#f1f5f9", fontVariantNumeric: "tabular-nums" }}>
               {/* Colored status header */}
