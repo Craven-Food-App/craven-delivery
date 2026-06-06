@@ -565,6 +565,119 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     }
   }, [status]);
 
+  // -----------------------------------------------------------------
+  // GPS BREADCRUMBS + OFF-ROUTE DETECTION (forensic audit trail)
+  // -----------------------------------------------------------------
+  // Samples driver GPS every ~15s while a delivery is live, writes to
+  // order_location_breadcrumbs, and opens/closes an
+  // order_route_deviations record whenever the driver drifts beyond
+  // ROUTE_DEVIATION_THRESHOLD_M of the planned polyline.
+  useEffect(() => {
+    const orderId = orderDetails?.order_id || orderDetails?.id;
+    if (!orderId || isTestOrder) return;
+    if (
+      status !== DRIVER_STATUS.TO_STORE &&
+      status !== DRIVER_STATUS.AT_STORE &&
+      status !== DRIVER_STATUS.TO_CUSTOMER &&
+      status !== DRIVER_STATUS.AT_CUSTOMER
+    ) return;
+
+    let cancelled = false;
+    let deviationId: string | null = null;
+    let deviationMaxDistance = 0;
+    let userId: string | null = null;
+
+    // Try to decode the planned route polyline (Mapbox-style coordinates: [lng,lat][])
+    const routeGeometry = orderDetails?.route_geometry;
+    const coords: Array<[number, number]> | null =
+      Array.isArray(routeGeometry?.coordinates) ? routeGeometry.coordinates :
+      Array.isArray(routeGeometry) ? routeGeometry : null;
+
+    const dropLat = orderDetails?.dropoff_address?.latitude ?? orderDetails?.dropoff_lat;
+    const dropLng = orderDetails?.dropoff_address?.longitude ?? orderDetails?.dropoff_lng;
+
+    const tick = async () => {
+      if (cancelled) return;
+      if (!userId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        userId = user?.id ?? null;
+        if (!userId) return;
+      }
+      const pos = await getCurrentPosition(6000);
+      if (cancelled || !pos) return;
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      const distFromRoute = pointToPolylineMeters(lat, lng, coords);
+      const distToDropoff =
+        typeof dropLat === 'number' && typeof dropLng === 'number'
+          ? haversineMeters(lat, lng, dropLat, dropLng)
+          : null;
+
+      const isOffRoute =
+        status === DRIVER_STATUS.TO_CUSTOMER &&
+        distFromRoute != null &&
+        distFromRoute > ROUTE_DEVIATION_THRESHOLD_M;
+
+      await recordBreadcrumb({
+        orderId,
+        driverId: userId,
+        lat,
+        lng,
+        accuracyM: pos.coords.accuracy,
+        heading: pos.coords.heading ?? null,
+        speedMps: pos.coords.speed ?? null,
+        distanceFromRouteM: distFromRoute,
+        distanceToDropoffM: distToDropoff,
+        isOffRoute,
+        stage: status,
+      });
+
+      if (isOffRoute && !deviationId) {
+        deviationId = await openRouteDeviation({
+          orderId,
+          driverId: userId,
+          lat,
+          lng,
+          distanceFromRouteM: distFromRoute!,
+        });
+        deviationMaxDistance = distFromRoute!;
+        await logOrderEvent({
+          orderId,
+          eventType: 'off_route_detected',
+          lat, lng,
+          accuracyM: pos.coords.accuracy,
+          distanceToTargetM: distFromRoute,
+          notes: `Feeder is ${Math.round(distFromRoute!)}m off the planned route.`,
+        });
+      } else if (isOffRoute && deviationId) {
+        if (distFromRoute! > deviationMaxDistance) deviationMaxDistance = distFromRoute!;
+      } else if (!isOffRoute && deviationId) {
+        await closeRouteDeviation({
+          deviationId,
+          lat,
+          lng,
+          maxDistanceM: deviationMaxDistance,
+        });
+        await logOrderEvent({
+          orderId,
+          eventType: 'off_route_resolved',
+          lat, lng,
+          notes: `Feeder rejoined route (peak deviation ${Math.round(deviationMaxDistance)}m).`,
+        });
+        deviationId = null;
+        deviationMaxDistance = 0;
+      }
+    };
+
+    void tick();
+    const interval = window.setInterval(tick, 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [orderDetails?.order_id, orderDetails?.id, status, isTestOrder]);
+
   // Animate total earnings counter - must be before any early returns
   // Only run once when status changes to COMPLETE
   useEffect(() => {
