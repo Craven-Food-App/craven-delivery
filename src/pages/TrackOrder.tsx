@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin, Clock, Phone, CheckCircle, Truck, Utensils, Navigation } from 'lucide-react';
 import { formatAddress } from '@/lib/formatAddress';
+import CustomerOrderSupportThread from '@/components/customer/CustomerOrderSupportThread';
 
 const TrackOrder: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -564,6 +565,12 @@ const TrackOrder: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {orderId && (
+              <div className="mt-6">
+                <CustomerOrderSupportThread orderId={orderId} />
+              </div>
+            )}
           </div>
         </div>
       </div>
