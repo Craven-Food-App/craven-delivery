@@ -1281,11 +1281,11 @@ export function MerchantLiveOrders({
                         </Text>
                         <Badge
                           size="sm"
-                          color={selectedOrder.driver_arrived_at ? "teal" : selectedOrder.pickup_confirmed_at ? "gray" : "blue"}
+                          color={selectedOrder.pickup_confirmed_at ? "teal" : selectedOrder.driver_arrived_at ? "teal" : "blue"}
                           variant="filled"
                         >
                           {selectedOrder.pickup_confirmed_at
-                            ? "Picked up"
+                            ? "Handoff verified"
                             : selectedOrder.driver_arrived_at
                               ? "At store"
                               : "En route"}
