@@ -444,7 +444,21 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
                 <div className="dfl-step-two-status-name">{restaurantName}</div>
               </div>
             </div>
-            <div className="dfl-step-two-dist-chip">{distStr} MI</div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              {onRefreshStatus && (
+                <button
+                  type="button"
+                  className="dfl-step-two-status-refresh"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  aria-label="Refresh order status"
+                  title="Refresh order status"
+                >
+                  <IconRefresh size={14} className={refreshing ? 'dfl-spin' : ''} />
+                </button>
+              )}
+              <div className="dfl-step-two-dist-chip">{distStr} MI</div>
+            </div>
           </div>
 
           <div ref={bodyRef} className="dfl-step-two-body" style={{ overflowY: 'auto' }}>
