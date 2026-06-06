@@ -554,7 +554,6 @@ export function MerchantLiveOrders({
       const ok = await updateOrder(order.id, {
         order_status: "picked_up",
         pickup_confirmed_at: order.pickup_confirmed_at || now,
-        merchant_pickup_confirmed_at: now,
       } as Record<string, unknown>);
       if (ok) {
         await logOrderEvent({
