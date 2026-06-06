@@ -1167,13 +1167,30 @@ export function MerchantLiveOrders({
                   ×
                 </UnstyledButton>
                 <Box style={{ flex: 1, minWidth: 0 }}>
-                  <Text size="xs" fw={600} style={{ opacity: 0.9, letterSpacing: "0.04em" }}>
-                    {behind
-                      ? "BEHIND"
-                      : selectedOrder.pickup_confirmed_at
-                        ? "HANDOFF VERIFIED"
-                        : meta.statusLabel.toUpperCase()} · #{orderNo}
-                  </Text>
+                  <Group gap={8} wrap="nowrap" align="center">
+                    <Text size="xs" fw={600} style={{ opacity: 0.9, letterSpacing: "0.04em" }}>
+                      {behind
+                        ? "BEHIND"
+                        : selectedOrder.pickup_confirmed_at
+                          ? "HANDOFF VERIFIED"
+                          : meta.statusLabel.toUpperCase()} · #{orderNo}
+                    </Text>
+                    {orderJustUpdated && (
+                      <Badge
+                        size="xs"
+                        radius="sm"
+                        variant="filled"
+                        color="orange"
+                        style={{
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                          animation: "merchant-live-banner-pulse-keyframes 0.6s ease-in-out 3",
+                        }}
+                      >
+                        Updated
+                      </Badge>
+                    )}
+                  </Group>
                   <Text fw={700} size="xl" style={{ lineHeight: 1.15, marginTop: 2 }}>
                     {formatCustomerNameForMerchant(selectedOrder.customer_name)}
                   </Text>
