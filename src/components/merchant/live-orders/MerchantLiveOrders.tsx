@@ -514,6 +514,34 @@ export function MerchantLiveOrders({
     return grouped;
   }, [orders]);
 
+  // Flash an "Updated" badge in the order modal when the selected order's key
+  // fields change (e.g. feeder accepts, arrives, status moves). Driven by the
+  // realtime postgres_changes subscription that keeps `orders` in sync.
+  const [orderJustUpdated, setOrderJustUpdated] = useState(false);
+  const lastOrderSigRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedOrder) {
+      lastOrderSigRef.current = null;
+      return;
+    }
+    const sig = [
+      selectedOrder.order_status,
+      selectedOrder.accepted_at,
+      selectedOrder.driver_arrived_at,
+      selectedOrder.pickup_confirmed_at,
+      selectedOrder.driver_id,
+      selectedOrder.accepted_driver_id,
+      selectedOrder.estimated_delivery_time,
+    ].join("|");
+    if (lastOrderSigRef.current != null && lastOrderSigRef.current !== sig) {
+      setOrderJustUpdated(true);
+      const t = window.setTimeout(() => setOrderJustUpdated(false), 2500);
+      lastOrderSigRef.current = sig;
+      return () => window.clearTimeout(t);
+    }
+    lastOrderSigRef.current = sig;
+  }, [selectedOrder]);
+
   const updateOrder = async (orderId: string, patch: Record<string, unknown>) => {
     const { error } = await supabase.from("orders").update(patch).eq("id", orderId);
     if (error) {
