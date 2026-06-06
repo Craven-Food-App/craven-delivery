@@ -300,10 +300,10 @@ const OrderForensicsViewer: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="outline" className="capitalize">{selected.order_status}</Badge>
-                  {selected.delivered_at && (
+                  {(selected.delivered_at || selected.feeder_delivery_completed_at) && (
                     <Badge className="bg-emerald-500/20 text-emerald-700 border-emerald-500/30">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Delivered {format(new Date(selected.delivered_at), 'MMM d, h:mm a')}
+                      Delivered {format(new Date((selected.delivered_at || selected.feeder_delivery_completed_at)!), 'MMM d, h:mm a')}
                     </Badge>
                   )}
                   {(selected.off_route_count ?? 0) > 0 && (
@@ -316,7 +316,11 @@ const OrderForensicsViewer: React.FC = () => {
               </div>
 
               {/* Pin summary */}
+              {(() => null)()}
               <div className="grid sm:grid-cols-2 gap-3">
+                {(() => {
+                  return null;
+                })()}
                 <Card className="p-3">
                   <div className="flex items-center gap-2 text-xs font-semibold mb-1">
                     <MapPin className="h-3.5 w-3.5 text-orange-500" />
@@ -324,7 +328,15 @@ const OrderForensicsViewer: React.FC = () => {
                   </div>
                   <p className="text-sm">{formatAddr(selected.pickup_address)}</p>
                   <div className="text-xs mt-1">
-                    <GpsLink lat={selected.pickup_lat} lng={selected.pickup_lng} />
+                    {(() => {
+                      const fb = extractLatLng(selected.pickup_address);
+                      return (
+                        <GpsLink
+                          lat={selected.pickup_lat ?? fb.lat}
+                          lng={selected.pickup_lng ?? fb.lng}
+                        />
+                      );
+                    })()}
                   </div>
                 </Card>
                 <Card className="p-3">
@@ -332,9 +344,21 @@ const OrderForensicsViewer: React.FC = () => {
                     <Navigation className="h-3.5 w-3.5 text-orange-500" />
                     DROP-OFF — CUSTOMER
                   </div>
-                  <p className="text-sm">{formatAddr(selected.dropoff_address)}</p>
+                  <p className="text-sm">
+                    {formatAddr(selected.dropoff_address || selected.delivery_address)}
+                  </p>
                   <div className="text-xs mt-1">
-                    <GpsLink lat={selected.dropoff_lat} lng={selected.dropoff_lng} />
+                    {(() => {
+                      const fb = extractLatLng(
+                        selected.dropoff_address || selected.delivery_address,
+                      );
+                      return (
+                        <GpsLink
+                          lat={selected.dropoff_lat ?? fb.lat}
+                          lng={selected.dropoff_lng ?? fb.lng}
+                        />
+                      );
+                    })()}
                   </div>
                 </Card>
               </div>
