@@ -22,11 +22,15 @@ import {
   IconPackage,
   IconRefresh,
   IconWifi,
+  IconCar,
+  IconUser,
+  IconMapPin,
 } from "@tabler/icons-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   type KanbanColumn,
   type LiveOrder,
+  type LiveOrderDriver,
   formatMoney,
   formatTime,
   getKanbanColumn,
