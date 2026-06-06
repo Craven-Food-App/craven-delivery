@@ -1529,18 +1529,72 @@ export function MerchantLiveOrders({
                         <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>
                           FEEDER
                         </Text>
-                        <Badge
-                          size="sm"
-                          color={selectedOrder.pickup_confirmed_at ? "teal" : selectedOrder.driver_arrived_at ? "teal" : "blue"}
-                          variant="filled"
-                        >
-                          {selectedOrder.pickup_confirmed_at
+                        {(() => {
+                          const verified = !!selectedOrder.pickup_confirmed_at;
+                          const arrived = !!selectedOrder.driver_arrived_at;
+                          const enRoute = !!(selectedOrder as any).feeder_route_started_at;
+                          const txt = verified
                             ? "Handoff verified"
-                            : selectedOrder.driver_arrived_at
+                            : arrived
                               ? "At store"
-                              : "En route"}
-                        </Badge>
+                              : enRoute
+                                ? "En route"
+                                : "Feeder assigned";
+                          const color = verified || arrived ? "teal" : enRoute ? "blue" : "gray";
+                          return (
+                            <Badge size="sm" color={color} variant="filled">{txt}</Badge>
+                          );
+                        })()}
                       </Group>
+                      {!selectedOrder.pickup_confirmed_at ? (
+                        <Stack gap={10}>
+                          <Group gap={8} wrap="nowrap" align="center">
+                            <IconLock size={16} color="#475569" />
+                            <Text size="sm" c="dimmed">
+                              Feeder photo, name, and vehicle details are hidden until you verify the
+                              <b> 6-digit handoff code</b> the Feeder presents (or scan their QR).
+                            </Text>
+                          </Group>
+                          <TextInput
+                            label="Enter Feeder's 6-digit handoff code"
+                            placeholder="••••••"
+                            value={handoffInput}
+                            onChange={(e) => {
+                              const v = e.currentTarget.value.replace(/[^0-9]/g, "").slice(0, 6);
+                              setHandoffInput(v);
+                              setHandoffError(null);
+                            }}
+                            inputMode="numeric"
+                            maxLength={6}
+                            error={handoffError || undefined}
+                            size="md"
+                            styles={{
+                              input: {
+                                fontFamily: "monospace",
+                                fontSize: 22,
+                                letterSpacing: "0.4em",
+                                textAlign: "center",
+                                fontWeight: 700,
+                              },
+                            }}
+                          />
+                          <Button
+                            color="orange"
+                            size="md"
+                            leftSection={<IconShieldCheck size={18} />}
+                            loading={handoffVerifying}
+                            disabled={handoffInput.length !== 6}
+                            onClick={() => void verifyHandoffCode(selectedOrder)}
+                            fullWidth
+                            style={{ fontWeight: 700 }}
+                          >
+                            Verify handoff code
+                          </Button>
+                          <Text size="xs" c="dimmed" ta="center">
+                            Nothing about this order can move forward until the code is verified.
+                          </Text>
+                        </Stack>
+                      ) : (
                       <Group gap={10} wrap="nowrap" align="flex-start">
                         <Box
                           style={{
@@ -1583,6 +1637,7 @@ export function MerchantLiveOrders({
                           )}
                         </Box>
                       </Group>
+                      )}
                       <Stack gap={4} mt={10}>
                         {selectedOrder.feeder_offer_accepted_at && (
                           <Group justify="space-between">
