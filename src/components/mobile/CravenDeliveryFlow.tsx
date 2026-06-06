@@ -574,7 +574,8 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   // ROUTE_DEVIATION_THRESHOLD_M of the planned polyline.
   useEffect(() => {
     const orderId = orderDetails?.order_id || orderDetails?.id;
-    if (!orderId || isTestOrder) return;
+    const isTest = orderDetails?.isTestOrder || false;
+    if (!orderId || isTest) return;
     if (
       status !== DRIVER_STATUS.TO_STORE &&
       status !== DRIVER_STATUS.AT_STORE &&
@@ -676,7 +677,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [orderDetails?.order_id, orderDetails?.id, status, isTestOrder]);
+  }, [orderDetails?.order_id, orderDetails?.id, status, orderDetails?.isTestOrder]);
 
   // Animate total earnings counter - must be before any early returns
   // Only run once when status changes to COMPLETE
