@@ -21960,6 +21960,7 @@ export type Database = {
       }
       order_support_messages: {
         Row: {
+          attachment_url: string | null
           body: string
           created_at: string
           id: string
@@ -21968,6 +21969,7 @@ export type Database = {
           thread_id: string
         }
         Insert: {
+          attachment_url?: string | null
           body: string
           created_at?: string
           id?: string
@@ -21976,6 +21978,7 @@ export type Database = {
           thread_id: string
         }
         Update: {
+          attachment_url?: string | null
           body?: string
           created_at?: string
           id?: string
@@ -21995,39 +21998,69 @@ export type Database = {
       }
       order_support_threads: {
         Row: {
+          assigned_agent_id: string | null
           channel: string
           created_at: string
           created_by: string | null
           customer_included: boolean
           customer_user_id: string | null
+          driver_id: string | null
+          driver_included: boolean
           id: string
+          last_message_at: string
           order_id: string
+          priority: string
           restaurant_id: string
           status: string
+          subject: string | null
+          unread_for_customer: number
+          unread_for_driver: number
+          unread_for_merchant: number
+          unread_for_support: number
           updated_at: string
         }
         Insert: {
+          assigned_agent_id?: string | null
           channel?: string
           created_at?: string
           created_by?: string | null
           customer_included?: boolean
           customer_user_id?: string | null
+          driver_id?: string | null
+          driver_included?: boolean
           id?: string
+          last_message_at?: string
           order_id: string
+          priority?: string
           restaurant_id: string
           status?: string
+          subject?: string | null
+          unread_for_customer?: number
+          unread_for_driver?: number
+          unread_for_merchant?: number
+          unread_for_support?: number
           updated_at?: string
         }
         Update: {
+          assigned_agent_id?: string | null
           channel?: string
           created_at?: string
           created_by?: string | null
           customer_included?: boolean
           customer_user_id?: string | null
+          driver_id?: string | null
+          driver_included?: boolean
           id?: string
+          last_message_at?: string
           order_id?: string
+          priority?: string
           restaurant_id?: string
           status?: string
+          subject?: string | null
+          unread_for_customer?: number
+          unread_for_driver?: number
+          unread_for_merchant?: number
+          unread_for_support?: number
           updated_at?: string
         }
         Relationships: [
@@ -32642,6 +32675,7 @@ export type Database = {
         Args: { _restaurant_id: string; _user_id: string }
         Returns: boolean
       }
+      is_support_agent: { Args: { _user_id: string }; Returns: boolean }
       is_thread_participant: {
         Args: { _thread_root_id: string; _user_id: string }
         Returns: boolean
@@ -32811,6 +32845,10 @@ export type Database = {
       }
       mark_expired_tester_credits: { Args: never; Returns: number }
       mark_inactive_sessions: { Args: never; Returns: undefined }
+      mark_support_thread_read: {
+        Args: { _role: string; _thread_id: string }
+        Returns: undefined
+      }
       mark_transfer_failed: {
         Args: {
           p_driver_transfer_id?: string
