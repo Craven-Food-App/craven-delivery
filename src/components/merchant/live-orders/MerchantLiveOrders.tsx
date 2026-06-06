@@ -1385,21 +1385,38 @@ export function MerchantLiveOrders({
                       </Text>
                     )}
                     <Text size="xs" c="dimmed" mt={6} style={{ fontStyle: "italic" }}>
-                      Customer privacy: full name, street address, and phone are hidden.
+                      Customer privacy: full name, street address, and phone are hidden. All contact is brokered through Crave'N customer service.
                     </Text>
-                    {selectedOrder.customer_phone && (
+                    <Group grow mt={10} gap={8}>
                       <Button
-                        component="a"
-                        href={`tel:${selectedOrder.customer_phone}`}
                         variant="light"
                         color="orange"
                         size="xs"
-                        mt={10}
-                        fullWidth
+                        onClick={() => {
+                          notifications.show({
+                            color: "orange",
+                            title: "Crave'N customer service notified",
+                            message: `A Crave'N support agent will call the customer for order #${selectedOrder.order_number ?? selectedOrder.id.slice(0, 6)} on your behalf.`,
+                          });
+                        }}
                       >
-                        Contact customer
+                        Request call via Crave'N CS
                       </Button>
-                    )}
+                      <Button
+                        variant="light"
+                        color="orange"
+                        size="xs"
+                        onClick={() => {
+                          notifications.show({
+                            color: "orange",
+                            title: "Crave'N customer service notified",
+                            message: `A Crave'N support agent will message the customer for order #${selectedOrder.order_number ?? selectedOrder.id.slice(0, 6)} on your behalf. They will relay your message.`,
+                          });
+                        }}
+                      >
+                        Message via Crave'N CS
+                      </Button>
+                    </Group>
                   </Box>
 
                   {selectedOrder.special_instructions && (
