@@ -854,16 +854,36 @@ export function MerchantLiveOrders({
                 <Group gap={6} wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
                   <IconCar size={14} color={order.driver_arrived_at ? "#047857" : "#1d4ed8"} />
                   <Box style={{ minWidth: 0 }}>
-                    <Text size="xs" fw={700} lineClamp={1} c={order.driver_arrived_at ? "teal.8" : "blue.8"}>
-                      {order.driver?.full_name || "Feeder assigned"}
-                      {order.driver_arrived_at ? " · Arrived" : " · En route"}
-                    </Text>
-                    {(order.driver?.vehicle_make || order.driver?.license_plate) && (
-                      <Text size="xs" c="dimmed" lineClamp={1}>
-                        {[order.driver?.vehicle_make, order.driver?.vehicle_model].filter(Boolean).join(" ")}
-                        {order.driver?.license_plate ? ` · ${order.driver.license_plate}` : ""}
-                      </Text>
-                    )}
+                    {(() => {
+                      const verified = !!order.pickup_confirmed_at;
+                      const arrived = !!order.driver_arrived_at;
+                      const enRoute = !!(order as any).feeder_route_started_at;
+                      const statusTxt = verified
+                        ? "Handoff verified"
+                        : arrived
+                          ? "At store"
+                          : enRoute
+                            ? "En route"
+                            : "Assigned";
+                      const color = verified || arrived ? "teal.8" : enRoute ? "blue.8" : "gray.7";
+                      // Identity only revealed once handoff code is verified.
+                      const label = verified
+                        ? (order.driver?.full_name || "Feeder")
+                        : "Feeder assigned";
+                      return (
+                        <>
+                          <Text size="xs" fw={700} lineClamp={1} c={color as any}>
+                            {label} · {statusTxt}
+                          </Text>
+                          {verified && (order.driver?.vehicle_make || order.driver?.license_plate) && (
+                            <Text size="xs" c="dimmed" lineClamp={1}>
+                              {[order.driver?.vehicle_make, order.driver?.vehicle_model].filter(Boolean).join(" ")}
+                              {order.driver?.license_plate ? ` · ${order.driver.license_plate}` : ""}
+                            </Text>
+                          )}
+                        </>
+                      );
+                    })()}
                   </Box>
                 </Group>
                 <Stack gap={2} align="flex-end" style={{ flexShrink: 0 }}>
