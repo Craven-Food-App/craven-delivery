@@ -1090,6 +1090,30 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       setDeliveryPhotoUrl(uploadedUrl);
       
       if (orderDetails.order_id) {
+        const pos = await getCurrentPosition();
+        await logOrderEvent({
+          orderId: orderDetails.order_id,
+          eventType: 'delivery_photo_captured',
+          lat: pos?.coords.latitude ?? null,
+          lng: pos?.coords.longitude ?? null,
+          accuracyM: pos?.coords.accuracy ?? null,
+          photoUrl: uploadedUrl,
+          notes: 'Delivery proof photo captured at drop-off.',
+        });
+        try {
+          await (supabase as any)
+            .from('orders')
+            .update({
+              delivery_photo_url: uploadedUrl,
+              delivery_photo_timestamp: new Date().toISOString(),
+              delivery_photo_lat: pos?.coords.latitude ?? null,
+              delivery_photo_lng: pos?.coords.longitude ?? null,
+              delivered_at: new Date().toISOString(),
+            })
+            .eq('id', orderDetails.order_id);
+        } catch (err) {
+          console.warn('Could not stamp delivery proof geo:', err);
+        }
         try {
           const { data: { user } } = await supabase.auth.getUser();
           await supabase.functions.invoke('finalize-delivery', {
@@ -1099,6 +1123,12 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               pickupPhotoUrl: pickupPhotoUrl,
               deliveryPhotoUrl: uploadedUrl,
             }
+          });
+          await logOrderEvent({
+            orderId: orderDetails.order_id,
+            eventType: 'order_delivered',
+            photoUrl: uploadedUrl,
+            notes: 'Order delivered and finalized.',
           });
         } catch (error) {
           console.error('Error finalizing delivery:', error);
