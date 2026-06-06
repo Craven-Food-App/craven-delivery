@@ -40,6 +40,7 @@ import {
   formatCustomerAreaForMerchant,
 } from "./liveOrderUtils";
 import "./merchant-live-orders.css";
+import { MerchantSupportThread } from "./MerchantSupportThread";
 
 const ACTIVE_STATUSES = new Set(["pending", "confirmed", "preparing", "ready", "picked_up", "out_for_delivery"]);
 
@@ -1387,36 +1388,12 @@ export function MerchantLiveOrders({
                     <Text size="xs" c="dimmed" mt={6} style={{ fontStyle: "italic" }}>
                       Customer privacy: full name, street address, and phone are hidden. All contact is brokered through Crave'N customer service.
                     </Text>
-                    <Group grow mt={10} gap={8}>
-                      <Button
-                        variant="light"
-                        color="orange"
-                        size="xs"
-                        onClick={() => {
-                          notifications.show({
-                            color: "orange",
-                            title: "Crave'N customer service notified",
-                            message: `A Crave'N support agent will call the customer for order #${selectedOrder.order_number ?? selectedOrder.id.slice(0, 6)} on your behalf.`,
-                          });
-                        }}
-                      >
-                        Request call via Crave'N CS
-                      </Button>
-                      <Button
-                        variant="light"
-                        color="orange"
-                        size="xs"
-                        onClick={() => {
-                          notifications.show({
-                            color: "orange",
-                            title: "Crave'N customer service notified",
-                            message: `A Crave'N support agent will message the customer for order #${selectedOrder.order_number ?? selectedOrder.id.slice(0, 6)} on your behalf. They will relay your message.`,
-                          });
-                        }}
-                      >
-                        Message via Crave'N CS
-                      </Button>
-                    </Group>
+                    <MerchantSupportThread
+                      orderId={selectedOrder.id}
+                      orderNumber={selectedOrder.order_number}
+                      restaurantId={restaurantId}
+                      customerUserId={(selectedOrder as any).customer_id ?? null}
+                    />
                   </Box>
 
                   {selectedOrder.special_instructions && (
