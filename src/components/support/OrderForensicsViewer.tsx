@@ -46,6 +46,7 @@ interface OrderRow {
   created_at: string;
   pickup_address: any;
   dropoff_address: any;
+  delivery_address: any;
   pickup_lat: number | null;
   pickup_lng: number | null;
   dropoff_lat: number | null;
@@ -94,7 +95,21 @@ const EVENT_TONE: Record<string, string> = {
 function formatAddr(a: any): string {
   if (!a) return '—';
   if (typeof a === 'string') return a;
-  return [a.street, a.address, a.city, a.state, a.zip].filter(Boolean).join(', ') || '—';
+  const street = a.street || a.address || a.address_line1 || a.line1 || '';
+  const apt = a.apt_suite || a.apt || a.unit || '';
+  const parts = [street, apt, a.city, a.state, a.zip || a.zip_code || a.postal_code]
+    .filter(Boolean);
+  return parts.join(', ') || '—';
+}
+
+function extractLatLng(a: any): { lat: number | null; lng: number | null } {
+  if (!a || typeof a !== 'object') return { lat: null, lng: null };
+  const lat = a.latitude ?? a.lat ?? null;
+  const lng = a.longitude ?? a.lng ?? a.lon ?? null;
+  return {
+    lat: typeof lat === 'number' ? lat : lat != null ? Number(lat) : null,
+    lng: typeof lng === 'number' ? lng : lng != null ? Number(lng) : null,
+  };
 }
 
 function GpsLink({ lat, lng }: { lat: number | null | undefined; lng: number | null | undefined }) {
