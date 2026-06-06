@@ -21958,6 +21958,102 @@ export type Database = {
         }
         Relationships: []
       }
+      order_support_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          sender_role: string
+          sender_user_id: string | null
+          thread_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          sender_role: string
+          sender_user_id?: string | null
+          thread_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          sender_role?: string
+          sender_user_id?: string | null
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_support_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "order_support_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_support_threads: {
+        Row: {
+          channel: string
+          created_at: string
+          created_by: string | null
+          customer_included: boolean
+          customer_user_id: string | null
+          id: string
+          order_id: string
+          restaurant_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          customer_included?: boolean
+          customer_user_id?: string | null
+          id?: string
+          order_id: string
+          restaurant_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          customer_included?: boolean
+          customer_user_id?: string | null
+          id?: string
+          order_id?: string
+          restaurant_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_support_threads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_support_threads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_support_threads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           accepted_at: string | null
@@ -32529,6 +32625,7 @@ export type Database = {
       is_ceo: { Args: { user_uuid: string }; Returns: boolean }
       is_ceo_email: { Args: { p_email: string }; Returns: boolean }
       is_craven_founder: { Args: never; Returns: boolean }
+      is_craven_support: { Args: { _user_id: string }; Returns: boolean }
       is_cto_or_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_cxo_or_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_diamond_driver: { Args: { p_driver_id: string }; Returns: boolean }
@@ -32539,6 +32636,10 @@ export type Database = {
       }
       is_executive_role_safe: {
         Args: { exec_role?: string; user_uuid: string }
+        Returns: boolean
+      }
+      is_restaurant_member: {
+        Args: { _restaurant_id: string; _user_id: string }
         Returns: boolean
       }
       is_thread_participant: {
