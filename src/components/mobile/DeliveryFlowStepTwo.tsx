@@ -533,6 +533,100 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
             </div>
 
             <div className="dfl-step-two-items-block">
+              {/* Handoff code (hidden in test mode) */}
+              {handoffCode && (
+                <div
+                  style={{
+                    margin: '0 0 14px',
+                    padding: '14px 14px 16px',
+                    borderRadius: 14,
+                    border: handoffVerified
+                      ? '1.5px solid #16a34a'
+                      : '1.5px solid #f26419',
+                    background: handoffVerified
+                      ? 'linear-gradient(180deg,#ecfdf5,#ffffff)'
+                      : 'linear-gradient(180deg,#fff7ed,#ffffff)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '4px 10px',
+                      borderRadius: 999,
+                      background: handoffVerified ? '#dcfce7' : '#ffedd5',
+                      color: handoffVerified ? '#15803d' : '#c2410c',
+                      fontSize: 10,
+                      letterSpacing: '0.14em',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      fontFamily: 'DM Mono, monospace',
+                    }}
+                  >
+                    {handoffVerified ? (
+                      <>
+                        <IconShieldCheck size={12} /> Handoff Code Verified
+                      </>
+                    ) : (
+                      <>
+                        <IconShieldLock size={12} /> Handoff Code
+                      </>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: 'DM Mono, monospace',
+                      fontSize: 38,
+                      letterSpacing: '0.32em',
+                      fontWeight: 700,
+                      color: handoffVerified ? '#15803d' : '#1c1c1e',
+                      marginTop: 10,
+                      textIndent: '0.32em',
+                    }}
+                  >
+                    {handoffCode}
+                  </div>
+                  {!handoffVerified && (
+                    <>
+                      <div style={{ fontSize: 12, color: 'rgba(28,28,30,0.65)', marginTop: 6 }}>
+                        Show this code to the merchant — or let them scan the QR.
+                      </div>
+                      {qrDataUrl && (
+                        <img
+                          src={qrDataUrl}
+                          alt="Handoff QR"
+                          style={{
+                            width: 168,
+                            height: 168,
+                            display: 'block',
+                            margin: '12px auto 4px',
+                            borderRadius: 10,
+                            border: '1px solid rgba(28,28,30,0.08)',
+                            background: '#fff',
+                            padding: 6,
+                          }}
+                        />
+                      )}
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: 'rgba(28,28,30,0.55)',
+                          marginTop: 6,
+                        }}
+                      >
+                        Pickup is locked until the merchant verifies this code.
+                      </div>
+                    </>
+                  )}
+                  {handoffVerified && (
+                    <div style={{ fontSize: 12, color: '#15803d', marginTop: 6, fontWeight: 600 }}>
+                      The merchant confirmed your identity. Finish the pickup below.
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="dfl-step-two-items-header">
                 <div className="dfl-step-two-items-title">
                   Order Items
