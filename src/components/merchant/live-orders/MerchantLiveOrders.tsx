@@ -134,6 +134,11 @@ export function MerchantLiveOrders({
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [prepMinutes, setPrepMinutes] = useState(20);
   const [urgentBannerOrderId, setUrgentBannerOrderId] = useState<string | null>(null);
+  const [reportIssueOpen, setReportIssueOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<string | null>(null);
+  const [reportNotes, setReportNotes] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [pickupConfirming, setPickupConfirming] = useState(false);
 
   const alertAudioRef = useRef<HTMLAudioElement | null>(null);
   const recentNewOrderIdsRef = useRef<Set<string>>(new Set());
