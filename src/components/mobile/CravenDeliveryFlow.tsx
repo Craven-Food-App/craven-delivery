@@ -983,15 +983,65 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const handleStartDeliveryVerification = () => {
     const orderKey = orderDetails?.order_id || orderDetails?.id;
     const seenKey = orderKey ? `craven:delivery-photo-guide:${orderKey}` : null;
-    if (seenKey) {
-      try {
-        if (localStorage.getItem(seenKey) === '1') {
-          openDeliveryCameraDirect();
-          return;
+    void (async () => {
+      // ---- Dropoff geofence enforcement ----
+      const dropLat = orderDetails?.dropoff_address?.latitude ?? orderDetails?.dropoff_lat;
+      const dropLng = orderDetails?.dropoff_address?.longitude ?? orderDetails?.dropoff_lng;
+      const orderId = orderDetails?.order_id || orderDetails?.id;
+      if (orderId && typeof dropLat === 'number' && typeof dropLng === 'number') {
+        const pos = await getCurrentPosition();
+        if (pos) {
+          const distance = haversineMeters(
+            pos.coords.latitude,
+            pos.coords.longitude,
+            dropLat,
+            dropLng,
+          );
+          if (distance > DELIVERY_GEOFENCE_RADIUS_M) {
+            await logOrderEvent({
+              orderId,
+              eventType: 'geofence_blocked',
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracyM: pos.coords.accuracy,
+              distanceToTargetM: distance,
+              notes: `Driver is ${Math.round(distance)}m from drop-off (max ${DELIVERY_GEOFENCE_RADIUS_M}m).`,
+            });
+            const proceed = window.confirm(
+              `You appear to be ${Math.round(distance)} meters away from the drop-off location. ` +
+              `Crave'N requires you to be at the customer's address to complete the delivery.\n\n` +
+              `Are you sure you are at the right place? This will be logged for review.`,
+            );
+            if (!proceed) {
+              notifications.show({
+                color: 'orange',
+                title: 'Move closer to the drop-off',
+                message: 'Please navigate to the customer location before completing the delivery.',
+              });
+              return;
+            }
+            await logOrderEvent({
+              orderId,
+              eventType: 'geofence_override',
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracyM: pos.coords.accuracy,
+              distanceToTargetM: distance,
+              notes: 'Feeder confirmed delivery despite being outside the geofence.',
+            });
+          }
         }
-      } catch {}
-    }
-    setShowDeliveryPhotoGuide(true);
+      }
+      if (seenKey) {
+        try {
+          if (localStorage.getItem(seenKey) === '1') {
+            openDeliveryCameraDirect();
+            return;
+          }
+        } catch {}
+      }
+      setShowDeliveryPhotoGuide(true);
+    })();
   };
   
   const handleConfirmDeliveryPhoto = async (photoUrl: string) => {
