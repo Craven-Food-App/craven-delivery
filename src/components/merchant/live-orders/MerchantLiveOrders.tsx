@@ -233,6 +233,7 @@ export function MerchantLiveOrders({
           pickup_code: row.pickup_code ?? null,
           pickup_confirmed_at: row.pickup_confirmed_at ?? null,
           feeder_offer_accepted_at: row.feeder_offer_accepted_at ?? null,
+          feeder_route_started_at: (row as any).feeder_route_started_at ?? null,
           customer_phone: row.customer_phone ?? null,
           driver: null,
           order_items: [],
