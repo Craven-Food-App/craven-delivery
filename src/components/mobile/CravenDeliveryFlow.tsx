@@ -1109,6 +1109,15 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   };
 
   const handleStartPickupVerification = () => {
+    if (!isTestOrder && !merchantHandoffVerified) {
+      notifications.show({
+        title: 'Waiting for merchant',
+        message:
+          'The merchant must verify your 6-digit handoff code before you can confirm pickup.',
+        color: 'orange',
+      });
+      return;
+    }
     setPhotoType('pickup');
     setShowCamera(true);
     onCameraStateChange?.(true);
