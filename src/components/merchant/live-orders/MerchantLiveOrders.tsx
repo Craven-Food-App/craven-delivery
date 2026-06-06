@@ -12,6 +12,8 @@ import {
   Stack,
   Switch,
   Text,
+  Textarea,
+  Select,
   UnstyledButton,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
@@ -25,8 +27,11 @@ import {
   IconCar,
   IconUser,
   IconMapPin,
+  IconCheck,
+  IconFlag,
 } from "@tabler/icons-react";
 import { supabase } from "@/integrations/supabase/client";
+import { logOrderEvent } from "@/lib/orderTracking";
 import {
   type KanbanColumn,
   type LiveOrder,
