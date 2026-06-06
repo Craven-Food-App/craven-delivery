@@ -40,6 +40,7 @@ import {
   formatCustomerAreaForMerchant,
 } from "./liveOrderUtils";
 import "./merchant-live-orders.css";
+import { MerchantSupportThread } from "./MerchantSupportThread";
 
 const ACTIVE_STATUSES = new Set(["pending", "confirmed", "preparing", "ready", "picked_up", "out_for_delivery"]);
 
