@@ -36,6 +36,8 @@ import {
   getKanbanColumn,
   isRunningBehind,
   minutesSince,
+  formatCustomerNameForMerchant,
+  formatCustomerAreaForMerchant,
 } from "./liveOrderUtils";
 import "./merchant-live-orders.css";
 
@@ -220,6 +222,7 @@ export function MerchantLiveOrders({
           pickup_code: row.pickup_code ?? null,
           pickup_confirmed_at: row.pickup_confirmed_at ?? null,
           feeder_offer_accepted_at: row.feeder_offer_accepted_at ?? null,
+          customer_phone: row.customer_phone ?? null,
           driver: null,
           order_items: [],
         };
@@ -270,7 +273,7 @@ export function MerchantLiveOrders({
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id, order_number, customer_name, order_status, created_at, total_cents, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time, driver_id, accepted_driver_id, pickup_code, pickup_confirmed_at, feeder_offer_accepted_at"
+          "id, order_number, customer_name, customer_phone, order_status, created_at, total_cents, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time, driver_id, accepted_driver_id, pickup_code, pickup_confirmed_at, feeder_offer_accepted_at"
         )
         .eq("restaurant_id", restaurantId)
         .in("order_status", Array.from(ACTIVE_STATUSES))
