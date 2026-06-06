@@ -908,6 +908,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       if (error) {
         console.warn('Could not record driver arrival (merchant may still use manual status):', error);
       }
+      await logOrderEventWithPosition({
+        orderId: orderDetails.order_id,
+        eventType: 'arrived_at_store',
+        notes: 'Feeder marked arrival at merchant.',
+      });
     }
     setStatus(DRIVER_STATUS.AT_STORE);
     await updateOrderStatus('at_restaurant');
@@ -923,6 +928,29 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     const uploadedUrl = await uploadPhoto(photoUrl, 'pickup');
     if (uploadedUrl) {
       setPickupPhotoUrl(uploadedUrl);
+      if (orderDetails?.order_id) {
+        const pos = await getCurrentPosition();
+        await logOrderEvent({
+          orderId: orderDetails.order_id,
+          eventType: 'pickup_photo_captured',
+          lat: pos?.coords.latitude ?? null,
+          lng: pos?.coords.longitude ?? null,
+          accuracyM: pos?.coords.accuracy ?? null,
+          photoUrl: uploadedUrl,
+          notes: 'Pickup proof photo captured at merchant.',
+        });
+        try {
+          await (supabase as any)
+            .from('orders')
+            .update({
+              pickup_photo_lat: pos?.coords.latitude ?? null,
+              pickup_photo_lng: pos?.coords.longitude ?? null,
+            })
+            .eq('id', orderDetails.order_id);
+        } catch (err) {
+          console.warn('Could not stamp pickup photo geo:', err);
+        }
+      }
       setShowCamera(false);
       onCameraStateChange?.(false);
       
@@ -936,6 +964,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         if (orderDetails.order_id) {
           const sync = await syncFeederCleanPayAdjustmentAtPickup(orderDetails.order_id);
           if (!sync.ok) console.warn('syncFeederCleanPayAdjustmentAtPickup', sync.error);
+          await logOrderEventWithPosition({
+            orderId: orderDetails.order_id,
+            eventType: 'order_picked_up',
+            notes: 'Order handed off to feeder. En route to customer.',
+          });
         }
         setStatus(DRIVER_STATUS.TO_CUSTOMER);
         await updateOrderStatus('picked_up');
@@ -961,6 +994,13 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     setTimeout(async () => {
       setStatus(DRIVER_STATUS.AT_CUSTOMER);
       await updateOrderStatus('at_customer');
+      if (orderDetails?.order_id) {
+        await logOrderEventWithPosition({
+          orderId: orderDetails.order_id,
+          eventType: 'arrived_at_customer',
+          notes: 'Feeder marked arrival at customer.',
+        });
+      }
       
       // Read delivery instructions out loud if enabled
       if (currentOrder.customer?.deliveryNotes) {
