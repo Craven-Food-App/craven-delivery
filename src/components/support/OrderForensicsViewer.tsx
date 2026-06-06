@@ -143,7 +143,7 @@ const OrderForensicsViewer: React.FC = () => {
       let q = (supabase as any)
         .from('orders')
         .select(
-          'id, order_number, order_status, customer_name, customer_phone, driver_id, delivered_at, created_at, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, pickup_photo_url, pickup_photo_lat, pickup_photo_lng, pickup_confirmed_at, delivery_photo_url, delivery_photo_lat, delivery_photo_lng, delivery_photo_timestamp, off_route_count, total_distance_traveled_m'
+          'id, order_number, order_status, customer_name, customer_phone, driver_id, delivered_at, feeder_delivery_completed_at, created_at, pickup_address, dropoff_address, delivery_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, pickup_photo_url, pickup_photo_lat, pickup_photo_lng, pickup_confirmed_at, delivery_photo_url, delivery_photo_lat, delivery_photo_lng, delivery_photo_timestamp, off_route_count, total_distance_traveled_m'
         )
         .order('created_at', { ascending: false })
         .limit(50);
