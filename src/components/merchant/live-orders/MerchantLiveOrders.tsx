@@ -574,7 +574,7 @@ export function MerchantLiveOrders({
     const moreCount = Math.max(0, order.order_items.length - itemsPreview.length);
 
     const headerBg = behind ? "#b42318" : meta.headerBg;
-    const statusText = behind ? "Behind" : meta.statusLabel;
+    const statusText = behind ? "Behind" : order.pickup_confirmed_at ? "Handoff verified" : meta.statusLabel;
 
     const handlePrimaryAction = async (e: MouseEvent) => {
       e.stopPropagation();
@@ -952,8 +952,7 @@ export function MerchantLiveOrders({
       >
         {selectedOrder && (() => {
           const status = (selectedOrder.order_status || "pending") as string;
-          const column: KanbanColumn =
-            status === "pending" ? "new" : status === "ready" ? "ready" : "preparing";
+          const column: KanbanColumn = getKanbanColumn(status) ?? "preparing";
           const meta = COLUMN_META[column];
           const behind = isRunningBehind(selectedOrder);
           const headerBg = behind ? "#b91c1c" : meta.headerBg;
