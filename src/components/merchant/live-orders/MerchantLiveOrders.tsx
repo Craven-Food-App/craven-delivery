@@ -1025,7 +1025,7 @@ export function MerchantLiveOrders({
                         : meta.statusLabel.toUpperCase()} · #{orderNo}
                   </Text>
                   <Text fw={700} size="xl" style={{ lineHeight: 1.15, marginTop: 2 }}>
-                    {selectedOrder.customer_name || "Customer"}
+                    {formatCustomerNameForMerchant(selectedOrder.customer_name)}
                   </Text>
                 </Box>
                 {status !== "pending" && (
