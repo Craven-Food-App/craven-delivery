@@ -4,6 +4,7 @@ import { Box, Button, Group, ScrollArea, Stack, Text, Textarea, Badge, Loader } 
 import { notifications } from "@mantine/notifications";
 import { IconPhone, IconMessage, IconUserPlus, IconSend } from "@tabler/icons-react";
 import { supabase } from "@/integrations/supabase/client";
+import { QUICK_REPLIES } from "@/components/support/supportQuickReplies";
 
 type Channel = "call" | "message";
 
@@ -322,6 +323,21 @@ export function MerchantSupportThread({ orderId, orderNumber, restaurantId, cust
         >
           Send
         </Button>
+      </Group>
+
+      <Group gap={6} mt={8} wrap="wrap">
+        {QUICK_REPLIES.merchant.map((q) => (
+          <Button
+            key={q.label}
+            size="compact-xs"
+            variant="light"
+            color="orange"
+            title={q.body}
+            onClick={() => setDraft(q.body)}
+          >
+            {q.label}
+          </Button>
+        ))}
       </Group>
     </Box>
   );
