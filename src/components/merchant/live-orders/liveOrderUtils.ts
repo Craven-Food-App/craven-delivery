@@ -67,6 +67,8 @@ export const getKanbanColumn = (status: string | null | undefined): KanbanColumn
     case "preparing":
       return "preparing";
     case "ready":
+    case "picked_up":
+    case "out_for_delivery":
       return "ready";
     default:
       return null;
