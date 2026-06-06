@@ -31,6 +31,7 @@ import {
   Navigation,
   Package,
   ShieldAlert,
+  MessageSquare,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -118,6 +119,7 @@ const OrderForensicsViewer: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [breadcrumbs, setBreadcrumbs] = useState<any[]>([]);
   const [deviations, setDeviations] = useState<any[]>([]);
+  const [conversation, setConversation] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   const loadOrders = useCallback(async () => {
@@ -156,8 +158,9 @@ const OrderForensicsViewer: React.FC = () => {
     setEvents([]);
     setBreadcrumbs([]);
     setDeviations([]);
+    setConversation([]);
     try {
-      const [ev, bc, dv] = await Promise.all([
+      const [ev, bc, dv, threads] = await Promise.all([
         (supabase as any)
           .from('order_tracking_events')
           .select('*')
@@ -174,10 +177,23 @@ const OrderForensicsViewer: React.FC = () => {
           .select('*')
           .eq('order_id', order.id)
           .order('started_at', { ascending: true }),
+        (supabase as any)
+          .from('order_support_threads')
+          .select('id, channel, customer_included, driver_included')
+          .eq('order_id', order.id),
       ]);
       setEvents(ev.data || []);
       setBreadcrumbs(bc.data || []);
       setDeviations(dv.data || []);
+      const threadIds = (threads.data || []).map((t: any) => t.id);
+      if (threadIds.length) {
+        const { data: msgs } = await (supabase as any)
+          .from('order_support_messages')
+          .select('id, thread_id, sender_role, body, created_at, attachment_url')
+          .in('thread_id', threadIds)
+          .order('created_at', { ascending: true });
+        setConversation(msgs || []);
+      }
     } catch (err) {
       console.error('loadDetails', err);
     }
