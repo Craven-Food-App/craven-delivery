@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageSquare, Phone, Send, Loader2 } from "lucide-react";
+import { QUICK_REPLIES } from "@/components/support/supportQuickReplies";
 
 type Role = "merchant" | "support" | "customer" | "driver" | "system";
 
@@ -156,6 +157,18 @@ export default function CustomerOrderSupportThread({ orderId }: Props) {
           {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           Send
         </button>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1">
+        {QUICK_REPLIES.customer.map((q) => (
+          <button
+            key={q.label}
+            onClick={() => setDraft(q.body)}
+            title={q.body}
+            className="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-medium text-orange-700 hover:bg-orange-100"
+          >
+            {q.label}
+          </button>
+        ))}
       </div>
     </div>
   );
