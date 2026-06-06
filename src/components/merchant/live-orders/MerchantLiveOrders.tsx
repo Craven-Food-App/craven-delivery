@@ -14,6 +14,7 @@ import {
   Text,
   Textarea,
   Select,
+  TextInput,
   UnstyledButton,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
@@ -29,6 +30,8 @@ import {
   IconMapPin,
   IconCheck,
   IconFlag,
+  IconShieldCheck,
+  IconLock,
 } from "@tabler/icons-react";
 import { supabase } from "@/integrations/supabase/client";
 import { logOrderEvent } from "@/lib/orderTracking";
@@ -139,6 +142,9 @@ export function MerchantLiveOrders({
   const [reportNotes, setReportNotes] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [pickupConfirming, setPickupConfirming] = useState(false);
+  const [handoffInput, setHandoffInput] = useState("");
+  const [handoffVerifying, setHandoffVerifying] = useState(false);
+  const [handoffError, setHandoffError] = useState<string | null>(null);
 
   const alertAudioRef = useRef<HTMLAudioElement | null>(null);
   const recentNewOrderIdsRef = useRef<Set<string>>(new Set());
@@ -233,6 +239,7 @@ export function MerchantLiveOrders({
           pickup_code: row.pickup_code ?? null,
           pickup_confirmed_at: row.pickup_confirmed_at ?? null,
           feeder_offer_accepted_at: row.feeder_offer_accepted_at ?? null,
+          feeder_route_started_at: (row as any).feeder_route_started_at ?? null,
           customer_phone: row.customer_phone ?? null,
           driver: null,
           order_items: [],
@@ -284,7 +291,7 @@ export function MerchantLiveOrders({
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id, order_number, customer_name, customer_phone, order_status, created_at, total_cents, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time, driver_id, accepted_driver_id, pickup_code, pickup_confirmed_at, feeder_offer_accepted_at"
+          "id, order_number, customer_name, customer_phone, order_status, created_at, total_cents, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time, driver_id, accepted_driver_id, pickup_code, pickup_confirmed_at, feeder_offer_accepted_at, feeder_route_started_at"
         )
         .eq("restaurant_id", restaurantId)
         .in("order_status", Array.from(ACTIVE_STATUSES))
@@ -606,6 +613,65 @@ export function MerchantLiveOrders({
     }
   };
 
+  const verifyHandoffCode = async (order: LiveOrder) => {
+    const expected = (order.pickup_code || "").trim();
+    const entered = handoffInput.replace(/\s+/g, "").trim();
+    if (!expected) {
+      setHandoffError("This order has no handoff code yet. Refresh and try again.");
+      return;
+    }
+    if (entered.length !== 6 || !/^[0-9]{6}$/.test(entered)) {
+      setHandoffError("Enter the 6-digit code from the Feeder.");
+      return;
+    }
+    if (entered !== expected) {
+      setHandoffError("Code doesn't match. Ask the Feeder to read it again or rescan the QR.");
+      await logOrderEvent({
+        orderId: order.id,
+        eventType: "support_action",
+        actorRole: "merchant",
+        notes: "Merchant entered an incorrect handoff code.",
+        metadata: { entered_code: entered.slice(0, 1) + "***" },
+      });
+      return;
+    }
+    setHandoffVerifying(true);
+    setHandoffError(null);
+    try {
+      const now = new Date().toISOString();
+      const ok = await updateOrder(order.id, {
+        pickup_confirmed_at: now,
+      } as Record<string, unknown>);
+      if (ok) {
+        await logOrderEvent({
+          orderId: order.id,
+          eventType: "support_action",
+          actorRole: "merchant",
+          notes: "Merchant verified handoff code. Feeder identity revealed.",
+          metadata: {
+            verified: true,
+            assigned_driver_id: order.driver_id || order.accepted_driver_id || null,
+            driver_name: order.driver?.full_name || null,
+          },
+        });
+        notifications.show({
+          title: "Handoff code verified",
+          message: "Feeder identity is now revealed. You can hand off the order.",
+          color: "teal",
+        });
+        setHandoffInput("");
+      }
+    } finally {
+      setHandoffVerifying(false);
+    }
+  };
+
+  // Reset the handoff input whenever the selected order changes
+  useEffect(() => {
+    setHandoffInput("");
+    setHandoffError(null);
+  }, [selectedOrderId]);
+
   const submitPickupIssue = async (order: LiveOrder) => {
     if (!reportReason) {
       notifications.show({ title: "Pick a reason", message: "Select a reason for the report", color: "orange" });
@@ -853,16 +919,36 @@ export function MerchantLiveOrders({
                 <Group gap={6} wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
                   <IconCar size={14} color={order.driver_arrived_at ? "#047857" : "#1d4ed8"} />
                   <Box style={{ minWidth: 0 }}>
-                    <Text size="xs" fw={700} lineClamp={1} c={order.driver_arrived_at ? "teal.8" : "blue.8"}>
-                      {order.driver?.full_name || "Feeder assigned"}
-                      {order.driver_arrived_at ? " · Arrived" : " · En route"}
-                    </Text>
-                    {(order.driver?.vehicle_make || order.driver?.license_plate) && (
-                      <Text size="xs" c="dimmed" lineClamp={1}>
-                        {[order.driver?.vehicle_make, order.driver?.vehicle_model].filter(Boolean).join(" ")}
-                        {order.driver?.license_plate ? ` · ${order.driver.license_plate}` : ""}
-                      </Text>
-                    )}
+                    {(() => {
+                      const verified = !!order.pickup_confirmed_at;
+                      const arrived = !!order.driver_arrived_at;
+                      const enRoute = !!(order as any).feeder_route_started_at;
+                      const statusTxt = verified
+                        ? "Handoff verified"
+                        : arrived
+                          ? "At store"
+                          : enRoute
+                            ? "En route"
+                            : "Assigned";
+                      const color = verified || arrived ? "teal.8" : enRoute ? "blue.8" : "gray.7";
+                      // Identity only revealed once handoff code is verified.
+                      const label = verified
+                        ? (order.driver?.full_name || "Feeder")
+                        : "Feeder assigned";
+                      return (
+                        <>
+                          <Text size="xs" fw={700} lineClamp={1} c={color as any}>
+                            {label} · {statusTxt}
+                          </Text>
+                          {verified && (order.driver?.vehicle_make || order.driver?.license_plate) && (
+                            <Text size="xs" c="dimmed" lineClamp={1}>
+                              {[order.driver?.vehicle_make, order.driver?.vehicle_model].filter(Boolean).join(" ")}
+                              {order.driver?.license_plate ? ` · ${order.driver.license_plate}` : ""}
+                            </Text>
+                          )}
+                        </>
+                      );
+                    })()}
                   </Box>
                 </Group>
                 <Stack gap={2} align="flex-end" style={{ flexShrink: 0 }}>
@@ -875,11 +961,6 @@ export function MerchantLiveOrders({
                     <Badge size="sm" color="orange" variant="filled" radius="sm">
                       Spot {order.pickup_parking_spot}
                     </Badge>
-                  )}
-                  {order.pickup_code && (
-                    <Text size="xs" fw={700} ff="monospace" c="dark.6">
-                      Code {order.pickup_code}
-                    </Text>
                   )}
                 </Stack>
               </Group>
@@ -1415,17 +1496,15 @@ export function MerchantLiveOrders({
                           <Text size="sm" fw={700}>{selectedOrder.pickup_parking_spot}</Text>
                         </Group>
                       )}
-                      {selectedOrder.pickup_code && (
+                      {selectedOrder.pickup_confirmed_at && (
                         <Group justify="space-between" align="flex-start">
                           <Box>
                             <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>HANDOFF CODE</Text>
-                            {selectedOrder.pickup_confirmed_at && (
-                              <Text size="xs" c="teal.7" fw={700} mt={2}>Merchant / support verified</Text>
-                            )}
+                            <Text size="xs" c="teal.7" fw={700} mt={2}>Verified</Text>
                           </Box>
                           <Box style={{ textAlign: "right" }}>
-                            <Text size="md" fw={800} ff="monospace" c={selectedOrder.pickup_confirmed_at ? "teal.7" : "orange.7"}>
-                              {selectedOrder.pickup_code}
+                            <Text size="md" fw={800} ff="monospace" c="teal.7">
+                              ✓ {selectedOrder.pickup_code}
                             </Text>
                             {handoffVerifiedTime && (
                               <Text size="xs" c="dimmed" mt={2}>{handoffVerifiedTime}</Text>
@@ -1450,18 +1529,72 @@ export function MerchantLiveOrders({
                         <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>
                           FEEDER
                         </Text>
-                        <Badge
-                          size="sm"
-                          color={selectedOrder.pickup_confirmed_at ? "teal" : selectedOrder.driver_arrived_at ? "teal" : "blue"}
-                          variant="filled"
-                        >
-                          {selectedOrder.pickup_confirmed_at
+                        {(() => {
+                          const verified = !!selectedOrder.pickup_confirmed_at;
+                          const arrived = !!selectedOrder.driver_arrived_at;
+                          const enRoute = !!(selectedOrder as any).feeder_route_started_at;
+                          const txt = verified
                             ? "Handoff verified"
-                            : selectedOrder.driver_arrived_at
+                            : arrived
                               ? "At store"
-                              : "En route"}
-                        </Badge>
+                              : enRoute
+                                ? "En route"
+                                : "Feeder assigned";
+                          const color = verified || arrived ? "teal" : enRoute ? "blue" : "gray";
+                          return (
+                            <Badge size="sm" color={color} variant="filled">{txt}</Badge>
+                          );
+                        })()}
                       </Group>
+                      {!selectedOrder.pickup_confirmed_at ? (
+                        <Stack gap={10}>
+                          <Group gap={8} wrap="nowrap" align="center">
+                            <IconLock size={16} color="#475569" />
+                            <Text size="sm" c="dimmed">
+                              Feeder photo, name, and vehicle details are hidden until you verify the
+                              <b> 6-digit handoff code</b> the Feeder presents (or scan their QR).
+                            </Text>
+                          </Group>
+                          <TextInput
+                            label="Enter Feeder's 6-digit handoff code"
+                            placeholder="••••••"
+                            value={handoffInput}
+                            onChange={(e) => {
+                              const v = e.currentTarget.value.replace(/[^0-9]/g, "").slice(0, 6);
+                              setHandoffInput(v);
+                              setHandoffError(null);
+                            }}
+                            inputMode="numeric"
+                            maxLength={6}
+                            error={handoffError || undefined}
+                            size="md"
+                            styles={{
+                              input: {
+                                fontFamily: "monospace",
+                                fontSize: 22,
+                                letterSpacing: "0.4em",
+                                textAlign: "center",
+                                fontWeight: 700,
+                              },
+                            }}
+                          />
+                          <Button
+                            color="orange"
+                            size="md"
+                            leftSection={<IconShieldCheck size={18} />}
+                            loading={handoffVerifying}
+                            disabled={handoffInput.length !== 6}
+                            onClick={() => void verifyHandoffCode(selectedOrder)}
+                            fullWidth
+                            style={{ fontWeight: 700 }}
+                          >
+                            Verify handoff code
+                          </Button>
+                          <Text size="xs" c="dimmed" ta="center">
+                            Nothing about this order can move forward until the code is verified.
+                          </Text>
+                        </Stack>
+                      ) : (
                       <Group gap={10} wrap="nowrap" align="flex-start">
                         <Box
                           style={{
@@ -1504,6 +1637,7 @@ export function MerchantLiveOrders({
                           )}
                         </Box>
                       </Group>
+                      )}
                       <Stack gap={4} mt={10}>
                         {selectedOrder.feeder_offer_accepted_at && (
                           <Group justify="space-between">
@@ -1657,10 +1791,12 @@ export function MerchantLiveOrders({
                       color="orange"
                       leftSection={<IconCheck size={18} />}
                       loading={pickupConfirming}
+                      disabled={!selectedOrder.pickup_confirmed_at}
                       onClick={() => void confirmMerchantPickup(selectedOrder)}
                       style={{ minWidth: 260, fontWeight: 700 }}
+                      title={!selectedOrder.pickup_confirmed_at ? "Verify the Feeder's handoff code first" : undefined}
                     >
-                      Confirm Feeder pickup
+                      {selectedOrder.pickup_confirmed_at ? "Mark order handed off" : "Verify code first"}
                     </Button>
                   </Group>
                 )}

@@ -29,6 +29,7 @@ export type LiveOrder = {
   pickup_code?: string | null;
   pickup_confirmed_at?: string | null;
   feeder_offer_accepted_at?: string | null;
+  feeder_route_started_at?: string | null;
   customer_phone?: string | null;
   driver?: LiveOrderDriver | null;
   order_items: Array<{

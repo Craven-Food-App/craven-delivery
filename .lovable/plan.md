@@ -1,101 +1,47 @@
+# Two-stage Feeder Status + Verified Handoff Reveal
 
+Right now, the merchant sees "En route" the instant a Feeder accepts an order, the handoff code is visible to the merchant before anything is verified, and the Feeder's photo / car details are always visible. This plan introduces:
 
-# Feeder Tier System -- Full Integration Plan
-
-## Problem
-
-The tier system spec is defined in `ratingHelpers.ts` but **none of the mobile/feeder UI components actually use it**. There are 4 separate ratings/score components, each with their own hardcoded or mock data, and none query the real rolling metrics from `driver_profiles`.
-
-### Current State (Broken)
-
-| Component | Data Source | Tier Logic |
-|---|---|---|
-| `FeederRatingsTab.tsx` (active in feeder app) | Mock data (all zeros) | None |
-| `DriverRatingsPage.tsx` | Hardcoded (score=95) | Wrong reward system |
-| `RatingsSection.tsx` | Real DB queries | Correct but unused |
-| `score.tsx` (feeder page) | `driver_scores` table | Wrong (0-100 scale) |
-| `ratingHelpers.ts` | N/A (utility) | Correct spec constants |
-
-### Database (Already Exists)
-
-`driver_profiles` already has: `rolling_rating`, `rolling_completion_rate`, `rolling_on_time_rate`, `rolling_cancel_rate`, `rolling_deliveries`, `rating_tier`
-
-`tier_history` table already exists with `feeder_id`, `old_tier`, `new_tier`, `reason`, `created_at`
+1. A real **Start Route** action so the merchant first sees "Feeder assigned" and only flips to "En route" when the Feeder taps Start Route.
+2. A generated **6-digit handoff code** shown right above the QR in the Feeder app, scannable (QR) **or** typed/entered by the merchant.
+3. A **handoff verification gate** — nothing in the pickup flow proceeds until the code is scanned/entered by the merchant.
+4. After verification, the **Feeder photo, name, and vehicle details are revealed** to the merchant for visual confirmation.
 
 ---
 
-## Plan
+## What changes
 
-### 1. Rewrite `FeederRatingsTab.tsx` to Use Real Data + Tier Spec
+### Database (`orders` table)
+- Add `feeder_route_started_at timestamptz` — set when Feeder taps Start Route.
+- Ensure `pickup_code` is a 6-digit numeric string (generated automatically when an order moves to `confirmed`/`preparing` if missing).
+- Ensure `pickup_confirmed_at` represents merchant verification (already exists, reused).
 
-Replace the mock data hook with a real Supabase query that pulls from `driver_profiles`:
-- `rolling_rating`, `rolling_completion_rate`, `rolling_on_time_rate`, `rolling_cancel_rate`, `rolling_deliveries`, `rating_tier`
+### Feeder app — `CravenDeliveryFlow` + `DeliveryFlowStepTwo`
+- Step One ("Head to merchant") gets an explicit **Start Route** slide/button. Until it's tapped, status stays "assigned"; tapping it:
+  - writes `feeder_route_started_at`
+  - logs `en_route_to_store` forensic event
+  - advances UI to navigation view
+- Step Two ("At merchant") shows the **6-digit code above the QR** with copy + a "Show to merchant or let them scan" caption. Items checklist + Start Hand-off Check stays disabled until `pickup_confirmed_at` is set.
 
-Use `evaluateFeederTier()` and `getNextTier()` from `ratingHelpers.ts` to determine the current tier and next tier requirements.
+### Merchant portal — `MerchantLiveOrders`
+- Feeder card / modal badge logic:
+  - has driver, no `feeder_route_started_at` → **"Feeder assigned"** (gray/blue)
+  - has `feeder_route_started_at`, no `driver_arrived_at` → **"En route"**
+  - has `driver_arrived_at`, no `pickup_confirmed_at` → **"At store"**
+  - has `pickup_confirmed_at` → **"Handoff verified"**
+- Replace the always-visible Feeder block until handoff verified with a **"Verify handoff" panel**:
+  - 6-digit code input + "Scan QR" button (camera modal using existing `DeliveryCamera`/`html5-qrcode` if present, else manual entry only)
+  - On match, writes `pickup_confirmed_at = now()`, logs `support_action` w/ `merchant_handoff_verified`, and the Feeder identity card (photo, name, make/model/plate) replaces the input panel.
+- "Confirm Feeder pickup" CTA stays, but is only enabled after handoff verified.
 
-Display:
-- Tier badge (color-coded per spec: white/gold gradient/silver-white/deep blue/black+orange)
-- Current rating with stars
-- Performance Pulse metrics (On-Time, Completion, Cancellation rates from rolling data)
-- Rating breakdown (keep existing star breakdown UI)
-- Next tier progress section showing requirements vs current values
-- Tier benefits list matching the spec exactly
-
-### 2. Update `score.tsx` (Feeder Score Page)
-
-- Replace the `getTier` function (which uses a 0-100 score scale) with `evaluateFeederTier()` from `ratingHelpers.ts`
-- Query `driver_profiles` rolling metrics instead of `driver_scores`
-- Add cancellation rate display (missing from current UI)
-- Add next-tier progress section with deliveries remaining, rating required, etc.
-
-### 3. Consolidate: Remove `DriverRatingsPage.tsx` Usage
-
-- The feeder app already uses `FeederRatingsTab` -- confirm `DriverRatingsPage` is not referenced anywhere active and leave it as-is (no breakage risk)
-
-### 4. Add Tier Badge to Feeder Account Page and Dashboard
-
-- On the account page header, show the current tier badge (icon + name + color)
-- On the main dashboard (home tab), show a small tier indicator near the driver's name/status
-
-### 5. Ensure `RatingsSection.tsx` Stays in Sync
-
-- This component already has correct logic; add the missing `cancellation_rate` metric and ensure it imports thresholds from `ratingHelpers.ts` instead of duplicating them inline
+### Forensics
+- New tracking events: `route_started`, `handoff_code_verified`, `handoff_code_failed` (logged via existing `logOrderEvent`).
 
 ---
 
-## Technical Details
+## Out of scope (ask if you want it)
+- Native QR scanner for merchant tablet beyond camera-based decode (uses `BarcodeDetector` API w/ manual fallback).
+- Driver identity reveal to the customer (this plan reveals it only to merchant).
+- Changing how `pickup_code` is generated for already-existing orders mid-flight (a one-time backfill can be added).
 
-### Shared Hook: `useFeederTier`
-
-Create a reusable hook that all components can share:
-
-```typescript
-// src/hooks/useFeederTier.ts
-function useFeederTier(userId: string) {
-  // Query driver_profiles for rolling metrics
-  // Call evaluateFeederTier() from ratingHelpers
-  // Return: { tier, metrics, nextTier, loading }
-}
-```
-
-### Files to Modify
-
-1. **`src/hooks/useFeederTier.ts`** -- New shared hook (or update existing `useDriverTier.ts`)
-2. **`src/components/mobile/FeederRatingsTab.tsx`** -- Replace mock data with real queries + full tier UI
-3. **`src/pages/feeder/score.tsx`** -- Fix tier evaluation to use spec thresholds
-4. **`src/components/mobile/FeederAccountPage.tsx`** -- Add tier badge display
-5. **`src/components/mobile/RatingsSection.tsx`** -- Add cancellation rate, import from ratingHelpers
-6. **`src/components/mobile/MobileDriverDashboard.tsx`** -- Add tier indicator to home tab header
-
-### Badge Colors (from spec)
-
-- Feeder: White background, gray text, gray border
-- Gold: Gold gradient, dark gold text
-- Platinum: Silver-white gradient, gray text
-- Diamond: Deep blue gradient, white text
-- Ultimate: Black background, orange (#E8622A) text/border
-
-### No Database Changes Needed
-
-All required columns and tables already exist in the schema.
-
+Ready to build — confirm and I'll ship it.

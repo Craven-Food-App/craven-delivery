@@ -4,7 +4,8 @@
  */
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Box } from '@mantine/core';
-import { IconMapPin, IconNavigation, IconRefresh } from '@tabler/icons-react';
+import { IconMapPin, IconNavigation, IconRefresh, IconShieldCheck, IconShieldLock } from '@tabler/icons-react';
+import QRCode from 'qrcode';
 import { StepOneMap } from './StepOneMap';
 
 const STEP_TWO_CSS = `
@@ -284,6 +285,10 @@ export interface DeliveryFlowStepTwoProps {
   cleanPaySlot?: React.ReactNode;
   /** Refresh order status from the database (re-pulls items + merchant status). */
   onRefreshStatus?: () => Promise<void> | void;
+  /** 6-digit handoff code shown to the merchant; required for verification. */
+  handoffCode?: string | null;
+  /** True once the merchant has entered/scanned the code. */
+  handoffVerified?: boolean;
 }
 
 export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
@@ -304,10 +309,21 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
   batchRouteStopCount,
   cleanPaySlot,
   onRefreshStatus,
+  handoffCode,
+  handoffVerified,
 }) => {
   const [sheetTranslatePct, setSheetTranslatePct] = useState(SNAP_HALF);
   const [dragging, setDragging] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!handoffCode) { setQrDataUrl(null); return; }
+    QRCode.toDataURL(`craven-handoff:${handoffCode}`, { margin: 1, width: 220 })
+      .then((url) => { if (!cancelled) setQrDataUrl(url); })
+      .catch(() => { if (!cancelled) setQrDataUrl(null); });
+    return () => { cancelled = true; };
+  }, [handoffCode]);
   const handleRefresh = useCallback(async () => {
     if (!onRefreshStatus || refreshing) return;
     setRefreshing(true);
@@ -517,6 +533,100 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
             </div>
 
             <div className="dfl-step-two-items-block">
+              {/* Handoff code (hidden in test mode) */}
+              {handoffCode && (
+                <div
+                  style={{
+                    margin: '0 0 14px',
+                    padding: '14px 14px 16px',
+                    borderRadius: 14,
+                    border: handoffVerified
+                      ? '1.5px solid #16a34a'
+                      : '1.5px solid #f26419',
+                    background: handoffVerified
+                      ? 'linear-gradient(180deg,#ecfdf5,#ffffff)'
+                      : 'linear-gradient(180deg,#fff7ed,#ffffff)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '4px 10px',
+                      borderRadius: 999,
+                      background: handoffVerified ? '#dcfce7' : '#ffedd5',
+                      color: handoffVerified ? '#15803d' : '#c2410c',
+                      fontSize: 10,
+                      letterSpacing: '0.14em',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      fontFamily: 'DM Mono, monospace',
+                    }}
+                  >
+                    {handoffVerified ? (
+                      <>
+                        <IconShieldCheck size={12} /> Handoff Code Verified
+                      </>
+                    ) : (
+                      <>
+                        <IconShieldLock size={12} /> Handoff Code
+                      </>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: 'DM Mono, monospace',
+                      fontSize: 38,
+                      letterSpacing: '0.32em',
+                      fontWeight: 700,
+                      color: handoffVerified ? '#15803d' : '#1c1c1e',
+                      marginTop: 10,
+                      textIndent: '0.32em',
+                    }}
+                  >
+                    {handoffCode}
+                  </div>
+                  {!handoffVerified && (
+                    <>
+                      <div style={{ fontSize: 12, color: 'rgba(28,28,30,0.65)', marginTop: 6 }}>
+                        Show this code to the merchant — or let them scan the QR.
+                      </div>
+                      {qrDataUrl && (
+                        <img
+                          src={qrDataUrl}
+                          alt="Handoff QR"
+                          style={{
+                            width: 168,
+                            height: 168,
+                            display: 'block',
+                            margin: '12px auto 4px',
+                            borderRadius: 10,
+                            border: '1px solid rgba(28,28,30,0.08)',
+                            background: '#fff',
+                            padding: 6,
+                          }}
+                        />
+                      )}
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: 'rgba(28,28,30,0.55)',
+                          marginTop: 6,
+                        }}
+                      >
+                        Pickup is locked until the merchant verifies this code.
+                      </div>
+                    </>
+                  )}
+                  {handoffVerified && (
+                    <div style={{ fontSize: 12, color: '#15803d', marginTop: 6, fontWeight: 600 }}>
+                      The merchant confirmed your identity. Finish the pickup below.
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="dfl-step-two-items-header">
                 <div className="dfl-step-two-items-title">
                   Order Items
@@ -566,16 +676,36 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
           </div>
 
           <div className="dfl-step-two-footer">
-            <button
-              type="button"
-              className={`dfl-step-two-cta ${allChecked ? 'active' : ''}`}
-              onClick={allChecked ? onConfirmPickup : undefined}
-              data-testid="verify-pickup-button"
-            >
-              <span>{allChecked ? 'Confirm Pickup' : 'Confirm items first'}</span>
-              <div className="dfl-step-two-cta-arrow" />
-            </button>
-            <div className={`dfl-step-two-cta-hint ${allChecked ? 'hidden' : ''}`}>CHECK ALL ITEMS TO CONTINUE</div>
+            {(() => {
+              const codeRequired = !!handoffCode;
+              const canProceed = allChecked && (!codeRequired || !!handoffVerified);
+              let label = 'Confirm Pickup';
+              let hint: string | null = null;
+              if (!allChecked) {
+                label = 'Confirm items first';
+                hint = 'CHECK ALL ITEMS TO CONTINUE';
+              } else if (codeRequired && !handoffVerified) {
+                label = 'Waiting on merchant verification';
+                hint = 'MERCHANT MUST VERIFY THE 6-DIGIT CODE';
+              }
+              return (
+                <>
+                  <button
+                    type="button"
+                    className={`dfl-step-two-cta ${canProceed ? 'active' : ''}`}
+                    onClick={canProceed ? onConfirmPickup : undefined}
+                    data-testid="verify-pickup-button"
+                    disabled={!canProceed}
+                  >
+                    <span>{label}</span>
+                    <div className="dfl-step-two-cta-arrow" />
+                  </button>
+                  <div className={`dfl-step-two-cta-hint ${canProceed ? 'hidden' : ''}`}>
+                    {hint}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
