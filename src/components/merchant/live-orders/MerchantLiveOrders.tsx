@@ -39,7 +39,7 @@ import {
 } from "./liveOrderUtils";
 import "./merchant-live-orders.css";
 
-const ACTIVE_STATUSES = new Set(["pending", "confirmed", "preparing", "ready"]);
+const ACTIVE_STATUSES = new Set(["pending", "confirmed", "preparing", "ready", "picked_up", "out_for_delivery"]);
 
 const COLUMN_META: Record<
   KanbanColumn,
@@ -86,7 +86,7 @@ const COLUMN_META: Record<
     headerBg: "#6b2150",
     headerFg: "#ffffff",
     actionLabel: "Mark picked up",
-    statusLabel: "Ready",
+    statusLabel: "Ready / handoff",
   },
 };
 
@@ -558,17 +558,23 @@ export function MerchantLiveOrders({
         timeCaption = "In kitchen";
       }
     } else if (column === "ready") {
-      timeLabel = order.driver_arrived_at
-        ? `${minutesSince(order.driver_arrived_at)}m`
-        : formatTime(order.estimated_delivery_time || order.created_at);
-      timeCaption = order.driver_arrived_at ? "Driver waiting" : "Pickup";
+      timeLabel = order.pickup_confirmed_at
+        ? `${minutesSince(order.pickup_confirmed_at)}m`
+        : order.driver_arrived_at
+          ? `${minutesSince(order.driver_arrived_at)}m`
+          : formatTime(order.estimated_delivery_time || order.created_at);
+      timeCaption = order.pickup_confirmed_at
+        ? "Handoff done"
+        : order.driver_arrived_at
+          ? "Driver waiting"
+          : "Pickup";
     }
 
     const itemsPreview = order.order_items.slice(0, 4);
     const moreCount = Math.max(0, order.order_items.length - itemsPreview.length);
 
     const headerBg = behind ? "#b42318" : meta.headerBg;
-    const statusText = behind ? "Behind" : meta.statusLabel;
+    const statusText = behind ? "Behind" : order.pickup_confirmed_at ? "Handoff verified" : meta.statusLabel;
 
     const handlePrimaryAction = async (e: MouseEvent) => {
       e.stopPropagation();
@@ -707,6 +713,11 @@ export function MerchantLiveOrders({
                   </Box>
                 </Group>
                 <Stack gap={2} align="flex-end" style={{ flexShrink: 0 }}>
+                  {order.pickup_confirmed_at && (
+                    <Badge size="sm" color="teal" variant="filled" radius="sm">
+                      Code verified
+                    </Badge>
+                  )}
                   {order.pickup_parking_spot && (
                     <Badge size="sm" color="orange" variant="filled" radius="sm">
                       Spot {order.pickup_parking_spot}
@@ -941,8 +952,7 @@ export function MerchantLiveOrders({
       >
         {selectedOrder && (() => {
           const status = (selectedOrder.order_status || "pending") as string;
-          const column: KanbanColumn =
-            status === "pending" ? "new" : status === "ready" ? "ready" : "preparing";
+          const column: KanbanColumn = getKanbanColumn(status) ?? "preparing";
           const meta = COLUMN_META[column];
           const behind = isRunningBehind(selectedOrder);
           const headerBg = behind ? "#b91c1c" : meta.headerBg;
@@ -959,6 +969,9 @@ export function MerchantLiveOrders({
           const acceptedTime = selectedOrder.accepted_at ? formatTime(selectedOrder.accepted_at) : null;
           const driverArrivedTime = selectedOrder.driver_arrived_at
             ? formatTime(selectedOrder.driver_arrived_at)
+            : null;
+          const handoffVerifiedTime = selectedOrder.pickup_confirmed_at
+            ? formatTime(selectedOrder.pickup_confirmed_at)
             : null;
           const ageMin = minutesSince(selectedOrder.created_at);
           const subtotalCents = selectedOrder.order_items.reduce(
@@ -1011,7 +1024,11 @@ export function MerchantLiveOrders({
                 </UnstyledButton>
                 <Box style={{ flex: 1, minWidth: 0 }}>
                   <Text size="xs" fw={600} style={{ opacity: 0.9, letterSpacing: "0.04em" }}>
-                    {behind ? "BEHIND" : meta.statusLabel.toUpperCase()} · #{orderNo}
+                    {behind
+                      ? "BEHIND"
+                      : selectedOrder.pickup_confirmed_at
+                        ? "HANDOFF VERIFIED"
+                        : meta.statusLabel.toUpperCase()} · #{orderNo}
                   </Text>
                   <Text fw={700} size="xl" style={{ lineHeight: 1.15, marginTop: 2 }}>
                     {selectedOrder.customer_name || "Customer"}
@@ -1204,6 +1221,12 @@ export function MerchantLiveOrders({
                           <Text size="sm" fw={700} c="orange.7">{driverArrivedTime}</Text>
                         </Group>
                       )}
+                      {handoffVerifiedTime && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="teal.7">Handoff code verified</Text>
+                          <Text size="sm" fw={700} c="teal.7">{handoffVerifiedTime}</Text>
+                        </Group>
+                      )}
                     </Stack>
                   </Box>
 
@@ -1221,9 +1244,21 @@ export function MerchantLiveOrders({
                         </Group>
                       )}
                       {selectedOrder.pickup_code && (
-                        <Group justify="space-between">
-                          <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>HANDOFF CODE</Text>
-                          <Text size="md" fw={800} ff="monospace" c="orange.7">{selectedOrder.pickup_code}</Text>
+                        <Group justify="space-between" align="flex-start">
+                          <Box>
+                            <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>HANDOFF CODE</Text>
+                            {selectedOrder.pickup_confirmed_at && (
+                              <Text size="xs" c="teal.7" fw={700} mt={2}>Merchant / support verified</Text>
+                            )}
+                          </Box>
+                          <Box style={{ textAlign: "right" }}>
+                            <Text size="md" fw={800} ff="monospace" c={selectedOrder.pickup_confirmed_at ? "teal.7" : "orange.7"}>
+                              {selectedOrder.pickup_code}
+                            </Text>
+                            {handoffVerifiedTime && (
+                              <Text size="xs" c="dimmed" mt={2}>{handoffVerifiedTime}</Text>
+                            )}
+                          </Box>
                         </Group>
                       )}
                     </Stack>
@@ -1245,11 +1280,11 @@ export function MerchantLiveOrders({
                         </Text>
                         <Badge
                           size="sm"
-                          color={selectedOrder.driver_arrived_at ? "teal" : selectedOrder.pickup_confirmed_at ? "gray" : "blue"}
+                          color={selectedOrder.pickup_confirmed_at ? "teal" : selectedOrder.driver_arrived_at ? "teal" : "blue"}
                           variant="filled"
                         >
                           {selectedOrder.pickup_confirmed_at
-                            ? "Picked up"
+                            ? "Handoff verified"
                             : selectedOrder.driver_arrived_at
                               ? "At store"
                               : "En route"}
@@ -1324,9 +1359,12 @@ export function MerchantLiveOrders({
                           </Group>
                         )}
                         {selectedOrder.pickup_confirmed_at && (
-                          <Group justify="space-between">
-                            <Text size="xs" c="dimmed">Picked up</Text>
-                            <Text size="xs" fw={600}>{formatTime(selectedOrder.pickup_confirmed_at)}</Text>
+                          <Group justify="space-between" align="flex-start">
+                            <Box>
+                              <Text size="xs" c="dimmed">Handoff to feeder</Text>
+                              <Text size="xs" c="dimmed">Merchant / customer service scanned code</Text>
+                            </Box>
+                            <Text size="xs" fw={700} c="teal.7">{formatTime(selectedOrder.pickup_confirmed_at)}</Text>
                           </Group>
                         )}
                       </Stack>
