@@ -18,6 +18,18 @@ import { speakDeliveryInstructions } from './ActiveFeedingMenu';
 import SlideToConfirm from '@/components/SlideToConfirm';
 import { getStopPickupKey } from '@/lib/deliveryRouteKeys';
 import { setOrderDriverArrivedAtStore } from '@/lib/orderDriverPresence';
+import {
+  logOrderEvent,
+  logOrderEventWithPosition,
+  getCurrentPosition,
+  recordBreadcrumb,
+  haversineMeters,
+  pointToPolylineMeters,
+  openRouteDeviation,
+  closeRouteDeviation,
+  DELIVERY_GEOFENCE_RADIUS_M,
+  ROUTE_DEVIATION_THRESHOLD_M,
+} from '@/lib/orderTracking';
 import FeederCleanPayCard from '@/components/mobile/FeederCleanPayCard';
 import {
   getFeederCleanPaySummary,
@@ -553,6 +565,120 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     }
   }, [status]);
 
+  // -----------------------------------------------------------------
+  // GPS BREADCRUMBS + OFF-ROUTE DETECTION (forensic audit trail)
+  // -----------------------------------------------------------------
+  // Samples driver GPS every ~15s while a delivery is live, writes to
+  // order_location_breadcrumbs, and opens/closes an
+  // order_route_deviations record whenever the driver drifts beyond
+  // ROUTE_DEVIATION_THRESHOLD_M of the planned polyline.
+  useEffect(() => {
+    const orderId = orderDetails?.order_id || orderDetails?.id;
+    const isTest = orderDetails?.isTestOrder || false;
+    if (!orderId || isTest) return;
+    if (
+      status !== DRIVER_STATUS.TO_STORE &&
+      status !== DRIVER_STATUS.AT_STORE &&
+      status !== DRIVER_STATUS.TO_CUSTOMER &&
+      status !== DRIVER_STATUS.AT_CUSTOMER
+    ) return;
+
+    let cancelled = false;
+    let deviationId: string | null = null;
+    let deviationMaxDistance = 0;
+    let userId: string | null = null;
+
+    // Try to decode the planned route polyline (Mapbox-style coordinates: [lng,lat][])
+    const routeGeometry = orderDetails?.route_geometry;
+    const coords: Array<[number, number]> | null =
+      Array.isArray(routeGeometry?.coordinates) ? routeGeometry.coordinates :
+      Array.isArray(routeGeometry) ? routeGeometry : null;
+
+    const dropLat = orderDetails?.dropoff_address?.latitude ?? orderDetails?.dropoff_lat;
+    const dropLng = orderDetails?.dropoff_address?.longitude ?? orderDetails?.dropoff_lng;
+
+    const tick = async () => {
+      if (cancelled) return;
+      if (!userId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        userId = user?.id ?? null;
+        if (!userId) return;
+      }
+      const pos = await getCurrentPosition(6000);
+      if (cancelled || !pos) return;
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      const distFromRoute = pointToPolylineMeters(lat, lng, coords);
+      const distToDropoff =
+        typeof dropLat === 'number' && typeof dropLng === 'number'
+          ? haversineMeters(lat, lng, dropLat, dropLng)
+          : null;
+
+      const isOffRoute =
+        status === DRIVER_STATUS.TO_CUSTOMER &&
+        distFromRoute != null &&
+        distFromRoute > ROUTE_DEVIATION_THRESHOLD_M;
+
+      await recordBreadcrumb({
+        orderId,
+        driverId: userId,
+        lat,
+        lng,
+        accuracyM: pos.coords.accuracy,
+        heading: pos.coords.heading ?? null,
+        speedMps: pos.coords.speed ?? null,
+        distanceFromRouteM: distFromRoute,
+        distanceToDropoffM: distToDropoff,
+        isOffRoute,
+        stage: status,
+      });
+
+      if (isOffRoute && !deviationId) {
+        deviationId = await openRouteDeviation({
+          orderId,
+          driverId: userId,
+          lat,
+          lng,
+          distanceFromRouteM: distFromRoute!,
+        });
+        deviationMaxDistance = distFromRoute!;
+        await logOrderEvent({
+          orderId,
+          eventType: 'off_route_detected',
+          lat, lng,
+          accuracyM: pos.coords.accuracy,
+          distanceToTargetM: distFromRoute,
+          notes: `Feeder is ${Math.round(distFromRoute!)}m off the planned route.`,
+        });
+      } else if (isOffRoute && deviationId) {
+        if (distFromRoute! > deviationMaxDistance) deviationMaxDistance = distFromRoute!;
+      } else if (!isOffRoute && deviationId) {
+        await closeRouteDeviation({
+          deviationId,
+          lat,
+          lng,
+          maxDistanceM: deviationMaxDistance,
+        });
+        await logOrderEvent({
+          orderId,
+          eventType: 'off_route_resolved',
+          lat, lng,
+          notes: `Feeder rejoined route (peak deviation ${Math.round(deviationMaxDistance)}m).`,
+        });
+        deviationId = null;
+        deviationMaxDistance = 0;
+      }
+    };
+
+    void tick();
+    const interval = window.setInterval(tick, 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [orderDetails?.order_id, orderDetails?.id, status, orderDetails?.isTestOrder]);
+
   // Animate total earnings counter - must be before any early returns
   // Only run once when status changes to COMPLETE
   useEffect(() => {
@@ -896,6 +1022,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       if (error) {
         console.warn('Could not record driver arrival (merchant may still use manual status):', error);
       }
+      await logOrderEventWithPosition({
+        orderId: orderDetails.order_id,
+        eventType: 'arrived_at_store',
+        notes: 'Feeder marked arrival at merchant.',
+      });
     }
     setStatus(DRIVER_STATUS.AT_STORE);
     await updateOrderStatus('at_restaurant');
@@ -911,6 +1042,29 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     const uploadedUrl = await uploadPhoto(photoUrl, 'pickup');
     if (uploadedUrl) {
       setPickupPhotoUrl(uploadedUrl);
+      if (orderDetails?.order_id) {
+        const pos = await getCurrentPosition();
+        await logOrderEvent({
+          orderId: orderDetails.order_id,
+          eventType: 'pickup_photo_captured',
+          lat: pos?.coords.latitude ?? null,
+          lng: pos?.coords.longitude ?? null,
+          accuracyM: pos?.coords.accuracy ?? null,
+          photoUrl: uploadedUrl,
+          notes: 'Pickup proof photo captured at merchant.',
+        });
+        try {
+          await (supabase as any)
+            .from('orders')
+            .update({
+              pickup_photo_lat: pos?.coords.latitude ?? null,
+              pickup_photo_lng: pos?.coords.longitude ?? null,
+            })
+            .eq('id', orderDetails.order_id);
+        } catch (err) {
+          console.warn('Could not stamp pickup photo geo:', err);
+        }
+      }
       setShowCamera(false);
       onCameraStateChange?.(false);
       
@@ -924,6 +1078,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         if (orderDetails.order_id) {
           const sync = await syncFeederCleanPayAdjustmentAtPickup(orderDetails.order_id);
           if (!sync.ok) console.warn('syncFeederCleanPayAdjustmentAtPickup', sync.error);
+          await logOrderEventWithPosition({
+            orderId: orderDetails.order_id,
+            eventType: 'order_picked_up',
+            notes: 'Order handed off to feeder. En route to customer.',
+          });
         }
         setStatus(DRIVER_STATUS.TO_CUSTOMER);
         await updateOrderStatus('picked_up');
@@ -949,6 +1108,13 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     setTimeout(async () => {
       setStatus(DRIVER_STATUS.AT_CUSTOMER);
       await updateOrderStatus('at_customer');
+      if (orderDetails?.order_id) {
+        await logOrderEventWithPosition({
+          orderId: orderDetails.order_id,
+          eventType: 'arrived_at_customer',
+          notes: 'Feeder marked arrival at customer.',
+        });
+      }
       
       // Read delivery instructions out loud if enabled
       if (currentOrder.customer?.deliveryNotes) {
@@ -971,15 +1137,65 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const handleStartDeliveryVerification = () => {
     const orderKey = orderDetails?.order_id || orderDetails?.id;
     const seenKey = orderKey ? `craven:delivery-photo-guide:${orderKey}` : null;
-    if (seenKey) {
-      try {
-        if (localStorage.getItem(seenKey) === '1') {
-          openDeliveryCameraDirect();
-          return;
+    void (async () => {
+      // ---- Dropoff geofence enforcement ----
+      const dropLat = orderDetails?.dropoff_address?.latitude ?? orderDetails?.dropoff_lat;
+      const dropLng = orderDetails?.dropoff_address?.longitude ?? orderDetails?.dropoff_lng;
+      const orderId = orderDetails?.order_id || orderDetails?.id;
+      if (orderId && typeof dropLat === 'number' && typeof dropLng === 'number') {
+        const pos = await getCurrentPosition();
+        if (pos) {
+          const distance = haversineMeters(
+            pos.coords.latitude,
+            pos.coords.longitude,
+            dropLat,
+            dropLng,
+          );
+          if (distance > DELIVERY_GEOFENCE_RADIUS_M) {
+            await logOrderEvent({
+              orderId,
+              eventType: 'geofence_blocked',
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracyM: pos.coords.accuracy,
+              distanceToTargetM: distance,
+              notes: `Driver is ${Math.round(distance)}m from drop-off (max ${DELIVERY_GEOFENCE_RADIUS_M}m).`,
+            });
+            const proceed = window.confirm(
+              `You appear to be ${Math.round(distance)} meters away from the drop-off location. ` +
+              `Crave'N requires you to be at the customer's address to complete the delivery.\n\n` +
+              `Are you sure you are at the right place? This will be logged for review.`,
+            );
+            if (!proceed) {
+              notifications.show({
+                color: 'orange',
+                title: 'Move closer to the drop-off',
+                message: 'Please navigate to the customer location before completing the delivery.',
+              });
+              return;
+            }
+            await logOrderEvent({
+              orderId,
+              eventType: 'geofence_override',
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracyM: pos.coords.accuracy,
+              distanceToTargetM: distance,
+              notes: 'Feeder confirmed delivery despite being outside the geofence.',
+            });
+          }
         }
-      } catch {}
-    }
-    setShowDeliveryPhotoGuide(true);
+      }
+      if (seenKey) {
+        try {
+          if (localStorage.getItem(seenKey) === '1') {
+            openDeliveryCameraDirect();
+            return;
+          }
+        } catch {}
+      }
+      setShowDeliveryPhotoGuide(true);
+    })();
   };
   
   const handleConfirmDeliveryPhoto = async (photoUrl: string) => {
@@ -988,6 +1204,30 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       setDeliveryPhotoUrl(uploadedUrl);
       
       if (orderDetails.order_id) {
+        const pos = await getCurrentPosition();
+        await logOrderEvent({
+          orderId: orderDetails.order_id,
+          eventType: 'delivery_photo_captured',
+          lat: pos?.coords.latitude ?? null,
+          lng: pos?.coords.longitude ?? null,
+          accuracyM: pos?.coords.accuracy ?? null,
+          photoUrl: uploadedUrl,
+          notes: 'Delivery proof photo captured at drop-off.',
+        });
+        try {
+          await (supabase as any)
+            .from('orders')
+            .update({
+              delivery_photo_url: uploadedUrl,
+              delivery_photo_timestamp: new Date().toISOString(),
+              delivery_photo_lat: pos?.coords.latitude ?? null,
+              delivery_photo_lng: pos?.coords.longitude ?? null,
+              delivered_at: new Date().toISOString(),
+            })
+            .eq('id', orderDetails.order_id);
+        } catch (err) {
+          console.warn('Could not stamp delivery proof geo:', err);
+        }
         try {
           const { data: { user } } = await supabase.auth.getUser();
           await supabase.functions.invoke('finalize-delivery', {
@@ -997,6 +1237,12 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               pickupPhotoUrl: pickupPhotoUrl,
               deliveryPhotoUrl: uploadedUrl,
             }
+          });
+          await logOrderEvent({
+            orderId: orderDetails.order_id,
+            eventType: 'order_delivered',
+            photoUrl: uploadedUrl,
+            notes: 'Order delivered and finalized.',
           });
         } catch (error) {
           console.error('Error finalizing delivery:', error);

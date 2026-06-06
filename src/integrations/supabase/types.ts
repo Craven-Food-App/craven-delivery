@@ -21925,6 +21925,76 @@ export type Database = {
           },
         ]
       }
+      order_location_breadcrumbs: {
+        Row: {
+          accuracy_m: number | null
+          distance_from_route_m: number | null
+          distance_to_dropoff_m: number | null
+          driver_id: string
+          heading: number | null
+          id: string
+          is_off_route: boolean | null
+          lat: number
+          lng: number
+          order_id: string
+          recorded_at: string
+          speed_mps: number | null
+          stage: string | null
+        }
+        Insert: {
+          accuracy_m?: number | null
+          distance_from_route_m?: number | null
+          distance_to_dropoff_m?: number | null
+          driver_id: string
+          heading?: number | null
+          id?: string
+          is_off_route?: boolean | null
+          lat: number
+          lng: number
+          order_id: string
+          recorded_at?: string
+          speed_mps?: number | null
+          stage?: string | null
+        }
+        Update: {
+          accuracy_m?: number | null
+          distance_from_route_m?: number | null
+          distance_to_dropoff_m?: number | null
+          driver_id?: string
+          heading?: number | null
+          id?: string
+          is_off_route?: boolean | null
+          lat?: number
+          lng?: number
+          order_id?: string
+          recorded_at?: string
+          speed_mps?: number | null
+          stage?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_location_breadcrumbs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_location_breadcrumbs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_location_breadcrumbs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
+          },
+        ]
+      }
       order_notifications: {
         Row: {
           created_at: string
@@ -21957,6 +22027,76 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      order_route_deviations: {
+        Row: {
+          created_at: string
+          driver_id: string
+          end_lat: number | null
+          end_lng: number | null
+          ended_at: string | null
+          id: string
+          max_distance_from_route_m: number | null
+          notes: string | null
+          order_id: string
+          resolved: boolean | null
+          start_lat: number | null
+          start_lng: number | null
+          started_at: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          end_lat?: number | null
+          end_lng?: number | null
+          ended_at?: string | null
+          id?: string
+          max_distance_from_route_m?: number | null
+          notes?: string | null
+          order_id: string
+          resolved?: boolean | null
+          start_lat?: number | null
+          start_lng?: number | null
+          started_at?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          end_lat?: number | null
+          end_lng?: number | null
+          ended_at?: string | null
+          id?: string
+          max_distance_from_route_m?: number | null
+          notes?: string | null
+          order_id?: string
+          resolved?: boolean | null
+          start_lat?: number | null
+          start_lng?: number | null
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_route_deviations_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_route_deviations_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_route_deviations_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
+          },
+        ]
       }
       order_support_messages: {
         Row: {
@@ -22087,6 +22227,88 @@ export type Database = {
           },
         ]
       }
+      order_tracking_events: {
+        Row: {
+          accuracy_m: number | null
+          actor_role: string | null
+          actor_user_id: string | null
+          created_at: string
+          distance_to_target_m: number | null
+          driver_id: string | null
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          metadata: Json | null
+          notes: string | null
+          occurred_at: string
+          order_id: string
+          photo_url: string | null
+          speed_mps: number | null
+        }
+        Insert: {
+          accuracy_m?: number | null
+          actor_role?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          distance_to_target_m?: number | null
+          driver_id?: string | null
+          event_type: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          metadata?: Json | null
+          notes?: string | null
+          occurred_at?: string
+          order_id: string
+          photo_url?: string | null
+          speed_mps?: number | null
+        }
+        Update: {
+          accuracy_m?: number | null
+          actor_role?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          distance_to_target_m?: number | null
+          driver_id?: string | null
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          metadata?: Json | null
+          notes?: string | null
+          occurred_at?: string
+          order_id?: string
+          photo_url?: string | null
+          speed_mps?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_tracking_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_tracking_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_tracking_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           accepted_at: string | null
@@ -22111,11 +22333,17 @@ export type Database = {
           customer_id: string | null
           customer_name: string | null
           customer_phone: string | null
+          delivered_at: string | null
           delivery_address: Json | null
           delivery_fee: number | null
           delivery_fee_cents: number | null
           delivery_fees_total_cents: number
+          delivery_instructions: string | null
           delivery_method: string | null
+          delivery_photo_lat: number | null
+          delivery_photo_lng: number | null
+          delivery_photo_timestamp: string | null
+          delivery_photo_url: string | null
           demand_fee_cents: number
           diamond_only_until: string | null
           distance_fee_cents: number
@@ -22128,6 +22356,8 @@ export type Database = {
           driver_pay_cents: number | null
           driver_payout_cents: number
           dropoff_address: Json | null
+          dropoff_lat: number | null
+          dropoff_lng: number | null
           dropoff_location: Json | null
           escalated_total_cents: number
           escalation_fee_cents: number
@@ -22159,6 +22389,7 @@ export type Database = {
           mileage_pay_cents: number | null
           next_escalation_at: string | null
           next_escalation_step: number
+          off_route_count: number | null
           order_number: string | null
           order_status: string | null
           paid_at: string | null
@@ -22170,8 +22401,12 @@ export type Database = {
           pickup_address: Json | null
           pickup_code: string | null
           pickup_confirmed_at: string | null
+          pickup_lat: number | null
+          pickup_lng: number | null
           pickup_location: Json | null
           pickup_parking_spot: string | null
+          pickup_photo_lat: number | null
+          pickup_photo_lng: number | null
           pickup_photo_url: string | null
           platform_delivery_share_cents: number
           platform_fee_cents: number | null
@@ -22200,6 +22435,7 @@ export type Database = {
           tip_cents: number | null
           total_amount: number | null
           total_cents: number
+          total_distance_traveled_m: number | null
           transfers_error: string | null
           transfers_lease_expires_at: string | null
           transfers_lease_id: string | null
@@ -22229,11 +22465,17 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          delivered_at?: string | null
           delivery_address?: Json | null
           delivery_fee?: number | null
           delivery_fee_cents?: number | null
           delivery_fees_total_cents?: number
+          delivery_instructions?: string | null
           delivery_method?: string | null
+          delivery_photo_lat?: number | null
+          delivery_photo_lng?: number | null
+          delivery_photo_timestamp?: string | null
+          delivery_photo_url?: string | null
           demand_fee_cents?: number
           diamond_only_until?: string | null
           distance_fee_cents?: number
@@ -22246,6 +22488,8 @@ export type Database = {
           driver_pay_cents?: number | null
           driver_payout_cents?: number
           dropoff_address?: Json | null
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
           dropoff_location?: Json | null
           escalated_total_cents?: number
           escalation_fee_cents?: number
@@ -22277,6 +22521,7 @@ export type Database = {
           mileage_pay_cents?: number | null
           next_escalation_at?: string | null
           next_escalation_step?: number
+          off_route_count?: number | null
           order_number?: string | null
           order_status?: string | null
           paid_at?: string | null
@@ -22288,8 +22533,12 @@ export type Database = {
           pickup_address?: Json | null
           pickup_code?: string | null
           pickup_confirmed_at?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
           pickup_location?: Json | null
           pickup_parking_spot?: string | null
+          pickup_photo_lat?: number | null
+          pickup_photo_lng?: number | null
           pickup_photo_url?: string | null
           platform_delivery_share_cents?: number
           platform_fee_cents?: number | null
@@ -22318,6 +22567,7 @@ export type Database = {
           tip_cents?: number | null
           total_amount?: number | null
           total_cents: number
+          total_distance_traveled_m?: number | null
           transfers_error?: string | null
           transfers_lease_expires_at?: string | null
           transfers_lease_id?: string | null
@@ -22347,11 +22597,17 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          delivered_at?: string | null
           delivery_address?: Json | null
           delivery_fee?: number | null
           delivery_fee_cents?: number | null
           delivery_fees_total_cents?: number
+          delivery_instructions?: string | null
           delivery_method?: string | null
+          delivery_photo_lat?: number | null
+          delivery_photo_lng?: number | null
+          delivery_photo_timestamp?: string | null
+          delivery_photo_url?: string | null
           demand_fee_cents?: number
           diamond_only_until?: string | null
           distance_fee_cents?: number
@@ -22364,6 +22620,8 @@ export type Database = {
           driver_pay_cents?: number | null
           driver_payout_cents?: number
           dropoff_address?: Json | null
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
           dropoff_location?: Json | null
           escalated_total_cents?: number
           escalation_fee_cents?: number
@@ -22395,6 +22653,7 @@ export type Database = {
           mileage_pay_cents?: number | null
           next_escalation_at?: string | null
           next_escalation_step?: number
+          off_route_count?: number | null
           order_number?: string | null
           order_status?: string | null
           paid_at?: string | null
@@ -22406,8 +22665,12 @@ export type Database = {
           pickup_address?: Json | null
           pickup_code?: string | null
           pickup_confirmed_at?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
           pickup_location?: Json | null
           pickup_parking_spot?: string | null
+          pickup_photo_lat?: number | null
+          pickup_photo_lng?: number | null
           pickup_photo_url?: string | null
           platform_delivery_share_cents?: number
           platform_fee_cents?: number | null
@@ -22436,6 +22699,7 @@ export type Database = {
           tip_cents?: number | null
           total_amount?: number | null
           total_cents?: number
+          total_distance_traveled_m?: number | null
           transfers_error?: string | null
           transfers_lease_expires_at?: string | null
           transfers_lease_id?: string | null
@@ -32737,6 +33001,7 @@ export type Database = {
         Args: { exec_role?: string; user_uuid: string }
         Returns: boolean
       }
+      is_order_admin: { Args: { _user_id: string }; Returns: boolean }
       is_restaurant_member: {
         Args: { _restaurant_id: string; _user_id: string }
         Returns: boolean
