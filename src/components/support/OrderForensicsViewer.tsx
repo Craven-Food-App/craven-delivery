@@ -46,6 +46,7 @@ interface OrderRow {
   created_at: string;
   pickup_address: any;
   dropoff_address: any;
+  delivery_address: any;
   pickup_lat: number | null;
   pickup_lng: number | null;
   dropoff_lat: number | null;
@@ -94,7 +95,21 @@ const EVENT_TONE: Record<string, string> = {
 function formatAddr(a: any): string {
   if (!a) return '—';
   if (typeof a === 'string') return a;
-  return [a.street, a.address, a.city, a.state, a.zip].filter(Boolean).join(', ') || '—';
+  const street = a.street || a.address || a.address_line1 || a.line1 || '';
+  const apt = a.apt_suite || a.apt || a.unit || '';
+  const parts = [street, apt, a.city, a.state, a.zip || a.zip_code || a.postal_code]
+    .filter(Boolean);
+  return parts.join(', ') || '—';
+}
+
+function extractLatLng(a: any): { lat: number | null; lng: number | null } {
+  if (!a || typeof a !== 'object') return { lat: null, lng: null };
+  const lat = a.latitude ?? a.lat ?? null;
+  const lng = a.longitude ?? a.lng ?? a.lon ?? null;
+  return {
+    lat: typeof lat === 'number' ? lat : lat != null ? Number(lat) : null,
+    lng: typeof lng === 'number' ? lng : lng != null ? Number(lng) : null,
+  };
 }
 
 function GpsLink({ lat, lng }: { lat: number | null | undefined; lng: number | null | undefined }) {
@@ -128,7 +143,7 @@ const OrderForensicsViewer: React.FC = () => {
       let q = (supabase as any)
         .from('orders')
         .select(
-          'id, order_number, order_status, customer_name, customer_phone, driver_id, delivered_at, created_at, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, pickup_photo_url, pickup_photo_lat, pickup_photo_lng, pickup_confirmed_at, delivery_photo_url, delivery_photo_lat, delivery_photo_lng, delivery_photo_timestamp, off_route_count, total_distance_traveled_m'
+          'id, order_number, order_status, customer_name, customer_phone, driver_id, delivered_at, feeder_delivery_completed_at, created_at, pickup_address, dropoff_address, delivery_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, pickup_photo_url, pickup_photo_lat, pickup_photo_lng, pickup_confirmed_at, delivery_photo_url, delivery_photo_lat, delivery_photo_lng, delivery_photo_timestamp, off_route_count, total_distance_traveled_m'
         )
         .order('created_at', { ascending: false })
         .limit(50);
@@ -285,10 +300,10 @@ const OrderForensicsViewer: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="outline" className="capitalize">{selected.order_status}</Badge>
-                  {selected.delivered_at && (
+                  {(selected.delivered_at || selected.feeder_delivery_completed_at) && (
                     <Badge className="bg-emerald-500/20 text-emerald-700 border-emerald-500/30">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Delivered {format(new Date(selected.delivered_at), 'MMM d, h:mm a')}
+                      Delivered {format(new Date((selected.delivered_at || selected.feeder_delivery_completed_at)!), 'MMM d, h:mm a')}
                     </Badge>
                   )}
                   {(selected.off_route_count ?? 0) > 0 && (
@@ -300,6 +315,25 @@ const OrderForensicsViewer: React.FC = () => {
                 </div>
               </div>
 
+              {/* Legacy-order notice */}
+              {!selected.pickup_photo_url &&
+                !selected.delivery_photo_url &&
+                events.length === 0 &&
+                breadcrumbs.length === 0 && (
+                  <div className="rounded-md border border-amber-500/40 bg-amber-50 text-amber-800 px-3 py-2 text-xs flex items-start gap-2">
+                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="font-semibold">No forensic capture for this order.</div>
+                      <div>
+                        This order was completed before the GPS / photo audit system
+                        was active for this Feeder, or the Feeder app did not upload
+                        proof. All future orders capture pickup photo, delivery photo,
+                        GPS breadcrumbs, route deviations, and a full event timeline.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
               {/* Pin summary */}
               <div className="grid sm:grid-cols-2 gap-3">
                 <Card className="p-3">
@@ -309,7 +343,15 @@ const OrderForensicsViewer: React.FC = () => {
                   </div>
                   <p className="text-sm">{formatAddr(selected.pickup_address)}</p>
                   <div className="text-xs mt-1">
-                    <GpsLink lat={selected.pickup_lat} lng={selected.pickup_lng} />
+                    {(() => {
+                      const fb = extractLatLng(selected.pickup_address);
+                      return (
+                        <GpsLink
+                          lat={selected.pickup_lat ?? fb.lat}
+                          lng={selected.pickup_lng ?? fb.lng}
+                        />
+                      );
+                    })()}
                   </div>
                 </Card>
                 <Card className="p-3">
@@ -317,9 +359,21 @@ const OrderForensicsViewer: React.FC = () => {
                     <Navigation className="h-3.5 w-3.5 text-orange-500" />
                     DROP-OFF — CUSTOMER
                   </div>
-                  <p className="text-sm">{formatAddr(selected.dropoff_address)}</p>
+                  <p className="text-sm">
+                    {formatAddr(selected.dropoff_address || selected.delivery_address)}
+                  </p>
                   <div className="text-xs mt-1">
-                    <GpsLink lat={selected.dropoff_lat} lng={selected.dropoff_lng} />
+                    {(() => {
+                      const fb = extractLatLng(
+                        selected.dropoff_address || selected.delivery_address,
+                      );
+                      return (
+                        <GpsLink
+                          lat={selected.dropoff_lat ?? fb.lat}
+                          lng={selected.dropoff_lng ?? fb.lng}
+                        />
+                      );
+                    })()}
                   </div>
                 </Card>
               </div>
