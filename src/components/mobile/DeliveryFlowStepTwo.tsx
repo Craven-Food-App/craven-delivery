@@ -4,7 +4,8 @@
  */
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Box } from '@mantine/core';
-import { IconMapPin, IconNavigation, IconRefresh } from '@tabler/icons-react';
+import { IconMapPin, IconNavigation, IconRefresh, IconShieldCheck, IconShieldLock } from '@tabler/icons-react';
+import QRCode from 'qrcode';
 import { StepOneMap } from './StepOneMap';
 
 const STEP_TWO_CSS = `
