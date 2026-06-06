@@ -16,6 +16,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { QUICK_REPLIES, SUPPORT_DEPARTMENTS } from "./supportQuickReplies";
+import SupportOrderActionsPanel from "./SupportOrderActionsPanel";
 
 type Channel = "call" | "message";
 type Role = "merchant" | "support" | "customer" | "driver" | "system";
@@ -402,6 +403,8 @@ export default function SupportConversationsInbox() {
             </div>
 
             <footer className="border-t border-border bg-background p-3">
+              {/* CS order actions (cancel, reassign, incentives, etc.) */}
+              <SupportOrderActionsPanel orderId={active.order_id} threadId={active.id} />
               {/* Department routing */}
               <div className="mb-2 flex flex-wrap items-center gap-1">
                 <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Route to:</span>
