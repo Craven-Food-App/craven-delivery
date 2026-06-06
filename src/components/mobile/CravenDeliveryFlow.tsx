@@ -18,6 +18,18 @@ import { speakDeliveryInstructions } from './ActiveFeedingMenu';
 import SlideToConfirm from '@/components/SlideToConfirm';
 import { getStopPickupKey } from '@/lib/deliveryRouteKeys';
 import { setOrderDriverArrivedAtStore } from '@/lib/orderDriverPresence';
+import {
+  logOrderEvent,
+  logOrderEventWithPosition,
+  getCurrentPosition,
+  recordBreadcrumb,
+  haversineMeters,
+  pointToPolylineMeters,
+  openRouteDeviation,
+  closeRouteDeviation,
+  DELIVERY_GEOFENCE_RADIUS_M,
+  ROUTE_DEVIATION_THRESHOLD_M,
+} from '@/lib/orderTracking';
 import FeederCleanPayCard from '@/components/mobile/FeederCleanPayCard';
 import {
   getFeederCleanPaySummary,
