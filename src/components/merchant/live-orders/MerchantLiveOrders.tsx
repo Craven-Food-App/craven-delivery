@@ -613,6 +613,65 @@ export function MerchantLiveOrders({
     }
   };
 
+  const verifyHandoffCode = async (order: LiveOrder) => {
+    const expected = (order.pickup_code || "").trim();
+    const entered = handoffInput.replace(/\s+/g, "").trim();
+    if (!expected) {
+      setHandoffError("This order has no handoff code yet. Refresh and try again.");
+      return;
+    }
+    if (entered.length !== 6 || !/^[0-9]{6}$/.test(entered)) {
+      setHandoffError("Enter the 6-digit code from the Feeder.");
+      return;
+    }
+    if (entered !== expected) {
+      setHandoffError("Code doesn't match. Ask the Feeder to read it again or rescan the QR.");
+      await logOrderEvent({
+        orderId: order.id,
+        eventType: "support_action",
+        actorRole: "merchant",
+        notes: "Merchant entered an incorrect handoff code.",
+        metadata: { entered_code: entered.slice(0, 1) + "***" },
+      });
+      return;
+    }
+    setHandoffVerifying(true);
+    setHandoffError(null);
+    try {
+      const now = new Date().toISOString();
+      const ok = await updateOrder(order.id, {
+        pickup_confirmed_at: now,
+      } as Record<string, unknown>);
+      if (ok) {
+        await logOrderEvent({
+          orderId: order.id,
+          eventType: "support_action",
+          actorRole: "merchant",
+          notes: "Merchant verified handoff code. Feeder identity revealed.",
+          metadata: {
+            verified: true,
+            assigned_driver_id: order.driver_id || order.accepted_driver_id || null,
+            driver_name: order.driver?.full_name || null,
+          },
+        });
+        notifications.show({
+          title: "Handoff code verified",
+          message: "Feeder identity is now revealed. You can hand off the order.",
+          color: "teal",
+        });
+        setHandoffInput("");
+      }
+    } finally {
+      setHandoffVerifying(false);
+    }
+  };
+
+  // Reset the handoff input whenever the selected order changes
+  useEffect(() => {
+    setHandoffInput("");
+    setHandoffError(null);
+  }, [selectedOrderId]);
+
   const submitPickupIssue = async (order: LiveOrder) => {
     if (!reportReason) {
       notifications.show({ title: "Pick a reason", message: "Select a reason for the report", color: "orange" });
