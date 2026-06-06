@@ -11,6 +11,8 @@ import { DeliveryFlowStepOne } from './DeliveryFlowStepOne';
 import { DeliveryFlowStepTwo } from './DeliveryFlowStepTwo';
 import { DeliveryFlowStepThree } from './DeliveryFlowStepThree';
 import { OrderChatOverlay } from './OrderChatOverlay';
+import DriverSupportThread from '@/components/driver/DriverSupportThread';
+import { HelpCircle, X } from 'lucide-react';
 import { useNavigation } from '@/hooks/useNavigation';
 import { speakDeliveryInstructions } from './ActiveFeedingMenu';
 import SlideToConfirm from '@/components/SlideToConfirm';
@@ -372,6 +374,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [deliveryPhotoUrl, setDeliveryPhotoUrl] = useState<string>();
   const [showCamera, setShowCamera] = useState(false);
   const [showOrderChat, setShowOrderChat] = useState(false);
+  const [showCsSupport, setShowCsSupport] = useState(false);
   const [photoType, setPhotoType] = useState<'pickup' | 'delivery'>('pickup');
   const [showDeliveryPhotoGuide, setShowDeliveryPhotoGuide] = useState(false);
   const [orderItems, setOrderItems] = useState<any[]>([]);
@@ -2334,11 +2337,89 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     );
   };
 
+  const supportOverlay = (
+    <>
+      {/* Floating Help button — opens CS support thread (same portal merchants/customers use) */}
+      <button
+        type="button"
+        onClick={() => setShowCsSupport(true)}
+        aria-label="Contact Crave'N customer service"
+        style={{
+          position: 'fixed',
+          right: 16,
+          bottom: 96,
+          zIndex: 9998,
+          width: 52,
+          height: 52,
+          borderRadius: 26,
+          background: '#EA580C',
+          color: '#fff',
+          border: 'none',
+          boxShadow: '0 6px 16px rgba(234,88,12,0.45)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <HelpCircle size={26} />
+      </button>
+
+      {showCsSupport && createPortal(
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          }}
+          onClick={() => setShowCsSupport(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 520, height: '85vh',
+              background: '#fff', borderTopLeftRadius: 18, borderTopRightRadius: 18,
+              display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            }}
+          >
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 16px', borderBottom: '1px solid #e5e7eb', background: '#EA580C', color: '#fff',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+                <HelpCircle size={18} />
+                <span>Crave'N Customer Service</span>
+              </div>
+              <button
+                onClick={() => setShowCsSupport(false)}
+                aria-label="Close support"
+                style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              {orderDetails?.id ? (
+                <DriverSupportThread
+                  orderId={orderDetails.id}
+                  restaurantId={orderDetails.restaurant_id ?? null}
+                />
+              ) : (
+                <div style={{ padding: 24, textAlign: 'center', color: '#6b7280', fontSize: 13 }}>
+                  No active order to attach a support thread to.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+
   if (status === DRIVER_STATUS.COMPLETE) {
-    return renderComplete();
+    return <>{renderComplete()}{supportOverlay}</>;
   }
-  
-  return renderActiveFlow();
+
+  return <>{renderActiveFlow()}{supportOverlay}</>;
 }
 
 export default CravenDeliveryFlow;
