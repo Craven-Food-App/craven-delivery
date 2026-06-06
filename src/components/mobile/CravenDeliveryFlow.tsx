@@ -2053,27 +2053,10 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             });
           }}
           onCall={
-            orderDetails?.order_id
-              ? async () => {
-                  try {
-                    notifications.show({ id: 'masked-call', message: 'Connecting… Your phone will ring.', loading: true });
-                    const { data, error } = await supabase.functions.invoke('start-masked-call', {
-                      body: { order_id: orderDetails.order_id, caller_role: 'driver' },
-                    });
-                    notifications.hide('masked-call');
-                    if (error) throw error;
-                    if (data?.error) throw new Error(data.error);
-                    notifications.show({ message: 'Your phone will ring from the delivery number.', color: 'green' });
-                  } catch (e) {
-                    notifications.show({ message: (e as Error)?.message ?? 'Could not start call.', color: 'red' });
-                  }
-                }
-              : undefined
+            orderDetails?.order_id ? () => { setShowOrderChat(true); } : undefined
           }
           onMessage={
-            currentOrder.customer.phone || orderDetails?.order_id
-              ? () => { setShowOrderChat(true); }
-              : undefined
+            orderDetails?.order_id ? () => { setShowOrderChat(true); } : undefined
           }
           onSpeakInstructions={
             currentOrder.customer.deliveryNotes
