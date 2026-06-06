@@ -29,6 +29,7 @@ export type LiveOrder = {
   pickup_code?: string | null;
   pickup_confirmed_at?: string | null;
   feeder_offer_accepted_at?: string | null;
+  customer_phone?: string | null;
   driver?: LiveOrderDriver | null;
   order_items: Array<{
     id: string;
@@ -58,6 +59,40 @@ export const formatTime = (value: string | null | undefined) =>
     : "--";
 
 export const formatMoney = (cents: number) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
+
+/**
+ * Mask customer name for merchant view: first name + last initial only.
+ * Example: "John Smith" -> "John S."
+ */
+export const formatCustomerNameForMerchant = (fullName: string | null | undefined): string => {
+  if (!fullName) return "Customer";
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "Customer";
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}.`;
+};
+
+/**
+ * Mask delivery address for merchant view: only city, state, zip (never street).
+ */
+export const formatCustomerAreaForMerchant = (addr: unknown): string | null => {
+  if (!addr) return null;
+  if (typeof addr === "string") {
+    // Try to extract trailing "City, ST ZIP" from a freeform string
+    const m = addr.match(/([A-Za-z .'-]+),\s*([A-Za-z]{2})\s*(\d{5}(?:-\d{4})?)?/);
+    if (m) {
+      return [m[1].trim(), m[2], m[3]].filter(Boolean).join(", ").replace(/, (\d)/, " $1");
+    }
+    return null;
+  }
+  if (typeof addr !== "object") return null;
+  const a = addr as Record<string, unknown>;
+  const city = (a.city as string) || "";
+  const state = (a.state as string) || "";
+  const zip = (a.zip as string) || (a.zip_code as string) || (a.postal_code as string) || "";
+  const cityState = [city, state].filter(Boolean).join(", ");
+  return [cityState, zip].filter(Boolean).join(" ").trim() || null;
+};
 
 export const getKanbanColumn = (status: string | null | undefined): KanbanColumn | null => {
   switch (status) {

@@ -36,6 +36,8 @@ import {
   getKanbanColumn,
   isRunningBehind,
   minutesSince,
+  formatCustomerNameForMerchant,
+  formatCustomerAreaForMerchant,
 } from "./liveOrderUtils";
 import "./merchant-live-orders.css";
 
@@ -220,6 +222,7 @@ export function MerchantLiveOrders({
           pickup_code: row.pickup_code ?? null,
           pickup_confirmed_at: row.pickup_confirmed_at ?? null,
           feeder_offer_accepted_at: row.feeder_offer_accepted_at ?? null,
+          customer_phone: row.customer_phone ?? null,
           driver: null,
           order_items: [],
         };
@@ -270,7 +273,7 @@ export function MerchantLiveOrders({
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id, order_number, customer_name, order_status, created_at, total_cents, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time, driver_id, accepted_driver_id, pickup_code, pickup_confirmed_at, feeder_offer_accepted_at"
+          "id, order_number, customer_name, customer_phone, order_status, created_at, total_cents, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time, driver_id, accepted_driver_id, pickup_code, pickup_confirmed_at, feeder_offer_accepted_at"
         )
         .eq("restaurant_id", restaurantId)
         .in("order_status", Array.from(ACTIVE_STATUSES))
@@ -619,7 +622,7 @@ export function MerchantLiveOrders({
                 style={{ color: meta.headerFg, letterSpacing: "-0.01em", lineHeight: 1.15 }}
                 lineClamp={1}
               >
-                {order.customer_name || "Customer"}
+                {formatCustomerNameForMerchant(order.customer_name)}
               </Text>
             </Box>
             {timeLabel && (
@@ -979,17 +982,8 @@ export function MerchantLiveOrders({
             0,
           );
           const feesCents = Math.max(0, (selectedOrder.total_cents || 0) - subtotalCents);
-          const addr = selectedOrder.delivery_address as
-            | { street?: string; address?: string; line1?: string; city?: string; state?: string; zip?: string; postal_code?: string }
-            | string
-            | null;
-          const addressLine = typeof addr === "string"
-            ? addr
-            : addr
-              ? [addr.street || addr.address || addr.line1, [addr.city, addr.state].filter(Boolean).join(", "), addr.zip || addr.postal_code]
-                  .filter(Boolean)
-                  .join(" · ")
-              : null;
+          // Privacy: merchants never see street address — only city/state/zip.
+          const addressLine = formatCustomerAreaForMerchant(selectedOrder.delivery_address);
           return (
             <Box style={{ background: "#f1f5f9", fontVariantNumeric: "tabular-nums" }}>
               {/* Colored status header */}
@@ -1031,7 +1025,7 @@ export function MerchantLiveOrders({
                         : meta.statusLabel.toUpperCase()} · #{orderNo}
                   </Text>
                   <Text fw={700} size="xl" style={{ lineHeight: 1.15, marginTop: 2 }}>
-                    {selectedOrder.customer_name || "Customer"}
+                    {formatCustomerNameForMerchant(selectedOrder.customer_name)}
                   </Text>
                 </Box>
                 {status !== "pending" && (
@@ -1383,12 +1377,28 @@ export function MerchantLiveOrders({
                       CUSTOMER
                     </Text>
                     <Text fw={700} size="md" mt={4}>
-                      {selectedOrder.customer_name || "Customer"}
+                      {formatCustomerNameForMerchant(selectedOrder.customer_name)}
                     </Text>
                     {addressLine && (
                       <Text size="sm" c="dimmed" mt={4}>
                         {addressLine}
                       </Text>
+                    )}
+                    <Text size="xs" c="dimmed" mt={6} style={{ fontStyle: "italic" }}>
+                      Customer privacy: full name, street address, and phone are hidden.
+                    </Text>
+                    {selectedOrder.customer_phone && (
+                      <Button
+                        component="a"
+                        href={`tel:${selectedOrder.customer_phone}`}
+                        variant="light"
+                        color="orange"
+                        size="xs"
+                        mt={10}
+                        fullWidth
+                      >
+                        Contact customer
+                      </Button>
                     )}
                   </Box>
 
