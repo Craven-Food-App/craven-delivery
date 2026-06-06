@@ -840,6 +840,80 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     fetchOrderData();
   }, [orderDetails.order_id, isTestOrder]);
 
+  // When the active delivery flow opens with the Feeder heading to the store,
+  // record `feeder_route_started_at` so the merchant sees "En route" only after
+  // the Feeder actually starts the route (not the instant they accept).
+  useEffect(() => {
+    if (isTestOrder) return;
+    const oid = orderDetails?.order_id;
+    if (!oid) return;
+    if (status !== DRIVER_STATUS.TO_STORE) return;
+    if (routeStartedWrittenRef.current) return;
+    routeStartedWrittenRef.current = true;
+    void (async () => {
+      try {
+        const { data: row } = await (supabase as any)
+          .from('orders')
+          .select('feeder_route_started_at')
+          .eq('id', oid)
+          .maybeSingle();
+        if (row?.feeder_route_started_at) return; // already started
+        await (supabase as any)
+          .from('orders')
+          .update({ feeder_route_started_at: new Date().toISOString() })
+          .eq('id', oid);
+        await logOrderEventWithPosition({
+          orderId: oid,
+          eventType: 'en_route_to_store',
+          notes: 'Feeder started route to merchant.',
+        });
+      } catch (err) {
+        console.warn('Could not mark feeder_route_started_at', err);
+        routeStartedWrittenRef.current = false; // allow retry
+      }
+    })();
+  }, [status, orderDetails?.order_id, isTestOrder]);
+
+  // Poll for merchant handoff verification while the feeder is at the store so
+  // the UI unlocks the pickup photo step the moment the merchant enters the code.
+  useEffect(() => {
+    if (isTestOrder) {
+      setMerchantHandoffVerified(true);
+      return;
+    }
+    const oid = orderDetails?.order_id;
+    if (!oid) return;
+    if (merchantHandoffVerified) return;
+    if (status !== DRIVER_STATUS.AT_STORE && status !== DRIVER_STATUS.AWAITING_PICKUP_PHOTO) return;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const { data } = await (supabase as any)
+          .from('orders')
+          .select('pickup_confirmed_at')
+          .eq('id', oid)
+          .maybeSingle();
+        if (cancelled) return;
+        if (data?.pickup_confirmed_at) {
+          setMerchantHandoffVerified(true);
+          notifications.show({
+            title: 'Handoff verified',
+            message: 'Merchant verified your code. You can finish the pickup.',
+            color: 'teal',
+          });
+        }
+      } catch {
+        // ignore transient errors
+      }
+    };
+    void check();
+    const interval = window.setInterval(check, 4000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [status, orderDetails?.order_id, isTestOrder, merchantHandoffVerified]);
+
   // Load items from orderDetails immediately
   useEffect(() => {
     if (orderDetails.items && orderDetails.items.length > 0) {
