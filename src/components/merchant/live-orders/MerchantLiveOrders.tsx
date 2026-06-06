@@ -877,11 +877,6 @@ export function MerchantLiveOrders({
                       Spot {order.pickup_parking_spot}
                     </Badge>
                   )}
-                  {order.pickup_code && (
-                    <Text size="xs" fw={700} ff="monospace" c="dark.6">
-                      Code {order.pickup_code}
-                    </Text>
-                  )}
                 </Stack>
               </Group>
             </Box>
