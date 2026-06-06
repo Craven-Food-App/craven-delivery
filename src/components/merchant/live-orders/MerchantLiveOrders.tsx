@@ -215,6 +215,12 @@ export function MerchantLiveOrders({
           delivery_address: row.delivery_address ?? null,
           estimated_delivery_time: row.estimated_delivery_time ?? null,
           special_instructions: row.special_instructions ?? null,
+          driver_id: row.driver_id ?? null,
+          accepted_driver_id: row.accepted_driver_id ?? null,
+          pickup_code: row.pickup_code ?? null,
+          pickup_confirmed_at: row.pickup_confirmed_at ?? null,
+          feeder_offer_accepted_at: row.feeder_offer_accepted_at ?? null,
+          driver: null,
           order_items: [],
         };
         return [nextOrder, ...prev];
@@ -223,7 +229,39 @@ export function MerchantLiveOrders({
       copy[idx] = { ...copy[idx], ...row, total_cents: Number(row.total_cents ?? copy[idx].total_cents ?? 0) };
       return copy;
     });
+    const driverId = (row.driver_id ?? row.accepted_driver_id) as string | undefined;
+    if (driverId) void hydrateDriver(row.id, driverId);
   };
+
+  const hydrateDriver = useCallback(async (orderId: string, driverUserId: string) => {
+    try {
+      // driver_id on orders references auth user id (same as driver_profiles.user_id)
+      const { data: dp } = await supabase
+        .from("driver_profiles")
+        .select("id, user_id, status, vehicle_make, vehicle_model, vehicle_year, license_plate")
+        .eq("user_id", driverUserId)
+        .maybeSingle();
+      const { data: up } = await supabase
+        .from("user_profiles")
+        .select("full_name, phone, avatar_url")
+        .eq("user_id", driverUserId)
+        .maybeSingle();
+      const driver: LiveOrderDriver = {
+        id: (dp?.id as string) || driverUserId,
+        user_id: driverUserId,
+        full_name: (up?.full_name as string | null) ?? null,
+        phone: (up?.phone as string | null) ?? null,
+        avatar_url: (up?.avatar_url as string | null) ?? null,
+        vehicle_make: (dp?.vehicle_make as string | null) ?? null,
+        vehicle_model: (dp?.vehicle_model as string | null) ?? null,
+        license_plate: (dp?.license_plate as string | null) ?? null,
+        status: (dp?.status as string | null) ?? null,
+      };
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, driver } : o)));
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const fetchOrders = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -232,7 +270,7 @@ export function MerchantLiveOrders({
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id, order_number, customer_name, order_status, created_at, total_cents, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time"
+          "id, order_number, customer_name, order_status, created_at, total_cents, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time, driver_id, accepted_driver_id, pickup_code, pickup_confirmed_at, feeder_offer_accepted_at"
         )
         .eq("restaurant_id", restaurantId)
         .in("order_status", Array.from(ACTIVE_STATUSES))
@@ -264,11 +302,56 @@ export function MerchantLiveOrders({
         });
       }
 
+      // Fetch driver info for any orders that have a driver assigned
+      const driverUserIds = Array.from(
+        new Set(
+          rows
+            .map((r) => (r.driver_id || r.accepted_driver_id) as string | null)
+            .filter((v): v is string => !!v),
+        ),
+      );
+      const driverByUserId: Record<string, LiveOrderDriver> = {};
+      if (driverUserIds.length > 0) {
+        const [{ data: dps }, { data: ups }] = await Promise.all([
+          supabase
+            .from("driver_profiles")
+            .select("id, user_id, status, vehicle_make, vehicle_model, license_plate")
+            .in("user_id", driverUserIds),
+          supabase
+            .from("user_profiles")
+            .select("user_id, full_name, phone, avatar_url")
+            .in("user_id", driverUserIds),
+        ]);
+        const upMap: Record<string, { full_name?: string | null; phone?: string | null; avatar_url?: string | null }> = {};
+        (ups || []).forEach((u: Record<string, unknown>) => {
+          upMap[String(u.user_id)] = u as never;
+        });
+        (dps || []).forEach((d: Record<string, unknown>) => {
+          const uid = String(d.user_id);
+          const u = upMap[uid] || {};
+          driverByUserId[uid] = {
+            id: String(d.id),
+            user_id: uid,
+            full_name: (u.full_name as string | null) ?? null,
+            phone: (u.phone as string | null) ?? null,
+            avatar_url: (u.avatar_url as string | null) ?? null,
+            vehicle_make: (d.vehicle_make as string | null) ?? null,
+            vehicle_model: (d.vehicle_model as string | null) ?? null,
+            license_plate: (d.license_plate as string | null) ?? null,
+            status: (d.status as string | null) ?? null,
+          };
+        });
+      }
+
       setOrders(
-        rows.map((order) => ({
-          ...order,
-          order_items: itemsByOrder[order.id] || [],
-        }))
+        rows.map((order) => {
+          const dUid = (order.driver_id || order.accepted_driver_id) as string | null;
+          return {
+            ...order,
+            order_items: itemsByOrder[order.id] || [],
+            driver: dUid ? driverByUserId[dUid] || null : null,
+          };
+        })
       );
     } catch (err: unknown) {
       notifications.show({
