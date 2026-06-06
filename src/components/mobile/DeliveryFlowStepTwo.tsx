@@ -676,16 +676,36 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
           </div>
 
           <div className="dfl-step-two-footer">
-            <button
-              type="button"
-              className={`dfl-step-two-cta ${allChecked ? 'active' : ''}`}
-              onClick={allChecked ? onConfirmPickup : undefined}
-              data-testid="verify-pickup-button"
-            >
-              <span>{allChecked ? 'Confirm Pickup' : 'Confirm items first'}</span>
-              <div className="dfl-step-two-cta-arrow" />
-            </button>
-            <div className={`dfl-step-two-cta-hint ${allChecked ? 'hidden' : ''}`}>CHECK ALL ITEMS TO CONTINUE</div>
+            {(() => {
+              const codeRequired = !!handoffCode;
+              const canProceed = allChecked && (!codeRequired || !!handoffVerified);
+              let label = 'Confirm Pickup';
+              let hint: string | null = null;
+              if (!allChecked) {
+                label = 'Confirm items first';
+                hint = 'CHECK ALL ITEMS TO CONTINUE';
+              } else if (codeRequired && !handoffVerified) {
+                label = 'Waiting on merchant verification';
+                hint = 'MERCHANT MUST VERIFY THE 6-DIGIT CODE';
+              }
+              return (
+                <>
+                  <button
+                    type="button"
+                    className={`dfl-step-two-cta ${canProceed ? 'active' : ''}`}
+                    onClick={canProceed ? onConfirmPickup : undefined}
+                    data-testid="verify-pickup-button"
+                    disabled={!canProceed}
+                  >
+                    <span>{label}</span>
+                    <div className="dfl-step-two-cta-arrow" />
+                  </button>
+                  <div className={`dfl-step-two-cta-hint ${canProceed ? 'hidden' : ''}`}>
+                    {hint}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
