@@ -24,6 +24,12 @@ export type LiveOrder = {
   delivery_address: unknown;
   estimated_delivery_time: string | null;
   special_instructions?: string | null;
+  driver_id?: string | null;
+  accepted_driver_id?: string | null;
+  pickup_code?: string | null;
+  pickup_confirmed_at?: string | null;
+  feeder_offer_accepted_at?: string | null;
+  driver?: LiveOrderDriver | null;
   order_items: Array<{
     id: string;
     quantity: number;
@@ -31,6 +37,19 @@ export type LiveOrder = {
     special_instructions: string | null;
     name: string;
   }>;
+};
+
+export type LiveOrderDriver = {
+  id: string;
+  user_id: string | null;
+  full_name: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  vehicle_make: string | null;
+  vehicle_model: string | null;
+  vehicle_color?: string | null;
+  license_plate: string | null;
+  status: string | null;
 };
 
 export const formatTime = (value: string | null | undefined) =>
