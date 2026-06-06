@@ -1764,6 +1764,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           onConfirmPickup={handleStartPickupVerification}
           batchRouteStopCount={deliveryStops && deliveryStops.length > 1 ? deliveryStops.length : undefined}
           cleanPaySlot={cleanPayCompact}
+          onRefreshStatus={refreshOrderFromDb}
         />
       );
     }
