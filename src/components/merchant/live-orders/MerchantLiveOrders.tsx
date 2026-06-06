@@ -142,6 +142,9 @@ export function MerchantLiveOrders({
   const [reportNotes, setReportNotes] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [pickupConfirming, setPickupConfirming] = useState(false);
+  const [handoffInput, setHandoffInput] = useState("");
+  const [handoffVerifying, setHandoffVerifying] = useState(false);
+  const [handoffError, setHandoffError] = useState<string | null>(null);
 
   const alertAudioRef = useRef<HTMLAudioElement | null>(null);
   const recentNewOrderIdsRef = useRef<Set<string>>(new Set());
