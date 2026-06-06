@@ -1431,17 +1431,15 @@ export function MerchantLiveOrders({
                           <Text size="sm" fw={700}>{selectedOrder.pickup_parking_spot}</Text>
                         </Group>
                       )}
-                      {selectedOrder.pickup_code && (
+                      {selectedOrder.pickup_confirmed_at && (
                         <Group justify="space-between" align="flex-start">
                           <Box>
                             <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>HANDOFF CODE</Text>
-                            {selectedOrder.pickup_confirmed_at && (
-                              <Text size="xs" c="teal.7" fw={700} mt={2}>Merchant / support verified</Text>
-                            )}
+                            <Text size="xs" c="teal.7" fw={700} mt={2}>Verified</Text>
                           </Box>
                           <Box style={{ textAlign: "right" }}>
-                            <Text size="md" fw={800} ff="monospace" c={selectedOrder.pickup_confirmed_at ? "teal.7" : "orange.7"}>
-                              {selectedOrder.pickup_code}
+                            <Text size="md" fw={800} ff="monospace" c="teal.7">
+                              ✓ {selectedOrder.pickup_code}
                             </Text>
                             {handoffVerifiedTime && (
                               <Text size="xs" c="dimmed" mt={2}>{handoffVerifiedTime}</Text>
