@@ -382,6 +382,8 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   // All hooks must be called before any early returns
   const [status, setStatus] = useState(initialDriverStatus || DRIVER_STATUS.TO_STORE);
   const [pickupCode, setPickupCode] = useState<string | null>(null);
+  const [merchantHandoffVerified, setMerchantHandoffVerified] = useState(false);
+  const routeStartedWrittenRef = useRef(false);
   const [pickupPhotoUrl, setPickupPhotoUrl] = useState<string>();
   const [deliveryPhotoUrl, setDeliveryPhotoUrl] = useState<string>();
   const [showCamera, setShowCamera] = useState(false);
