@@ -514,6 +514,34 @@ export function MerchantLiveOrders({
     return grouped;
   }, [orders]);
 
+  // Flash an "Updated" badge in the order modal when the selected order's key
+  // fields change (e.g. feeder accepts, arrives, status moves). Driven by the
+  // realtime postgres_changes subscription that keeps `orders` in sync.
+  const [orderJustUpdated, setOrderJustUpdated] = useState(false);
+  const lastOrderSigRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedOrder) {
+      lastOrderSigRef.current = null;
+      return;
+    }
+    const sig = [
+      selectedOrder.order_status,
+      selectedOrder.accepted_at,
+      selectedOrder.driver_arrived_at,
+      selectedOrder.pickup_confirmed_at,
+      selectedOrder.driver_id,
+      selectedOrder.accepted_driver_id,
+      selectedOrder.estimated_delivery_time,
+    ].join("|");
+    if (lastOrderSigRef.current != null && lastOrderSigRef.current !== sig) {
+      setOrderJustUpdated(true);
+      const t = window.setTimeout(() => setOrderJustUpdated(false), 2500);
+      lastOrderSigRef.current = sig;
+      return () => window.clearTimeout(t);
+    }
+    lastOrderSigRef.current = sig;
+  }, [selectedOrder]);
+
   const updateOrder = async (orderId: string, patch: Record<string, unknown>) => {
     const { error } = await supabase.from("orders").update(patch).eq("id", orderId);
     if (error) {
@@ -1139,19 +1167,47 @@ export function MerchantLiveOrders({
                   ×
                 </UnstyledButton>
                 <Box style={{ flex: 1, minWidth: 0 }}>
-                  <Text size="xs" fw={600} style={{ opacity: 0.9, letterSpacing: "0.04em" }}>
-                    {behind
-                      ? "BEHIND"
-                      : selectedOrder.pickup_confirmed_at
-                        ? "HANDOFF VERIFIED"
-                        : meta.statusLabel.toUpperCase()} · #{orderNo}
-                  </Text>
+                  <Group gap={8} wrap="nowrap" align="center">
+                    <Text size="xs" fw={600} style={{ opacity: 0.9, letterSpacing: "0.04em" }}>
+                      {behind
+                        ? "BEHIND"
+                        : selectedOrder.pickup_confirmed_at
+                          ? "HANDOFF VERIFIED"
+                          : meta.statusLabel.toUpperCase()} · #{orderNo}
+                    </Text>
+                    {orderJustUpdated && (
+                      <Badge
+                        size="xs"
+                        radius="sm"
+                        variant="filled"
+                        color="orange"
+                        style={{
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                          animation: "merchant-live-banner-pulse-keyframes 0.6s ease-in-out 3",
+                        }}
+                      >
+                        Updated
+                      </Badge>
+                    )}
+                  </Group>
                   <Text fw={700} size="xl" style={{ lineHeight: 1.15, marginTop: 2 }}>
                     {formatCustomerNameForMerchant(selectedOrder.customer_name)}
                   </Text>
                 </Box>
                 {status !== "pending" && (
                   <Group gap={8} wrap="nowrap">
+                    <UnstyledButton
+                      onClick={() => void fetchOrders(true)}
+                      style={pillButtonStyle}
+                      title="Refresh order"
+                      aria-label="Refresh order"
+                    >
+                      <Group gap={4} wrap="nowrap" style={{ alignItems: "center" }}>
+                        <IconRefresh size={14} />
+                        <Text size="xs" fw={700}>Refresh</Text>
+                      </Group>
+                    </UnstyledButton>
                     <UnstyledButton
                       onClick={async () => {
                         const base = selectedOrder.estimated_delivery_time
