@@ -285,6 +285,10 @@ export interface DeliveryFlowStepTwoProps {
   cleanPaySlot?: React.ReactNode;
   /** Refresh order status from the database (re-pulls items + merchant status). */
   onRefreshStatus?: () => Promise<void> | void;
+  /** 6-digit handoff code shown to the merchant; required for verification. */
+  handoffCode?: string | null;
+  /** True once the merchant has entered/scanned the code. */
+  handoffVerified?: boolean;
 }
 
 export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
@@ -305,6 +309,8 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
   batchRouteStopCount,
   cleanPaySlot,
   onRefreshStatus,
+  handoffCode,
+  handoffVerified,
 }) => {
   const [sheetTranslatePct, setSheetTranslatePct] = useState(SNAP_HALF);
   const [dragging, setDragging] = useState(false);
