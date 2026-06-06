@@ -1153,6 +1153,17 @@ export function MerchantLiveOrders({
                 {status !== "pending" && (
                   <Group gap={8} wrap="nowrap">
                     <UnstyledButton
+                      onClick={() => void fetchOrders(true)}
+                      style={pillButtonStyle}
+                      title="Refresh order"
+                      aria-label="Refresh order"
+                    >
+                      <Group gap={4} wrap="nowrap" style={{ alignItems: "center" }}>
+                        <IconRefresh size={14} />
+                        <Text size="xs" fw={700}>Refresh</Text>
+                      </Group>
+                    </UnstyledButton>
+                    <UnstyledButton
                       onClick={async () => {
                         const base = selectedOrder.estimated_delivery_time
                           ? new Date(selectedOrder.estimated_delivery_time).getTime()
