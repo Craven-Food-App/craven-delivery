@@ -316,11 +316,7 @@ const OrderForensicsViewer: React.FC = () => {
               </div>
 
               {/* Pin summary */}
-              {(() => null)()}
               <div className="grid sm:grid-cols-2 gap-3">
-                {(() => {
-                  return null;
-                })()}
                 <Card className="p-3">
                   <div className="flex items-center gap-2 text-xs font-semibold mb-1">
                     <MapPin className="h-3.5 w-3.5 text-orange-500" />
