@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { IconMapPin, IconNavigation, IconCurrencyDollar, IconClock, IconPackage, IconHome, IconBell, IconCopy, IconToolsKitchen2, IconCheck, IconVolume, IconMenu2 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -738,7 +738,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           .eq('order_id', orderDetails.order_id),
         supabase
           .from('orders')
-          .select('order_status, merchant_status')
+          .select('order_status')
           .eq('id', orderDetails.order_id)
           .maybeSingle(),
       ]);
@@ -752,7 +752,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           image_url: item.menu_items?.image_url,
         })));
       }
-      if (ord && (ord.order_status === 'ready_for_pickup' || ord.merchant_status === 'ready')) {
+      if (ord && ord.order_status === 'ready_for_pickup') {
         // Surface ready state — keep the feeder in AT_STORE but allow them to proceed.
         // No status mutation here; the UI button enables once items are checked.
       }
