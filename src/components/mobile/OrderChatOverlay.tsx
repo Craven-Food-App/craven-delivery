@@ -102,7 +102,8 @@ export const OrderChatOverlay: React.FC<OrderChatOverlayProps> = ({
           .select('id, driver_included, customer_included, status, channel')
           .maybeSingle();
         if (insErr) {
-          setError('Could not start chat. Try again.');
+          console.error('[OrderChatOverlay] thread insert failed', insErr);
+          setError(`Could not start chat: ${insErr.message || 'unknown error'}`);
           setLoading(false);
           return;
         }
