@@ -1632,6 +1632,77 @@ export function MerchantLiveOrders({
           );
         })()}
       </Modal>
+
+      <Modal
+        opened={reportIssueOpen}
+        onClose={() => {
+          if (reportSubmitting) return;
+          setReportIssueOpen(false);
+          setReportReason(null);
+          setReportNotes("");
+        }}
+        title={<Text fw={800}>Report a pickup issue</Text>}
+        centered
+        size="md"
+        radius="lg"
+      >
+        {selectedOrder && (
+          <Stack gap="sm">
+            <Text size="sm" c="dimmed">
+              This sends a high-priority alert to Crave'N customer service for order{" "}
+              <b>#{selectedOrder.order_number || selectedOrder.id.slice(-6).toUpperCase()}</b>.
+              The reported event is logged in the order forensics record.
+            </Text>
+            <Select
+              label="What happened?"
+              placeholder="Select a reason"
+              value={reportReason}
+              onChange={setReportReason}
+              data={[
+                { value: "wrong_feeder", label: "Picked up by a different person (not the assigned Feeder)" },
+                { value: "no_id_match", label: "Person could not verify identity / handoff code" },
+                { value: "stolen", label: "Order was taken without authorization (possible theft)" },
+                { value: "missing", label: "Order is missing — staff cannot locate it" },
+                { value: "feeder_no_show", label: "Assigned Feeder never arrived" },
+                { value: "damaged_before_pickup", label: "Order was damaged before pickup" },
+                { value: "other", label: "Other — see notes" },
+              ]}
+              required
+            />
+            <Textarea
+              label="Notes for Crave'N support"
+              placeholder="Describe what you saw, names, timing, vehicle details, anything helpful..."
+              autosize
+              minRows={3}
+              maxRows={6}
+              value={reportNotes}
+              onChange={(e) => setReportNotes(e.currentTarget.value)}
+            />
+            <Group justify="flex-end" mt="xs">
+              <Button
+                variant="subtle"
+                color="gray"
+                onClick={() => {
+                  setReportIssueOpen(false);
+                  setReportReason(null);
+                  setReportNotes("");
+                }}
+                disabled={reportSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                color="red"
+                leftSection={<IconAlertTriangle size={16} />}
+                loading={reportSubmitting}
+                onClick={() => void submitPickupIssue(selectedOrder)}
+              >
+                Send report
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </Modal>
     </Stack>
   );
 }
