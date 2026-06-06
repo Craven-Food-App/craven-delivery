@@ -22,11 +22,15 @@ import {
   IconPackage,
   IconRefresh,
   IconWifi,
+  IconCar,
+  IconUser,
+  IconMapPin,
 } from "@tabler/icons-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   type KanbanColumn,
   type LiveOrder,
+  type LiveOrderDriver,
   formatMoney,
   formatTime,
   getKanbanColumn,
@@ -211,6 +215,12 @@ export function MerchantLiveOrders({
           delivery_address: row.delivery_address ?? null,
           estimated_delivery_time: row.estimated_delivery_time ?? null,
           special_instructions: row.special_instructions ?? null,
+          driver_id: row.driver_id ?? null,
+          accepted_driver_id: row.accepted_driver_id ?? null,
+          pickup_code: row.pickup_code ?? null,
+          pickup_confirmed_at: row.pickup_confirmed_at ?? null,
+          feeder_offer_accepted_at: row.feeder_offer_accepted_at ?? null,
+          driver: null,
           order_items: [],
         };
         return [nextOrder, ...prev];
@@ -219,7 +229,39 @@ export function MerchantLiveOrders({
       copy[idx] = { ...copy[idx], ...row, total_cents: Number(row.total_cents ?? copy[idx].total_cents ?? 0) };
       return copy;
     });
+    const driverId = (row.driver_id ?? row.accepted_driver_id) as string | undefined;
+    if (driverId) void hydrateDriver(row.id, driverId);
   };
+
+  const hydrateDriver = useCallback(async (orderId: string, driverUserId: string) => {
+    try {
+      // driver_id on orders references auth user id (same as driver_profiles.user_id)
+      const { data: dp } = await supabase
+        .from("driver_profiles")
+        .select("id, user_id, status, vehicle_make, vehicle_model, vehicle_year, license_plate")
+        .eq("user_id", driverUserId)
+        .maybeSingle();
+      const { data: up } = await supabase
+        .from("user_profiles")
+        .select("full_name, phone, avatar_url")
+        .eq("user_id", driverUserId)
+        .maybeSingle();
+      const driver: LiveOrderDriver = {
+        id: (dp?.id as string) || driverUserId,
+        user_id: driverUserId,
+        full_name: (up?.full_name as string | null) ?? null,
+        phone: (up?.phone as string | null) ?? null,
+        avatar_url: (up?.avatar_url as string | null) ?? null,
+        vehicle_make: (dp?.vehicle_make as string | null) ?? null,
+        vehicle_model: (dp?.vehicle_model as string | null) ?? null,
+        license_plate: (dp?.license_plate as string | null) ?? null,
+        status: (dp?.status as string | null) ?? null,
+      };
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, driver } : o)));
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const fetchOrders = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -228,7 +270,7 @@ export function MerchantLiveOrders({
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id, order_number, customer_name, order_status, created_at, total_cents, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time"
+          "id, order_number, customer_name, order_status, created_at, total_cents, accepted_at, driver_arrived_at, pickup_parking_spot, delivery_method, delivery_address, estimated_delivery_time, driver_id, accepted_driver_id, pickup_code, pickup_confirmed_at, feeder_offer_accepted_at"
         )
         .eq("restaurant_id", restaurantId)
         .in("order_status", Array.from(ACTIVE_STATUSES))
@@ -260,11 +302,56 @@ export function MerchantLiveOrders({
         });
       }
 
+      // Fetch driver info for any orders that have a driver assigned
+      const driverUserIds = Array.from(
+        new Set(
+          rows
+            .map((r) => (r.driver_id || r.accepted_driver_id) as string | null)
+            .filter((v): v is string => !!v),
+        ),
+      );
+      const driverByUserId: Record<string, LiveOrderDriver> = {};
+      if (driverUserIds.length > 0) {
+        const [{ data: dps }, { data: ups }] = await Promise.all([
+          supabase
+            .from("driver_profiles")
+            .select("id, user_id, status, vehicle_make, vehicle_model, license_plate")
+            .in("user_id", driverUserIds),
+          supabase
+            .from("user_profiles")
+            .select("user_id, full_name, phone, avatar_url")
+            .in("user_id", driverUserIds),
+        ]);
+        const upMap: Record<string, { full_name?: string | null; phone?: string | null; avatar_url?: string | null }> = {};
+        (ups || []).forEach((u: Record<string, unknown>) => {
+          upMap[String(u.user_id)] = u as never;
+        });
+        (dps || []).forEach((d: Record<string, unknown>) => {
+          const uid = String(d.user_id);
+          const u = upMap[uid] || {};
+          driverByUserId[uid] = {
+            id: String(d.id),
+            user_id: uid,
+            full_name: (u.full_name as string | null) ?? null,
+            phone: (u.phone as string | null) ?? null,
+            avatar_url: (u.avatar_url as string | null) ?? null,
+            vehicle_make: (d.vehicle_make as string | null) ?? null,
+            vehicle_model: (d.vehicle_model as string | null) ?? null,
+            license_plate: (d.license_plate as string | null) ?? null,
+            status: (d.status as string | null) ?? null,
+          };
+        });
+      }
+
       setOrders(
-        rows.map((order) => ({
-          ...order,
-          order_items: itemsByOrder[order.id] || [],
-        }))
+        rows.map((order) => {
+          const dUid = (order.driver_id || order.accepted_driver_id) as string | null;
+          return {
+            ...order,
+            order_items: itemsByOrder[order.id] || [],
+            driver: dUid ? driverByUserId[dUid] || null : null,
+          };
+        })
       );
     } catch (err: unknown) {
       notifications.show({
@@ -592,6 +679,48 @@ export function MerchantLiveOrders({
               </Text>
             )}
           </Group>
+
+          {(order.driver || order.driver_id || order.accepted_driver_id) && (
+            <Box
+              mt={10}
+              p={8}
+              style={{
+                background: order.driver_arrived_at ? "#ecfdf5" : "#eff6ff",
+                border: `1px solid ${order.driver_arrived_at ? "#a7f3d0" : "#bfdbfe"}`,
+                borderRadius: 8,
+              }}
+            >
+              <Group justify="space-between" gap={6} wrap="nowrap" align="flex-start">
+                <Group gap={6} wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
+                  <IconCar size={14} color={order.driver_arrived_at ? "#047857" : "#1d4ed8"} />
+                  <Box style={{ minWidth: 0 }}>
+                    <Text size="xs" fw={700} lineClamp={1} c={order.driver_arrived_at ? "teal.8" : "blue.8"}>
+                      {order.driver?.full_name || "Feeder assigned"}
+                      {order.driver_arrived_at ? " · Arrived" : " · En route"}
+                    </Text>
+                    {(order.driver?.vehicle_make || order.driver?.license_plate) && (
+                      <Text size="xs" c="dimmed" lineClamp={1}>
+                        {[order.driver?.vehicle_make, order.driver?.vehicle_model].filter(Boolean).join(" ")}
+                        {order.driver?.license_plate ? ` · ${order.driver.license_plate}` : ""}
+                      </Text>
+                    )}
+                  </Box>
+                </Group>
+                <Stack gap={2} align="flex-end" style={{ flexShrink: 0 }}>
+                  {order.pickup_parking_spot && (
+                    <Badge size="sm" color="orange" variant="filled" radius="sm">
+                      Spot {order.pickup_parking_spot}
+                    </Badge>
+                  )}
+                  {order.pickup_code && (
+                    <Text size="xs" fw={700} ff="monospace" c="dark.6">
+                      Code {order.pickup_code}
+                    </Text>
+                  )}
+                </Stack>
+              </Group>
+            </Box>
+          )}
         </Box>
 
         {/* Primary action button — DoorDash-style full-width CTA */}
@@ -1091,8 +1220,118 @@ export function MerchantLiveOrders({
                           <Text size="sm" fw={700}>{selectedOrder.pickup_parking_spot}</Text>
                         </Group>
                       )}
+                      {selectedOrder.pickup_code && (
+                        <Group justify="space-between">
+                          <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>HANDOFF CODE</Text>
+                          <Text size="md" fw={800} ff="monospace" c="orange.7">{selectedOrder.pickup_code}</Text>
+                        </Group>
+                      )}
                     </Stack>
                   </Box>
+
+                  {/* Feeder / Driver */}
+                  {(selectedOrder.driver || selectedOrder.driver_id || selectedOrder.accepted_driver_id) && (
+                    <Box
+                      style={{
+                        background: "#fff",
+                        borderRadius: 10,
+                        border: `1px solid ${selectedOrder.driver_arrived_at ? "#a7f3d0" : "#e5e7eb"}`,
+                        padding: 14,
+                      }}
+                    >
+                      <Group justify="space-between" mb={6}>
+                        <Text size="xs" c="dimmed" fw={700} style={{ letterSpacing: "0.04em" }}>
+                          FEEDER
+                        </Text>
+                        <Badge
+                          size="sm"
+                          color={selectedOrder.driver_arrived_at ? "teal" : selectedOrder.pickup_confirmed_at ? "gray" : "blue"}
+                          variant="filled"
+                        >
+                          {selectedOrder.pickup_confirmed_at
+                            ? "Picked up"
+                            : selectedOrder.driver_arrived_at
+                              ? "At store"
+                              : "En route"}
+                        </Badge>
+                      </Group>
+                      <Group gap={10} wrap="nowrap" align="flex-start">
+                        <Box
+                          style={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: "50%",
+                            background: "#f1f5f9",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            overflow: "hidden",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {selectedOrder.driver?.avatar_url ? (
+                            <img
+                              src={selectedOrder.driver.avatar_url}
+                              alt=""
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                          ) : (
+                            <IconUser size={20} color="#475569" />
+                          )}
+                        </Box>
+                        <Box style={{ flex: 1, minWidth: 0 }}>
+                          <Text fw={700} size="sm" lineClamp={1}>
+                            {selectedOrder.driver?.full_name || "Feeder assigned"}
+                          </Text>
+                          {selectedOrder.driver?.phone && (
+                            <Text size="xs" c="dimmed">{selectedOrder.driver.phone}</Text>
+                          )}
+                          {(selectedOrder.driver?.vehicle_make || selectedOrder.driver?.vehicle_model) && (
+                            <Group gap={4} mt={2} wrap="nowrap">
+                              <IconCar size={12} color="#64748b" />
+                              <Text size="xs" c="dimmed" lineClamp={1}>
+                                {[selectedOrder.driver?.vehicle_make, selectedOrder.driver?.vehicle_model].filter(Boolean).join(" ")}
+                                {selectedOrder.driver?.license_plate ? ` · ${selectedOrder.driver.license_plate}` : ""}
+                              </Text>
+                            </Group>
+                          )}
+                        </Box>
+                      </Group>
+                      <Stack gap={4} mt={10}>
+                        {selectedOrder.feeder_offer_accepted_at && (
+                          <Group justify="space-between">
+                            <Text size="xs" c="dimmed">Accepted</Text>
+                            <Text size="xs" fw={600}>{formatTime(selectedOrder.feeder_offer_accepted_at)}</Text>
+                          </Group>
+                        )}
+                        {selectedOrder.driver_arrived_at && (
+                          <Group justify="space-between">
+                            <Text size="xs" c="dimmed">Arrived at store</Text>
+                            <Text size="xs" fw={700} c="teal.7">
+                              {formatTime(selectedOrder.driver_arrived_at)} · {minutesSince(selectedOrder.driver_arrived_at)}m ago
+                            </Text>
+                          </Group>
+                        )}
+                        {selectedOrder.pickup_parking_spot && (
+                          <Group justify="space-between">
+                            <Text size="xs" c="dimmed">Parking spot</Text>
+                            <Badge size="sm" color="orange" variant="filled">
+                              <Group gap={4} wrap="nowrap">
+                                <IconMapPin size={10} />
+                                {selectedOrder.pickup_parking_spot}
+                              </Group>
+                            </Badge>
+                          </Group>
+                        )}
+                        {selectedOrder.pickup_confirmed_at && (
+                          <Group justify="space-between">
+                            <Text size="xs" c="dimmed">Picked up</Text>
+                            <Text size="xs" fw={600}>{formatTime(selectedOrder.pickup_confirmed_at)}</Text>
+                          </Group>
+                        )}
+                      </Stack>
+                    </Box>
+                  )}
 
                   <Box
                     style={{
