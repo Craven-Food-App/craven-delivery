@@ -459,6 +459,7 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
                   title="Refresh order status"
                 >
                   <IconRefresh size={14} className={refreshing ? 'dfl-spin' : ''} />
+                  <span>{refreshing ? 'Syncing' : 'Refresh'}</span>
                 </button>
               )}
               <div className="dfl-step-two-dist-chip">{distStr} MI</div>
