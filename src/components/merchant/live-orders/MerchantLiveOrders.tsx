@@ -622,7 +622,7 @@ export function MerchantLiveOrders({
                 style={{ color: meta.headerFg, letterSpacing: "-0.01em", lineHeight: 1.15 }}
                 lineClamp={1}
               >
-                {order.customer_name || "Customer"}
+                {formatCustomerNameForMerchant(order.customer_name)}
               </Text>
             </Box>
             {timeLabel && (
