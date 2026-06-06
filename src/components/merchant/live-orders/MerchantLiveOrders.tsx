@@ -12,6 +12,8 @@ import {
   Stack,
   Switch,
   Text,
+  Textarea,
+  Select,
   UnstyledButton,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
@@ -25,8 +27,11 @@ import {
   IconCar,
   IconUser,
   IconMapPin,
+  IconCheck,
+  IconFlag,
 } from "@tabler/icons-react";
 import { supabase } from "@/integrations/supabase/client";
+import { logOrderEvent } from "@/lib/orderTracking";
 import {
   type KanbanColumn,
   type LiveOrder,
@@ -129,6 +134,11 @@ export function MerchantLiveOrders({
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [prepMinutes, setPrepMinutes] = useState(20);
   const [urgentBannerOrderId, setUrgentBannerOrderId] = useState<string | null>(null);
+  const [reportIssueOpen, setReportIssueOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<string | null>(null);
+  const [reportNotes, setReportNotes] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [pickupConfirming, setPickupConfirming] = useState(false);
 
   const alertAudioRef = useRef<HTMLAudioElement | null>(null);
   const recentNewOrderIdsRef = useRef<Set<string>>(new Set());
@@ -537,6 +547,117 @@ export function MerchantLiveOrders({
     }
   };
 
+  const confirmMerchantPickup = async (order: LiveOrder) => {
+    setPickupConfirming(true);
+    try {
+      const now = new Date().toISOString();
+      const ok = await updateOrder(order.id, {
+        order_status: "picked_up",
+        pickup_confirmed_at: order.pickup_confirmed_at || now,
+      } as Record<string, unknown>);
+      if (ok) {
+        await logOrderEvent({
+          orderId: order.id,
+          eventType: "order_picked_up",
+          actorRole: "merchant",
+          notes: "Merchant confirmed Feeder pickup",
+          metadata: {
+            assigned_driver_id: order.driver_id || order.accepted_driver_id || null,
+            driver_name: order.driver?.full_name || null,
+          },
+        });
+        notifications.show({
+          title: "Pickup confirmed",
+          message: "Order marked as picked up by Feeder",
+          color: "green",
+        });
+        setSelectedOrderId(null);
+      }
+    } finally {
+      setPickupConfirming(false);
+    }
+  };
+
+  const submitPickupIssue = async (order: LiveOrder) => {
+    if (!reportReason) {
+      notifications.show({ title: "Pick a reason", message: "Select a reason for the report", color: "orange" });
+      return;
+    }
+    setReportSubmitting(true);
+    try {
+      // Log forensic event
+      await logOrderEvent({
+        orderId: order.id,
+        eventType: "support_action",
+        actorRole: "merchant",
+        notes: reportNotes || `Merchant reported pickup issue: ${reportReason}`,
+        metadata: {
+          report_type: "pickup_issue",
+          reason: reportReason,
+          assigned_driver_id: order.driver_id || order.accepted_driver_id || null,
+          driver_name: order.driver?.full_name || null,
+          reported_at: new Date().toISOString(),
+        },
+      });
+
+      // Open / append to a support thread so customer service is notified
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const subject = `Pickup issue · #${order.order_number || order.id.slice(-6).toUpperCase()}`;
+        const body =
+          `Merchant report — ${reportReason}\n` +
+          (reportNotes ? `Notes: ${reportNotes}\n` : "") +
+          `Assigned feeder: ${order.driver?.full_name || "(unknown)"}`;
+
+        const { data: existing } = await (supabase as any)
+          .from("order_support_threads")
+          .select("id")
+          .eq("order_id", order.id)
+          .eq("channel", "message")
+          .maybeSingle();
+
+        let threadId: string | null = existing?.id ?? null;
+        if (!threadId) {
+          const { data: created } = await (supabase as any)
+            .from("order_support_threads")
+            .insert({
+              order_id: order.id,
+              restaurant_id: restaurantId,
+              channel: "message",
+              subject,
+              priority: reportReason === "stolen" ? "urgent" : "high",
+              created_by: user?.id ?? null,
+            })
+            .select("id")
+            .maybeSingle();
+          threadId = created?.id ?? null;
+        }
+
+        if (threadId) {
+          await (supabase as any).from("order_support_messages").insert({
+            thread_id: threadId,
+            sender_user_id: user?.id ?? null,
+            sender_role: "merchant",
+            body,
+          });
+        }
+      } catch (err) {
+        console.warn("[merchant] support thread create failed", err);
+      }
+
+      notifications.show({
+        title: "Report sent to Crave'N support",
+        message: "Customer service has been notified and will investigate.",
+        color: "orange",
+      });
+      setReportIssueOpen(false);
+      setReportReason(null);
+      setReportNotes("");
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
   const renderOrderCard = (order: LiveOrder, column: KanbanColumn) => {
     const meta = COLUMN_META[column];
     const behind = isRunningBehind(order);
@@ -744,8 +865,8 @@ export function MerchantLiveOrders({
             fullWidth
             radius="md"
             size="sm"
-            color={column === "ready" ? "gray" : "orange"}
-            variant={column === "ready" ? "light" : "filled"}
+            color="orange"
+            variant="filled"
             onClick={handlePrimaryAction}
             styles={{
               root: {
@@ -1464,8 +1585,32 @@ export function MerchantLiveOrders({
                   </Button>
                 )}
                 {status === "ready" && (
-                  <Badge color="green" size="lg" variant="light">
-                    Waiting for Feeder pickup
+                  <Group gap={8} wrap="nowrap">
+                    <Button
+                      size="lg"
+                      color="red"
+                      variant="outline"
+                      leftSection={<IconFlag size={16} />}
+                      onClick={() => setReportIssueOpen(true)}
+                      style={{ fontWeight: 700 }}
+                    >
+                      Report issue
+                    </Button>
+                    <Button
+                      size="lg"
+                      color="orange"
+                      leftSection={<IconCheck size={18} />}
+                      loading={pickupConfirming}
+                      onClick={() => void confirmMerchantPickup(selectedOrder)}
+                      style={{ minWidth: 260, fontWeight: 700 }}
+                    >
+                      Confirm Feeder pickup
+                    </Button>
+                  </Group>
+                )}
+                {status === "picked_up" && (
+                  <Badge color="teal" size="lg" variant="filled">
+                    Pickup confirmed by merchant
                   </Badge>
                 )}
               </Box>
@@ -1482,6 +1627,77 @@ export function MerchantLiveOrders({
             </Box>
           );
         })()}
+      </Modal>
+
+      <Modal
+        opened={reportIssueOpen}
+        onClose={() => {
+          if (reportSubmitting) return;
+          setReportIssueOpen(false);
+          setReportReason(null);
+          setReportNotes("");
+        }}
+        title={<Text fw={800}>Report a pickup issue</Text>}
+        centered
+        size="md"
+        radius="lg"
+      >
+        {selectedOrder && (
+          <Stack gap="sm">
+            <Text size="sm" c="dimmed">
+              This sends a high-priority alert to Crave'N customer service for order{" "}
+              <b>#{selectedOrder.order_number || selectedOrder.id.slice(-6).toUpperCase()}</b>.
+              The reported event is logged in the order forensics record.
+            </Text>
+            <Select
+              label="What happened?"
+              placeholder="Select a reason"
+              value={reportReason}
+              onChange={setReportReason}
+              data={[
+                { value: "wrong_feeder", label: "Picked up by a different person (not the assigned Feeder)" },
+                { value: "no_id_match", label: "Person could not verify identity / handoff code" },
+                { value: "stolen", label: "Order was taken without authorization (possible theft)" },
+                { value: "missing", label: "Order is missing — staff cannot locate it" },
+                { value: "feeder_no_show", label: "Assigned Feeder never arrived" },
+                { value: "damaged_before_pickup", label: "Order was damaged before pickup" },
+                { value: "other", label: "Other — see notes" },
+              ]}
+              required
+            />
+            <Textarea
+              label="Notes for Crave'N support"
+              placeholder="Describe what you saw, names, timing, vehicle details, anything helpful..."
+              autosize
+              minRows={3}
+              maxRows={6}
+              value={reportNotes}
+              onChange={(e) => setReportNotes(e.currentTarget.value)}
+            />
+            <Group justify="flex-end" mt="xs">
+              <Button
+                variant="subtle"
+                color="gray"
+                onClick={() => {
+                  setReportIssueOpen(false);
+                  setReportReason(null);
+                  setReportNotes("");
+                }}
+                disabled={reportSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                color="red"
+                leftSection={<IconAlertTriangle size={16} />}
+                loading={reportSubmitting}
+                onClick={() => void submitPickupIssue(selectedOrder)}
+              >
+                Send report
+              </Button>
+            </Group>
+          </Stack>
+        )}
       </Modal>
     </Stack>
   );

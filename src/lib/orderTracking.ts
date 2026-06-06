@@ -30,6 +30,7 @@ export type OrderTrackingEventType =
 export interface TrackingEventInput {
   orderId: string;
   eventType: OrderTrackingEventType;
+  actorRole?: 'feeder' | 'merchant' | 'customer' | 'support' | 'system';
   lat?: number | null;
   lng?: number | null;
   accuracyM?: number | null;
@@ -116,7 +117,7 @@ export async function logOrderEvent(input: TrackingEventInput): Promise<void> {
       order_id: input.orderId,
       driver_id: user?.id ?? null,
       actor_user_id: user?.id ?? null,
-      actor_role: 'feeder',
+      actor_role: input.actorRole ?? 'feeder',
       event_type: input.eventType,
       lat: input.lat ?? null,
       lng: input.lng ?? null,
