@@ -78,18 +78,19 @@ export const OrderChatOverlay: React.FC<OrderChatOverlayProps> = ({
 
       if (!t) {
         let custId = customerIdProp;
-        if (custId == null) {
-          const { data: orderRow } = await (supabase as any)
-            .from('orders')
-            .select('customer_id, restaurant_id')
-            .eq('id', orderId)
-            .maybeSingle();
-          custId = orderRow?.customer_id ?? null;
-        }
+        let restId: string | null = null;
+        const { data: orderRow } = await (supabase as any)
+          .from('orders')
+          .select('customer_id, restaurant_id')
+          .eq('id', orderId)
+          .maybeSingle();
+        if (custId == null) custId = orderRow?.customer_id ?? null;
+        restId = orderRow?.restaurant_id ?? null;
         const { data: created, error: insErr } = await (supabase as any)
           .from('order_support_threads')
           .insert({
             order_id: orderId,
+            restaurant_id: restId,
             customer_user_id: custId ?? null,
             driver_id: user.id,
             channel: 'message',
