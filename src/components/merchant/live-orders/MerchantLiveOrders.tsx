@@ -1791,10 +1791,12 @@ export function MerchantLiveOrders({
                       color="orange"
                       leftSection={<IconCheck size={18} />}
                       loading={pickupConfirming}
+                      disabled={!selectedOrder.pickup_confirmed_at}
                       onClick={() => void confirmMerchantPickup(selectedOrder)}
                       style={{ minWidth: 260, fontWeight: 700 }}
+                      title={!selectedOrder.pickup_confirmed_at ? "Verify the Feeder's handoff code first" : undefined}
                     >
-                      Confirm Feeder pickup
+                      {selectedOrder.pickup_confirmed_at ? "Mark order handed off" : "Verify code first"}
                     </Button>
                   </Group>
                 )}
