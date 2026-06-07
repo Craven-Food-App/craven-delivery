@@ -859,31 +859,25 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
         >
           <button
             type="button"
-            onClick={async () => {
-              if (hasUnscanned) {
-                const nextId = scanLabels.find((p) => !p.scanned)?.id;
-                if (nextId != null) {
-                  setScanLabels((prev) => prev.map((p) => (p.id === nextId ? { ...p, scanned: true } : p)));
-                  setScannedCount((prev) => prev + 1);
-                }
-                return;
-              }
-              setStep('stops_summary');
+            onClick={() => {
+              if (!hasUnscanned) setStep('stops_summary');
             }}
+            disabled={hasUnscanned}
             style={{
               width: '100%',
               padding: '13px 16px',
               borderRadius: 999,
               border: 'none',
-              background: C.accent,
+              background: hasUnscanned ? '#D1D5DB' : C.accent,
               color: '#FFFFFF',
               fontSize: 15,
               fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 6px 18px rgba(234, 88, 12, 0.35)',
+              cursor: hasUnscanned ? 'not-allowed' : 'pointer',
+              boxShadow: hasUnscanned ? 'none' : '0 6px 18px rgba(234, 88, 12, 0.35)',
+              opacity: hasUnscanned ? 0.82 : 1,
             }}
           >
-            {hasUnscanned ? 'Mark next label scanned' : 'Finish scanning'}
+            {hasUnscanned ? 'Scan all labels to continue' : 'Finish scanning'}
           </button>
           <div
             style={{
