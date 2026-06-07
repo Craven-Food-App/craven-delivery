@@ -8,7 +8,7 @@
  * this component renders a foreground card and bottom slide / controls.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import SlideToConfirm from '@/components/SlideToConfirm';
 
 const C = {
@@ -108,12 +108,18 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   const [scannedCount, setScannedCount] = useState(0);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [lastScanned, setLastScanned] = useState<string | null>(null);
+  const [scanFeedback, setScanFeedback] = useState<{
+    tone: 'success' | 'error';
+    message: string;
+    value?: string;
+  } | null>(null);
   const [torchOn, setTorchOn] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const scanIntervalRef = useRef<number | null>(null);
   const scanStartTimeoutRef = useRef<number | null>(null);
+  const scanFeedbackTimeoutRef = useRef<number | null>(null);
   const lastScannedValueRef = useRef<string>('');
   const lastScannedTimeRef = useRef<number>(0);
 
@@ -139,6 +145,21 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   const spots = useMemo(() => {
     return Array.from({ length: safeSpotCount }, (_v, i) => i + 1);
   }, [safeSpotCount]);
+
+  const showScanFeedback = useCallback(
+    (tone: 'success' | 'error', message: string, value?: string) => {
+      if (scanFeedbackTimeoutRef.current != null) {
+        window.clearTimeout(scanFeedbackTimeoutRef.current);
+        scanFeedbackTimeoutRef.current = null;
+      }
+      setScanFeedback({ tone, message, value });
+      scanFeedbackTimeoutRef.current = window.setTimeout(() => {
+        setScanFeedback(null);
+        scanFeedbackTimeoutRef.current = null;
+      }, tone === 'success' ? 1400 : 1800);
+    },
+    []
+  );
 
   const handleConfirmArrival = async () => {
     if (onArrivalConfirmed) {
@@ -232,6 +253,25 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
     setScanLabels(labels);
     setScannedCount(0);
   }, [step, parkingSpotCount, ordersForPickup, orderId]);
+
+  useEffect(() => {
+    if (step !== 'scan') {
+      if (scanFeedbackTimeoutRef.current != null) {
+        window.clearTimeout(scanFeedbackTimeoutRef.current);
+        scanFeedbackTimeoutRef.current = null;
+      }
+      setScanFeedback(null);
+      return;
+    }
+  }, [step]);
+
+  useEffect(() => {
+    return () => {
+      if (scanFeedbackTimeoutRef.current != null) {
+        window.clearTimeout(scanFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Start/stop live camera barcode scanning in the Scan Labels step
   useEffect(() => {
@@ -329,24 +369,53 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
 
             setLastScanned(value);
 
+            const normalized = value.trim().toLowerCase();
             const digitsOnly = value.replace(/\D/g, '');
             const scannedLast4 = digitsOnly.length >= 4 ? digitsOnly.slice(-4) : digitsOnly;
 
             setScanLabels((prev) => {
-              const matchByLast4 = scannedLast4
+              const hasExplicitBarcodes = prev.some((p) => !!p.itemBarcode);
+              const matchBarcode = (candidate?: string) => {
+                if (!candidate) return false;
+                const exp = candidate.trim().toLowerCase();
+                const expDigits = exp.replace(/\D/g, '');
+                return (
+                  normalized === exp ||
+                  normalized.endsWith(exp) ||
+                  (!!expDigits && digitsOnly === expDigits) ||
+                  (!!expDigits && digitsOnly.endsWith(expDigits))
+                );
+              };
+
+              const matchByExplicitBarcode = prev.find(
+                (p) => !p.scanned && p.itemBarcode && matchBarcode(p.itemBarcode)
+              );
+              const matchByOrderTail = !hasExplicitBarcodes && scannedLast4
                 ? prev.find((p) => !p.scanned && p.orderNumber === scannedLast4)
                 : null;
-              const matchByBarcode = prev.find(
-                (p) => !p.scanned && (value === p.orderId || (p.orderNumber && value.endsWith(p.orderNumber)))
-              );
-              const next = matchByLast4 ?? matchByBarcode ?? prev.find((p) => !p.scanned);
-              if (!next) return prev;
+              const matchByOrderId = !hasExplicitBarcodes
+                ? prev.find(
+                    (p) =>
+                      !p.scanned &&
+                      (value === p.orderId ||
+                        (p.orderNumber && value.endsWith(p.orderNumber)) ||
+                        (p.orderId && normalized.endsWith(p.orderId.toLowerCase())))
+                  )
+                : null;
+
+              const next = matchByExplicitBarcode ?? matchByOrderTail ?? matchByOrderId;
+              if (!next) {
+                showScanFeedback('error', hasExplicitBarcodes ? 'Wrong barcode' : 'Barcode does not match this order', value);
+                return prev;
+              }
+
+              showScanFeedback('success', 'Barcode accepted', value);
               const updated = prev.map((p) =>
                 p.id === next.id
                   ? {
                       ...p,
                       scanned: true,
-                      itemBarcode: value,
+                      itemBarcode: p.itemBarcode ?? value,
                       name: value,
                     }
                   : p
@@ -559,6 +628,62 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
             <span>Please position the label barcode within this scanner box.</span>
           </div>
 
+          {scanFeedback && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: '7% 5%',
+                borderRadius: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                pointerEvents: 'none',
+                background:
+                  scanFeedback.tone === 'success'
+                    ? 'rgba(22, 163, 74, 0.18)'
+                    : 'rgba(220, 38, 38, 0.20)',
+              }}
+            >
+              <div
+                style={{
+                  minWidth: 176,
+                  maxWidth: '80%',
+                  padding: '16px 18px',
+                  borderRadius: 18,
+                  background: scanFeedback.tone === 'success' ? 'rgba(21, 128, 61, 0.96)' : 'rgba(185, 28, 28, 0.96)',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 6,
+                  boxShadow: '0 12px 32px rgba(0,0,0,0.32)',
+                  textAlign: 'center',
+                }}
+              >
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: '50%',
+                    border: '2px solid rgba(255,255,255,0.92)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 26,
+                    fontWeight: 800,
+                    lineHeight: 1,
+                  }}
+                >
+                  {scanFeedback.tone === 'success' ? '✓' : '✕'}
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>{scanFeedback.message}</div>
+                {scanFeedback.value && (
+                  <div style={{ fontSize: 11, opacity: 0.92, wordBreak: 'break-all' }}>{scanFeedback.value}</div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Flash button */}
           <button
             type="button"
@@ -692,7 +817,8 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                   </div>
                   {group.packages.map((pkg) => {
                     const isScanned = pkg.scanned;
-                    const labelTail = (pkg.itemBarcode ?? pkg.name ?? '').slice(-3);
+                    const labelValue = pkg.itemBarcode ?? pkg.name ?? '';
+                    const labelTail = labelValue.slice(-4);
                     return (
                       <div key={pkg.id} style={{ display: 'flex', alignItems: 'center', padding: '4px 0' }}>
                         <div style={{ width: 24 }}>
@@ -706,8 +832,13 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                             }}
                           />
                         </div>
-                        <div style={{ fontSize: 13, color: C.textPrimary, fontWeight: 500 }}>
-                          ***{labelTail || '---'}
+                        <div>
+                          <div style={{ fontSize: 13, color: C.textPrimary, fontWeight: 500 }}>
+                            {labelValue ? `••••${labelTail || '----'}` : 'Awaiting barcode'}
+                          </div>
+                          <div style={{ fontSize: 11, color: C.textSecondary }}>
+                            {isScanned ? 'Matched barcode' : pkg.itemBarcode ? 'Expected barcode' : 'Scan order barcode'}
+                          </div>
                         </div>
                       </div>
                     );
@@ -728,31 +859,25 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
         >
           <button
             type="button"
-            onClick={async () => {
-              if (hasUnscanned) {
-                const nextId = scanLabels.find((p) => !p.scanned)?.id;
-                if (nextId != null) {
-                  setScanLabels((prev) => prev.map((p) => (p.id === nextId ? { ...p, scanned: true } : p)));
-                  setScannedCount((prev) => prev + 1);
-                }
-                return;
-              }
-              setStep('stops_summary');
+            onClick={() => {
+              if (!hasUnscanned) setStep('stops_summary');
             }}
+            disabled={hasUnscanned}
             style={{
               width: '100%',
               padding: '13px 16px',
               borderRadius: 999,
               border: 'none',
-              background: C.accent,
+              background: hasUnscanned ? '#D1D5DB' : C.accent,
               color: '#FFFFFF',
               fontSize: 15,
               fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 6px 18px rgba(234, 88, 12, 0.35)',
+              cursor: hasUnscanned ? 'not-allowed' : 'pointer',
+              boxShadow: hasUnscanned ? 'none' : '0 6px 18px rgba(234, 88, 12, 0.35)',
+              opacity: hasUnscanned ? 0.82 : 1,
             }}
           >
-            {hasUnscanned ? 'Mark next label scanned' : 'Finish scanning'}
+            {hasUnscanned ? 'Scan all labels to continue' : 'Finish scanning'}
           </button>
           <div
             style={{
@@ -1771,28 +1896,22 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                                   ✓
                                 </span>
                               ) : (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    setScanLabels((prev) =>
-                                      prev.map((p) =>
-                                        p.id === pkg.id ? { ...p, scanned: true } : p
-                                      )
-                                    );
-                                    setScannedCount((prev) => prev + 1);
-                                  }}
+                                <span
                                   style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                     padding: '5px 9px',
                                     borderRadius: 999,
-                                    border: `1px solid ${C.accent}`,
-                                    background: 'white',
-                                    color: C.accent,
+                                    border: '1px solid #E5E7EB',
+                                    background: '#F9FAFB',
+                                    color: C.textSecondary,
                                     fontSize: 11,
                                     fontWeight: 500,
                                   }}
                                 >
-                                  Mark scanned
-                                </button>
+                                  Awaiting scan
+                                </span>
                               )}
                             </div>
                           </div>

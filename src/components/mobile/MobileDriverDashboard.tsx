@@ -1925,6 +1925,7 @@ export const MobileDriverDashboard: React.FC = () => {
 
     if (batch && batch.length > 1) {
       const orderRows: any[] = [];
+      const orderItemsByOrderId = new Map<string, any[]>();
       for (const b of batch) {
         const { data: od } = await supabase
           .from('orders')
@@ -1959,6 +1960,13 @@ export const MobileDriverDashboard: React.FC = () => {
             _labelFallback: addressStr,
           } as any);
         }
+
+        const { data: orderItems } = await supabase
+          .from('order_items')
+          .select('id, quantity, menu_items (name, image_url, barcode)')
+          .eq('order_id', b.order_id);
+
+        orderItemsByOrderId.set(b.order_id, orderItems || []);
       }
       const first = batch[0];
       const totalPayout = sumPayoutCents(batch);
@@ -1978,6 +1986,13 @@ export const MobileDriverDashboard: React.FC = () => {
           id: o.id,
           order_number: o.order_number,
           label: o.customer_name || o.order_number || o.id,
+          totalPackages: Math.max(
+            1,
+            (orderItemsByOrderId.get(o.id) || []).reduce((sum, item: any) => sum + Number(item.quantity || 0), 0)
+          ),
+          itemBarcodes: (orderItemsByOrderId.get(o.id) || []).flatMap((item: any) =>
+            Array.from({ length: Math.max(1, Number(item.quantity || 0)) }, () => item.menu_items?.barcode).filter(Boolean)
+          ),
           address: addressStr,
           customer_name: o.customer_name,
           payout_cents: o.payout_cents,
@@ -2042,7 +2057,7 @@ export const MobileDriverDashboard: React.FC = () => {
     const { data: orderItemsData } = await supabase
       .from('order_items')
       .select(
-        'id, quantity, price_cents, special_instructions, menu_items (name, image_url)'
+        'id, quantity, price_cents, special_instructions, menu_items (name, image_url, barcode)'
       )
       .eq('order_id', current.order_id);
     const formattedItems = (orderItemsData || []).map((item: any) => ({
@@ -2052,8 +2067,30 @@ export const MobileDriverDashboard: React.FC = () => {
       price_cents: item.price_cents,
       special_instructions: item.special_instructions,
       image_url: item.menu_items?.image_url,
+      barcode: item.menu_items?.barcode,
     }));
     const itemsToUse = (current as any).items?.length > 0 ? (current as any).items : formattedItems;
+    const retailPickupOrders = [
+      {
+        id: current.order_id,
+        orderNumber: orderData?.order_number || current.order_number,
+        label: resolvedCustomerName || current.order_number || current.order_id,
+        totalPackages: Math.max(
+          1,
+          itemsToUse.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0)
+        ),
+        itemBarcodes: itemsToUse
+          .flatMap((item: any) =>
+            Array.from({ length: Math.max(1, Number(item.quantity || 0)) }, () => item.barcode).filter(Boolean)
+          ),
+        address:
+          typeof (orderData as any)?.dropoff_address === 'string'
+            ? (orderData as any).dropoff_address
+            : typeof current.dropoff_address === 'string'
+              ? current.dropoff_address
+              : '—',
+      },
+    ];
     if (!orderData) {
       // Claim succeeded; DB read can still fail (RLS/replica) — use offer payload so the trip can start.
       setActiveDelivery({
@@ -2073,6 +2110,7 @@ export const MobileDriverDashboard: React.FC = () => {
         customer_name: resolvedCustomerName,
         customer_phone: undefined,
         delivery_notes: undefined,
+        ordersForPickup: retailPickupOrders,
       });
     } else {
       setActiveDelivery({
@@ -2092,6 +2130,7 @@ export const MobileDriverDashboard: React.FC = () => {
         customer_name: resolvedCustomerName,
         customer_phone: (orderData as any).customer_phone,
         delivery_notes: (orderData as any).delivery_notes,
+        ordersForPickup: retailPickupOrders,
       });
     }
     if (isOfferRetail(current)) {
