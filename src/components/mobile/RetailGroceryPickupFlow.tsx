@@ -628,6 +628,62 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
             <span>Please position the label barcode within this scanner box.</span>
           </div>
 
+          {scanFeedback && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: '7% 5%',
+                borderRadius: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                pointerEvents: 'none',
+                background:
+                  scanFeedback.tone === 'success'
+                    ? 'rgba(22, 163, 74, 0.18)'
+                    : 'rgba(220, 38, 38, 0.20)',
+              }}
+            >
+              <div
+                style={{
+                  minWidth: 176,
+                  maxWidth: '80%',
+                  padding: '16px 18px',
+                  borderRadius: 18,
+                  background: scanFeedback.tone === 'success' ? 'rgba(21, 128, 61, 0.96)' : 'rgba(185, 28, 28, 0.96)',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 6,
+                  boxShadow: '0 12px 32px rgba(0,0,0,0.32)',
+                  textAlign: 'center',
+                }}
+              >
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: '50%',
+                    border: '2px solid rgba(255,255,255,0.92)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 26,
+                    fontWeight: 800,
+                    lineHeight: 1,
+                  }}
+                >
+                  {scanFeedback.tone === 'success' ? '✓' : '✕'}
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>{scanFeedback.message}</div>
+                {scanFeedback.value && (
+                  <div style={{ fontSize: 11, opacity: 0.92, wordBreak: 'break-all' }}>{scanFeedback.value}</div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Flash button */}
           <button
             type="button"
@@ -761,7 +817,8 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                   </div>
                   {group.packages.map((pkg) => {
                     const isScanned = pkg.scanned;
-                    const labelTail = (pkg.itemBarcode ?? pkg.name ?? '').slice(-3);
+                    const labelValue = pkg.itemBarcode ?? pkg.name ?? '';
+                    const labelTail = labelValue.slice(-4);
                     return (
                       <div key={pkg.id} style={{ display: 'flex', alignItems: 'center', padding: '4px 0' }}>
                         <div style={{ width: 24 }}>
@@ -775,8 +832,13 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                             }}
                           />
                         </div>
-                        <div style={{ fontSize: 13, color: C.textPrimary, fontWeight: 500 }}>
-                          ***{labelTail || '---'}
+                        <div>
+                          <div style={{ fontSize: 13, color: C.textPrimary, fontWeight: 500 }}>
+                            {labelValue ? `••••${labelTail || '----'}` : 'Awaiting barcode'}
+                          </div>
+                          <div style={{ fontSize: 11, color: C.textSecondary }}>
+                            {isScanned ? 'Matched barcode' : pkg.itemBarcode ? 'Expected barcode' : 'Scan order barcode'}
+                          </div>
                         </div>
                       </div>
                     );
