@@ -8,7 +8,7 @@
  * this component renders a foreground card and bottom slide / controls.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import SlideToConfirm from '@/components/SlideToConfirm';
 
 const C = {
@@ -108,12 +108,18 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   const [scannedCount, setScannedCount] = useState(0);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [lastScanned, setLastScanned] = useState<string | null>(null);
+  const [scanFeedback, setScanFeedback] = useState<{
+    tone: 'success' | 'error';
+    message: string;
+    value?: string;
+  } | null>(null);
   const [torchOn, setTorchOn] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const scanIntervalRef = useRef<number | null>(null);
   const scanStartTimeoutRef = useRef<number | null>(null);
+  const scanFeedbackTimeoutRef = useRef<number | null>(null);
   const lastScannedValueRef = useRef<string>('');
   const lastScannedTimeRef = useRef<number>(0);
 
@@ -139,6 +145,21 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   const spots = useMemo(() => {
     return Array.from({ length: safeSpotCount }, (_v, i) => i + 1);
   }, [safeSpotCount]);
+
+  const showScanFeedback = useCallback(
+    (tone: 'success' | 'error', message: string, value?: string) => {
+      if (scanFeedbackTimeoutRef.current != null) {
+        window.clearTimeout(scanFeedbackTimeoutRef.current);
+        scanFeedbackTimeoutRef.current = null;
+      }
+      setScanFeedback({ tone, message, value });
+      scanFeedbackTimeoutRef.current = window.setTimeout(() => {
+        setScanFeedback(null);
+        scanFeedbackTimeoutRef.current = null;
+      }, tone === 'success' ? 1400 : 1800);
+    },
+    []
+  );
 
   const handleConfirmArrival = async () => {
     if (onArrivalConfirmed) {
