@@ -1279,7 +1279,7 @@ export function MerchantLiveOrders({
                 {status !== "pending" && (
                   <Group gap={8} wrap="nowrap">
                     <UnstyledButton
-                      onClick={() => void refreshSelectedOrder()}
+                      onClick={() => void fetchOrders(true)}
                       style={pillButtonStyle}
                       title="Refresh order"
                       aria-label="Refresh order"
