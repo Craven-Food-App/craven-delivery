@@ -155,10 +155,6 @@ export function MerchantLiveOrders({
     [orders, selectedOrderId]
   );
 
-  const refreshSelectedOrder = useCallback(async () => {
-    await fetchOrders(true);
-  }, [fetchOrders]);
-
   const playLoudNewOrderAlert = useCallback(() => {
     if (!soundEnabled) return;
 
