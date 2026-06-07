@@ -41,6 +41,7 @@ const STEP_TWO_CSS = `
     flex-shrink: 0; padding: 10px 20px 12px;
     border-bottom: 1px solid rgba(28,28,30,0.09);
     display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
   }
   .dfl-step-two-status-dot-wrap {
     width: 20px; height: 20px; border: 1px solid rgba(28,28,30,0.09);
@@ -63,6 +64,7 @@ const STEP_TWO_CSS = `
   .dfl-step-two-status-refresh {
     display: inline-flex; align-items: center; justify-content: center;
     gap: 6px;
+    flex-shrink: 0;
     height: 32px; border-radius: 999px;
     border: 1.5px solid #f26419;
     background: #fff7f2; color: #f26419;
@@ -77,10 +79,26 @@ const STEP_TWO_CSS = `
   .dfl-step-two-status-refresh:disabled { opacity: 0.6; cursor: default; }
   .dfl-step-two-status-refresh .dfl-spin { animation: dfl-spin 0.9s linear infinite; }
   @keyframes dfl-spin { to { transform: rotate(360deg); } }
+  .dfl-step-two-status-actions {
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
   .dfl-step-two-dist-chip {
     font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.08em;
     color: #f26419; background: #fff7f2; border: 1px solid rgba(242,100,25,0.18);
     border-radius: 6px; padding: 5px 11px;
+    flex-shrink: 0;
+  }
+  @media (max-width: 420px) {
+    .dfl-step-two-status-bar {
+      align-items: flex-start;
+    }
+    .dfl-step-two-status-actions {
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .dfl-step-two-status-refresh {
+      min-width: 104px;
+    }
   }
   .dfl-step-two-body {
     flex: 1; overflow-y: auto; overscroll-behavior: contain;
@@ -464,7 +482,7 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
                 <div className="dfl-step-two-status-name">{restaurantName}</div>
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div className="dfl-step-two-status-actions">
               {onRefreshStatus && (
                 <button
                   type="button"
