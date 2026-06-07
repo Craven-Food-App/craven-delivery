@@ -155,6 +155,10 @@ export function MerchantLiveOrders({
     [orders, selectedOrderId]
   );
 
+  const refreshSelectedOrder = useCallback(async () => {
+    await fetchOrders(true);
+  }, [fetchOrders]);
+
   const playLoudNewOrderAlert = useCallback(() => {
     if (!soundEnabled) return;
 
@@ -1279,7 +1283,7 @@ export function MerchantLiveOrders({
                 {status !== "pending" && (
                   <Group gap={8} wrap="nowrap">
                     <UnstyledButton
-                      onClick={() => void fetchOrders(true)}
+                      onClick={() => void refreshSelectedOrder()}
                       style={pillButtonStyle}
                       title="Refresh order"
                       aria-label="Refresh order"
