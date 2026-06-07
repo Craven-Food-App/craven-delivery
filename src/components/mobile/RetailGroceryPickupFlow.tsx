@@ -806,7 +806,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
         }}
       >
         {/* Card with store + status (hidden on Scan Labels step for full-screen scanner) */}
-        {step !== 'scan' && step !== 'stops_summary' && step !== 'stops_list' && (
+        {step !== 'stops_summary' && step !== 'stops_list' && (
           <div
             style={{
               background: C.surface,
