@@ -1896,28 +1896,22 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                                   ✓
                                 </span>
                               ) : (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    setScanLabels((prev) =>
-                                      prev.map((p) =>
-                                        p.id === pkg.id ? { ...p, scanned: true } : p
-                                      )
-                                    );
-                                    setScannedCount((prev) => prev + 1);
-                                  }}
+                                <span
                                   style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                     padding: '5px 9px',
                                     borderRadius: 999,
-                                    border: `1px solid ${C.accent}`,
-                                    background: 'white',
-                                    color: C.accent,
+                                    border: '1px solid #E5E7EB',
+                                    background: '#F9FAFB',
+                                    color: C.textSecondary,
                                     fontSize: 11,
                                     fontWeight: 500,
                                   }}
                                 >
-                                  Mark scanned
-                                </button>
+                                  Awaiting scan
+                                </span>
                               )}
                             </div>
                           </div>
