@@ -369,24 +369,53 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
 
             setLastScanned(value);
 
+            const normalized = value.trim().toLowerCase();
             const digitsOnly = value.replace(/\D/g, '');
             const scannedLast4 = digitsOnly.length >= 4 ? digitsOnly.slice(-4) : digitsOnly;
 
             setScanLabels((prev) => {
-              const matchByLast4 = scannedLast4
+              const hasExplicitBarcodes = prev.some((p) => !!p.itemBarcode);
+              const matchBarcode = (candidate?: string) => {
+                if (!candidate) return false;
+                const exp = candidate.trim().toLowerCase();
+                const expDigits = exp.replace(/\D/g, '');
+                return (
+                  normalized === exp ||
+                  normalized.endsWith(exp) ||
+                  (!!expDigits && digitsOnly === expDigits) ||
+                  (!!expDigits && digitsOnly.endsWith(expDigits))
+                );
+              };
+
+              const matchByExplicitBarcode = prev.find(
+                (p) => !p.scanned && p.itemBarcode && matchBarcode(p.itemBarcode)
+              );
+              const matchByOrderTail = !hasExplicitBarcodes && scannedLast4
                 ? prev.find((p) => !p.scanned && p.orderNumber === scannedLast4)
                 : null;
-              const matchByBarcode = prev.find(
-                (p) => !p.scanned && (value === p.orderId || (p.orderNumber && value.endsWith(p.orderNumber)))
-              );
-              const next = matchByLast4 ?? matchByBarcode ?? prev.find((p) => !p.scanned);
-              if (!next) return prev;
+              const matchByOrderId = !hasExplicitBarcodes
+                ? prev.find(
+                    (p) =>
+                      !p.scanned &&
+                      (value === p.orderId ||
+                        (p.orderNumber && value.endsWith(p.orderNumber)) ||
+                        (p.orderId && normalized.endsWith(p.orderId.toLowerCase())))
+                  )
+                : null;
+
+              const next = matchByExplicitBarcode ?? matchByOrderTail ?? matchByOrderId;
+              if (!next) {
+                showScanFeedback('error', hasExplicitBarcodes ? 'Wrong barcode' : 'Barcode does not match this order', value);
+                return prev;
+              }
+
+              showScanFeedback('success', 'Barcode accepted', value);
               const updated = prev.map((p) =>
                 p.id === next.id
                   ? {
                       ...p,
                       scanned: true,
-                      itemBarcode: value,
+                      itemBarcode: p.itemBarcode ?? value,
                       name: value,
                     }
                   : p
