@@ -108,6 +108,8 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   const [scannedCount, setScannedCount] = useState(0);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [lastScanned, setLastScanned] = useState<string | null>(null);
+  const [torchOn, setTorchOn] = useState(false);
+  const [torchSupported, setTorchSupported] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const scanIntervalRef = useRef<number | null>(null);
@@ -376,6 +378,397 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   }, [step]);
 
   const headerTitle = tripLabel ? `Curbside Pickup • ${tripLabel}` : 'Curbside Pickup';
+
+  // After camera stream is acquired, detect torch capability
+  useEffect(() => {
+    if (step !== 'scan') {
+      setTorchOn(false);
+      setTorchSupported(false);
+      return;
+    }
+    const id = window.setInterval(() => {
+      const stream = mediaStreamRef.current;
+      const track = stream?.getVideoTracks?.()[0];
+      if (!track) return;
+      const caps: any = (track as any).getCapabilities ? (track as any).getCapabilities() : {};
+      if ('torch' in caps) {
+        setTorchSupported(true);
+        window.clearInterval(id);
+      }
+    }, 500);
+    return () => window.clearInterval(id);
+  }, [step]);
+
+  const toggleTorch = async () => {
+    const stream = mediaStreamRef.current;
+    const track = stream?.getVideoTracks?.()[0];
+    if (!track) return;
+    try {
+      const next = !torchOn;
+      await (track as any).applyConstraints({ advanced: [{ torch: next }] });
+      setTorchOn(next);
+    } catch (err) {
+      console.warn('Torch toggle failed', err);
+    }
+  };
+
+  // Full-screen Label Scanning view (Walmart Spark style, orange)
+  if (step === 'scan') {
+    const groups = (() => {
+      const m = new Map<string, { label: string; orderNumber: string; packages: typeof scanLabels }>();
+      scanLabels.forEach((pkg) => {
+        const key = pkg.orderId || 'default';
+        const rawLabel = pkg.orderLabel?.trim();
+        const customerName = rawLabel && rawLabel !== '—' ? rawLabel : 'Customer';
+        const g = m.get(key) || {
+          label: customerName,
+          orderNumber: pkg.orderNumber || (pkg.orderId ? pkg.orderId.replace(/\D/g, '').slice(-4) : ''),
+          packages: [] as typeof scanLabels,
+        };
+        g.packages.push(pkg);
+        m.set(key, g);
+      });
+      return Array.from(m.values());
+    })();
+
+    const hasUnscanned = scanLabels.some((p) => !p.scanned);
+
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          background: '#F4F5F7',
+          fontFamily: '-apple-system, SF Pro Text, system-ui, sans-serif',
+        }}
+      >
+        {/* Orange header bar */}
+        <div
+          style={{
+            background: C.accent,
+            color: '#FFFFFF',
+            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 10px)',
+            paddingBottom: 14,
+            paddingLeft: 14,
+            paddingRight: 14,
+            display: 'grid',
+            gridTemplateColumns: '32px 1fr 32px',
+            alignItems: 'center',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setStep('spot_and_qr')}
+            aria-label="Close scanner"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#FFFFFF',
+              width: 32,
+              height: 32,
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+          <div style={{ fontSize: 17, fontWeight: 600, textAlign: 'center', letterSpacing: 0.1 }}>
+            Label Scanning
+          </div>
+          <button
+            type="button"
+            aria-label="Help"
+            style={{
+              background: 'transparent',
+              border: '1.5px solid rgba(255,255,255,0.85)',
+              color: '#FFFFFF',
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 600,
+              padding: 0,
+              justifySelf: 'end',
+            }}
+          >
+            ?
+          </button>
+        </div>
+
+        {/* Camera viewfinder */}
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            aspectRatio: '4 / 3',
+            background: '#000',
+            overflow: 'hidden',
+          }}
+        >
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+
+          {/* White scanner box overlay */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: '7% 5%',
+              border: '2px solid rgba(255,255,255,0.95)',
+              borderRadius: 14,
+              pointerEvents: 'none',
+              boxShadow: '0 0 0 9999px rgba(0,0,0,0.18)',
+            }}
+          />
+
+          {/* Instruction text */}
+          <div
+            style={{
+              position: 'absolute',
+              left: '12%',
+              right: '12%',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              color: '#FFFFFF',
+              fontSize: 14,
+              fontWeight: 500,
+              textAlign: 'center',
+              textShadow: '0 1px 4px rgba(0,0,0,0.6)',
+              pointerEvents: 'none',
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ flexShrink: 0 }}>
+              <path d="M3 5v14M7 5v14M10 5v14M13 5v14M17 5v14M21 5v14" />
+            </svg>
+            <span>Please position the label barcode within this scanner box.</span>
+          </div>
+
+          {/* Flash button */}
+          <button
+            type="button"
+            onClick={toggleTorch}
+            aria-label="Toggle flashlight"
+            disabled={!torchSupported}
+            style={{
+              position: 'absolute',
+              right: 18,
+              bottom: 18,
+              width: 46,
+              height: 46,
+              borderRadius: '50%',
+              background: torchOn ? '#FACC15' : 'rgba(255,255,255,0.92)',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+              cursor: torchSupported ? 'pointer' : 'not-allowed',
+              opacity: torchSupported ? 1 : 0.55,
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={torchOn ? '#92400E' : '#1F2937'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 2h10l-2 6h-6L7 2z" />
+              <path d="M9 8h6v4l-3 10-3-10V8z" />
+              <line x1="12" y1="13" x2="12" y2="16" />
+            </svg>
+          </button>
+
+          {cameraError && (
+            <div
+              style={{
+                position: 'absolute',
+                left: 12,
+                right: 12,
+                bottom: 76,
+                padding: '8px 12px',
+                background: 'rgba(0,0,0,0.7)',
+                color: '#FEE2E2',
+                fontSize: 11,
+                borderRadius: 8,
+                textAlign: 'center',
+              }}
+            >
+              {cameraError}
+            </div>
+          )}
+        </div>
+
+        {/* Counter */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            padding: '14px 12px 10px',
+            fontSize: 14,
+            color: C.textSecondary,
+            background: '#FFFFFF',
+            borderBottom: '1px solid #E5E7EB',
+          }}
+        >
+          <span
+            style={{
+              display: 'inline-flex',
+              width: 18,
+              height: 18,
+              borderRadius: '50%',
+              border: `1.5px solid ${C.accent}`,
+              color: C.accent,
+              fontSize: 11,
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 700,
+              fontStyle: 'italic',
+              fontFamily: 'Georgia, serif',
+            }}
+          >
+            i
+          </span>
+          <span>
+            Total scanned:{' '}
+            <span style={{ color: C.accent, fontWeight: 700 }}>
+              {scannedCount}/{scanLabels.length || 0}
+            </span>
+          </span>
+        </div>
+
+        {/* Package list */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px' }}>
+          {groups.map((group, gi) => {
+            const total = group.packages.length;
+            const scanned = group.packages.filter((p) => p.scanned).length;
+            return (
+              <div
+                key={gi}
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: 12,
+                  border: '1px solid #E5E7EB',
+                  marginBottom: 10,
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    padding: '12px 14px 10px',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: C.accent }}>{group.label}</div>
+                    {group.orderNumber && (
+                      <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>
+                        Order: <span style={{ color: C.textPrimary, fontWeight: 600 }}>{group.orderNumber}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: C.accent, fontWeight: 600 }}>
+                    {scanned}/{total} Scanned
+                  </div>
+                </div>
+                <div style={{ borderTop: '1px dashed #E5E7EB', padding: '8px 14px 12px' }}>
+                  <div style={{ display: 'flex', fontSize: 11, color: C.textSecondary, marginBottom: 6 }}>
+                    <div style={{ width: 24 }}>Status</div>
+                    <div>Label</div>
+                  </div>
+                  {group.packages.map((pkg) => {
+                    const isScanned = pkg.scanned;
+                    const labelTail = (pkg.itemBarcode ?? pkg.name ?? '').slice(-3);
+                    return (
+                      <div key={pkg.id} style={{ display: 'flex', alignItems: 'center', padding: '4px 0' }}>
+                        <div style={{ width: 24 }}>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: 10,
+                              height: 10,
+                              borderRadius: '50%',
+                              background: isScanned ? '#22C55E' : '#D1D5DB',
+                            }}
+                          />
+                        </div>
+                        <div style={{ fontSize: 13, color: C.textPrimary, fontWeight: 500 }}>
+                          ***{labelTail || '---'}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div
+          style={{
+            background: '#FFFFFF',
+            borderTop: '1px solid #E5E7EB',
+            padding: '12px 14px calc(env(safe-area-inset-bottom, 0px) + 14px)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={async () => {
+              if (hasUnscanned) {
+                const nextId = scanLabels.find((p) => !p.scanned)?.id;
+                if (nextId != null) {
+                  setScanLabels((prev) => prev.map((p) => (p.id === nextId ? { ...p, scanned: true } : p)));
+                  setScannedCount((prev) => prev + 1);
+                }
+                return;
+              }
+              setStep('stops_summary');
+            }}
+            style={{
+              width: '100%',
+              padding: '13px 16px',
+              borderRadius: 999,
+              border: 'none',
+              background: C.accent,
+              color: '#FFFFFF',
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 6px 18px rgba(234, 88, 12, 0.35)',
+            }}
+          >
+            {hasUnscanned ? 'Mark next label scanned' : 'Finish scanning'}
+          </button>
+          <div
+            style={{
+              marginTop: 10,
+              fontSize: 12,
+              color: C.accent,
+              textAlign: 'center',
+              fontWeight: 500,
+            }}
+          >
+            Swipe up for help and other options
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
