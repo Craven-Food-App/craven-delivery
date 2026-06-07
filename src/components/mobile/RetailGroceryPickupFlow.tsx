@@ -254,6 +254,25 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
     setScannedCount(0);
   }, [step, parkingSpotCount, ordersForPickup, orderId]);
 
+  useEffect(() => {
+    if (step !== 'scan') {
+      if (scanFeedbackTimeoutRef.current != null) {
+        window.clearTimeout(scanFeedbackTimeoutRef.current);
+        scanFeedbackTimeoutRef.current = null;
+      }
+      setScanFeedback(null);
+      return;
+    }
+  }, [step]);
+
+  useEffect(() => {
+    return () => {
+      if (scanFeedbackTimeoutRef.current != null) {
+        window.clearTimeout(scanFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Start/stop live camera barcode scanning in the Scan Labels step
   useEffect(() => {
     const stopCamera = () => {
