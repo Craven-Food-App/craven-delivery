@@ -430,6 +430,19 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
             const scannedLast4 = digitsOnly.length >= 4 ? digitsOnly.slice(-4) : digitsOnly;
 
             setScanLabels((prev) => {
+              // Test-order bypass: accept ANY barcode and mark the next unscanned package as done.
+              if (isTestOrder) {
+                const next = prev.find((p) => !p.scanned);
+                if (!next) return prev;
+                showScanFeedback('success', 'Barcode accepted', value);
+                const updated = prev.map((p) =>
+                  p.id === next.id
+                    ? { ...p, scanned: true, itemBarcode: p.itemBarcode ?? value, name: value }
+                    : p
+                );
+                setScannedCount((c) => c + 1);
+                return updated;
+              }
               const hasExplicitBarcodes = prev.some((p) => !!p.itemBarcode);
               const matchBarcode = (candidate?: string) => {
                 if (!candidate) return false;
