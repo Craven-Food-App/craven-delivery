@@ -1,7 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import cravenCarLogo from '@/assets/craven-c-celebration.png';
-import { FeederCleanPayCard } from './FeederCleanPayCard';
-import type { FeederCleanPaySummary } from '@/lib/feederCleanPaySummary';
+import React from 'react';
 
 interface Earnings {
   orderId: string;
@@ -30,118 +27,32 @@ interface Props {
 
 const formatCurrency = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
-const useCountUp = (targetCents: number, durationMs = 900) => {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    let raf = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / durationMs);
-      // ease-out cubic
-      const eased = 1 - Math.pow(1 - t, 3);
-      setValue(Math.round(targetCents * eased));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [targetCents, durationMs]);
-  return value;
-};
-
-const buildSummaryFromEarnings = (e: Earnings): FeederCleanPaySummary => ({
-  orderId: e.orderId,
-  basePayCents: e.deliveryPayCents,
-  deliveryFeeShareCents: 0,
-  deliveryPayCents: e.deliveryPayCents,
-  mileagePayCents: e.mileagePayCents,
-  customerTipCents: e.customerTipCents,
-  promoBonusCents: e.promoBonusCents,
-  adjustmentCents: e.adjustmentCents,
-  totalGuaranteedCents: e.deliveryPayCents + e.mileagePayCents,
-  originalAcceptedOfferCents: e.originalAcceptedOfferCents ?? null,
-  expectedFinalPayoutCents: e.finalPayoutCents,
-  finalPayoutCents: e.finalPayoutCents,
-  tipStatus: e.tipStatus,
-  payoutStatus: e.payoutStatus,
-  cleanPayStatusLabel: e.cleanPayVerified ? 'Clean Pay Verified' : 'Clean Pay',
-  adjustmentReason: e.adjustmentReason,
-  offerLockedAt: e.offerAcceptedAt,
-  offerAcceptedAt: e.offerAcceptedAt,
-  pickupConfirmedAt: e.pickupConfirmedAt,
-  deliveryCompletedAt: e.deliveryCompletedAt,
-  cleanPayVerified: e.cleanPayVerified,
-});
-
 const FeederOrderCompleteScreen: React.FC<Props> = ({ earnings, displayOrderId, onContinue }) => {
-  const animated = useCountUp(earnings.finalPayoutCents);
-  const summary = React.useMemo(() => buildSummaryFromEarnings(earnings), [earnings]);
-
   return (
-    <div
-      className="min-h-screen w-full flex flex-col items-center px-5 py-8"
-      style={{ background: 'linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 35%)' }}
-    >
-      <div className="w-full max-w-md flex flex-col items-center text-center space-y-5">
-        {/* C car logo with orange glow */}
-        <div
-          className="relative flex items-center justify-center"
-          style={{
-            width: 120,
-            height: 120,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(234,88,12,0.18) 0%, rgba(234,88,12,0) 70%)',
-          }}
-        >
-          <img
-            src={cravenCarLogo}
-            alt="Crave'n delivery complete"
-            style={{ width: 104, height: 104, objectFit: 'contain' }}
-            draggable={false}
-          />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 text-center">
+      <div className="max-w-md w-full bg-card rounded-2xl shadow-lg p-8 space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-foreground">Delivery Complete</h1>
+          <p className="text-sm text-muted-foreground">Order {displayOrderId}</p>
         </div>
-
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold" style={{ color: '#111827' }}>
-            Delivery Complete!
-          </h1>
-          <p className="text-sm" style={{ color: '#6B7280' }}>
-            Order #{displayOrderId.slice(-6).toUpperCase()}
-          </p>
-        </div>
-
-        {/* Big green animated total */}
-        <div className="flex flex-col items-center">
-          <div
-            className="font-extrabold tabular-nums leading-none"
-            style={{ color: '#16a34a', fontSize: 56, letterSpacing: '-0.02em' }}
-          >
-            {formatCurrency(animated)}
-          </div>
-          <div className="mt-1 text-sm font-medium uppercase tracking-wider" style={{ color: '#16a34a' }}>
-            Total Earnings
+        <div className="space-y-3 text-left">
+          <Row label="Delivery pay" value={formatCurrency(earnings.deliveryPayCents)} />
+          <Row label="Mileage pay" value={formatCurrency(earnings.mileagePayCents)} />
+          <Row label="Customer tip" value={formatCurrency(earnings.customerTipCents)} />
+          {earnings.promoBonusCents > 0 && (
+            <Row label="Promo bonus" value={formatCurrency(earnings.promoBonusCents)} />
+          )}
+          {earnings.adjustmentCents !== 0 && (
+            <Row label="Adjustment" value={formatCurrency(earnings.adjustmentCents)} />
+          )}
+          <div className="border-t border-border pt-3 flex justify-between font-semibold text-foreground">
+            <span>Total payout</span>
+            <span>{formatCurrency(earnings.finalPayoutCents)}</span>
           </div>
         </div>
-
-        {/* Clean Pay breakdown */}
-        <div className="w-full">
-          <FeederCleanPayCard
-            variant="full"
-            orderEarnings={summary}
-            showVerificationBadge
-            showAdjustment
-          />
-        </div>
-
-        {/* Continue CTA in Crave'n orange */}
         <button
-          type="button"
           onClick={onContinue}
-          className="w-full rounded-full py-3.5 font-semibold text-white transition active:scale-[0.99]"
-          style={{
-            background: '#EA580C',
-            boxShadow: '0 8px 22px rgba(234, 88, 12, 0.38)',
-            fontSize: 16,
-          }}
+          className="w-full bg-primary text-primary-foreground rounded-xl py-3 font-semibold hover:bg-primary/90 transition"
         >
           Continue
         </button>
@@ -149,5 +60,12 @@ const FeederOrderCompleteScreen: React.FC<Props> = ({ earnings, displayOrderId, 
     </div>
   );
 };
+
+const Row: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="flex justify-between text-sm">
+    <span className="text-muted-foreground">{label}</span>
+    <span className="text-foreground font-medium">{value}</span>
+  </div>
+);
 
 export default FeederOrderCompleteScreen;
