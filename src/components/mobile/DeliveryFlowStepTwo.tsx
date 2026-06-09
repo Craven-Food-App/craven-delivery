@@ -334,6 +334,7 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
   const [dragging, setDragging] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [handoffExpanded, setHandoffExpanded] = useState(true);
   useEffect(() => {
     let cancelled = false;
     if (!handoffCode) { setQrDataUrl(null); return; }
@@ -556,91 +557,142 @@ export const DeliveryFlowStepTwo: React.FC<DeliveryFlowStepTwoProps> = ({
                 <div
                   style={{
                     margin: '0 0 14px',
-                    padding: '14px 14px 16px',
-                    borderRadius: 14,
+                    padding: '16px 18px 18px',
+                    borderRadius: 16,
                     border: handoffVerified
                       ? '1.5px solid #16a34a'
-                      : '1.5px solid #f26419',
-                    background: handoffVerified
-                      ? 'linear-gradient(180deg,#ecfdf5,#ffffff)'
-                      : 'linear-gradient(180deg,#fff7ed,#ffffff)',
-                    textAlign: 'center',
+                      : '1px solid rgba(28,28,30,0.10)',
+                    background: '#ffffff',
+                    boxShadow: '0 2px 10px rgba(28,28,30,0.05)',
                   }}
                 >
-                  <div
+                  {/* Header row — tappable to expand/collapse */}
+                  <button
+                    type="button"
+                    onClick={() => setHandoffExpanded((v) => !v)}
                     style={{
-                      display: 'inline-flex',
+                      width: '100%',
+                      display: 'flex',
                       alignItems: 'center',
-                      gap: 6,
-                      padding: '4px 10px',
-                      borderRadius: 999,
-                      background: handoffVerified ? '#dcfce7' : '#ffedd5',
-                      color: handoffVerified ? '#15803d' : '#c2410c',
-                      fontSize: 10,
-                      letterSpacing: '0.14em',
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      fontFamily: 'DM Mono, monospace',
+                      gap: 10,
+                      background: 'transparent',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      textAlign: 'left',
                     }}
                   >
-                    {handoffVerified ? (
-                      <>
-                        <IconShieldCheck size={12} /> Handoff Code Verified
-                      </>
-                    ) : (
-                      <>
-                        <IconShieldLock size={12} /> Handoff Code
-                      </>
-                    )}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: 'DM Mono, monospace',
-                      fontSize: 38,
-                      letterSpacing: '0.32em',
-                      fontWeight: 700,
-                      color: handoffVerified ? '#15803d' : '#1c1c1e',
-                      marginTop: 10,
-                      textIndent: '0.32em',
-                    }}
-                  >
-                    {handoffCode}
-                  </div>
-                  {!handoffVerified && (
-                    <>
-                      <div style={{ fontSize: 12, color: 'rgba(28,28,30,0.65)', marginTop: 6 }}>
-                        Show this code to the merchant — or let them scan the QR.
-                      </div>
-                      {qrDataUrl && (
-                        <img
-                          src={qrDataUrl}
-                          alt="Handoff QR"
-                          style={{
-                            width: 168,
-                            height: 168,
-                            display: 'block',
-                            margin: '12px auto 4px',
-                            borderRadius: 10,
-                            border: '1px solid rgba(28,28,30,0.08)',
-                            background: '#fff',
-                            padding: 6,
-                          }}
-                        />
-                      )}
+                    <span
+                      style={{
+                        fontFamily: 'DM Mono, monospace',
+                        fontSize: 26,
+                        fontWeight: 800,
+                        color: handoffVerified ? '#16a34a' : '#f26419',
+                        lineHeight: 1,
+                      }}
+                    >
+                      #
+                    </span>
+                    <span
+                      style={{
+                        flex: 1,
+                        fontSize: 18,
+                        fontWeight: 700,
+                        color: handoffVerified ? '#16a34a' : '#f26419',
+                        letterSpacing: '0.01em',
+                      }}
+                    >
+                      Driver code: <span style={{ letterSpacing: '0.08em' }}>{handoffCode}</span>
+                    </span>
+                    <span
+                      aria-hidden
+                      style={{
+                        color: handoffVerified ? '#16a34a' : '#f26419',
+                        fontSize: 18,
+                        fontWeight: 700,
+                        transform: handoffExpanded ? 'rotate(0deg)' : 'rotate(180deg)',
+                        transition: 'transform 0.2s ease',
+                        lineHeight: 1,
+                      }}
+                    >
+                      ⌃
+                    </span>
+                  </button>
+
+                  {handoffExpanded && (
+                    <div style={{ marginTop: 12 }}>
                       <div
                         style={{
-                          fontSize: 11,
-                          color: 'rgba(28,28,30,0.55)',
-                          marginTop: 6,
+                          fontSize: 15,
+                          lineHeight: 1.45,
+                          color: '#1c1c1e',
+                          fontWeight: 500,
                         }}
                       >
-                        Pickup is locked until the merchant verifies this code.
+                        Please show this code to the associate to ensure you're
+                        picking up the correct order(s).
                       </div>
-                    </>
-                  )}
-                  {handoffVerified && (
-                    <div style={{ fontSize: 12, color: '#15803d', marginTop: 6, fontWeight: 600 }}>
-                      The merchant confirmed your identity. Finish the pickup below.
+
+                      {!handoffVerified && qrDataUrl && (
+                        <div style={{ textAlign: 'center', marginTop: 14 }}>
+                          <img
+                            src={qrDataUrl}
+                            alt="Handoff QR"
+                            style={{
+                              width: 180,
+                              height: 180,
+                              display: 'inline-block',
+                              borderRadius: 12,
+                              border: '1px solid rgba(28,28,30,0.08)',
+                              background: '#fff',
+                              padding: 8,
+                            }}
+                          />
+                          <div
+                            style={{
+                              fontSize: 11,
+                              color: 'rgba(28,28,30,0.55)',
+                              marginTop: 8,
+                              letterSpacing: '0.04em',
+                              textTransform: 'uppercase',
+                              fontWeight: 600,
+                            }}
+                          >
+                            Merchant can scan this QR
+                          </div>
+                        </div>
+                      )}
+
+                      <div
+                        style={{
+                          marginTop: 16,
+                          width: '100%',
+                          padding: '16px 20px',
+                          borderRadius: 999,
+                          background: handoffVerified ? '#16a34a' : '#f26419',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: 15,
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          textAlign: 'center',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8,
+                          opacity: handoffVerified ? 1 : 0.95,
+                        }}
+                      >
+                        {handoffVerified ? (
+                          <>
+                            <IconShieldCheck size={18} /> Code Confirmed
+                          </>
+                        ) : (
+                          <>
+                            <IconShieldLock size={16} /> Awaiting Merchant Verification
+                          </>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
