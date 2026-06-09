@@ -10,6 +10,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import SlideToConfirm from '@/components/SlideToConfirm';
+import { supabase } from '@/integrations/supabase/client';
 
 const C = {
   surface: '#FFFFFF',
@@ -94,6 +95,9 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   const [isSpotDropdownOpen, setIsSpotDropdownOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [isQrCompleted, setIsQrCompleted] = useState(false);
+  const [handoffCode, setHandoffCode] = useState<string | null>(null);
+  const [handoffVerified, setHandoffVerified] = useState(false);
+  const [handoffExpanded, setHandoffExpanded] = useState(true);
   const [scanLabels, setScanLabels] = useState<{
     id: number;
     name: string;
@@ -200,6 +204,55 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
     };
     generate();
   }, [step, orderId, selectedSpot]);
+
+  // Fetch / subscribe to the 6-digit pickup_code + merchant verification status
+  useEffect(() => {
+    if (!orderId) return;
+    let cancelled = false;
+    const load = async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('pickup_code, pickup_confirmed_at')
+        .eq('id', orderId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        console.warn('fetch pickup_code failed', error);
+        return;
+      }
+      const code = (data as any)?.pickup_code as string | null;
+      if (code) {
+        setHandoffCode(String(code));
+      } else {
+        // Generate a 6-digit code and persist
+        const generated = String(Math.floor(100000 + Math.random() * 900000));
+        const { error: upErr } = await supabase
+          .from('orders')
+          .update({ pickup_code: generated })
+          .eq('id', orderId);
+        if (!upErr && !cancelled) setHandoffCode(generated);
+      }
+      setHandoffVerified(!!(data as any)?.pickup_confirmed_at);
+    };
+    load();
+    const channel = supabase
+      .channel(`retail-pickup-${orderId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
+        (payload: any) => {
+          const row = payload?.new;
+          if (!row) return;
+          if (row.pickup_code) setHandoffCode(String(row.pickup_code));
+          setHandoffVerified(!!row.pickup_confirmed_at);
+        }
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [orderId]);
 
   // Initialize scan labels list when entering scan step
   useEffect(() => {
