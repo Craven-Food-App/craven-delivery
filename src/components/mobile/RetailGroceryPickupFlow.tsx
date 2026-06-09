@@ -1350,6 +1350,102 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                   background: '#FFFFFF',
                 }}
               >
+                {/* 6-digit handoff code – shown above the QR */}
+                {handoffCode && (
+                  <div
+                    style={{
+                      marginBottom: 14,
+                      padding: '14px 16px 16px',
+                      borderRadius: 14,
+                      border: handoffVerified
+                        ? '1.5px solid #16a34a'
+                        : '1px solid rgba(28,28,30,0.10)',
+                      background: '#FFFFFF',
+                      boxShadow: '0 2px 10px rgba(28,28,30,0.05)',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setHandoffExpanded((v) => !v)}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        background: 'transparent',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: 'DM Mono, ui-monospace, monospace',
+                          fontSize: 24,
+                          fontWeight: 800,
+                          color: handoffVerified ? '#16a34a' : '#EA580C',
+                          lineHeight: 1,
+                        }}
+                      >
+                        #
+                      </span>
+                      <span
+                        style={{
+                          flex: 1,
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: handoffVerified ? '#16a34a' : '#EA580C',
+                        }}
+                      >
+                        Driver code:{' '}
+                        <span style={{ letterSpacing: '0.12em' }}>{handoffCode}</span>
+                      </span>
+                      <span
+                        aria-hidden
+                        style={{
+                          color: handoffVerified ? '#16a34a' : '#EA580C',
+                          fontSize: 18,
+                          fontWeight: 700,
+                          transform: handoffExpanded ? 'rotate(0deg)' : 'rotate(180deg)',
+                          transition: 'transform 0.2s ease',
+                          lineHeight: 1,
+                        }}
+                      >
+                        ⌃
+                      </span>
+                    </button>
+                    {handoffExpanded && (
+                      <div
+                        style={{
+                          marginTop: 10,
+                          fontSize: 13,
+                          lineHeight: 1.45,
+                          color: '#1c1c1e',
+                        }}
+                      >
+                        Show this 6-digit code to the associate, or let them scan the QR below.
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        marginTop: 12,
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: 999,
+                        background: handoffVerified ? '#16a34a' : '#EA580C',
+                        color: '#ffffff',
+                        fontWeight: 700,
+                        fontSize: 13,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {handoffVerified ? 'Code Confirmed' : 'Awaiting Merchant Verification'}
+                    </div>
+                  </div>
+                )}
                 <div
                   style={{
                     fontSize: 14,
