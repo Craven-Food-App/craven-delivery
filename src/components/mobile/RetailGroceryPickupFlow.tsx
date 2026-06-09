@@ -64,6 +64,8 @@ export interface RetailGroceryPickupFlowProps {
   orderStatusStep?: number;
   /** Optional compact Clean Pay card (non-blocking). */
   cleanPaySlot?: React.ReactNode;
+  /** When true (live test order), every scanned barcode is auto-accepted so the flow can be completed end-to-end. */
+  isTestOrder?: boolean;
 }
 
 type PickupStep = 'arrival' | 'spot_and_qr' | 'scan' | 'stops_summary' | 'stops_list';
@@ -89,6 +91,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   onStartScanning,
   orderStatusStep: orderStatusStepProp,
   cleanPaySlot,
+  isTestOrder = false,
 }) => {
   const [step, setStep] = useState<PickupStep>('arrival');
   const [selectedSpot, setSelectedSpot] = useState<number | null>(null);
