@@ -2562,6 +2562,7 @@ export const MobileDriverDashboard: React.FC = () => {
               tripLabel={activeDelivery.order_id ? `Trip ${activeDelivery.order_id.slice(-4)}` : undefined}
               parkingSpotCount={(activeDelivery as any).parking_spot_count}
               orderStatusStep={retailMerchantStatusStep}
+              isTestOrder={Boolean((activeDelivery as any).isTestOrder)}
               cleanPaySlot={
                 retailCleanPaySummary ? (
                   <FeederCleanPayCard variant="compact" orderEarnings={retailCleanPaySummary} showAdjustment />

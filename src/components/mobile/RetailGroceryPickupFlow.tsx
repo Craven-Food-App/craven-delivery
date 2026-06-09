@@ -64,6 +64,8 @@ export interface RetailGroceryPickupFlowProps {
   orderStatusStep?: number;
   /** Optional compact Clean Pay card (non-blocking). */
   cleanPaySlot?: React.ReactNode;
+  /** When true (live test order), every scanned barcode is auto-accepted so the flow can be completed end-to-end. */
+  isTestOrder?: boolean;
 }
 
 type PickupStep = 'arrival' | 'spot_and_qr' | 'scan' | 'stops_summary' | 'stops_list';
@@ -89,6 +91,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   onStartScanning,
   orderStatusStep: orderStatusStepProp,
   cleanPaySlot,
+  isTestOrder = false,
 }) => {
   const [step, setStep] = useState<PickupStep>('arrival');
   const [selectedSpot, setSelectedSpot] = useState<number | null>(null);
@@ -427,6 +430,19 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
             const scannedLast4 = digitsOnly.length >= 4 ? digitsOnly.slice(-4) : digitsOnly;
 
             setScanLabels((prev) => {
+              // Test-order bypass: accept ANY barcode and mark the next unscanned package as done.
+              if (isTestOrder) {
+                const next = prev.find((p) => !p.scanned);
+                if (!next) return prev;
+                showScanFeedback('success', 'Barcode accepted', value);
+                const updated = prev.map((p) =>
+                  p.id === next.id
+                    ? { ...p, scanned: true, itemBarcode: p.itemBarcode ?? value, name: value }
+                    : p
+                );
+                setScannedCount((c) => c + 1);
+                return updated;
+              }
               const hasExplicitBarcodes = prev.some((p) => !!p.itemBarcode);
               const matchBarcode = (candidate?: string) => {
                 if (!candidate) return false;

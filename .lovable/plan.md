@@ -1,47 +1,63 @@
-# Two-stage Feeder Status + Verified Handoff Reveal
+## Goal
 
-Right now, the merchant sees "En route" the instant a Feeder accepts an order, the handoff code is visible to the merchant before anything is verified, and the Feeder's photo / car details are always visible. This plan introduces:
+1. During the live feeder/driver test, let **any barcode scan succeed** so the flow can be completed end-to-end.
+2. Restore the **rich completion screen** at the end of the delivery: Crave'n "C" car logo, large green total earnings counter, and the full **Clean Pay breakdown** card.
 
-1. A real **Start Route** action so the merchant first sees "Feeder assigned" and only flips to "En route" when the Feeder taps Start Route.
-2. A generated **6-digit handoff code** shown right above the QR in the Feeder app, scannable (QR) **or** typed/entered by the merchant.
-3. A **handoff verification gate** — nothing in the pickup flow proceeds until the code is scanned/entered by the merchant.
-4. After verification, the **Feeder photo, name, and vehicle details are revealed** to the merchant for visual confirmation.
+## 1. Auto-accept scans in test mode
 
----
+File: `src/components/mobile/RetailGroceryPickupFlow.tsx`
 
-## What changes
+- Add `isTestOrder?: boolean` to `RetailGroceryPickupFlowProps`.
+- In the live camera detection callback (around lines 429–478), when `isTestOrder` is true, skip the explicit/order-id matching logic: mark the next unscanned package as scanned with the scanned `value`, show the green "Barcode accepted" feedback, and increment `scannedCount`. All real validation paths stay intact for production orders.
+- Also relax the manual "Scan next label" fallback (around line 2079) so it remains available in test mode (it already auto-advances, just ensure it isn't gated by anything new).
 
-### Database (`orders` table)
-- Add `feeder_route_started_at timestamptz` — set when Feeder taps Start Route.
-- Ensure `pickup_code` is a 6-digit numeric string (generated automatically when an order moves to `confirmed`/`preparing` if missing).
-- Ensure `pickup_confirmed_at` represents merchant verification (already exists, reused).
+File: `src/components/mobile/CravenDeliveryFlow.tsx`
 
-### Feeder app — `CravenDeliveryFlow` + `DeliveryFlowStepTwo`
-- Step One ("Head to merchant") gets an explicit **Start Route** slide/button. Until it's tapped, status stays "assigned"; tapping it:
-  - writes `feeder_route_started_at`
-  - logs `en_route_to_store` forensic event
-  - advances UI to navigation view
-- Step Two ("At merchant") shows the **6-digit code above the QR** with copy + a "Show to merchant or let them scan" caption. Items checklist + Start Hand-off Check stays disabled until `pickup_confirmed_at` is set.
+- Pass `isTestOrder={isTestOrder}` to every `RetailGroceryPickupFlow` render site (the three locations near lines 2048 / 2083 / 2128 where other test flags are already forwarded).
 
-### Merchant portal — `MerchantLiveOrders`
-- Feeder card / modal badge logic:
-  - has driver, no `feeder_route_started_at` → **"Feeder assigned"** (gray/blue)
-  - has `feeder_route_started_at`, no `driver_arrived_at` → **"En route"**
-  - has `driver_arrived_at`, no `pickup_confirmed_at` → **"At store"**
-  - has `pickup_confirmed_at` → **"Handoff verified"**
-- Replace the always-visible Feeder block until handoff verified with a **"Verify handoff" panel**:
-  - 6-digit code input + "Scan QR" button (camera modal using existing `DeliveryCamera`/`html5-qrcode` if present, else manual entry only)
-  - On match, writes `pickup_confirmed_at = now()`, logs `support_action` w/ `merchant_handoff_verified`, and the Feeder identity card (photo, name, make/model/plate) replaces the input panel.
-- "Confirm Feeder pickup" CTA stays, but is only enabled after handoff verified.
+## 2. Restore the rich completion screen
 
-### Forensics
-- New tracking events: `route_started`, `handoff_code_verified`, `handoff_code_failed` (logged via existing `logOrderEvent`).
+File: `src/components/mobile/FeederOrderCompleteScreen.tsx` — full rewrite of the body (props unchanged so all callers keep working).
 
----
+Layout (mobile-first, Crave'n orange theme, responsive, white background):
 
-## Out of scope (ask if you want it)
-- Native QR scanner for merchant tablet beyond camera-based decode (uses `BarcodeDetector` API w/ manual fallback).
-- Driver identity reveal to the customer (this plan reveals it only to merchant).
-- Changing how `pickup_code` is generated for already-existing orders mid-flight (a one-time backfill can be added).
+```text
+┌─────────────────────────────┐
+│      [Crave'n C car logo]   │   src/assets/craven-c-celebration.png
+│       Delivery Complete!    │
+│         Order #1234         │
+│                             │
+│         $ 18.42             │   big animated green counter
+│      Total earnings         │
+│                             │
+│  ┌── Clean Pay Receipt ──┐  │   <FeederCleanPayCard variant="full" …/>
+│  │ Delivery pay   $6.00  │  │
+│  │ Mileage pay    $4.20  │  │
+│  │ Customer tip   $8.22  │  │
+│  │ ─────────────────────  │  │
+│  │ Final payout  $18.42  │  │
+│  │ ✓ Clean Pay Verified  │  │
+│  └───────────────────────┘  │
+│                             │
+│        [ Continue ]         │   orange CTA
+└─────────────────────────────┘
+```
 
-Ready to build — confirm and I'll ship it.
+Implementation details:
+
+- Import `craven-c-celebration.png` from `src/assets` and render it at ~96px, centered, with a soft orange glow.
+- Big total uses `text-5xl font-extrabold text-[#16a34a] tabular-nums` and counts up from 0 → `earnings.finalPayoutCents` over ~900ms via `requestAnimationFrame`.
+- Render `<FeederCleanPayCard variant="full" orderEarnings={…} showVerificationBadge showAdjustment />` directly under the counter. Build a minimal `FeederCleanPaySummary` from the existing `earnings` prop (delivery / mileage / tip / promo / adjustment / final, plus the three timestamps already in `earnings`) so the card renders without an extra fetch.
+- "Continue" button uses Crave'n orange (`bg-[#EA580C] hover:bg-[#C2410C]`) and calls `onContinue`.
+- Use semantic Tailwind tokens where available; only hard-code the orange/green brand hues already used elsewhere in the feeder flow.
+
+## Verification
+
+- Run through the feeder live driver test: every scan in the Scan Labels step shows the green "Barcode accepted" overlay and advances the counter.
+- Complete the delivery and confirm the final screen shows the C car logo, animated green total, Clean Pay breakdown, and orange Continue button on a 390px-wide viewport.
+
+## Files touched
+
+- `src/components/mobile/RetailGroceryPickupFlow.tsx`
+- `src/components/mobile/CravenDeliveryFlow.tsx`
+- `src/components/mobile/FeederOrderCompleteScreen.tsx`
