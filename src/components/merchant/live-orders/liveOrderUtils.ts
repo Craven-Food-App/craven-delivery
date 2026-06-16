@@ -121,6 +121,10 @@ export const minutesSince = (iso: string | null | undefined): number => {
 export const isRunningBehind = (order: LiveOrder): boolean => {
   const status = order.order_status || "pending";
 
+  // Once the feeder handoff is verified, the merchant's responsibility is
+  // complete — never flag as behind after that.
+  if ((order as any).pickup_confirmed_at) return false;
+
   if (order.driver_arrived_at && status === "preparing") return true;
   if (order.driver_arrived_at && status === "confirmed") return true;
 
