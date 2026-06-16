@@ -885,7 +885,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                             }}
                           />
                         </div>
-                        <div>
+                        <div style={{ flex: 1 }}>
                           <div style={{ fontSize: 13, color: C.textPrimary, fontWeight: 500 }}>
                             {labelValue ? `••••${labelTail || '----'}` : 'Awaiting barcode'}
                           </div>
@@ -893,6 +893,38 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                             {isScanned ? 'Matched barcode' : pkg.itemBarcode ? 'Expected barcode' : 'Scan order barcode'}
                           </div>
                         </div>
+                        {!isScanned && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setScanLabels((prev) => {
+                                const target = prev.find((p) => p.id === pkg.id);
+                                if (!target || target.scanned) return prev;
+                                const synthetic = target.itemBarcode || target.orderNumber || target.orderId || `manual-${pkg.id}`;
+                                showScanFeedback('success', 'Marked scanned (manual)', synthetic);
+                                setScannedCount((c) => c + 1);
+                                return prev.map((p) =>
+                                  p.id === pkg.id
+                                    ? { ...p, scanned: true, itemBarcode: p.itemBarcode ?? synthetic, name: synthetic }
+                                    : p
+                                );
+                              });
+                            }}
+                            style={{
+                              marginLeft: 'auto',
+                              padding: '6px 10px',
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: C.accent,
+                              background: '#FFF7ED',
+                              border: `1px solid ${C.accent}`,
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Mark scanned
+                          </button>
+                        )}
                       </div>
                     );
                   })}
