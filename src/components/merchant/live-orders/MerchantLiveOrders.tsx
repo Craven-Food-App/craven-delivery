@@ -295,6 +295,9 @@ export function MerchantLiveOrders({
         )
         .eq("restaurant_id", restaurantId)
         .in("order_status", Array.from(ACTIVE_STATUSES))
+        // Once the merchant has handed the order to the feeder (handoff code
+        // verified), the order leaves the merchant's active board.
+        .is("pickup_confirmed_at", null)
         .order("created_at", { ascending: false })
         .limit(80);
 
@@ -458,7 +461,8 @@ export function MerchantLiveOrders({
 
           if (payload.eventType === "UPDATE" && payload.new?.id) {
             const status = payload.new.order_status || "";
-            if (!ACTIVE_STATUSES.has(status)) {
+            const handedOff = !!(payload.new as any).pickup_confirmed_at;
+            if (!ACTIVE_STATUSES.has(status) || handedOff) {
               setOrders((prev) => prev.filter((o) => o.id !== payload.new!.id));
               return;
             }
