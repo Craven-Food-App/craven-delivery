@@ -65,6 +65,15 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId, playSoundForNe
   const [loading, setLoading] = useState(true);
   const [newOrderAlert, setNewOrderAlert] = useState<NewOrderRealtimePayload | null>(null);
   const newOrderSoundRef = useRef<HTMLAudioElement | null>(null);
+  const refetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleRefetch = () => {
+    if (refetchTimerRef.current) clearTimeout(refetchTimerRef.current);
+    refetchTimerRef.current = setTimeout(() => {
+      refetchTimerRef.current = null;
+      fetchOrders();
+    }, 400);
+  };
 
   useEffect(() => {
     newOrderSoundRef.current = new Audio("/craven-notification.wav");
@@ -139,139 +148,88 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId, playSoundForNe
               });
             }
           }
-          fetchOrders();
+          scheduleRefetch();
         }
       )
       .subscribe();
 
     return () => {
+      if (refetchTimerRef.current) clearTimeout(refetchTimerRef.current);
       subscription.unsubscribe();
     };
   }, [restaurantId, playSoundForNewOrders]);
 
   const fetchOrders = async () => {
     try {
-      console.log('Fetching orders for restaurant:', restaurantId);
-      
-      // First fetch orders without nested relationships
+      // Window: last 30 days, hard cap 100 rows. Active (non-terminal) orders are always included.
+      const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
         .eq('restaurant_id', restaurantId)
-        .order('created_at', { ascending: false });
+        .or(`created_at.gte.${since},order_status.in.(pending,confirmed,preparing,ready,picked_up,out_for_delivery)`)
+        .order('created_at', { ascending: false })
+        .limit(100);
 
-      if (ordersError) {
-        console.error('Orders fetch error:', ordersError);
-        throw ordersError;
-      }
-      
-      console.log('Orders data:', ordersData);
-
+      if (ordersError) throw ordersError;
       if (!ordersData || ordersData.length === 0) {
         setOrders([]);
         return;
       }
 
-      // Fetch order items separately for each order
-      const transformedOrders = await Promise.all(
-        ordersData.map(async (order) => {
-          try {
-            // Fetch order items for this order
-            const { data: orderItems, error: itemsError } = await supabase
-              .from('order_items')
-              .select(`
-                id,
-                menu_item_id,
-                quantity,
-                price_cents,
-                special_instructions,
-                menu_items (name)
-              `)
-              .eq('order_id', order.id);
+      const orderIds = ordersData.map((o: any) => o.id);
+      const customerIds = Array.from(new Set(ordersData.map((o: any) => o.customer_id).filter(Boolean)));
+      const driverIds = Array.from(new Set(ordersData.map((o: any) => o.driver_id).filter(Boolean)));
+      const profileIds = Array.from(new Set([...customerIds, ...driverIds]));
 
-            if (itemsError) {
-              console.error('Error fetching order items:', itemsError);
-            }
+      // Batched lookups in parallel — replaces ~4 round-trips per order
+      const [itemsRes, profilesRes, driverProfilesRes] = await Promise.all([
+        supabase
+          .from('order_items')
+          .select('id, order_id, menu_item_id, quantity, price_cents, special_instructions, menu_items(name)')
+          .in('order_id', orderIds),
+        profileIds.length
+          ? supabase
+              .from('user_profiles')
+              .select('user_id, full_name, phone')
+              .in('user_id', profileIds)
+          : Promise.resolve({ data: [], error: null } as any),
+        driverIds.length
+          ? supabase
+              .from('driver_profiles')
+              .select('user_id, vehicle_type')
+              .in('user_id', driverIds)
+          : Promise.resolve({ data: [], error: null } as any),
+      ]);
 
-            // Try to fetch customer info from user_profiles
-            // Note: This may fail due to RLS policies restricting access
-            let customerName = 'Customer';
-            let customerPhone = '';
-            let customerEmail = '';
+      const itemsByOrder = new Map<string, any[]>();
+      (itemsRes.data || []).forEach((it: any) => {
+        const arr = itemsByOrder.get(it.order_id) || [];
+        arr.push({ ...it, name: it.menu_items?.name || 'Unknown Item', modifiers: [] });
+        itemsByOrder.set(it.order_id, arr);
+      });
+      const profileById = new Map<string, any>();
+      (profilesRes.data || []).forEach((p: any) => profileById.set(p.user_id, p));
+      const driverProfileById = new Map<string, any>();
+      (driverProfilesRes.data || []).forEach((d: any) => driverProfileById.set(d.user_id, d));
 
-            try {
-              const { data: customerProfile } = await supabase
-                .from('user_profiles')
-                .select('full_name, phone')
-                .eq('user_id', order.customer_id)
-                .maybeSingle();
+      const transformedOrders = ordersData.map((order: any) => {
+        const cust = profileById.get(order.customer_id);
+        const driverUser = order.driver_id ? profileById.get(order.driver_id) : null;
+        const driverProf = order.driver_id ? driverProfileById.get(order.driver_id) : null;
+        return {
+          ...order,
+          customer_name: cust?.full_name || 'Customer',
+          customer_email: '',
+          customer_phone: cust?.phone || '',
+          driver_name: driverUser?.full_name ?? null,
+          driver_vehicle: driverProf?.vehicle_type ?? null,
+          order_items: itemsByOrder.get(order.id) || [],
+          delivery_method: order.delivery_address ? ('delivery' as const) : ('pickup' as const),
+          payment_status: 'paid' as const,
+        };
+      });
 
-              if (customerProfile) {
-                customerName = customerProfile.full_name || 'Customer';
-                customerPhone = customerProfile.phone || '';
-              }
-            } catch (profileError) {
-              console.log('Could not fetch customer profile (RLS restriction):', profileError);
-              // This is expected due to RLS policies - restaurant owners can't see customer profiles
-            }
-
-            let driverName: string | null = null;
-            let driverVehicle: string | null = null;
-            if (order.driver_id) {
-              try {
-                const [{ data: driverProfile }, { data: driverUserProfile }] = await Promise.all([
-                  supabase
-                    .from('driver_profiles')
-                    .select('vehicle_type')
-                    .eq('user_id', order.driver_id)
-                    .maybeSingle(),
-                  supabase
-                    .from('user_profiles')
-                    .select('full_name')
-                    .eq('user_id', order.driver_id)
-                    .maybeSingle(),
-                ]);
-                driverVehicle = driverProfile?.vehicle_type ?? null;
-                driverName = (driverUserProfile?.full_name as string) ?? null;
-              } catch (driverErr) {
-                console.log('Could not fetch driver info (RLS may restrict):', driverErr);
-              }
-            }
-
-            return {
-              ...order,
-              customer_name: customerName,
-              customer_email: customerEmail,
-              customer_phone: customerPhone,
-              driver_name: driverName,
-              driver_vehicle: driverVehicle,
-              order_items: orderItems?.map((item: any) => ({
-                ...item,
-                name: item.menu_items?.name || 'Unknown Item',
-                modifiers: [] // Simplified for now
-              })) || [],
-              delivery_method: order.delivery_address ? 'delivery' as const : 'pickup' as const,
-              payment_status: 'paid' as const
-            };
-          } catch (error) {
-            console.error('Error processing order:', order.id, error);
-            // Return order with minimal data if processing fails
-            return {
-              ...order,
-              customer_name: 'Customer',
-              customer_email: '',
-              customer_phone: '',
-              driver_name: null,
-              driver_vehicle: null,
-              order_items: [],
-              delivery_method: order.delivery_address ? 'delivery' as const : 'pickup' as const,
-              payment_status: 'paid' as const
-            };
-          }
-        })
-      );
-      
-      console.log('Transformed orders:', transformedOrders);
       setOrders(transformedOrders as CustomerOrder[]);
     } catch (error) {
       console.error('Error fetching orders:', error);
