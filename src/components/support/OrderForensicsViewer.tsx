@@ -423,14 +423,8 @@ const OrderForensicsViewer: React.FC = () => {
                   <div className="flex items-center gap-2 text-xs font-semibold mb-2">
                     <Camera className="h-3.5 w-3.5" /> PICKUP PROOF
                   </div>
-                  {selected.pickup_photo_url ? (
-                    <a href={selected.pickup_photo_url} target="_blank" rel="noopener noreferrer">
-                      <img
-                        src={selected.pickup_photo_url}
-                        alt="Pickup proof"
-                        className="w-full h-48 object-cover rounded border"
-                      />
-                    </a>
+                  {isUsablePhotoUrl(selected.pickup_photo_url) ? (
+                    <ProofImage src={selected.pickup_photo_url} alt="Pickup proof" />
                   ) : (
                     <div className="h-48 flex items-center justify-center bg-muted/40 rounded border text-xs text-muted-foreground">
                       No pickup photo
@@ -453,14 +447,8 @@ const OrderForensicsViewer: React.FC = () => {
                   <div className="flex items-center gap-2 text-xs font-semibold mb-2">
                     <Camera className="h-3.5 w-3.5" /> DELIVERY PROOF
                   </div>
-                  {selected.delivery_photo_url ? (
-                    <a href={selected.delivery_photo_url} target="_blank" rel="noopener noreferrer">
-                      <img
-                        src={selected.delivery_photo_url}
-                        alt="Delivery proof"
-                        className="w-full h-48 object-cover rounded border"
-                      />
-                    </a>
+                  {isUsablePhotoUrl(selected.delivery_photo_url) ? (
+                    <ProofImage src={selected.delivery_photo_url} alt="Delivery proof" />
                   ) : (
                     <div className="h-48 flex items-center justify-center bg-muted/40 rounded border text-xs text-muted-foreground">
                       No delivery photo
