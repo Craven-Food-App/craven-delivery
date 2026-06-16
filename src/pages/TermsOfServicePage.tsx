@@ -6,7 +6,7 @@ const TermsOfServicePage: React.FC = () => {
       <div className="max-w-xl mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold mb-4">Crave’n Terms of Service</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Last updated: May 2026
+          Last updated: June 2026
         </p>
 
         <p className="text-sm mb-4">
@@ -90,6 +90,34 @@ const TermsOfServicePage: React.FC = () => {
           or Crave’n personnel. We may investigate and cooperate with law enforcement regarding any suspected
           illegal or abusive activity.
         </p>
+
+        <h2 className="text-lg font-semibold mt-6 mb-2">7a. Ratings, Reviews, and Trust &amp; Safety Reports</h2>
+        <p className="text-sm mb-2">
+          After each delivery, customers, Restaurants, and Feeders may rate one another on a 1–5 star scale,
+          add optional tags, and submit Trust &amp; Safety reports describing issues such as safety concerns,
+          harassment, fraud, no‑shows, or damaged/wrong orders. By using the Services you agree that:
+        </p>
+        <ul className="list-disc pl-5 text-sm space-y-1 mb-4">
+          <li>Your ratings and reports are submitted voluntarily and must be truthful and made in good faith.</li>
+          <li>Ratings are anonymous to the rated party. We display averages, not the identity of any individual rater.</li>
+          <li>
+            Reports are reviewed by Crave’n Trust &amp; Safety. Reports do not automatically deduct stars, but
+            confirmed reports — alone or in combination with other signals — may result in warnings, temporary
+            suspension, deactivation, or permanent removal from the platform.
+          </li>
+          <li>
+            We may withhold, weight, or remove ratings we believe to be retaliatory, automated, off‑topic, abusive,
+            or in violation of these Terms.
+          </li>
+          <li>
+            You waive any claim against Crave’n or other users arising from another user’s good‑faith rating or
+            report, except as required by applicable law.
+          </li>
+          <li>
+            Rating and report data may be used to compute eligibility for tiers, dispatch weight, payouts,
+            promotions, and continued access to the Services.
+          </li>
+        </ul>
 
         <h2 className="text-lg font-semibold mt-6 mb-2">8. Disclaimers</h2>
         <p className="text-sm mb-4">

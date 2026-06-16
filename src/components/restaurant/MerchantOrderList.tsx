@@ -7,12 +7,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { OrderTrustActions } from "@/components/trust/OrderTrustActions";
 
 export interface CustomerOrderForList {
   id: string;
   customer_name: string;
   customer_email: string;
   customer_phone: string;
+  /** Authoritative ids used to submit ratings / reports. Never displayed. */
+  customer_id?: string | null;
+  driver_id?: string | null;
+  restaurant_id?: string | null;
   order_items: Array<{
     quantity: number;
     price_cents: number;
@@ -598,6 +603,24 @@ function OrderRow({ order, getStatusLabel, onUpdateStatus, onRefund, canRefund }
                   >
                     Print ticket
                   </button>
+                  {order.order_status === "delivered" && order.customer_id && (
+                    <OrderTrustActions
+                      orderId={order.id}
+                      raterType="merchant"
+                      rateeType="customer"
+                      rateeId={order.customer_id}
+                      rateeLabel={customerDisplayName}
+                    />
+                  )}
+                  {order.order_status === "delivered" && order.driver_id && order.delivery_method === "delivery" && (
+                    <OrderTrustActions
+                      orderId={order.id}
+                      raterType="merchant"
+                      rateeType="feeder"
+                      rateeId={order.driver_id}
+                      rateeLabel={driverDisplayName ? `Feeder ${driverDisplayName}` : "your Feeder"}
+                    />
+                  )}
                   {allowRefund && (
                     <>
                       <button

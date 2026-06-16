@@ -7,6 +7,7 @@ import SupportTickets from '@/components/admin/SupportTickets';
 import AuditLogs from '@/components/admin/AuditLogs';
 import SupportConversationsInbox from '@/components/support/SupportConversationsInbox';
 import OrderForensicsViewer from '@/components/support/OrderForensicsViewer';
+import TrustSafetyQueue from '@/components/admin/TrustSafetyQueue';
 import {
   IconCurrencyDollar,
   IconAlertTriangle,
@@ -14,6 +15,7 @@ import {
   IconFileText,
   IconMessageCircle2,
   IconRoute,
+  IconShieldCheck,
 } from '@tabler/icons-react';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
@@ -24,6 +26,7 @@ const TABS: PortalTab[] = [
   { id: 'order-forensics', label: 'Order Forensics', description: 'Pickup/delivery audit trail, photos, GPS breadcrumbs, off-route incidents.', section: 'Operations', icon: IconRoute },
   { id: 'refunds', label: 'Refund Management', description: 'Process and track customer refund requests.', section: 'Operations', icon: IconCurrencyDollar },
   { id: 'disputes', label: 'Dispute Resolution', description: 'Manage payment disputes and chargebacks.', section: 'Operations', icon: IconAlertTriangle },
+  { id: 'trust-safety', label: 'Trust & Safety', description: 'Customer, Feeder, and merchant reports queue.', section: 'Operations', icon: IconShieldCheck },
   { id: 'support-tickets', label: 'Support Tickets', description: 'Customer support ticket queue and triage.', section: 'Operations', icon: IconLifebuoy },
   { id: 'audit-logs', label: 'Audit Logs', description: 'Activity and compliance audit trail.', section: 'Compliance', icon: IconFileText },
 ];
@@ -41,6 +44,7 @@ const SupportOperationsPortal: React.FC = () => {
       case 'order-forensics': return <OrderForensicsViewer />;
       case 'refunds': return <RefundManagement />;
       case 'disputes': return <DisputeResolution />;
+      case 'trust-safety': return <TrustSafetyQueue />;
       case 'support-tickets': return <SupportTickets />;
       case 'audit-logs': return <AuditLogs />;
       default: return <SupportConversationsInbox />;

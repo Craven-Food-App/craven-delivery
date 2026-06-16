@@ -6,7 +6,7 @@ const PrivacyPolicyPage: React.FC = () => {
       <div className="max-w-xl mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold mb-4">Crave’n Privacy Policy</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Last updated: May 2026
+          Last updated: June 2026
         </p>
 
         <p className="mb-4 text-sm">
@@ -30,6 +30,10 @@ const PrivacyPolicyPage: React.FC = () => {
             card numbers on our servers.
           </li>
           <li>Support communications, feedback, and chat messages.</li>
+          <li>
+            Ratings, tags, optional comments, and Trust &amp; Safety reports you submit about other users
+            (customers, Restaurants, or Feeders), and the same content submitted by others about you.
+          </li>
         </ul>
 
         <h2 className="text-lg font-semibold mt-6 mb-2">2. How We Use Your Information</h2>
@@ -38,6 +42,33 @@ const PrivacyPolicyPage: React.FC = () => {
           <li>To manage payments, subscriptions (including CraveMore), and promotional credits.</li>
           <li>To send order updates, account alerts, and customer support communications.</li>
           <li>To maintain safety, security, and legal compliance.</li>
+          <li>
+            To compute community ratings, Feeder tiers, dispatch eligibility, and to review and act on Trust &amp;
+            Safety reports (including warnings, suspensions, deactivations, or referrals to law enforcement).
+          </li>
+        </ul>
+
+        <h2 className="text-lg font-semibold mt-6 mb-2">3a. Ratings &amp; Trust &amp; Safety Reports</h2>
+        <p className="text-sm mb-2">
+          When you submit a star rating, tag, comment, or Trust &amp; Safety report:
+        </p>
+        <ul className="list-disc pl-5 text-sm space-y-1 mb-4">
+          <li>
+            Your identity is <span className="font-medium">not shared</span> with the rated or reported party.
+            Only Crave’n Trust &amp; Safety personnel and authorized investigators can see who submitted what.
+          </li>
+          <li>
+            Aggregated averages (and, where applicable, tags) may be shown to other users, including merchants and
+            Feeders viewing their own performance, and to customers viewing a Restaurant or Feeder profile.
+          </li>
+          <li>
+            Reports are retained for the life of the account and for a reasonable period afterward to support
+            safety, fraud prevention, dispute resolution, and legal obligations.
+          </li>
+          <li>
+            We may share reports with law enforcement or regulators where we believe in good faith that doing so
+            is necessary to address unlawful activity, fraud, or imminent harm.
+          </li>
         </ul>
 
         <h2 className="text-lg font-semibold mt-6 mb-2">3. How We Share Your Information</h2>
