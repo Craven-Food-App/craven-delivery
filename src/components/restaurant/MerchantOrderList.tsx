@@ -143,6 +143,35 @@ function OrderRow({ order, getStatusLabel, onUpdateStatus, onRefund, canRefund }
   const pickupCode = order.pickup_code || "—";
   const address = formatAddress(order.delivery_address);
 
+  // ── Customer privacy filters ──
+  // Merchants should never see a customer's full name, email, phone, or street address.
+  // Craven handles all customer support / delivery routing.
+  const maskName = (n?: string | null): string => {
+    const raw = (n || "").trim();
+    if (!raw) return "Customer";
+    const parts = raw.split(/\s+/);
+    const first = parts[0];
+    const lastInitial = parts.length > 1 ? `${parts[parts.length - 1].charAt(0).toUpperCase()}.` : "";
+    return lastInitial ? `${first} ${lastInitial}` : first;
+  };
+  const firstNameOnly = (n?: string | null): string => {
+    const raw = (n || "").trim();
+    return raw ? raw.split(/\s+/)[0] : "";
+  };
+  const customerDisplayName = maskName(order.customer_name);
+  const driverDisplayName = firstNameOnly(order.driver_name);
+  // Hide street for delivery (driver app routes); show only city/state to give merchant geographic context.
+  const cityState = (() => {
+    const a = order.delivery_address as any;
+    if (!a || typeof a !== "object") return "";
+    const city = a.city || "";
+    const state = a.state || "";
+    return [city, state].filter(Boolean).join(", ");
+  })();
+  const customerLocation = order.delivery_method === "delivery"
+    ? (cityState || "Delivery — address hidden")
+    : "In-store pickup";
+
   const subtotalStr = `$${(order.subtotal_cents / 100).toFixed(2)}`;
   const shippingCents = order.delivery_fee_cents ?? 0;
   const shippingStr = `$${(shippingCents / 100).toFixed(2)}`;
@@ -205,18 +234,18 @@ function OrderRow({ order, getStatusLabel, onUpdateStatus, onRefund, canRefund }
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
         <span>Customer</span>
-        <span>{order.customer_name}</span>
+        <span>{customerDisplayName}</span>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
-        <span>{order.delivery_method === "delivery" ? "Address" : "Pickup"}</span>
-        <span>{address || "—"}</span>
+        <span>{order.delivery_method === "delivery" ? "Drop-off" : "Pickup"}</span>
+        <span>{customerLocation}</span>
       </div>
       {order.delivery_method === "delivery" && (
         <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
           <span>Driver</span>
           <span>
-            {order.driver_name || order.driver_vehicle
-              ? [order.driver_name, order.driver_vehicle].filter(Boolean).join(order.driver_name && order.driver_vehicle ? " · " : "")
+            {driverDisplayName || order.driver_vehicle
+              ? [driverDisplayName, order.driver_vehicle].filter(Boolean).join(driverDisplayName && order.driver_vehicle ? " · " : "")
               : "No driver assigned"}
           </span>
         </div>
@@ -452,12 +481,10 @@ function OrderRow({ order, getStatusLabel, onUpdateStatus, onRefund, canRefund }
                   Customer
                 </p>
                 {[
-                  { icon: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", val: order.customer_name, bold: true },
-                  { icon: "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6", val: order.customer_email || "—" },
-                  { icon: "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.5 2 2 0 0 1 3.6 1.32h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21.73 16.92z", val: order.customer_phone || "—" },
-                  { icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", val: address || "—" },
+                  { icon: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", val: customerDisplayName, bold: true },
+                  { icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", val: customerLocation },
                   ...(order.delivery_method === "delivery"
-                    ? [{ icon: "M18 18H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2z", val: order.driver_name || order.driver_vehicle ? [order.driver_name, order.driver_vehicle].filter(Boolean).join(order.driver_name && order.driver_vehicle ? " · " : "") : "No driver assigned", bold: false as boolean }]
+                    ? [{ icon: "M18 18H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2z", val: driverDisplayName || order.driver_vehicle ? [driverDisplayName, order.driver_vehicle].filter(Boolean).join(driverDisplayName && order.driver_vehicle ? " · " : "") : "No driver assigned", bold: false as boolean }]
                     : []),
                 ].map((r, i) => (
                   <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", marginBottom: 5 }}>
