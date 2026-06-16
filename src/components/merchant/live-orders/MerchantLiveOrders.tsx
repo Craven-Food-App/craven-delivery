@@ -933,7 +933,7 @@ export function MerchantLiveOrders({
                       const color = verified || arrived ? "teal.8" : enRoute ? "blue.8" : "gray.7";
                       // Identity only revealed once handoff code is verified.
                       const label = verified
-                        ? (order.driver?.full_name || "Feeder")
+                        ? ((order.driver?.full_name || "Feeder").trim().split(/\s+/)[0])
                         : "Feeder assigned";
                       return (
                         <>
