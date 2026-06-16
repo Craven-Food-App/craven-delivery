@@ -56,6 +56,35 @@ const MerchantTermsOfServicePage: React.FC = () => {
           cancellation rates, fraud, or repeated failures may result in warnings, throttling, or removal.
         </p>
 
+        <h2 className="text-lg font-semibold mt-8 mb-2">5a. Ratings &amp; Trust &amp; Safety Reports</h2>
+        <p className="text-sm mb-2">
+          Crave&apos;n operates a community rating and reporting system across customers, Restaurants, and Feeders.
+          As a merchant, you acknowledge and agree that:
+        </p>
+        <ul className="list-disc pl-5 text-sm space-y-1 mb-4">
+          <li>
+            Customers and Feeders may rate your restaurant on a 1–5 star scale and submit Trust &amp; Safety reports
+            describing issues such as wrong/missing items, food safety, or unsafe handoffs.
+          </li>
+          <li>
+            You may rate customers and Feeders following each order. Ratings must be honest, made in good faith,
+            and based solely on the experience tied to the order. You must not use ratings or reports to retaliate
+            or to discriminate on any basis prohibited by law.
+          </li>
+          <li>
+            Aggregated ratings, tag frequencies, and report outcomes may be used to determine your visibility,
+            promotion eligibility, dispatch priority, and continued participation on the marketplace.
+          </li>
+          <li>
+            Confirmed Trust &amp; Safety reports may result in warnings, throttling, removal of menu items, temporary
+            suspension, or removal from the marketplace, in addition to any chargebacks or refunds.
+          </li>
+          <li>
+            Identities of individual raters or reporters are not shared with you. Crave&apos;n may share aggregated
+            or anonymized rating data and report categories for transparency and operational purposes.
+          </li>
+        </ul>
+
         <h2 className="text-lg font-semibold mt-8 mb-2">6. Data</h2>
         <p className="text-sm mb-4">
           Customer and order data generated through the Platform is licensed and used as described in our Privacy
