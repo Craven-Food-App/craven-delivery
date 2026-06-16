@@ -1621,7 +1621,9 @@ export function MerchantLiveOrders({
                         </Box>
                         <Box style={{ flex: 1, minWidth: 0 }}>
                           <Text fw={700} size="sm" lineClamp={1}>
-                            {selectedOrder.driver?.full_name || "Feeder assigned"}
+                            {selectedOrder.driver?.full_name
+                              ? selectedOrder.driver.full_name.trim().split(/\s+/)[0]
+                              : "Feeder assigned"}
                           </Text>
                           {selectedOrder.driver?.phone && (
                             <Text size="xs" c="dimmed">{selectedOrder.driver.phone}</Text>
