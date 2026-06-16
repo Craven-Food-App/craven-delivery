@@ -22028,6 +22028,48 @@ export type Database = {
         }
         Relationships: []
       }
+      order_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          order_id: string
+          ratee_id: string
+          ratee_type: Database["public"]["Enums"]["party_type"]
+          rater_id: string
+          rater_type: Database["public"]["Enums"]["party_type"]
+          stars: number
+          tags: string[]
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          order_id: string
+          ratee_id: string
+          ratee_type: Database["public"]["Enums"]["party_type"]
+          rater_id: string
+          rater_type: Database["public"]["Enums"]["party_type"]
+          stars: number
+          tags?: string[]
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          ratee_id?: string
+          ratee_type?: Database["public"]["Enums"]["party_type"]
+          rater_id?: string
+          rater_type?: Database["public"]["Enums"]["party_type"]
+          stars?: number
+          tags?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_route_deviations: {
         Row: {
           created_at: string
@@ -30226,6 +30268,63 @@ export type Database = {
           },
         ]
       }
+      trust_reports: {
+        Row: {
+          admin_notes: string | null
+          category: string
+          created_at: string
+          description: string
+          id: string
+          order_id: string | null
+          reported_id: string
+          reported_type: Database["public"]["Enums"]["party_type"]
+          reporter_id: string
+          reporter_type: Database["public"]["Enums"]["party_type"]
+          resolution_action: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: Database["public"]["Enums"]["trust_report_severity"]
+          status: Database["public"]["Enums"]["trust_report_status"]
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          order_id?: string | null
+          reported_id: string
+          reported_type: Database["public"]["Enums"]["party_type"]
+          reporter_id: string
+          reporter_type: Database["public"]["Enums"]["party_type"]
+          resolution_action?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: Database["public"]["Enums"]["trust_report_severity"]
+          status?: Database["public"]["Enums"]["trust_report_status"]
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          order_id?: string | null
+          reported_id?: string
+          reported_type?: Database["public"]["Enums"]["party_type"]
+          reporter_id?: string
+          reporter_type?: Database["public"]["Enums"]["party_type"]
+          resolution_action?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: Database["public"]["Enums"]["trust_report_severity"]
+          status?: Database["public"]["Enums"]["trust_report_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       trusted_devices: {
         Row: {
           device_id: string
@@ -31854,6 +31953,16 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rating_aggregates: {
+        Row: {
+          avg_stars: number | null
+          last_rated_at: string | null
+          ratee_id: string | null
+          ratee_type: Database["public"]["Enums"]["party_type"] | null
+          rating_count: number | null
+        }
+        Relationships: []
       }
       stacked_orders_view: {
         Row: {
@@ -33979,6 +34088,18 @@ export type Database = {
         }
         Returns: string
       }
+      submit_order_rating: {
+        Args: {
+          p_comment?: string
+          p_order_id: string
+          p_ratee_id: string
+          p_ratee_type: Database["public"]["Enums"]["party_type"]
+          p_rater_type: Database["public"]["Enums"]["party_type"]
+          p_stars: number
+          p_tags?: string[]
+        }
+        Returns: string
+      }
       submit_partnership_request: {
         Args: {
           p_message_to_business?: string
@@ -33999,6 +34120,18 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      submit_trust_report: {
+        Args: {
+          p_category: string
+          p_description: string
+          p_order_id: string
+          p_reported_id: string
+          p_reported_type: Database["public"]["Enums"]["party_type"]
+          p_reporter_type: Database["public"]["Enums"]["party_type"]
+          p_severity: Database["public"]["Enums"]["trust_report_severity"]
+        }
+        Returns: string
       }
       sync_executive_file_system_from_records: { Args: never; Returns: Json }
       sync_feeder_clean_pay_adjustment_at_pickup: {
@@ -34140,6 +34273,7 @@ export type Database = {
         | "strategic_distribution"
         | "demand"
         | "infrastructure"
+      party_type: "customer" | "feeder" | "merchant"
       role_name:
         | "admin"
         | "moderator"
@@ -34183,6 +34317,8 @@ export type Database = {
         | "INTERN_MANAGER"
         | "INTERN_SPONSOR"
         | "INTERN_PROGRAM_ADMIN"
+      trust_report_severity: "low" | "medium" | "high" | "critical"
+      trust_report_status: "pending" | "reviewing" | "upheld" | "dismissed"
       verification_task_status:
         | "pending"
         | "in_progress"
@@ -34407,6 +34543,7 @@ export const Constants = {
         "demand",
         "infrastructure",
       ],
+      party_type: ["customer", "feeder", "merchant"],
       role_name: [
         "admin",
         "moderator",
@@ -34451,6 +34588,8 @@ export const Constants = {
         "INTERN_SPONSOR",
         "INTERN_PROGRAM_ADMIN",
       ],
+      trust_report_severity: ["low", "medium", "high", "critical"],
+      trust_report_status: ["pending", "reviewing", "upheld", "dismissed"],
       verification_task_status: [
         "pending",
         "in_progress",
