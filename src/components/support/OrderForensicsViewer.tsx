@@ -127,6 +127,45 @@ function GpsLink({ lat, lng }: { lat: number | null | undefined; lng: number | n
   );
 }
 
+/**
+ * Some legacy / test orders saved placeholder URLs (e.g. `https://mock-storage.com/...`)
+ * that never resolve. Treat those as "no photo" so the UI doesn't render a broken image.
+ */
+function isUsablePhotoUrl(url: string | null | undefined): url is string {
+  if (!url || typeof url !== 'string') return false;
+  const u = url.trim();
+  if (!u) return false;
+  if (u.startsWith('blob:') || u.startsWith('data:')) return true;
+  if (/mock-storage\.com|example\.com|placeholder|test-photo/i.test(u)) return false;
+  return /^https?:\/\//i.test(u);
+}
+
+const ProofImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
+  const [errored, setErrored] = useState(false);
+  if (errored) {
+    return (
+      <div className="h-48 flex flex-col items-center justify-center bg-muted/40 rounded border text-xs text-muted-foreground gap-1 px-3 text-center">
+        <Camera className="h-5 w-5 opacity-50" />
+        <div className="font-medium">Photo unavailable</div>
+        <div className="text-[10px] leading-tight">
+          The Feeder upload is missing or expired. Future orders capture proof to permanent storage.
+        </div>
+      </div>
+    );
+  }
+  return (
+    <a href={src} target="_blank" rel="noopener noreferrer">
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        onError={() => setErrored(true)}
+        className="w-full h-48 object-cover rounded border bg-muted/40"
+      />
+    </a>
+  );
+};
+
 const OrderForensicsViewer: React.FC = () => {
   const [query, setQuery] = useState('');
   const [orders, setOrders] = useState<OrderRow[]>([]);
@@ -384,14 +423,8 @@ const OrderForensicsViewer: React.FC = () => {
                   <div className="flex items-center gap-2 text-xs font-semibold mb-2">
                     <Camera className="h-3.5 w-3.5" /> PICKUP PROOF
                   </div>
-                  {selected.pickup_photo_url ? (
-                    <a href={selected.pickup_photo_url} target="_blank" rel="noopener noreferrer">
-                      <img
-                        src={selected.pickup_photo_url}
-                        alt="Pickup proof"
-                        className="w-full h-48 object-cover rounded border"
-                      />
-                    </a>
+                  {isUsablePhotoUrl(selected.pickup_photo_url) ? (
+                    <ProofImage src={selected.pickup_photo_url} alt="Pickup proof" />
                   ) : (
                     <div className="h-48 flex items-center justify-center bg-muted/40 rounded border text-xs text-muted-foreground">
                       No pickup photo
@@ -414,14 +447,8 @@ const OrderForensicsViewer: React.FC = () => {
                   <div className="flex items-center gap-2 text-xs font-semibold mb-2">
                     <Camera className="h-3.5 w-3.5" /> DELIVERY PROOF
                   </div>
-                  {selected.delivery_photo_url ? (
-                    <a href={selected.delivery_photo_url} target="_blank" rel="noopener noreferrer">
-                      <img
-                        src={selected.delivery_photo_url}
-                        alt="Delivery proof"
-                        className="w-full h-48 object-cover rounded border"
-                      />
-                    </a>
+                  {isUsablePhotoUrl(selected.delivery_photo_url) ? (
+                    <ProofImage src={selected.delivery_photo_url} alt="Delivery proof" />
                   ) : (
                     <div className="h-48 flex items-center justify-center bg-muted/40 rounded border text-xs text-muted-foreground">
                       No delivery photo
