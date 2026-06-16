@@ -7,12 +7,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { OrderTrustActions } from "@/components/trust/OrderTrustActions";
 
 export interface CustomerOrderForList {
   id: string;
   customer_name: string;
   customer_email: string;
   customer_phone: string;
+  /** Authoritative ids used to submit ratings / reports. Never displayed. */
+  customer_id?: string | null;
+  driver_id?: string | null;
+  restaurant_id?: string | null;
   order_items: Array<{
     quantity: number;
     price_cents: number;
