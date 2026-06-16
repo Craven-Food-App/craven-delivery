@@ -2629,6 +2629,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         displayOrderId={displayOrderId}
         orderDetails={completedDetails}
         onContinue={onCompleteDelivery}
+        orderId={(orderDetails as any)?.id ?? null}
+        customerId={(orderDetails as any)?.customer_id ?? null}
+        restaurantId={(orderDetails as any)?.restaurant_id ?? null}
+        customerLabel={(orderDetails as any)?.customer_first_name || (orderDetails as any)?.customer_name?.split?.(' ')?.[0] || 'your customer'}
+        restaurantLabel={(orderDetails as any)?.restaurant_name || 'the restaurant'}
       />
     );
   };
