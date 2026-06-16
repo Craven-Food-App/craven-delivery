@@ -603,6 +603,24 @@ function OrderRow({ order, getStatusLabel, onUpdateStatus, onRefund, canRefund }
                   >
                     Print ticket
                   </button>
+                  {order.order_status === "delivered" && order.customer_id && (
+                    <OrderTrustActions
+                      orderId={order.id}
+                      raterType="merchant"
+                      rateeType="customer"
+                      rateeId={order.customer_id}
+                      rateeLabel={customerDisplayName}
+                    />
+                  )}
+                  {order.order_status === "delivered" && order.driver_id && order.delivery_method === "delivery" && (
+                    <OrderTrustActions
+                      orderId={order.id}
+                      raterType="merchant"
+                      rateeType="feeder"
+                      rateeId={order.driver_id}
+                      rateeLabel={driverDisplayName ? `Feeder ${driverDisplayName}` : "your Feeder"}
+                    />
+                  )}
                   {allowRefund && (
                     <>
                       <button
