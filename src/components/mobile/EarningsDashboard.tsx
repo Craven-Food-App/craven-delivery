@@ -1143,6 +1143,84 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
             </div>
           </div>
 
+          {/* Tips Bucket Card */}
+          {(() => {
+            const tipTxns = transactions.filter((t) => (t.tipAmount || 0) > 0);
+            const tipCount = tipTxns.length;
+            const tipTotal = breakdown.tips || 0;
+            const tipAvg = tipCount > 0 ? tipTotal / tipCount : 0;
+            const tipBest = tipTxns.reduce((m, t) => Math.max(m, t.tipAmount || 0), 0);
+            return (
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-gray-900">Tips</h3>
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-green-700 bg-green-100 px-2 py-0.5 rounded-full">100% Yours</span>
+                  </div>
+                  <button
+                    onClick={() => setTipsExpanded((v) => !v)}
+                    className="text-xs font-semibold text-orange-600 hover:text-orange-700"
+                  >
+                    {tipsExpanded ? 'Hide' : 'View All'}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">
+                  Every tip from every customer, tracked separately. Tips are never blended into base pay.
+                </p>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="rounded-xl bg-green-50 p-3">
+                    <p className="text-[10px] uppercase tracking-wide text-green-700 font-semibold">Total</p>
+                    <p className="text-xl font-bold text-green-700">{formatCurrency(tipTotal)}</p>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 p-3">
+                    <p className="text-[10px] uppercase tracking-wide text-gray-600 font-semibold">Tipped</p>
+                    <p className="text-xl font-bold text-gray-900">{tipCount}</p>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 p-3">
+                    <p className="text-[10px] uppercase tracking-wide text-gray-600 font-semibold">Average</p>
+                    <p className="text-xl font-bold text-gray-900">{formatCurrency(tipAvg)}</p>
+                  </div>
+                </div>
+                {tipCount > 0 && (
+                  <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                    <span>Best tip this period</span>
+                    <span className="font-semibold text-gray-900">{formatCurrency(tipBest)}</span>
+                  </div>
+                )}
+                {tipsExpanded && (
+                  <div className="mt-3 border-t border-gray-100 pt-3 max-h-80 overflow-y-auto divide-y divide-gray-100">
+                    {tipCount === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-6">No tips yet for this period</p>
+                    ) : (
+                      tipTxns.map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => {
+                            setSelectedTransaction(t);
+                            setShowDetailModal(true);
+                          }}
+                          className="w-full flex items-center justify-between py-2.5 text-left hover:bg-gray-50 rounded-lg px-2 -mx-2"
+                        >
+                          <div className="min-w-0 pr-3">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {t.restaurantName || 'Delivery'}
+                            </p>
+                            <p className="text-[11px] text-gray-500">
+                              {t.date} · {t.time} · #{t.orderId}
+                            </p>
+                          </div>
+                          <span className="text-sm font-bold text-green-600 whitespace-nowrap">
+                            +{formatCurrency(t.tipAmount)}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Payout Status Card */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Payout Status</h3>
