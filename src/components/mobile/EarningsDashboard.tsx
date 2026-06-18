@@ -1165,9 +1165,15 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                     {tipsExpanded ? 'Hide' : 'View All'}
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 mb-4">
+                <p className="text-xs text-gray-500 mb-3">
                   Every tip from every customer, tracked separately. Tips are never blended into base pay.
                 </p>
+                <div className="flex items-start gap-2 mb-4 rounded-lg bg-green-50 border border-green-200 p-2.5">
+                  <Check className="w-4 h-4 text-green-700 mt-0.5 flex-shrink-0" />
+                  <p className="text-[11px] leading-snug text-green-800">
+                    <span className="font-semibold">Final & paid.</span> Every tip shown here was already charged to the customer at delivery and credited to you — Crave'N takes 0%.
+                  </p>
+                </div>
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <div className="rounded-xl bg-green-50 p-3">
                     <p className="text-[10px] uppercase tracking-wide text-green-700 font-semibold">Total</p>
@@ -1209,6 +1215,12 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                             <p className="text-[11px] text-gray-500">
                               {t.date} · {t.time} · #{t.orderId}
                             </p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Check className="w-3 h-3 text-green-600" />
+                              <span className="text-[10px] font-semibold text-green-700 uppercase tracking-wide">
+                                Final · Paid by customer
+                              </span>
+                            </div>
                           </div>
                           <span className="text-sm font-bold text-green-600 whitespace-nowrap">
                             +{formatCurrency(t.tipAmount)}
