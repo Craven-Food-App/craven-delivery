@@ -101,6 +101,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const [historyFilter, setHistoryFilter] = useState<'all' | 'completed' | 'in_progress' | 'adjusted' | 'cancelled'>('all');
   const [historySearch, setHistorySearch] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [tipsExpanded, setTipsExpanded] = useState(false);
   const [selectedCleanPay, setSelectedCleanPay] = useState<FeederCleanPaySummary | null>(null);
   const [cleanPayLoading, setCleanPayLoading] = useState(false);
   
