@@ -67,7 +67,12 @@ export const LiveCourierTesting: React.FC = () => {
       const { data, error } = await supabase.functions.invoke("create-courier-test-job", {
         body: { restaurantId: selectedCourier, feederId, payoutCents },
       });
-      if (error) throw new Error(error.message);
+      if (error) {
+        throw new Error(
+          (data as any)?.error ||
+          (error.message === "Edge Function returned a non-2xx status code" ? "CX test job failed on the server" : error.message)
+        );
+      }
       if ((data as any)?.error) throw new Error((data as any).error);
       toast({
         title: "CX test job created",
