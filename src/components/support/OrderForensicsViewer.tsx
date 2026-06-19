@@ -206,9 +206,63 @@ const OrderForensicsViewer: React.FC = () => {
           `order_number.ilike.%${term}%,customer_name.ilike.%${term}%,customer_phone.ilike.%${term}%,id.eq.${term}`,
         );
       }
-      const { data, error } = await q;
+      const [{ data, error }, cxRes] = await Promise.all([
+        q,
+        (supabase as any)
+          .from('cx_jobs')
+          .select('id, status, assigned_driver_id, created_at, notes, cx_job_stops(*)')
+          .order('created_at', { ascending: false })
+          .limit(50),
+      ]);
       if (error) throw error;
-      setOrders(data || []);
+      const cxRows: OrderRow[] = ((cxRes.data as any[]) || []).map((j) => {
+        const stops = (j.cx_job_stops || []).slice().sort((a: any, b: any) => a.sequence - b.sequence);
+        const pickup = stops.find((s: any) => s.stop_type === 'pickup');
+        const dropoff = stops.find((s: any) => s.stop_type === 'dropoff');
+        return {
+          id: j.id,
+          order_number: `CX-${j.id.slice(0, 6).toUpperCase()}`,
+          order_status: j.status,
+          customer_name: dropoff?.contact_name || 'Courier customer',
+          customer_phone: dropoff?.contact_phone || null,
+          driver_id: j.assigned_driver_id,
+          delivered_at: j.status === 'delivered' ? (dropoff?.completed_at ?? null) : null,
+          created_at: j.created_at,
+          pickup_address: pickup?.address || null,
+          dropoff_address: dropoff?.address || null,
+          delivery_address: dropoff?.address || null,
+          pickup_lat: pickup?.latitude ?? null,
+          pickup_lng: pickup?.longitude ?? null,
+          dropoff_lat: dropoff?.latitude ?? null,
+          dropoff_lng: dropoff?.longitude ?? null,
+          pickup_photo_url: pickup?.pickup_photo_url ?? null,
+          pickup_photo_lat: pickup?.pickup_photo_lat ?? null,
+          pickup_photo_lng: pickup?.pickup_photo_lng ?? null,
+          pickup_confirmed_at: pickup?.completed_at ?? pickup?.package_verified_at ?? null,
+          delivery_photo_url: dropoff?.dropoff_photo_url ?? null,
+          delivery_photo_lat: dropoff?.dropoff_photo_lat ?? null,
+          delivery_photo_lng: dropoff?.dropoff_photo_lng ?? null,
+          delivery_photo_timestamp: dropoff?.completed_at ?? null,
+          off_route_count: 0,
+          total_distance_traveled_m: null,
+          is_cx: true,
+          signature_url: dropoff?.signature_url ?? null,
+          signer_name: dropoff?.signer_name ?? null,
+        };
+      });
+      const filteredCx = term
+        ? cxRows.filter(
+            (r) =>
+              (r.order_number || '').toLowerCase().includes(term.toLowerCase()) ||
+              (r.customer_name || '').toLowerCase().includes(term.toLowerCase()) ||
+              (r.customer_phone || '').toLowerCase().includes(term.toLowerCase()) ||
+              r.id === term,
+          )
+        : cxRows;
+      const merged = [...(data || []), ...filteredCx].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+      setOrders(merged);
     } catch (err) {
       console.error('loadOrders', err);
       setOrders([]);
@@ -228,6 +282,26 @@ const OrderForensicsViewer: React.FC = () => {
     setDeviations([]);
     setConversation([]);
     try {
+      if (order.is_cx) {
+        const { data: cxEv } = await (supabase as any)
+          .from('cx_job_events')
+          .select('*')
+          .eq('job_id', order.id)
+          .order('created_at', { ascending: true });
+        // Normalize CX events to the regular shape the timeline UI expects.
+        setEvents(
+          (cxEv || []).map((e: any) => ({
+            id: e.id,
+            event_type: e.event_type,
+            occurred_at: e.created_at,
+            lat: e.lat,
+            lng: e.lng,
+            notes: e.notes,
+            photo_url: e.photo_url,
+          })),
+        );
+        return;
+      }
       const [ev, bc, dv, threads] = await Promise.all([
         (supabase as any)
           .from('order_tracking_events')
