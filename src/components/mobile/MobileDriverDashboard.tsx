@@ -28,6 +28,7 @@ import FeederScheduleTab from './FeederScheduleTab';
 import OnFireDashboard from './CorporateEarningsDashboard';
 import EarningsDashboard from './EarningsDashboard';
 import FeederAccountPage from './FeederAccountPage';
+import { CXDriverJobsPage } from './CXDriverJobsPage';
 import FeederRatingsTab from './FeederRatingsTab';
 import CravenAppComm from './CravenAppComm';
 import { SafetySettings } from '@/components/settings/SafetySettings';
@@ -440,7 +441,7 @@ export const MobileDriverDashboard: React.FC = () => {
   const [hasCompletedRetailPickup, setHasCompletedRetailPickup] = useState(false);
   const [previewRetailStep, setPreviewRetailStep] = useState<1 | 2>(1);
   const [showQuickScheduler, setShowQuickScheduler] = useState(false);
-  const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages' | 'cx'>('home');
   const [driverRating, setDriverRating] = useState<number>(5.0);
   const [driverDeliveries, setDriverDeliveries] = useState<number>(0);
   const [ratingTrend, setRatingTrend] = useState<number>(0);
@@ -508,8 +509,8 @@ export const MobileDriverDashboard: React.FC = () => {
   // Handle URL parameter changes
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['schedule', 'earnings', 'onfire', 'notifications', 'account', 'ratings', 'promos', 'preferences', 'help', 'messages'].includes(tab)) {
-      setActiveTab(tab as 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages');
+    if (tab && ['schedule', 'earnings', 'onfire', 'notifications', 'account', 'ratings', 'promos', 'preferences', 'help', 'messages', 'cx'].includes(tab)) {
+      setActiveTab(tab as 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages' | 'cx');
     } else {
       setActiveTab('home');
     }
@@ -519,7 +520,7 @@ export const MobileDriverDashboard: React.FC = () => {
   useEffect(() => {
     const handleSwitchTab = (event: CustomEvent<{ tab: string; section?: string }>) => {
       const { tab, section } = event.detail;
-      if (['schedule', 'earnings', 'onfire', 'notifications', 'account', 'ratings', 'promos', 'preferences', 'help', 'messages'].includes(tab)) {
+      if (['schedule', 'earnings', 'onfire', 'notifications', 'account', 'ratings', 'promos', 'preferences', 'help', 'messages', 'cx'].includes(tab)) {
         setActiveTab(tab as any);
         // Update URL without causing reload
         const newUrl = section ? `/mobile?tab=${tab}&section=${section}` : `/mobile?tab=${tab}`;
