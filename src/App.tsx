@@ -723,6 +723,9 @@ const App = () => {
               <Route path="/business-auth" element={<BusinessAuthWrapper />} />
               <Route path="/" element={<Index />} />
           <Route path="/restaurants" element={<Restaurants />} />
+          <Route path="/cx" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXLandingPage /></Suspense>} />
+          <Route path="/cx/signup" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXSignupPage /></Suspense>} />
+          <Route path="/cx/portal" element={<Suspense fallback={<SuspenseLoader message="Loading CX Portal" />}><CXPortal /></Suspense>} />
           <Route path="/restaurants/cuisine/:cuisine" element={<CuisineResults />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/order-history" element={<OrderHistory />} />
