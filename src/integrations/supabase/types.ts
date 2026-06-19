@@ -7286,8 +7286,13 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           package_description: string | null
+          package_dimensions: string | null
+          package_image_url: string | null
           package_label: string | null
+          package_quantity: number | null
           package_verified_at: string | null
+          package_weight_lbs: number | null
+          pickup_instructions: string | null
           pickup_photo_lat: number | null
           pickup_photo_lng: number | null
           pickup_photo_url: string | null
@@ -7312,8 +7317,13 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           package_description?: string | null
+          package_dimensions?: string | null
+          package_image_url?: string | null
           package_label?: string | null
+          package_quantity?: number | null
           package_verified_at?: string | null
+          package_weight_lbs?: number | null
+          pickup_instructions?: string | null
           pickup_photo_lat?: number | null
           pickup_photo_lng?: number | null
           pickup_photo_url?: string | null
@@ -7338,8 +7348,13 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           package_description?: string | null
+          package_dimensions?: string | null
+          package_image_url?: string | null
           package_label?: string | null
+          package_quantity?: number | null
           package_verified_at?: string | null
+          package_weight_lbs?: number | null
+          pickup_instructions?: string | null
           pickup_photo_lat?: number | null
           pickup_photo_lng?: number | null
           pickup_photo_url?: string | null
