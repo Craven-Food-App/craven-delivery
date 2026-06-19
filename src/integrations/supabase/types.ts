@@ -7240,17 +7240,21 @@ export type Database = {
           created_at: string
           created_by: string
           dispatch_deadline_at: string | null
+          dispatch_round: number
           driver_payout_offer_cents: number
           estimated_distance_meters: number | null
           estimated_duration_seconds: number | null
+          expires_at: string | null
           id: string
           job_type: Database["public"]["Enums"]["cx_job_type"]
+          next_broadcast_at: string | null
           notes: string | null
           optimized_polyline: string | null
           pickup_at: string | null
           platform_base_cents: number
           region_id: string | null
           status: Database["public"]["Enums"]["cx_job_status"]
+          tier_open: boolean
           total_charge_cents: number | null
           updated_at: string
         }
@@ -7261,17 +7265,21 @@ export type Database = {
           created_at?: string
           created_by: string
           dispatch_deadline_at?: string | null
+          dispatch_round?: number
           driver_payout_offer_cents: number
           estimated_distance_meters?: number | null
           estimated_duration_seconds?: number | null
+          expires_at?: string | null
           id?: string
           job_type: Database["public"]["Enums"]["cx_job_type"]
+          next_broadcast_at?: string | null
           notes?: string | null
           optimized_polyline?: string | null
           pickup_at?: string | null
           platform_base_cents: number
           region_id?: string | null
           status?: Database["public"]["Enums"]["cx_job_status"]
+          tier_open?: boolean
           total_charge_cents?: number | null
           updated_at?: string
         }
@@ -7282,17 +7290,21 @@ export type Database = {
           created_at?: string
           created_by?: string
           dispatch_deadline_at?: string | null
+          dispatch_round?: number
           driver_payout_offer_cents?: number
           estimated_distance_meters?: number | null
           estimated_duration_seconds?: number | null
+          expires_at?: string | null
           id?: string
           job_type?: Database["public"]["Enums"]["cx_job_type"]
+          next_broadcast_at?: string | null
           notes?: string | null
           optimized_polyline?: string | null
           pickup_at?: string | null
           platform_base_cents?: number
           region_id?: string | null
           status?: Database["public"]["Enums"]["cx_job_status"]
+          tier_open?: boolean
           total_charge_cents?: number | null
           updated_at?: string
         }
@@ -7318,8 +7330,11 @@ export type Database = {
           active: boolean
           created_at: string
           dispatch_timeout_seconds: number
+          expire_seconds: number
+          fallback_seconds: number
           id: string
           job_type: Database["public"]["Enums"]["cx_job_type"]
+          max_rounds: number
           minimum_driver_payout_cents: number
           per_mile_floor_cents: number
           per_stop_floor_cents: number
@@ -7331,8 +7346,11 @@ export type Database = {
           active?: boolean
           created_at?: string
           dispatch_timeout_seconds?: number
+          expire_seconds?: number
+          fallback_seconds?: number
           id?: string
           job_type: Database["public"]["Enums"]["cx_job_type"]
+          max_rounds?: number
           minimum_driver_payout_cents: number
           per_mile_floor_cents?: number
           per_stop_floor_cents?: number
@@ -7344,13 +7362,61 @@ export type Database = {
           active?: boolean
           created_at?: string
           dispatch_timeout_seconds?: number
+          expire_seconds?: number
+          fallback_seconds?: number
           id?: string
           job_type?: Database["public"]["Enums"]["cx_job_type"]
+          max_rounds?: number
           minimum_driver_payout_cents?: number
           per_mile_floor_cents?: number
           per_stop_floor_cents?: number
           platform_base_cents?: number
           region_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cx_subscription_plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          included_jobs: number
+          monthly_price_cents: number
+          name: string
+          overage_cents: number
+          slug: string
+          sort_order: number
+          stripe_price_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          included_jobs?: number
+          monthly_price_cents?: number
+          name: string
+          overage_cents?: number
+          slug: string
+          sort_order?: number
+          stripe_price_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          included_jobs?: number
+          monthly_price_cents?: number
+          name?: string
+          overage_cents?: number
+          slug?: string
+          sort_order?: number
+          stripe_price_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -27753,6 +27819,12 @@ export type Database = {
           cravemore_eligible: boolean | null
           created_at: string | null
           cuisine_type: string | null
+          cx_current_period_end: string | null
+          cx_insurance_approved: boolean
+          cx_plan_id: string | null
+          cx_stripe_customer_id: string | null
+          cx_stripe_subscription_id: string | null
+          cx_subscription_status: string | null
           delivery_fee_cents: number | null
           delivery_radius_miles: number | null
           description: string | null
@@ -27830,6 +27902,12 @@ export type Database = {
           cravemore_eligible?: boolean | null
           created_at?: string | null
           cuisine_type?: string | null
+          cx_current_period_end?: string | null
+          cx_insurance_approved?: boolean
+          cx_plan_id?: string | null
+          cx_stripe_customer_id?: string | null
+          cx_stripe_subscription_id?: string | null
+          cx_subscription_status?: string | null
           delivery_fee_cents?: number | null
           delivery_radius_miles?: number | null
           description?: string | null
@@ -27907,6 +27985,12 @@ export type Database = {
           cravemore_eligible?: boolean | null
           created_at?: string | null
           cuisine_type?: string | null
+          cx_current_period_end?: string | null
+          cx_insurance_approved?: boolean
+          cx_plan_id?: string | null
+          cx_stripe_customer_id?: string | null
+          cx_stripe_subscription_id?: string | null
+          cx_subscription_status?: string | null
           delivery_fee_cents?: number | null
           delivery_radius_miles?: number | null
           description?: string | null
@@ -27969,7 +28053,15 @@ export type Database = {
           verification_notes?: Json | null
           zip_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "restaurants_cx_plan_id_fkey"
+            columns: ["cx_plan_id"]
+            isOneToOne: false
+            referencedRelation: "cx_subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       restaurants_master: {
         Row: {

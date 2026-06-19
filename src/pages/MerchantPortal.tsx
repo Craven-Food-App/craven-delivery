@@ -76,6 +76,7 @@ import MerchantTermsAcceptanceModal from "@/components/merchant/MerchantTermsAcc
 import { useMerchantTermsAcceptance } from "@/hooks/useMerchantTermsAcceptance";
 import { MERCHANT_TERMS_PATH } from "@/constants/merchantTerms";
 import cravenCLogo from "@/assets/craven-c-new.png";
+import CourierPortalView from "@/components/merchant/CourierPortalView";
 
 // Helper function to format restaurant type for display
 const formatRestaurantType = (type: string | null | undefined): string => {
@@ -348,6 +349,17 @@ const RestaurantSetup = () => {
       >
         <MerchantTermsAcceptanceModal opened allowClose={false} onAccept={termsAcceptance.accept} />
       </Box>
+    );
+  }
+
+  // Branch: courier merchants get a dispatch-style portal instead of the restaurant/retail UI.
+  if ((restaurant as any)?.business_type === 'courier_service') {
+    return (
+      <CourierPortalView
+        restaurant={restaurant}
+        userId={(restaurant as any)?.owner_id || ''}
+        userName={userName || 'Operator'}
+      />
     );
   }
 

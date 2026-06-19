@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { CXDriverOptInCard } from '@/components/cx/CXDriverOptInCard';
 
 export function DriverPreferencesPage() {
   const [loading, setLoading] = useState(true);
@@ -173,6 +174,9 @@ export function DriverPreferencesPage() {
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Crave'N Express opt-in */}
+        {prefs.driver_id && <CXDriverOptInCard driverId={prefs.driver_id} />}
+
         {/* 1. Delivery Preferences */}
         <Card className="border-2 border-purple-200 bg-white/80 backdrop-blur">
           <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50">
