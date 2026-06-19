@@ -1367,6 +1367,14 @@ const MainHub: React.FC = () => {
       color: "#fa8c16",
     },
     {
+      id: "cx-courier",
+      name: "Crave'N Express (CX) Dispatch",
+      description: "Courier merchant dispatch — post & manage on-demand courier jobs",
+      icon: RocketOutlined,
+      path: "/merchant-portal",
+      color: "#f97316",
+    },
+    {
       id: "intern",
       name: "Intern Portal",
       description: "Intern workspace for training, tasks, and performance",
