@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import CXIntroSection from "@/components/home/CXIntroSection";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -73,6 +74,7 @@ const Index = () => {
       <div className="min-h-screen bg-background">
         <Header />
         <Hero />
+        <CXIntroSection />
         <Footer />
       </div>
     </>
