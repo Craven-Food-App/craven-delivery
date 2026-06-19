@@ -107,6 +107,40 @@ async function uploadProof(blob: Blob, kind: string, jobId: string, stopId: stri
   return supabase.storage.from("delivery-photos").getPublicUrl(path).data.publicUrl;
 }
 
+/** Best-effort GPS capture — never throws, never blocks the flow. */
+async function snapPosition(): Promise<GeolocationPosition | null> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) return null;
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve(p),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 5000 },
+    );
+  });
+}
+
+async function logCxEvent(
+  jobId: string,
+  eventType: string,
+  extra: { photo_url?: string | null; notes?: string | null; pos?: GeolocationPosition | null } = {},
+) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    await (supabase as any).from("cx_job_events").insert({
+      job_id: jobId,
+      actor_id: user?.id ?? null,
+      event_type: eventType,
+      photo_url: extra.photo_url ?? null,
+      notes: extra.notes ?? null,
+      lat: extra.pos?.coords.latitude ?? null,
+      lng: extra.pos?.coords.longitude ?? null,
+      accuracy_m: extra.pos?.coords.accuracy ?? null,
+    });
+  } catch (err) {
+    console.warn("[cx] logCxEvent failed", err);
+  }
+}
+
 /**
  * Pickup proof: package verified + photo of package(s) at pickup.
  */
@@ -133,16 +167,24 @@ export function CXPickupProofSheet({
     }
     setBusy(true);
     try {
+      const pos = await snapPosition();
       const url = await uploadProof(photo.blob, "pickup", job.id, stop.id);
       const { error: e1 } = await supabase
         .from("cx_job_stops")
         .update({
           pickup_photo_url: url,
+          pickup_photo_lat: pos?.coords.latitude ?? null,
+          pickup_photo_lng: pos?.coords.longitude ?? null,
           package_verified_at: new Date().toISOString(),
           completed_at: new Date().toISOString(),
         })
         .eq("id", stop.id);
       if (e1) throw e1;
+      await logCxEvent(job.id, "pickup_photo_captured", {
+        photo_url: url,
+        notes: "Package verified at pickup",
+        pos,
+      });
       const { data, error: e2 } = await supabase.functions.invoke("cx-update-status", {
         body: { job_id: job.id, status: "picked_up" },
       });
@@ -305,6 +347,7 @@ export function CXDropoffProofSheet({
 
     setBusy(true);
     try {
+      const pos = await snapPosition();
       const photoUrl = await uploadProof(photo.blob, "dropoff", job.id, stop.id);
 
       let signatureUrl: string | null = null;
@@ -323,12 +366,26 @@ export function CXDropoffProofSheet({
         .from("cx_job_stops")
         .update({
           dropoff_photo_url: photoUrl,
+          dropoff_photo_lat: pos?.coords.latitude ?? null,
+          dropoff_photo_lng: pos?.coords.longitude ?? null,
           signature_url: signatureUrl,
           signer_name: signerName || null,
           completed_at: new Date().toISOString(),
         })
         .eq("id", stop.id);
       if (e1) throw e1;
+      await logCxEvent(job.id, "delivery_photo_captured", {
+        photo_url: photoUrl,
+        notes: signerName ? `Signed by ${signerName}` : "Delivered (no-signature waived)",
+        pos,
+      });
+      if (signatureUrl) {
+        await logCxEvent(job.id, "signature_captured", {
+          photo_url: signatureUrl,
+          notes: `Recipient: ${signerName}`,
+          pos,
+        });
+      }
 
       const { data, error: e2 } = await supabase.functions.invoke("cx-update-status", {
         body: { job_id: job.id, status: "delivered" },

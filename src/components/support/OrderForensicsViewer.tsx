@@ -61,6 +61,11 @@ interface OrderRow {
   delivery_photo_timestamp: string | null;
   off_route_count: number | null;
   total_distance_traveled_m: number | null;
+  /** True when this row is a Crave'N Express courier job, not a food order. */
+  is_cx?: boolean;
+  /** Signature image (CX only). */
+  signature_url?: string | null;
+  signer_name?: string | null;
 }
 
 const EVENT_LABEL: Record<string, string> = {
@@ -79,6 +84,15 @@ const EVENT_LABEL: Record<string, string> = {
   order_delivered: 'Order delivered',
   order_cancelled: 'Order cancelled',
   support_action: 'Support action',
+  // CX-native event types
+  accepted: 'Courier accepted job',
+  en_route_pickup: 'En route to pickup',
+  picked_up: 'Package picked up',
+  en_route_dropoff: 'En route to drop-off',
+  delivered: 'Package delivered',
+  signature_captured: 'Signature captured',
+  cancelled: 'Job cancelled',
+  failed: 'Job failed',
 };
 
 const EVENT_TONE: Record<string, string> = {
@@ -192,9 +206,63 @@ const OrderForensicsViewer: React.FC = () => {
           `order_number.ilike.%${term}%,customer_name.ilike.%${term}%,customer_phone.ilike.%${term}%,id.eq.${term}`,
         );
       }
-      const { data, error } = await q;
+      const [{ data, error }, cxRes] = await Promise.all([
+        q,
+        (supabase as any)
+          .from('cx_jobs')
+          .select('id, status, assigned_driver_id, created_at, notes, cx_job_stops(*)')
+          .order('created_at', { ascending: false })
+          .limit(50),
+      ]);
       if (error) throw error;
-      setOrders(data || []);
+      const cxRows: OrderRow[] = ((cxRes.data as any[]) || []).map((j) => {
+        const stops = (j.cx_job_stops || []).slice().sort((a: any, b: any) => a.sequence - b.sequence);
+        const pickup = stops.find((s: any) => s.stop_type === 'pickup');
+        const dropoff = stops.find((s: any) => s.stop_type === 'dropoff');
+        return {
+          id: j.id,
+          order_number: `CX-${j.id.slice(0, 6).toUpperCase()}`,
+          order_status: j.status,
+          customer_name: dropoff?.contact_name || 'Courier customer',
+          customer_phone: dropoff?.contact_phone || null,
+          driver_id: j.assigned_driver_id,
+          delivered_at: j.status === 'delivered' ? (dropoff?.completed_at ?? null) : null,
+          created_at: j.created_at,
+          pickup_address: pickup?.address || null,
+          dropoff_address: dropoff?.address || null,
+          delivery_address: dropoff?.address || null,
+          pickup_lat: pickup?.latitude ?? null,
+          pickup_lng: pickup?.longitude ?? null,
+          dropoff_lat: dropoff?.latitude ?? null,
+          dropoff_lng: dropoff?.longitude ?? null,
+          pickup_photo_url: pickup?.pickup_photo_url ?? null,
+          pickup_photo_lat: pickup?.pickup_photo_lat ?? null,
+          pickup_photo_lng: pickup?.pickup_photo_lng ?? null,
+          pickup_confirmed_at: pickup?.completed_at ?? pickup?.package_verified_at ?? null,
+          delivery_photo_url: dropoff?.dropoff_photo_url ?? null,
+          delivery_photo_lat: dropoff?.dropoff_photo_lat ?? null,
+          delivery_photo_lng: dropoff?.dropoff_photo_lng ?? null,
+          delivery_photo_timestamp: dropoff?.completed_at ?? null,
+          off_route_count: 0,
+          total_distance_traveled_m: null,
+          is_cx: true,
+          signature_url: dropoff?.signature_url ?? null,
+          signer_name: dropoff?.signer_name ?? null,
+        };
+      });
+      const filteredCx = term
+        ? cxRows.filter(
+            (r) =>
+              (r.order_number || '').toLowerCase().includes(term.toLowerCase()) ||
+              (r.customer_name || '').toLowerCase().includes(term.toLowerCase()) ||
+              (r.customer_phone || '').toLowerCase().includes(term.toLowerCase()) ||
+              r.id === term,
+          )
+        : cxRows;
+      const merged = [...(data || []), ...filteredCx].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+      setOrders(merged);
     } catch (err) {
       console.error('loadOrders', err);
       setOrders([]);
@@ -214,6 +282,26 @@ const OrderForensicsViewer: React.FC = () => {
     setDeviations([]);
     setConversation([]);
     try {
+      if (order.is_cx) {
+        const { data: cxEv } = await (supabase as any)
+          .from('cx_job_events')
+          .select('*')
+          .eq('job_id', order.id)
+          .order('created_at', { ascending: true });
+        // Normalize CX events to the regular shape the timeline UI expects.
+        setEvents(
+          (cxEv || []).map((e: any) => ({
+            id: e.id,
+            event_type: e.event_type,
+            occurred_at: e.created_at,
+            lat: e.lat,
+            lng: e.lng,
+            notes: e.notes,
+            photo_url: e.photo_url,
+          })),
+        );
+        return;
+      }
       const [ev, bc, dv, threads] = await Promise.all([
         (supabase as any)
           .from('order_tracking_events')
@@ -291,9 +379,14 @@ const OrderForensicsViewer: React.FC = () => {
                   <span className="font-mono text-xs font-semibold">
                     #{o.order_number || o.id.slice(0, 8)}
                   </span>
-                  <Badge variant="outline" className="text-[10px] capitalize">
-                    {o.order_status || 'unknown'}
-                  </Badge>
+                  <div className="flex items-center gap-1">
+                    {o.is_cx && (
+                      <Badge className="text-[10px] bg-orange-500 text-white border-0">CX</Badge>
+                    )}
+                    <Badge variant="outline" className="text-[10px] capitalize">
+                      {o.order_status || 'unknown'}
+                    </Badge>
+                  </div>
                 </div>
                 <div className="text-sm mt-1 truncate">{o.customer_name || '—'}</div>
                 <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-1">
@@ -338,6 +431,9 @@ const OrderForensicsViewer: React.FC = () => {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
+                  {selected.is_cx && (
+                    <Badge className="bg-orange-500 text-white border-0">Crave'N Express</Badge>
+                  )}
                   <Badge variant="outline" className="capitalize">{selected.order_status}</Badge>
                   {(selected.delivered_at || selected.feeder_delivery_completed_at) && (
                     <Badge className="bg-emerald-500/20 text-emerald-700 border-emerald-500/30">
@@ -468,6 +564,39 @@ const OrderForensicsViewer: React.FC = () => {
                   </div>
                 </Card>
               </div>
+
+              {selected.is_cx && (selected.signature_url || selected.signer_name) && (
+                <Card className="p-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold mb-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> RECIPIENT SIGNATURE
+                  </div>
+                  <div className="grid sm:grid-cols-[200px_1fr] gap-3 items-start">
+                    {selected.signature_url ? (
+                      <a href={selected.signature_url} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={selected.signature_url}
+                          alt="Signature"
+                          className="w-full h-24 object-contain bg-white border rounded"
+                        />
+                      </a>
+                    ) : (
+                      <div className="h-24 flex items-center justify-center bg-muted/40 rounded border text-xs text-muted-foreground">
+                        No signature
+                      </div>
+                    )}
+                    <div className="text-xs space-y-1">
+                      <div>
+                        <span className="text-muted-foreground">Signed by:</span>{' '}
+                        <span className="font-semibold">{selected.signer_name || '—'}</span>
+                      </div>
+                      <div className="text-muted-foreground text-[11px]">
+                        Couriers require a signature unless the merchant marks the stop
+                        "no signature required."
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )}
 
               {/* Off-route incidents */}
               {deviations.length > 0 && (
