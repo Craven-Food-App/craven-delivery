@@ -975,6 +975,21 @@ export const MobileDriverDashboard: React.FC = () => {
       })
       .subscribe();
 
+    const cxChannel = supabase
+      .channel(`cx_driver_${userId}`)
+      .on('broadcast', { event: 'cx_job_offer' }, (ev: any) => {
+        const payload = ev?.payload ?? ev ?? {};
+        showNotification(
+          `CX courier job: ${payload.courier_name || "Crave'N Express"}`,
+          `$${((payload.payout_cents || 0) / 100).toFixed(2)} courier gig available`,
+          8000
+        );
+        playNotification();
+        setActiveTab('cx');
+        navigate('/mobile?tab=cx');
+      })
+      .subscribe();
+
     const dbChannel = supabase
       .channel(`order_assignments_q_${userId}`)
       .on(
@@ -1098,6 +1113,7 @@ export const MobileDriverDashboard: React.FC = () => {
       .subscribe();
     const cleanup = () => {
       supabase.removeChannel(broadcastChannel);
+      supabase.removeChannel(cxChannel);
       supabase.removeChannel(dbChannel);
     };
     realtimeCleanupRef.current = cleanup;
