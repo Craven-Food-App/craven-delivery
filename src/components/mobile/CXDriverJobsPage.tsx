@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Truck, MapPin, ArrowRight, Package, Phone, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import { CXJobDetailSheet } from "./CXJobDetailSheet";
+import { CXPickupProofSheet, CXDropoffProofSheet } from "./CXProofSheets";
 
 const NEXT_STATUS: Record<string, string> = {
   accepted: "en_route_pickup",
@@ -16,9 +17,9 @@ const NEXT_STATUS: Record<string, string> = {
 };
 const NEXT_LABEL: Record<string, string> = {
   accepted: "Start trip to pickup",
-  en_route_pickup: "Mark picked up",
+  en_route_pickup: "I've arrived — verify pickup",
   picked_up: "Start trip to drop-off",
-  en_route_dropoff: "Mark delivered",
+  en_route_dropoff: "I've arrived — complete delivery",
 };
 
 export function CXDriverJobsPage({ onClose }: { onClose?: () => void }) {
@@ -30,6 +31,7 @@ export function CXDriverJobsPage({ onClose }: { onClose?: () => void }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [selectedJob, setSelectedJob] = useState<any | null>(null);
+  const [proofJob, setProofJob] = useState<{ job: any; kind: "pickup" | "dropoff" } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -101,6 +103,15 @@ export function CXDriverJobsPage({ onClose }: { onClose?: () => void }) {
   const advance = async (job: any) => {
     const next = NEXT_STATUS[job.status];
     if (!next) return;
+    // Gate the picked_up / delivered transitions behind the proof sheets.
+    if (next === "picked_up") {
+      setProofJob({ job, kind: "pickup" });
+      return;
+    }
+    if (next === "delivered") {
+      setProofJob({ job, kind: "dropoff" });
+      return;
+    }
     setBusy(job.id);
     const { data, error } = await supabase.functions.invoke("cx-update-status", {
       body: { job_id: job.id, status: next },
@@ -185,6 +196,31 @@ export function CXDriverJobsPage({ onClose }: { onClose?: () => void }) {
           }}
         />
       )}
+
+      {proofJob && (() => {
+        const stops = (proofJob.job.cx_job_stops ?? [])
+          .slice()
+          .sort((a: any, b: any) => a.sequence - b.sequence);
+        const stop =
+          proofJob.kind === "pickup"
+            ? stops.find((s: any) => s.stop_type === "pickup")
+            : stops.find((s: any) => s.stop_type === "dropoff" && !s.completed_at) ||
+              stops.find((s: any) => s.stop_type === "dropoff");
+        if (!stop) {
+          setProofJob(null);
+          return null;
+        }
+        const close = () => setProofJob(null);
+        const confirmed = () => {
+          setProofJob(null);
+          if (userId) loadJobs(userId, verified);
+        };
+        return proofJob.kind === "pickup" ? (
+          <CXPickupProofSheet job={proofJob.job} stop={stop} onClose={close} onConfirmed={confirmed} />
+        ) : (
+          <CXDropoffProofSheet job={proofJob.job} stop={stop} onClose={close} onConfirmed={confirmed} />
+        );
+      })()}
     </div>
   );
 }
