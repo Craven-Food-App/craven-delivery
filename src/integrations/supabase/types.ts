@@ -7263,12 +7263,20 @@ export type Database = {
           contact_name: string | null
           contact_phone: string | null
           created_at: string
+          dropoff_photo_url: string | null
           id: string
           job_id: string
           latitude: number | null
           longitude: number | null
           package_description: string | null
+          package_label: string | null
+          package_verified_at: string | null
+          pickup_photo_url: string | null
+          proof_notes: string | null
           sequence: number
+          signature_required: boolean
+          signature_url: string | null
+          signer_name: string | null
           stop_type: string
         }
         Insert: {
@@ -7277,12 +7285,20 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          dropoff_photo_url?: string | null
           id?: string
           job_id: string
           latitude?: number | null
           longitude?: number | null
           package_description?: string | null
+          package_label?: string | null
+          package_verified_at?: string | null
+          pickup_photo_url?: string | null
+          proof_notes?: string | null
           sequence: number
+          signature_required?: boolean
+          signature_url?: string | null
+          signer_name?: string | null
           stop_type: string
         }
         Update: {
@@ -7291,12 +7307,20 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          dropoff_photo_url?: string | null
           id?: string
           job_id?: string
           latitude?: number | null
           longitude?: number | null
           package_description?: string | null
+          package_label?: string | null
+          package_verified_at?: string | null
+          pickup_photo_url?: string | null
+          proof_notes?: string | null
           sequence?: number
+          signature_required?: boolean
+          signature_url?: string | null
+          signer_name?: string | null
           stop_type?: string
         }
         Relationships: [
