@@ -27,10 +27,12 @@ Deno.serve(async (req) => {
     if (jErr || !job) throw jErr ?? new Error("Job not found");
 
     const { data: pricing } = await supabase
-      .from("cx_pricing_config").select("dispatch_timeout_seconds")
+      .from("cx_pricing_config").select("dispatch_timeout_seconds, fallback_seconds, max_rounds, expire_seconds")
       .eq("active", true).eq("job_type", job.job_type).maybeSingle();
-    const timeoutSec = pricing?.dispatch_timeout_seconds ?? 60;
+    const timeoutSec = pricing?.dispatch_timeout_seconds ?? pricing?.fallback_seconds ?? 60;
+    const expireSec = pricing?.expire_seconds ?? 900;
     const deadline = new Date(Date.now() + timeoutSec * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + expireSec * 1000).toISOString();
 
     const { data: tier1 } = await supabase
       .from("driver_preferences").select("driver_id")
@@ -42,7 +44,12 @@ Deno.serve(async (req) => {
     const tier2Ids = (tier2 ?? []).map((d: any) => d.driver_id);
 
     await supabase.from("cx_jobs").update({
-      status: "offered", dispatch_deadline_at: deadline,
+      status: "offered",
+      dispatch_deadline_at: deadline,
+      next_broadcast_at: deadline,
+      expires_at: expiresAt,
+      dispatch_round: 1,
+      tier_open: false,
     }).eq("id", job_id);
 
     await supabase.from("cx_job_events").insert({
