@@ -49,6 +49,9 @@ verify_jwt = false
 [functions.cx-stripe-webhook]
 verify_jwt = false
 
+[functions.cx-dispatch-tick]
+verify_jwt = false
+
 [functions.daily-driver-payouts]
 verify_jwt = false
 
