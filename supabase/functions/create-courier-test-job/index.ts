@@ -54,13 +54,13 @@ Deno.serve(async (req) => {
     if (restaurantId) {
       const { data } = await service
         .from("restaurants")
-        .select("id, name, business_type, region_id")
+        .select("id, name, business_type")
         .eq("id", restaurantId).maybeSingle();
       courierRest = data;
     } else {
       const { data } = await service
         .from("restaurants")
-        .select("id, name, business_type, region_id")
+        .select("id, name, business_type")
         .eq("business_type", "courier_service")
         .order("created_at", { ascending: true })
         .limit(1).maybeSingle();
@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
         platform_base_cents: baseCents,
         total_charge_cents: totalCharge,
         notes: notes ?? "TEST: Pet Supplies MUST READ: Please review item descriptions/dimensions and ensure you have a vehicle large enough and can independently load and unload the Gig items before offering.",
-        region_id: courierRest.region_id ?? null,
+        region_id: null,
         dispatch_deadline_at: deadline,
         next_broadcast_at: deadline,
         expires_at: expiresAt,
