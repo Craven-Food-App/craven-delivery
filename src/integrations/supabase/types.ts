@@ -7240,17 +7240,21 @@ export type Database = {
           created_at: string
           created_by: string
           dispatch_deadline_at: string | null
+          dispatch_round: number
           driver_payout_offer_cents: number
           estimated_distance_meters: number | null
           estimated_duration_seconds: number | null
+          expires_at: string | null
           id: string
           job_type: Database["public"]["Enums"]["cx_job_type"]
+          next_broadcast_at: string | null
           notes: string | null
           optimized_polyline: string | null
           pickup_at: string | null
           platform_base_cents: number
           region_id: string | null
           status: Database["public"]["Enums"]["cx_job_status"]
+          tier_open: boolean
           total_charge_cents: number | null
           updated_at: string
         }
@@ -7261,17 +7265,21 @@ export type Database = {
           created_at?: string
           created_by: string
           dispatch_deadline_at?: string | null
+          dispatch_round?: number
           driver_payout_offer_cents: number
           estimated_distance_meters?: number | null
           estimated_duration_seconds?: number | null
+          expires_at?: string | null
           id?: string
           job_type: Database["public"]["Enums"]["cx_job_type"]
+          next_broadcast_at?: string | null
           notes?: string | null
           optimized_polyline?: string | null
           pickup_at?: string | null
           platform_base_cents: number
           region_id?: string | null
           status?: Database["public"]["Enums"]["cx_job_status"]
+          tier_open?: boolean
           total_charge_cents?: number | null
           updated_at?: string
         }
@@ -7282,17 +7290,21 @@ export type Database = {
           created_at?: string
           created_by?: string
           dispatch_deadline_at?: string | null
+          dispatch_round?: number
           driver_payout_offer_cents?: number
           estimated_distance_meters?: number | null
           estimated_duration_seconds?: number | null
+          expires_at?: string | null
           id?: string
           job_type?: Database["public"]["Enums"]["cx_job_type"]
+          next_broadcast_at?: string | null
           notes?: string | null
           optimized_polyline?: string | null
           pickup_at?: string | null
           platform_base_cents?: number
           region_id?: string | null
           status?: Database["public"]["Enums"]["cx_job_status"]
+          tier_open?: boolean
           total_charge_cents?: number | null
           updated_at?: string
         }
@@ -7318,8 +7330,11 @@ export type Database = {
           active: boolean
           created_at: string
           dispatch_timeout_seconds: number
+          expire_seconds: number
+          fallback_seconds: number
           id: string
           job_type: Database["public"]["Enums"]["cx_job_type"]
+          max_rounds: number
           minimum_driver_payout_cents: number
           per_mile_floor_cents: number
           per_stop_floor_cents: number
@@ -7331,8 +7346,11 @@ export type Database = {
           active?: boolean
           created_at?: string
           dispatch_timeout_seconds?: number
+          expire_seconds?: number
+          fallback_seconds?: number
           id?: string
           job_type: Database["public"]["Enums"]["cx_job_type"]
+          max_rounds?: number
           minimum_driver_payout_cents: number
           per_mile_floor_cents?: number
           per_stop_floor_cents?: number
@@ -7344,8 +7362,11 @@ export type Database = {
           active?: boolean
           created_at?: string
           dispatch_timeout_seconds?: number
+          expire_seconds?: number
+          fallback_seconds?: number
           id?: string
           job_type?: Database["public"]["Enums"]["cx_job_type"]
+          max_rounds?: number
           minimum_driver_payout_cents?: number
           per_mile_floor_cents?: number
           per_stop_floor_cents?: number
