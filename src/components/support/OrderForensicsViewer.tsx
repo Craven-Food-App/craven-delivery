@@ -379,9 +379,14 @@ const OrderForensicsViewer: React.FC = () => {
                   <span className="font-mono text-xs font-semibold">
                     #{o.order_number || o.id.slice(0, 8)}
                   </span>
-                  <Badge variant="outline" className="text-[10px] capitalize">
-                    {o.order_status || 'unknown'}
-                  </Badge>
+                  <div className="flex items-center gap-1">
+                    {o.is_cx && (
+                      <Badge className="text-[10px] bg-orange-500 text-white border-0">CX</Badge>
+                    )}
+                    <Badge variant="outline" className="text-[10px] capitalize">
+                      {o.order_status || 'unknown'}
+                    </Badge>
+                  </div>
                 </div>
                 <div className="text-sm mt-1 truncate">{o.customer_name || '—'}</div>
                 <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-1">
