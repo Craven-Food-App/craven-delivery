@@ -7355,6 +7355,51 @@ export type Database = {
         }
         Relationships: []
       }
+      cx_subscription_plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          included_jobs: number
+          monthly_price_cents: number
+          name: string
+          overage_cents: number
+          slug: string
+          sort_order: number
+          stripe_price_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          included_jobs?: number
+          monthly_price_cents?: number
+          name: string
+          overage_cents?: number
+          slug: string
+          sort_order?: number
+          stripe_price_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          included_jobs?: number
+          monthly_price_cents?: number
+          name?: string
+          overage_cents?: number
+          slug?: string
+          sort_order?: number
+          stripe_price_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cxo_acknowledgments: {
         Row: {
           agreed_checkbox: boolean
@@ -27753,6 +27798,12 @@ export type Database = {
           cravemore_eligible: boolean | null
           created_at: string | null
           cuisine_type: string | null
+          cx_current_period_end: string | null
+          cx_insurance_approved: boolean
+          cx_plan_id: string | null
+          cx_stripe_customer_id: string | null
+          cx_stripe_subscription_id: string | null
+          cx_subscription_status: string | null
           delivery_fee_cents: number | null
           delivery_radius_miles: number | null
           description: string | null
@@ -27830,6 +27881,12 @@ export type Database = {
           cravemore_eligible?: boolean | null
           created_at?: string | null
           cuisine_type?: string | null
+          cx_current_period_end?: string | null
+          cx_insurance_approved?: boolean
+          cx_plan_id?: string | null
+          cx_stripe_customer_id?: string | null
+          cx_stripe_subscription_id?: string | null
+          cx_subscription_status?: string | null
           delivery_fee_cents?: number | null
           delivery_radius_miles?: number | null
           description?: string | null
@@ -27907,6 +27964,12 @@ export type Database = {
           cravemore_eligible?: boolean | null
           created_at?: string | null
           cuisine_type?: string | null
+          cx_current_period_end?: string | null
+          cx_insurance_approved?: boolean
+          cx_plan_id?: string | null
+          cx_stripe_customer_id?: string | null
+          cx_stripe_subscription_id?: string | null
+          cx_subscription_status?: string | null
           delivery_fee_cents?: number | null
           delivery_radius_miles?: number | null
           description?: string | null
@@ -27969,7 +28032,15 @@ export type Database = {
           verification_notes?: Json | null
           zip_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "restaurants_cx_plan_id_fkey"
+            columns: ["cx_plan_id"]
+            isOneToOne: false
+            referencedRelation: "cx_subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       restaurants_master: {
         Row: {
