@@ -156,24 +156,35 @@ function isUsablePhotoUrl(url: string | null | undefined): url is string {
 
 const ProofImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
   const [errored, setErrored] = useState(false);
-  const [resolved, setResolved] = useState<string>(src);
+  // Detect Supabase storage URLs — always resolve to a fresh signed URL so
+  // private buckets (or buckets that flip private) keep working.
+  const storageMatch = src.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?|$)/);
+  const needsSigning = !!storageMatch;
+  const [resolved, setResolved] = useState<string | null>(needsSigning ? null : src);
 
   useEffect(() => {
     setErrored(false);
-    setResolved(src);
-    // If this is a public URL pointing at a private bucket (delivery-photos),
-    // the public URL will 400. Convert it to a short-lived signed URL.
-    const match = src.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?|$)/);
-    if (!match) return;
-    const bucket = match[1];
-    const path = decodeURIComponent(match[2]);
+    const m = src.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?|$)/);
+    if (!m) {
+      setResolved(src);
+      return;
+    }
+    setResolved(null);
+    const bucket = m[1];
+    const path = decodeURIComponent(m[2]);
     let cancelled = false;
     (async () => {
       const { data, error } = await (supabase as any)
         .storage
         .from(bucket)
         .createSignedUrl(path, 60 * 60);
-      if (!cancelled && !error && data?.signedUrl) setResolved(data.signedUrl);
+      if (cancelled) return;
+      if (!error && data?.signedUrl) {
+        setResolved(data.signedUrl);
+      } else {
+        // Fall back to the original URL — works if the bucket is public.
+        setResolved(src);
+      }
     })();
     return () => {
       cancelled = true;
@@ -188,6 +199,13 @@ const ProofImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
         <div className="text-[10px] leading-tight">
           The Feeder upload is missing or expired. Future orders capture proof to permanent storage.
         </div>
+      </div>
+    );
+  }
+  if (!resolved) {
+    return (
+      <div className="h-48 flex items-center justify-center bg-muted/40 rounded border text-xs text-muted-foreground">
+        Loading proof…
       </div>
     );
   }
