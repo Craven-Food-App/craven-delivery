@@ -1,206 +1,75 @@
+# Crave'N Express — Production Build Plan
 
-# Crave'N Express (CX)
+Six ordered phases. Each phase is shippable on its own so the build stays smooth and we can verify before moving on.
 
-A courier-style delivery branch blended into the existing Crave'N merchant and Feeder ecosystems. Courier companies sign up as a new merchant type, post pickup→dropoff jobs (on-demand, scheduled, or multi-stop), and our Feeder drivers fulfill them through the same dispatch, payout, rating, and tier systems already in production. Couriers set the driver payout they're willing to pay, and Crave'N stacks a platform base fee on top.
+---
 
-## Branding
+## Phase 1 — Courier-branch of the Merchant Portal
+Same `/merchant-portal` route, but when `restaurants.business_type = 'courier_service'` the portal renders a dispatch-style UI instead of restaurant tools.
 
-- Name: **Crave'N Express** (display), **CX** (short).
-- Same Crave'N orange palette, with a secondary "express" accent (deep navy `#0F172A`) and a CX wordmark to distinguish from food.
-- Route: `/cx` (public landing) and `/cx/portal` (authenticated courier portal). Reuse `UnifiedPortalShell`.
-- Menu entry added to the main site header and merchant portal: **"Switch to Courier Service"** / **"Find a Courier"** → routes to `/cx`.
+- New `src/components/merchant/CourierPortalView.tsx` with tabs: **Dashboard**, **Post Job**, **Active Jobs**, **Route Builder**, **Driver Pool**, **Invoices**, **Settings**.
+- Reuse existing `CXPostJobForm` and `CXJobList`; add `CXRouteBuilder` (multi-stop) and `CXDriverPool` (verified + opted-in Feeders, read-only).
+- `MerchantPortal.tsx` detects business type on load and branches: courier → `CourierPortalView`, everything else → existing portal.
+- Shared chrome (header, sidebar, account menu) stays identical so billing/settings work the same.
 
-## User flows
+## Phase 2 — Billing for CX Merchants
+Stripe subscription tier specifically for courier merchants (separate from restaurant commission model).
 
-### Courier company (merchant side)
-1. Lands on `/cx`, clicks "Sign up as a courier service".
-2. Goes through the existing merchant onboarding (`merchant_partnership_requests` → `restaurant_onboarding_progress`) with `business_type = 'courier_service'`. The flow skips menu / POS / hours and adds: company info, service area, vehicle types accepted, insurance + DOT docs, billing.
-3. Once approved, they get the CX portal: post a job, see active jobs, history, drivers assigned, invoices, ratings, fleet of recurring drop locations.
+- Use Lovable's built-in Stripe payments. Add a `cx_subscription_plans` table (name, monthly_price_cents, included_jobs, overage_cents, stripe_price_id).
+- New columns on `restaurants` (courier subset): `cx_stripe_customer_id`, `cx_stripe_subscription_id`, `cx_subscription_status`, `cx_plan_id`.
+- Edge functions: `cx-create-checkout`, `cx-customer-portal`, `cx-stripe-webhook` (subscription created/updated/canceled, invoice paid/failed).
+- Settings tab in the courier portal shows current plan, usage this cycle, "Manage Billing" → Stripe customer portal.
+- Block `cx-post-job` server-side when `cx_subscription_status` is not `active` or `trialing`.
 
-### Job types
-- **On-demand** — single pickup→dropoff, dispatched immediately.
-- **Scheduled** — same as on-demand but with a future `pickup_at` window.
-- **Bulk route** — courier uploads/enters multiple stops; system optimizes via Google Maps Routes API and assigns to one driver.
+## Phase 3 — Driver-Facing CX Queue (Feeder app)
+- Drop `CXDriverOptInCard` into `FeederAccountPage` → Preferences.
+- Add a **CX** tab to the Feeder home next to Food: lists incoming/available CX jobs from `cx_jobs` filtered by tier + opt-in, realtime.
+- `CXJobOfferModal`: shows pickup, dropoff(s), distance, driver payout, accept/decline (calls `cx-accept-job`).
+- Active CX job → status flow buttons (En route to pickup → Picked up → En route → Delivered) calling `cx-update-status`.
+- Tip + payout flows through the existing earnings/tips bucket we already built (no Crave'N cut on the courier's offer).
 
-### Driver (Feeder) side
-- Driver preferences gain two toggles:
-  - `cx_opt_in` (boolean) — any Feeder can opt in to receive CX requests.
-  - `cx_tier_verified` (boolean, set by admin) — passed extra courier verification (insurance, vehicle, ID).
-- Dedicated-tier drivers still control acceptance with `cx_opt_in`. A CX job is offered to verified-and-opted-in drivers first, then falls back to general opted-in Feeders if no one accepts within N seconds (configurable, default 60s).
-- In the Feeder app, CX jobs appear in the same queue with a clear "CX" pill, payout breakdown (courier offer + Crave'N base), and stop count.
+## Phase 4 — Dispatch Fallback Timer
+Re-broadcast unaccepted jobs from verified tier → general opted-in pool.
 
-### Pricing
-- Courier sets `driver_payout_offer_cents` per job (with a configured minimum floor by distance/stop count).
-- Crave'N adds `platform_base_cents` (configurable per region / job type).
-- Customer (courier) invoice = courier offer + platform base + taxes.
-- Driver earnings = courier offer + tips. (No Crave'N cut from the courier's offer to the driver — that's the model the user described.)
+- Add `dispatch_round`, `next_broadcast_at`, `expires_at` columns to `cx_jobs`.
+- `cx-dispatch-job` writes `next_broadcast_at = now() + fallback_seconds` (from `cx_pricing_config`).
+- New scheduled edge function `cx-dispatch-tick` (pg_cron every 30s) that finds jobs past `next_broadcast_at` still unassigned and bumps the round / widens the candidate pool. After max rounds → mark `dispatch_failed`, notify courier.
+- Realtime push to drivers on each round.
 
-## Database changes
+## Phase 5 — Courier Onboarding Docs
+Insurance + DOT + business license uploads during courier merchant signup.
 
-New enums + tables (full migration in technical section):
-- `cx_job_type` enum: `on_demand | scheduled | bulk_route`.
-- `cx_job_status` enum: `draft | posted | offered | accepted | en_route_pickup | picked_up | en_route_dropoff | delivered | cancelled | failed`.
-- `cx_jobs` — one row per job (links to courier merchant + assigned driver + price fields + window times).
-- `cx_job_stops` — ordered stops for bulk routes (single jobs use 2: pickup + dropoff).
-- `cx_job_events` — status timeline / audit trail.
-- `cx_pricing_config` — base fees, minimum payout floors, fallback timing, by region.
-- `cx_driver_verification` — courier-tier qualification: insurance docs, vehicle class, expiry dates, status.
+- New step in `MerchantLandingPage` flow when `businessType === 'Courier Service'`: upload commercial auto insurance certificate (PDF/JPG), DOT number (optional), business license, W-9.
+- Store in existing `business-documents` bucket under `courier/{merchant_id}/...`.
+- Rows in `business_documents` with `doc_type` in (`courier_insurance`, `dot_authority`, `business_license`, `w9`) + `expires_at`.
+- Courier portal Settings → Documents tab shows status, expiry warnings (30/14/0 days), re-upload.
+- Admin review gate: `cx_subscription_status` cannot move to `active` until insurance is `approved` and unexpired.
 
-Extend existing tables:
-- `restaurants`: add `business_type text` (`restaurant | grocery | retail | courier_service`).
-- `driver_preferences`: add `cx_opt_in boolean`, `cx_tier_verified boolean`.
+## Phase 6 — Server-Side Pricing Floors + `cx-post-job`
+Lock down pricing math so couriers can't underpay drivers.
 
-All new public tables get explicit `GRANT`s (authenticated + service_role), RLS enabled, and policies scoped by:
-- Couriers see only their own jobs (`courier_user_id = auth.uid()` via `restaurant_users`).
-- Drivers see jobs offered to them or in their queue.
-- Admins / dispatch / `exec_users` see all.
+- New edge function `cx-post-job` (replaces direct insert from `CXPostJobForm`).
+- Validates with zod, computes distance via Google Maps Distance Matrix, enforces floor from `cx_pricing_config` (`min_payout_cents`, `min_per_mile_cents`, `min_per_stop_cents`).
+- Adds `platform_base_cents` from config so customer total = courier offer + platform base + tax.
+- Rejects with clear errors if subscription inactive, doc requirements unmet, or offer below floor.
+- `CXPostJobForm` switches to invoking this function and shows live "minimum payout" hint as the operator types.
 
-## Edge functions
+---
 
-- `cx-post-job` — validates, prices, creates `cx_jobs` row, kicks off dispatch.
-- `cx-dispatch-job` — picks eligible drivers (verified+opted-in → opted-in fallback), writes offers, fires notifications, handles timeout escalation.
-- `cx-accept-job` / `cx-update-status` — driver actions.
-- `cx-optimize-route` — calls Google Maps Routes API for bulk-route ordering + ETAs (uses existing google_maps connector).
-- `cx-invoice-job` — on delivery, generates courier invoice line item.
+## Technical Notes
 
-## Frontend modules
+- All new tables follow the GRANT → RLS → POLICY order. Service role granted for edge functions; authenticated grants scoped by `auth.uid()` against the courier's `restaurants.owner_id` or the driver's id.
+- Realtime publication added for `cx_jobs` (already done) and any new status columns picked up automatically.
+- All edge functions use `corsHeaders` and zod validation per project conventions.
+- Mobile-first: courier portal collapses to single column at 440px; Feeder CX UI matches the existing Feeder layout (80px bottom nav, max 140px sticky map).
+- No mock data; everything reads/writes live tables.
 
-New:
-- `src/pages/cx/CXLandingPage.tsx` — public CX marketing/landing.
-- `src/pages/cx/CXSignupPage.tsx` — courier signup entry (routes into existing merchant onboarding with `business_type=courier_service`).
-- `src/portals/cx/CXPortalLayout.tsx` + routes.
-- `src/portals/cx/modules/` — Dashboard, PostJob (with map picker), ActiveJobs, JobHistory, BulkRouteBuilder, Invoices, Drivers (read-only roster of who fulfilled jobs), Settings.
-- `src/components/cx/CXJobCard.tsx`, `CXBranding.tsx`, `CXPriceBreakdown.tsx`, `CXStopList.tsx`.
-- Feeder app: extend `EarningsDashboard` and the active-orders queue with a CX section + opt-in toggle in driver settings.
+## Build Order & Checkpoints
+1. Phase 1 → verify courier signup → portal shows dispatch UI.
+2. Phase 2 → run a test checkout; verify webhook updates `cx_subscription_status`.
+3. Phase 3 → on Feeder web replica at 440px, accept a test job end-to-end.
+4. Phase 4 → seed a stale job, watch tick re-broadcast.
+5. Phase 5 → upload insurance, confirm gate blocks/unblocks billing activation.
+6. Phase 6 → attempt a sub-floor offer, see rejection; valid offer goes through and bills the customer correctly.
 
-Edits:
-- Main site header + merchant portal sidebar: add "Crave'N Express / Find a Courier" link.
-- `MerchantOperationsPortal` filters: include `business_type=courier_service`.
-- Driver settings page: add the two CX toggles.
-
-## Production readiness
-
-- RLS policies + GRANTs on every new table; admin/exec bypass via existing `has_permission`.
-- Strict input validation with zod in edge functions; service_role only inside functions.
-- Audit trail via `cx_job_events`.
-- Realtime subscription on `cx_jobs` for courier dashboard and driver queue.
-- Pricing floors enforced server-side, not just UI.
-- Insurance/DOT docs stored in existing `business_documents` bucket with the same RLS pattern as merchant docs.
-- All UI mobile-first, orange primary, CX navy accent, tabular numbers per the enterprise compact standard.
-
-## Build order (so nothing ships half-wired)
-
-1. Migration: enums, tables, GRANTs, RLS, `business_type` + driver pref columns, `cx_pricing_config` seed row.
-2. Edge functions (post, dispatch, status, optimize, invoice).
-3. CX public landing + signup wiring into existing merchant onboarding.
-4. CX courier portal modules (post job → active → history → bulk → invoices).
-5. Feeder integration: CX queue card, opt-in toggle, accept/update flows.
-6. Admin: CX dashboard tab in support/ops for monitoring jobs + verifying courier-tier drivers.
-7. QA pass on mobile (440px), realtime, and pricing math.
-
-## Technical details
-
-```sql
--- enums
-CREATE TYPE cx_job_type AS ENUM ('on_demand','scheduled','bulk_route');
-CREATE TYPE cx_job_status AS ENUM (
-  'draft','posted','offered','accepted',
-  'en_route_pickup','picked_up','en_route_dropoff',
-  'delivered','cancelled','failed'
-);
-
--- jobs
-CREATE TABLE public.cx_jobs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  courier_restaurant_id uuid NOT NULL REFERENCES public.restaurants(id) ON DELETE CASCADE,
-  created_by uuid NOT NULL,                 -- auth.uid()
-  job_type cx_job_type NOT NULL,
-  status cx_job_status NOT NULL DEFAULT 'draft',
-  pickup_at timestamptz,                    -- null for on-demand "now"
-  driver_payout_offer_cents int NOT NULL,
-  platform_base_cents int NOT NULL,
-  total_charge_cents int GENERATED ALWAYS AS (driver_payout_offer_cents + platform_base_cents) STORED,
-  assigned_driver_id uuid,
-  region_id uuid,
-  notes text,
-  optimized_polyline text,
-  estimated_distance_meters int,
-  estimated_duration_seconds int,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE public.cx_job_stops (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  job_id uuid NOT NULL REFERENCES public.cx_jobs(id) ON DELETE CASCADE,
-  sequence int NOT NULL,
-  stop_type text NOT NULL CHECK (stop_type IN ('pickup','dropoff')),
-  address text NOT NULL,
-  latitude numeric, longitude numeric,
-  contact_name text, contact_phone text,
-  package_description text,
-  completed_at timestamptz,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE public.cx_job_events (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  job_id uuid NOT NULL REFERENCES public.cx_jobs(id) ON DELETE CASCADE,
-  actor_id uuid,
-  event_type text NOT NULL,
-  metadata jsonb DEFAULT '{}'::jsonb,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE public.cx_pricing_config (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  region_id uuid,
-  job_type cx_job_type NOT NULL,
-  platform_base_cents int NOT NULL,
-  minimum_driver_payout_cents int NOT NULL,
-  per_mile_floor_cents int NOT NULL DEFAULT 0,
-  per_stop_floor_cents int NOT NULL DEFAULT 0,
-  dispatch_timeout_seconds int NOT NULL DEFAULT 60,
-  active boolean NOT NULL DEFAULT true,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE public.cx_driver_verification (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  driver_id uuid NOT NULL UNIQUE,
-  insurance_doc_url text,
-  insurance_expires_on date,
-  vehicle_class text,
-  max_package_size text,
-  status text NOT NULL DEFAULT 'pending', -- pending|approved|rejected|expired
-  reviewed_by uuid,
-  reviewed_at timestamptz,
-  notes text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-
--- GRANTs (every table)
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.cx_jobs, public.cx_job_stops,
-  public.cx_job_events, public.cx_driver_verification TO authenticated;
-GRANT SELECT ON public.cx_pricing_config TO authenticated;
-GRANT ALL ON public.cx_jobs, public.cx_job_stops, public.cx_job_events,
-  public.cx_pricing_config, public.cx_driver_verification TO service_role;
-
--- RLS + policies (full set in migration)
-
-ALTER TABLE public.restaurants
-  ADD COLUMN IF NOT EXISTS business_type text NOT NULL DEFAULT 'restaurant';
-
-ALTER TABLE public.driver_preferences
-  ADD COLUMN IF NOT EXISTS cx_opt_in boolean NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS cx_tier_verified boolean NOT NULL DEFAULT false;
-```
-
-Dispatch logic (in `cx-dispatch-job`): query `driver_profiles` where `is_available = true` AND `status = 'online'`, join `driver_preferences` where `cx_opt_in = true`, prefer `cx_tier_verified = true` within geofence; offer to top N by tier weight; on timeout, broaden to all opted-in drivers; on final timeout, mark `failed` and notify courier with refund option.
-
-Pricing validation in `cx-post-job`: reject if `driver_payout_offer_cents < minimum_driver_payout_cents + per_mile_floor_cents * miles + per_stop_floor_cents * stops`.
-
-Route optimization uses Google Maps Routes API via the existing `google_maps` connector gateway (`routes/directions/v2:computeRoutes` for single, `routeoptimization/` for bulk).
-
+After all six, run `supabase--linter` and fix any RLS warnings before declaring CX production-ready.
