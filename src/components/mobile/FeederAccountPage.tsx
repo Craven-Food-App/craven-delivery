@@ -526,7 +526,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [isCardLocked, setIsCardLocked] = useState(false);
   const [showPinDialog, setShowPinDialog] = useState(false);
-  const [currentPage, setCurrentPage] = useState<'main' | 'profile' | 'vehicle' | 'settings' | 'security' | 'support'>('main');
+  const [currentPage, setCurrentPage] = useState<'main' | 'profile' | 'vehicle' | 'settings' | 'security' | 'support' | 'cx'>('main');
   const [loading, setLoading] = useState(true);
   const [showSafetySettings, setShowSafetySettings] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -702,6 +702,9 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
         break;
       case "vehicle":
         setCurrentPage('vehicle');
+        break;
+      case "cx":
+        setCurrentPage('cx');
         break;
       case "feederCard":
         setShowCardPage(true);
