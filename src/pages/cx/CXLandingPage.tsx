@@ -1,17 +1,21 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Truck, Route, Clock, ShieldCheck, ArrowRight } from "lucide-react";
-import { Helmet } from "react-helmet-async";
+import { useEffect } from "react";
 
 export default function CXLandingPage() {
+  useEffect(() => {
+    document.title = "Crave'N Express (CX) — On-Demand Couriers, Powered by Crave'N";
+    const meta = document.querySelector('meta[name="description"]') || (() => {
+      const m = document.createElement('meta');
+      m.setAttribute('name', 'description');
+      document.head.appendChild(m);
+      return m;
+    })();
+    meta.setAttribute('content', "Crave'N Express (CX) gives courier companies instant access to thousands of Feeder drivers for on-demand, scheduled, and multi-stop deliveries. Set your driver payout, we handle dispatch.");
+  }, []);
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] via-[#0F172A] to-[#1E293B] text-white">
-      <Helmet>
-        <title>Crave'N Express (CX) — On-Demand Couriers, Powered by Crave'N</title>
-        <meta name="description" content="Crave'N Express (CX) gives courier companies instant access to thousands of Feeder drivers for on-demand, scheduled, and multi-stop deliveries. Set your driver payout, we handle dispatch." />
-        <link rel="canonical" href="https://cravenusa.com/cx" />
-      </Helmet>
-
       <header className="px-4 sm:px-8 py-5 flex items-center justify-between border-b border-white/10">
         <Link to="/" className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-md bg-orange-500 grid place-items-center font-bold text-white">CX</div>
