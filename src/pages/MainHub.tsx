@@ -82,6 +82,7 @@ const isPortalInDepartment = (portalId: string, deptId: string): boolean => {
         "driver-operations",
         "support-operations",
         "customer-success",
+        "cx-courier",
       ].includes(portalId);
     case "finance":
       return ["cfo", "foundational-invites"].includes(portalId);
@@ -109,7 +110,7 @@ const isPortalInDepartment = (portalId: string, deptId: string): boolean => {
     case "support":
       return ["support-operations", "customer-success", "mail-center"].includes(portalId);
     case "logistics":
-      return ["coo", "driver-operations", "merchant-operations"].includes(portalId);
+      return ["coo", "driver-operations", "merchant-operations", "cx-courier"].includes(portalId);
     default:
       return true;
   }
