@@ -25,7 +25,20 @@ Deno.serve(async (req) => {
       feederId?: string | null;
       payoutCents?: number;
       pickup?: { address: string; latitude?: number; longitude?: number; contact_name?: string; contact_phone?: string };
-      dropoffs?: Array<{ address: string; latitude?: number; longitude?: number; contact_name?: string; contact_phone?: string; package_description?: string }>;
+      pickup?: { address: string; latitude?: number; longitude?: number; contact_name?: string; contact_phone?: string; pickup_instructions?: string };
+      dropoffs?: Array<{
+        address: string;
+        latitude?: number;
+        longitude?: number;
+        contact_name?: string;
+        contact_phone?: string;
+        package_description?: string;
+        package_weight_lbs?: number;
+        package_dimensions?: string;
+        package_image_url?: string;
+        package_quantity?: number;
+        pickup_instructions?: string;
+      }>;
       jobType?: "on_demand" | "scheduled" | "bulk_route";
       notes?: string;
     };
@@ -75,6 +88,7 @@ Deno.serve(async (req) => {
       longitude: -83.5638,
       contact_name: "Store Manager",
       contact_phone: "+14195551234",
+      pickup_instructions: "Park in marked Crave'N pickup spot. Ask cashier for the will-call order under courier name. Two bags + one box — verify count before leaving.",
     };
     const drops = (dropoffs && dropoffs.length > 0) ? dropoffs : [
       {
@@ -84,6 +98,11 @@ Deno.serve(async (req) => {
         contact_name: "J. Carter",
         contact_phone: "+14195551001",
         package_description: "Pet food (25 lbs)",
+        package_weight_lbs: 25,
+        package_dimensions: "18 x 12 x 6 in",
+        package_quantity: 1,
+        package_image_url: "https://images.unsplash.com/photo-1601758124510-52d02ddb7cbd?w=600&q=70",
+        pickup_instructions: "Leave at front porch. Ring doorbell once.",
       },
       {
         address: "456 Main St, Gibsonburg, OH 43431",
@@ -92,6 +111,11 @@ Deno.serve(async (req) => {
         contact_name: "M. Lopez",
         contact_phone: "+14195551002",
         package_description: "Pet supplies (18 lbs)",
+        package_weight_lbs: 18,
+        package_dimensions: "14 x 10 x 8 in",
+        package_quantity: 2,
+        package_image_url: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=600&q=70",
+        pickup_instructions: "Hand directly to recipient. Signature required.",
       },
     ];
 

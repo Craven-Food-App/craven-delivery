@@ -99,7 +99,7 @@ export function CXJobDetailSheet({
   const mapUrl = staticMapUrl(stops);
 
   if (showItems) {
-    return <ItemSummaryView stops={dropoffs} onBack={() => setShowItems(false)} job={job} />;
+    return <ItemSummaryView stops={dropoffs} pickup={pickup} onBack={() => setShowItems(false)} job={job} />;
   }
 
   return (
@@ -236,7 +236,8 @@ function SummaryCell({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ItemSummaryView({ stops, onBack, job }: { stops: any[]; onBack: () => void; job: any }) {
+function ItemSummaryView({ stops, pickup, onBack, job }: { stops: any[]; pickup: any; onBack: () => void; job: any }) {
+  const totalItems = stops.reduce((acc, s) => acc + (Number(s.package_quantity) || 1), 0);
   return (
     <div className="fixed inset-0 z-[110] bg-white flex flex-col">
       <div
@@ -254,11 +255,30 @@ function ItemSummaryView({ stops, onBack, job }: { stops: any[]; onBack: () => v
           <HelpCircle className="h-5 w-5 text-slate-400" />
         </div>
         <div className="mt-4 border rounded-xl p-4 grid grid-cols-2 gap-y-4">
-          <SummaryCell label="Total Items" value={String(stops.length)} />
+          <SummaryCell label="Total Items" value={String(totalItems)} />
           <SummaryCell label="Job Type" value={(job.job_type || "").replace(/_/g, " ")} />
           <SummaryCell label="Stops" value={String(stops.length)} />
           <SummaryCell label="Status" value="Available" />
         </div>
+
+        {pickup && (
+          <div className="mt-6">
+            <div className="text-sm text-slate-500">Pickup</div>
+            <div className="border-t mt-2 pt-3 text-sm text-slate-800">
+              <div className="font-medium">{pickup.address}</div>
+              {pickup.contact_name && <div className="text-slate-600 mt-1">Contact: {pickup.contact_name}</div>}
+              {pickup.pickup_instructions && (
+                <div className="mt-2 rounded-lg bg-orange-50 border border-orange-200 p-3">
+                  <div className="text-[10px] font-bold tracking-widest text-orange-700 uppercase mb-1">
+                    Pickup Instructions
+                  </div>
+                  <div className="text-sm text-slate-800 whitespace-pre-line">{pickup.pickup_instructions}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 space-y-6">
           {stops.map((s, i) => (
             <div key={s.id ?? i}>
@@ -266,14 +286,50 @@ function ItemSummaryView({ stops, onBack, job }: { stops: any[]; onBack: () => v
               <div className="border-t mt-2 pt-2 text-sm text-slate-800">
                 <div className="font-medium">{s.address}</div>
                 {s.contact_name && <div className="text-slate-600 mt-1">Contact: {s.contact_name}</div>}
-                {s.package_description && (
-                  <div className="text-slate-600 mt-1">Package: {s.package_description}</div>
+
+                {(s.package_image_url || s.package_weight_lbs || s.package_dimensions || s.package_quantity || s.package_description) && (
+                  <div className="mt-3 rounded-xl border bg-slate-50 overflow-hidden">
+                    {s.package_image_url && (
+                      <img
+                        src={s.package_image_url}
+                        alt="Package"
+                        className="w-full h-40 object-cover bg-slate-200"
+                        onError={(e) => ((e.currentTarget.style.display = "none"))}
+                      />
+                    )}
+                    <div className="p-3 grid grid-cols-3 gap-3">
+                      <PkgCell label="Qty" value={s.package_quantity ? String(s.package_quantity) : "1"} />
+                      <PkgCell label="Weight" value={s.package_weight_lbs ? `${s.package_weight_lbs} lbs` : "—"} />
+                      <PkgCell label="Dimensions" value={s.package_dimensions ?? "—"} />
+                    </div>
+                    {s.package_description && (
+                      <div className="px-3 pb-3 text-xs text-slate-600">{s.package_description}</div>
+                    )}
+                  </div>
+                )}
+
+                {s.pickup_instructions && (
+                  <div className="mt-2 rounded-lg bg-amber-50 border border-amber-200 p-3">
+                    <div className="text-[10px] font-bold tracking-widest text-amber-700 uppercase mb-1">
+                      Delivery Instructions
+                    </div>
+                    <div className="text-sm text-slate-800 whitespace-pre-line">{s.pickup_instructions}</div>
+                  </div>
                 )}
               </div>
             </div>
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PkgCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">{label}</div>
+      <div className="text-sm font-semibold text-slate-900 mt-0.5">{value}</div>
     </div>
   );
 }
