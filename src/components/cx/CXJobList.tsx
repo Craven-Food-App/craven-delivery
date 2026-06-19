@@ -1,6 +1,8 @@
 // @ts-nocheck
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, ArrowRight, Clock } from "lucide-react";
+import { MapPin, ArrowRight, Clock, ChevronRight } from "lucide-react";
+import { CXJobDetailModal } from "./CXJobDetailModal";
 
 const STATUS_COLOR: Record<string, string> = {
   draft: "bg-slate-200 text-slate-700",
@@ -16,6 +18,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export function CXJobList({ jobs }: { jobs: any[] }) {
+  const [selected, setSelected] = useState<any>(null);
   if (!jobs?.length) {
     return <div className="text-center py-10 text-sm text-slate-500">No jobs yet.</div>;
   }
@@ -26,7 +29,11 @@ export function CXJobList({ jobs }: { jobs: any[] }) {
         const pickup = stops.find((s: any) => s.stop_type === "pickup");
         const dropoff = stops.filter((s: any) => s.stop_type === "dropoff").pop();
         return (
-          <div key={j.id} className="rounded-xl border bg-white p-3">
+          <button
+            key={j.id}
+            onClick={() => setSelected(j)}
+            className="w-full text-left rounded-xl border bg-white p-3 hover:border-orange-300 hover:bg-orange-50/30 transition"
+          >
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <Badge className="bg-orange-500 text-white">{j.job_type.replace("_"," ")}</Badge>
@@ -34,8 +41,11 @@ export function CXJobList({ jobs }: { jobs: any[] }) {
                   {j.status.replace(/_/g," ")}
                 </span>
               </div>
-              <div className="text-sm font-semibold tabular-nums">
-                ${((j.total_charge_cents || 0) / 100).toFixed(2)}
+              <div className="flex items-center gap-1">
+                <div className="text-sm font-semibold tabular-nums">
+                  ${((j.total_charge_cents || 0) / 100).toFixed(2)}
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-400"/>
               </div>
             </div>
             <div className="mt-2 text-sm text-slate-700 flex items-center gap-1 truncate">
@@ -49,9 +59,10 @@ export function CXJobList({ jobs }: { jobs: any[] }) {
               <span className="tabular-nums">Driver: ${((j.driver_payout_offer_cents||0)/100).toFixed(2)}</span>
               <span className="tabular-nums">+ Base: ${((j.platform_base_cents||0)/100).toFixed(2)}</span>
             </div>
-          </div>
+          </button>
         );
       })}
+      <CXJobDetailModal job={selected} open={!!selected} onOpenChange={(v) => !v && setSelected(null)} />
     </div>
   );
 }
