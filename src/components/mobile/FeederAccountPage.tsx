@@ -757,6 +757,10 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
     return <DrivingInfoPage onBack={() => setCurrentPage('main')} />;
   }
 
+  if (currentPage === 'cx') {
+    return <CXDriverJobsPage onClose={() => setCurrentPage('main')} />;
+  }
+
   if (currentPage === 'settings') {
     return <AppSettingsPage onBack={() => setCurrentPage('main')} />;
   }
