@@ -155,10 +155,10 @@ Deno.serve(async (req) => {
       try {
         await service.from("notification_logs").insert(targetFeederIds.map((uid) => ({
           user_id: uid,
-          type: "cx_job_offer",
+          notification_type: "cx_job_offer",
           title: `CX TEST — ${courierRest.name}`,
           body: `$${(payoutCents / 100).toFixed(2)} courier gig available`,
-          metadata: { job_id: job.id, kind: "cx_test", payout_cents: payoutCents },
+          data: { job_id: job.id, kind: "cx_test", payout_cents: payoutCents },
         })));
 
         for (const uid of targetFeederIds) {
