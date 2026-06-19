@@ -61,6 +61,11 @@ interface OrderRow {
   delivery_photo_timestamp: string | null;
   off_route_count: number | null;
   total_distance_traveled_m: number | null;
+  /** True when this row is a Crave'N Express courier job, not a food order. */
+  is_cx?: boolean;
+  /** Signature image (CX only). */
+  signature_url?: string | null;
+  signer_name?: string | null;
 }
 
 const EVENT_LABEL: Record<string, string> = {
@@ -79,6 +84,15 @@ const EVENT_LABEL: Record<string, string> = {
   order_delivered: 'Order delivered',
   order_cancelled: 'Order cancelled',
   support_action: 'Support action',
+  // CX-native event types
+  accepted: 'Courier accepted job',
+  en_route_pickup: 'En route to pickup',
+  picked_up: 'Package picked up',
+  en_route_dropoff: 'En route to drop-off',
+  delivered: 'Package delivered',
+  signature_captured: 'Signature captured',
+  cancelled: 'Job cancelled',
+  failed: 'Job failed',
 };
 
 const EVENT_TONE: Record<string, string> = {
