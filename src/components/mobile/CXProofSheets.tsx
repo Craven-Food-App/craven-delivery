@@ -167,16 +167,24 @@ export function CXPickupProofSheet({
     }
     setBusy(true);
     try {
+      const pos = await snapPosition();
       const url = await uploadProof(photo.blob, "pickup", job.id, stop.id);
       const { error: e1 } = await supabase
         .from("cx_job_stops")
         .update({
           pickup_photo_url: url,
+          pickup_photo_lat: pos?.coords.latitude ?? null,
+          pickup_photo_lng: pos?.coords.longitude ?? null,
           package_verified_at: new Date().toISOString(),
           completed_at: new Date().toISOString(),
         })
         .eq("id", stop.id);
       if (e1) throw e1;
+      await logCxEvent(job.id, "pickup_photo_captured", {
+        photo_url: url,
+        notes: "Package verified at pickup",
+        pos,
+      });
       const { data, error: e2 } = await supabase.functions.invoke("cx-update-status", {
         body: { job_id: job.id, status: "picked_up" },
       });
@@ -339,6 +347,7 @@ export function CXDropoffProofSheet({
 
     setBusy(true);
     try {
+      const pos = await snapPosition();
       const photoUrl = await uploadProof(photo.blob, "dropoff", job.id, stop.id);
 
       let signatureUrl: string | null = null;
@@ -357,12 +366,26 @@ export function CXDropoffProofSheet({
         .from("cx_job_stops")
         .update({
           dropoff_photo_url: photoUrl,
+          dropoff_photo_lat: pos?.coords.latitude ?? null,
+          dropoff_photo_lng: pos?.coords.longitude ?? null,
           signature_url: signatureUrl,
           signer_name: signerName || null,
           completed_at: new Date().toISOString(),
         })
         .eq("id", stop.id);
       if (e1) throw e1;
+      await logCxEvent(job.id, "delivery_photo_captured", {
+        photo_url: photoUrl,
+        notes: signerName ? `Signed by ${signerName}` : "Delivered (no-signature waived)",
+        pos,
+      });
+      if (signatureUrl) {
+        await logCxEvent(job.id, "signature_captured", {
+          photo_url: signatureUrl,
+          notes: `Recipient: ${signerName}`,
+          pos,
+        });
+      }
 
       const { data, error: e2 } = await supabase.functions.invoke("cx-update-status", {
         body: { job_id: job.id, status: "delivered" },
