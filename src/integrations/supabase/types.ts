@@ -9611,6 +9611,59 @@ export type Database = {
           },
         ]
       }
+      driver_licenses: {
+        Row: {
+          back_image_url: string | null
+          created_at: string
+          expiration_date: string | null
+          front_image_url: string | null
+          id: string
+          last_updated_at: string | null
+          license_number: string | null
+          license_state: string | null
+          selfie_image_url: string | null
+          updated_at: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          back_image_url?: string | null
+          created_at?: string
+          expiration_date?: string | null
+          front_image_url?: string | null
+          id?: string
+          last_updated_at?: string | null
+          license_number?: string | null
+          license_state?: string | null
+          selfie_image_url?: string | null
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          back_image_url?: string | null
+          created_at?: string
+          expiration_date?: string | null
+          front_image_url?: string | null
+          id?: string
+          last_updated_at?: string | null
+          license_number?: string | null
+          license_state?: string | null
+          selfie_image_url?: string | null
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_licenses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       driver_location_history: {
         Row: {
           accuracy: number | null
@@ -10764,6 +10817,71 @@ export type Database = {
           zone_name?: string
         }
         Relationships: []
+      }
+      driver_vehicles: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          insurance_doc_url: string | null
+          insurance_expiration: string | null
+          is_active: boolean
+          license_plate: string | null
+          make: string
+          model: string
+          plate_state: string | null
+          registration_doc_url: string | null
+          registration_expiration: string | null
+          updated_at: string
+          user_id: string
+          vehicle_type: string
+          year: number | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          insurance_doc_url?: string | null
+          insurance_expiration?: string | null
+          is_active?: boolean
+          license_plate?: string | null
+          make: string
+          model: string
+          plate_state?: string | null
+          registration_doc_url?: string | null
+          registration_expiration?: string | null
+          updated_at?: string
+          user_id: string
+          vehicle_type?: string
+          year?: number | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          insurance_doc_url?: string | null
+          insurance_expiration?: string | null
+          is_active?: boolean
+          license_plate?: string | null
+          make?: string
+          model?: string
+          plate_state?: string | null
+          registration_doc_url?: string | null
+          registration_expiration?: string | null
+          updated_at?: string
+          user_id?: string
+          vehicle_type?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_vehicles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       driver_waitlist: {
         Row: {
