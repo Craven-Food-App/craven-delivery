@@ -431,6 +431,9 @@ const OrderForensicsViewer: React.FC = () => {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
+                  {selected.is_cx && (
+                    <Badge className="bg-orange-500 text-white border-0">Crave'N Express</Badge>
+                  )}
                   <Badge variant="outline" className="capitalize">{selected.order_status}</Badge>
                   {(selected.delivered_at || selected.feeder_delivery_completed_at) && (
                     <Badge className="bg-emerald-500/20 text-emerald-700 border-emerald-500/30">
