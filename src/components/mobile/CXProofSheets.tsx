@@ -107,6 +107,40 @@ async function uploadProof(blob: Blob, kind: string, jobId: string, stopId: stri
   return supabase.storage.from("delivery-photos").getPublicUrl(path).data.publicUrl;
 }
 
+/** Best-effort GPS capture — never throws, never blocks the flow. */
+async function snapPosition(): Promise<GeolocationPosition | null> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) return null;
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve(p),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 5000 },
+    );
+  });
+}
+
+async function logCxEvent(
+  jobId: string,
+  eventType: string,
+  extra: { photo_url?: string | null; notes?: string | null; pos?: GeolocationPosition | null } = {},
+) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    await (supabase as any).from("cx_job_events").insert({
+      job_id: jobId,
+      actor_id: user?.id ?? null,
+      event_type: eventType,
+      photo_url: extra.photo_url ?? null,
+      notes: extra.notes ?? null,
+      lat: extra.pos?.coords.latitude ?? null,
+      lng: extra.pos?.coords.longitude ?? null,
+      accuracy_m: extra.pos?.coords.accuracy ?? null,
+    });
+  } catch (err) {
+    console.warn("[cx] logCxEvent failed", err);
+  }
+}
+
 /**
  * Pickup proof: package verified + photo of package(s) at pickup.
  */
