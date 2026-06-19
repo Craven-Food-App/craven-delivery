@@ -565,6 +565,39 @@ const OrderForensicsViewer: React.FC = () => {
                 </Card>
               </div>
 
+              {selected.is_cx && (selected.signature_url || selected.signer_name) && (
+                <Card className="p-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold mb-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> RECIPIENT SIGNATURE
+                  </div>
+                  <div className="grid sm:grid-cols-[200px_1fr] gap-3 items-start">
+                    {selected.signature_url ? (
+                      <a href={selected.signature_url} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={selected.signature_url}
+                          alt="Signature"
+                          className="w-full h-24 object-contain bg-white border rounded"
+                        />
+                      </a>
+                    ) : (
+                      <div className="h-24 flex items-center justify-center bg-muted/40 rounded border text-xs text-muted-foreground">
+                        No signature
+                      </div>
+                    )}
+                    <div className="text-xs space-y-1">
+                      <div>
+                        <span className="text-muted-foreground">Signed by:</span>{' '}
+                        <span className="font-semibold">{selected.signer_name || '—'}</span>
+                      </div>
+                      <div className="text-muted-foreground text-[11px]">
+                        Couriers require a signature unless the merchant marks the stop
+                        "no signature required."
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
               {/* Off-route incidents */}
               {deviations.length > 0 && (
                 <Card className="p-3 border-amber-500/40">
