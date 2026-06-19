@@ -69,6 +69,30 @@ export default function CXSignupPage() {
           to post jobs and dispatch Crave'N Feeders.
         </p>
 
+        <div className="mt-6 rounded-2xl border border-orange-500/30 bg-orange-500/10 p-5 sm:p-6">
+          <h2 className="text-base sm:text-lg font-bold text-orange-300">
+            Required to move forward
+          </h2>
+          <p className="text-sm text-slate-300 mt-1">
+            The items below are <span className="font-semibold text-white">mandatory</span>.
+            Your account cannot be activated and you will not be able to post jobs until every
+            item has been submitted and approved by Crave'N.
+          </p>
+          <ul className="mt-4 space-y-2 text-sm text-slate-100">
+            <li className="flex gap-2"><span className="text-orange-400">●</span> Completed application below (company info, contact, service area, fleet size)</li>
+            <li className="flex gap-2"><span className="text-orange-400">●</span> Commercial Auto Insurance Certificate — current, unexpired (PDF or image)</li>
+            <li className="flex gap-2"><span className="text-orange-400">●</span> Business License — state or city issued</li>
+            <li className="flex gap-2"><span className="text-orange-400">●</span> W-9 — for tax reporting / 1099s</li>
+            <li className="flex gap-2"><span className="text-orange-400">●</span> DOT Authority Number — if applicable to your operation</li>
+            <li className="flex gap-2"><span className="text-orange-400">●</span> Active Crave'N Express subscription (selected after approval via Stripe)</li>
+            <li className="flex gap-2"><span className="text-orange-400">●</span> At least one verified Crave'N Feeder opted into your driver pool</li>
+          </ul>
+          <p className="text-xs text-slate-400 mt-4">
+            Document uploads and billing setup happen inside the CX portal after your application
+            is approved. Submissions with missing or expired documents will not be activated.
+          </p>
+        </div>
+
         <div className="mt-8 space-y-5 rounded-2xl bg-white/5 border border-white/10 p-5 sm:p-7">
           {[
             ["company_name", "Company name", "Acme Couriers LLC"],
