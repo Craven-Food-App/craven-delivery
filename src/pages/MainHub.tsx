@@ -1483,7 +1483,7 @@ const MainHub: React.FC = () => {
       id: "operations-delivery",
       title: "Operations & Delivery",
       subtitle: "Field operations and service delivery",
-      portalIds: ["driver-operations", "merchant-operations", "coo", "cxo"],
+      portalIds: ["driver-operations", "merchant-operations", "cx-courier", "coo", "cxo"],
     },
     {
       id: "technology-engineering",
