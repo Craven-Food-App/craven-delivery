@@ -43,9 +43,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: jsonHeaders });
     }
     const callerId = userRes.user.id;
-    const { data: roles } = await service
-      .from("user_roles").select("role").eq("user_id", callerId).eq("role", "admin").limit(1);
-    if (!roles || roles.length === 0) {
+    const { data: isCxAdmin, error: adminErr } = await service.rpc("is_cx_admin", { _user_id: callerId });
+    if (adminErr || isCxAdmin !== true) {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: jsonHeaders });
     }
 
@@ -121,7 +120,6 @@ Deno.serve(async (req) => {
         status: "offered",
         driver_payout_offer_cents: payoutCents,
         platform_base_cents: baseCents,
-        total_charge_cents: totalCharge,
         notes: notes ?? "TEST: Pet Supplies MUST READ: Please review item descriptions/dimensions and ensure you have a vehicle large enough and can independently load and unload the Gig items before offering.",
         region_id: null,
         dispatch_deadline_at: deadline,
@@ -152,30 +150,40 @@ Deno.serve(async (req) => {
       metadata: { test: true, stops: stopsPayload.length, payout_cents: payoutCents },
     });
 
-    // Broadcast direct offer to a feeder if specified
-    if (feederId) {
+    const targetFeederIds = feederId ? [feederId] : await resolveTargetFeeders(service);
+    if (targetFeederIds.length > 0) {
       try {
-        const ch = service.channel(`cx_driver_${feederId}`);
-        await ch.subscribe();
-        await ch.send({
-          type: "broadcast",
-          event: "cx_job_offer",
-          payload: { job_id: job.id, payout_cents: payoutCents, courier_name: courierRest.name },
-        });
-        await service.removeChannel(ch);
+        await service.from("notification_logs").insert(targetFeederIds.map((uid) => ({
+          user_id: uid,
+          notification_type: "cx_job_offer",
+          title: `CX TEST — ${courierRest.name}`,
+          body: `$${(payoutCents / 100).toFixed(2)} courier gig available`,
+          data: { job_id: job.id, kind: "cx_test", payout_cents: payoutCents },
+        })));
 
-        const userCh = service.channel(`user_notifications_${feederId}`);
-        await userCh.subscribe();
-        await userCh.send({
-          type: "broadcast",
-          event: "push_notification",
-          payload: {
-            title: `CX TEST — ${courierRest.name}`,
-            message: `$${(payoutCents / 100).toFixed(2)} courier gig available`,
-            data: { job_id: job.id, kind: "cx_test" },
-          },
-        });
-        await service.removeChannel(userCh);
+        for (const uid of targetFeederIds) {
+          const ch = service.channel(`cx_driver_${uid}`);
+          await ch.subscribe();
+          await ch.send({
+            type: "broadcast",
+            event: "cx_job_offer",
+            payload: { job_id: job.id, payout_cents: payoutCents, courier_name: courierRest.name },
+          });
+          await service.removeChannel(ch);
+
+          const userCh = service.channel(`user_notifications_${uid}`);
+          await userCh.subscribe();
+          await userCh.send({
+            type: "broadcast",
+            event: "push_notification",
+            payload: {
+              title: `CX TEST — ${courierRest.name}`,
+              message: `$${(payoutCents / 100).toFixed(2)} courier gig available`,
+              data: { job_id: job.id, kind: "cx_test", type: "cx_job_offer" },
+            },
+          });
+          await service.removeChannel(userCh);
+        }
       } catch (broadcastErr) {
         console.warn("broadcast failed", broadcastErr);
       }
@@ -187,8 +195,25 @@ Deno.serve(async (req) => {
       courier_restaurant: { id: courierRest.id, name: courierRest.name },
       payout_cents: payoutCents,
       total_charge_cents: totalCharge,
+      notified_feeders: targetFeederIds.length,
     }), { status: 200, headers: jsonHeaders });
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e?.message ?? "Failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
+
+async function resolveTargetFeeders(service: any): Promise<string[]> {
+  const { data: optedIn } = await service
+    .from("driver_preferences")
+    .select("driver_id")
+    .eq("cx_opt_in", true);
+  const ids = [...new Set((optedIn ?? []).map((d: any) => d.driver_id).filter(Boolean))];
+  if (ids.length > 0) return ids.slice(0, 50);
+
+  const { data: online } = await service
+    .from("driver_profiles")
+    .select("user_id")
+    .eq("is_available", true)
+    .eq("status", "online");
+  return [...new Set((online ?? []).map((d: any) => d.user_id).filter(Boolean))].slice(0, 50);
+}

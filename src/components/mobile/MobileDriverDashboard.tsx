@@ -28,6 +28,7 @@ import FeederScheduleTab from './FeederScheduleTab';
 import OnFireDashboard from './CorporateEarningsDashboard';
 import EarningsDashboard from './EarningsDashboard';
 import FeederAccountPage from './FeederAccountPage';
+import { CXDriverJobsPage } from './CXDriverJobsPage';
 import FeederRatingsTab from './FeederRatingsTab';
 import CravenAppComm from './CravenAppComm';
 import { SafetySettings } from '@/components/settings/SafetySettings';
@@ -440,7 +441,7 @@ export const MobileDriverDashboard: React.FC = () => {
   const [hasCompletedRetailPickup, setHasCompletedRetailPickup] = useState(false);
   const [previewRetailStep, setPreviewRetailStep] = useState<1 | 2>(1);
   const [showQuickScheduler, setShowQuickScheduler] = useState(false);
-  const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages' | 'cx'>('home');
   const [driverRating, setDriverRating] = useState<number>(5.0);
   const [driverDeliveries, setDriverDeliveries] = useState<number>(0);
   const [ratingTrend, setRatingTrend] = useState<number>(0);
@@ -508,8 +509,8 @@ export const MobileDriverDashboard: React.FC = () => {
   // Handle URL parameter changes
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['schedule', 'earnings', 'onfire', 'notifications', 'account', 'ratings', 'promos', 'preferences', 'help', 'messages'].includes(tab)) {
-      setActiveTab(tab as 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages');
+    if (tab && ['schedule', 'earnings', 'onfire', 'notifications', 'account', 'ratings', 'promos', 'preferences', 'help', 'messages', 'cx'].includes(tab)) {
+      setActiveTab(tab as 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages' | 'cx');
     } else {
       setActiveTab('home');
     }
@@ -519,7 +520,7 @@ export const MobileDriverDashboard: React.FC = () => {
   useEffect(() => {
     const handleSwitchTab = (event: CustomEvent<{ tab: string; section?: string }>) => {
       const { tab, section } = event.detail;
-      if (['schedule', 'earnings', 'onfire', 'notifications', 'account', 'ratings', 'promos', 'preferences', 'help', 'messages'].includes(tab)) {
+      if (['schedule', 'earnings', 'onfire', 'notifications', 'account', 'ratings', 'promos', 'preferences', 'help', 'messages', 'cx'].includes(tab)) {
         setActiveTab(tab as any);
         // Update URL without causing reload
         const newUrl = section ? `/mobile?tab=${tab}&section=${section}` : `/mobile?tab=${tab}`;
@@ -974,6 +975,21 @@ export const MobileDriverDashboard: React.FC = () => {
       })
       .subscribe();
 
+    const cxChannel = supabase
+      .channel(`cx_driver_${userId}`)
+      .on('broadcast', { event: 'cx_job_offer' }, (ev: any) => {
+        const payload = ev?.payload ?? ev ?? {};
+        showNotification(
+          `CX courier job: ${payload.courier_name || "Crave'N Express"}`,
+          `$${((payload.payout_cents || 0) / 100).toFixed(2)} courier gig available`,
+          8000
+        );
+        playNotification();
+        setActiveTab('cx');
+        navigate('/mobile?tab=cx');
+      })
+      .subscribe();
+
     const dbChannel = supabase
       .channel(`order_assignments_q_${userId}`)
       .on(
@@ -1097,6 +1113,7 @@ export const MobileDriverDashboard: React.FC = () => {
       .subscribe();
     const cleanup = () => {
       supabase.removeChannel(broadcastChannel);
+      supabase.removeChannel(cxChannel);
       supabase.removeChannel(dbChannel);
     };
     realtimeCleanupRef.current = cleanup;
@@ -2287,6 +2304,15 @@ export const MobileDriverDashboard: React.FC = () => {
                 navigate('/mobile?tab=notifications');
               }}
             />
+          </div>
+        )}
+
+        {activeTab === 'cx' && (
+          <div className="fixed inset-0 z-20 overflow-hidden bg-background pointer-events-auto">
+            <CXDriverJobsPage onClose={() => {
+              setActiveTab('home');
+              navigate('/mobile');
+            }} />
           </div>
         )}
         
