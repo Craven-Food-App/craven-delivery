@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Truck, MapPin, ArrowRight, Package, Phone, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
+import { CXJobDetailSheet } from "./CXJobDetailSheet";
 
 const NEXT_STATUS: Record<string, string> = {
   accepted: "en_route_pickup",
@@ -28,6 +29,7 @@ export function CXDriverJobsPage({ onClose }: { onClose?: () => void }) {
   const [mine, setMine] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [selectedJob, setSelectedJob] = useState<any | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -161,11 +163,28 @@ export function CXDriverJobsPage({ onClose }: { onClose?: () => void }) {
             <Card className="p-6 text-center text-sm text-slate-500">No CX jobs available right now.</Card>
           ) : (
             available.map((j) => (
-              <AvailableJobCard key={j.id} job={j} busy={busy === j.id} onAccept={() => accept(j.id)} />
+              <AvailableJobCard
+                key={j.id}
+                job={j}
+                busy={busy === j.id}
+                onOpen={() => setSelectedJob(j)}
+              />
             ))
           )}
         </div>
       </div>
+
+      {selectedJob && (
+        <CXJobDetailSheet
+          job={selectedJob}
+          busy={busy === selectedJob.id}
+          onClose={() => setSelectedJob(null)}
+          onAccept={async () => {
+            await accept(selectedJob.id);
+            setSelectedJob(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -177,10 +196,10 @@ function jobAddresses(j: any) {
   return { pickup, dropoffs };
 }
 
-function AvailableJobCard({ job, busy, onAccept }: { job: any; busy: boolean; onAccept: () => void }) {
+function AvailableJobCard({ job, busy, onOpen }: { job: any; busy: boolean; onOpen: () => void }) {
   const { pickup, dropoffs } = useMemo(() => jobAddresses(job), [job]);
   return (
-    <Card className="p-4">
+    <Card className="p-4 active:scale-[0.99] transition-transform cursor-pointer" onClick={onOpen}>
       <div className="flex items-center justify-between mb-2">
         <Badge className="bg-orange-500 text-white capitalize">{(job.job_type || "").replace("_", " ")}</Badge>
         <div className="text-lg font-extrabold tabular-nums text-emerald-700">
@@ -212,10 +231,10 @@ function AvailableJobCard({ job, busy, onAccept }: { job: any; busy: boolean; on
       )}
       <Button
         disabled={busy}
-        onClick={onAccept}
+        onClick={(e) => { e.stopPropagation(); onOpen(); }}
         className="w-full mt-3 bg-orange-500 hover:bg-orange-600 h-11 font-semibold"
       >
-        {busy ? "Accepting…" : "Accept job"}
+        View details
       </Button>
     </Card>
   );
