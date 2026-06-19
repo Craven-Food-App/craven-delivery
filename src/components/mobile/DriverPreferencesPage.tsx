@@ -175,7 +175,7 @@ export function DriverPreferencesPage() {
 
       <div className="p-4 space-y-4">
         {/* Crave'N Express opt-in */}
-        <CXDriverOptInCard driverId={prefs.driver_id} />
+        {prefs.driver_id && <CXDriverOptInCard driverId={prefs.driver_id} />}
 
         {/* 1. Delivery Preferences */}
         <Card className="border-2 border-purple-200 bg-white/80 backdrop-blur">
