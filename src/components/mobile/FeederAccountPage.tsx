@@ -30,6 +30,7 @@ import DrivingInfoPage from "./DrivingInfoPage";
 import AppSettingsPage from "./AppSettingsPage";
 import SecuritySafetyPage from "./SecuritySafetyPage";
 import DriverSupportChat from "./DriverSupportChat";
+import { CXDriverJobsPage } from "./CXDriverJobsPage";
 import { SafetySettings } from "@/components/settings/SafetySettings";
 import { useFeederTier } from "@/hooks/useFeederTier";
 import { TIER_BADGE_STYLES, type FeederTierName } from "@/utils/ratingHelpers";
@@ -127,6 +128,7 @@ function tierProgress(pts: number, status: StatusInfo): number {
 const MENU_ITEMS = [
   { id: "profile",     label: "Profile Information",  desc: "Personal details & preferences" },
   { id: "vehicle",     label: "Driving Info",         desc: "License, vehicles, insurance" },
+  { id: "cx",          label: "Crave'N Express",      desc: "Courier jobs & opt-in status" },
   { id: "feederCard",  label: "Transaction History",  desc: "View all Feeder Card transactions" },
   { id: "settings",    label: "App Settings",         desc: "Notifications, language, preferences" },
   { id: "security",    label: "Security & Safety",    desc: "Password, 2FA, emergency contacts" },
@@ -190,6 +192,15 @@ function NavIcon({ id }: { id: NavId }) {
         <svg {...s}>
           <rect x="1" y="3" width="15" height="13" rx="2" />
           <path d="M16 8l5 3-5 3z" />
+        </svg>
+      );
+    case "cx":
+      return (
+        <svg {...s}>
+          <path d="M3 7h11v8H3z" />
+          <path d="M14 10h4l3 3v2h-7z" />
+          <circle cx="7" cy="17" r="2" />
+          <circle cx="17" cy="17" r="2" />
         </svg>
       );
     case "feederCard":
