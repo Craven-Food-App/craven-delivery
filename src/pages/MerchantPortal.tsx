@@ -76,6 +76,7 @@ import MerchantTermsAcceptanceModal from "@/components/merchant/MerchantTermsAcc
 import { useMerchantTermsAcceptance } from "@/hooks/useMerchantTermsAcceptance";
 import { MERCHANT_TERMS_PATH } from "@/constants/merchantTerms";
 import cravenCLogo from "@/assets/craven-c-new.png";
+import CourierPortalView from "@/components/merchant/CourierPortalView";
 
 // Helper function to format restaurant type for display
 const formatRestaurantType = (type: string | null | undefined): string => {
