@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import ProfileDetailsPage from "./ProfileDetailsPage";
 import VehicleDocumentsPage from "./VehicleDocumentsPage";
+import DrivingInfoPage from "./DrivingInfoPage";
 import AppSettingsPage from "./AppSettingsPage";
 import SecuritySafetyPage from "./SecuritySafetyPage";
 import DriverSupportChat from "./DriverSupportChat";
@@ -125,7 +126,7 @@ function tierProgress(pts: number, status: StatusInfo): number {
 //     Each `id` maps to the onPress switch below in NavRow.
 const MENU_ITEMS = [
   { id: "profile",     label: "Profile Information",  desc: "Personal details & preferences" },
-  { id: "vehicle",     label: "Vehicle & Documents",  desc: "Registration, insurance, inspection" },
+  { id: "vehicle",     label: "Driving Info",         desc: "License, vehicles, insurance" },
   { id: "feederCard",  label: "Transaction History",  desc: "View all Feeder Card transactions" },
   { id: "settings",    label: "App Settings",         desc: "Notifications, language, preferences" },
   { id: "security",    label: "Security & Safety",    desc: "Password, 2FA, emergency contacts" },
@@ -739,7 +740,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
   }
 
   if (currentPage === 'vehicle') {
-    return <VehicleDocumentsPage onBack={() => setCurrentPage('main')} />;
+    return <DrivingInfoPage onBack={() => setCurrentPage('main')} />;
   }
 
   if (currentPage === 'settings') {
