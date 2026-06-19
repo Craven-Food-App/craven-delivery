@@ -2306,6 +2306,15 @@ export const MobileDriverDashboard: React.FC = () => {
             />
           </div>
         )}
+
+        {activeTab === 'cx' && (
+          <div className="fixed inset-0 z-20 overflow-hidden bg-background pointer-events-auto">
+            <CXDriverJobsPage onClose={() => {
+              setActiveTab('home');
+              navigate('/mobile');
+            }} />
+          </div>
+        )}
         
         {activeTab === 'ratings' && (
           <div className="fixed inset-0 z-20 overflow-hidden">
