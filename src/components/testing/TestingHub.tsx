@@ -9,6 +9,8 @@ import { TestDriver } from './TestDriver';
 import { TestRestaurant } from './TestRestaurant';
 import { TestDataManager } from './TestDataManager';
 import { LiveDriverTesting } from './LiveDriverTesting';
+import { LiveMerchantTesting } from './LiveMerchantTesting';
+import { LiveCourierTesting } from './LiveCourierTesting';
 import { 
   Home, 
   Users, 
@@ -247,6 +249,8 @@ export const TestingHub = () => {
 
           <TabsContent value="live" className="space-y-6">
             <LiveDriverTesting />
+            <LiveMerchantTesting />
+            <LiveCourierTesting />
           </TabsContent>
 
           <TabsContent value="data" className="space-y-6">
