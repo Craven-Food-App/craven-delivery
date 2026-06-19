@@ -352,6 +352,17 @@ const RestaurantSetup = () => {
     );
   }
 
+  // Branch: courier merchants get a dispatch-style portal instead of the restaurant/retail UI.
+  if ((restaurant as any)?.business_type === 'courier_service') {
+    return (
+      <CourierPortalView
+        restaurant={restaurant}
+        userId={(restaurant as any)?.owner_id || ''}
+        userName={userName || 'Operator'}
+      />
+    );
+  }
+
   const liveOrdersNavItem = { tab: 'live-orders' as const, icon: IconBolt, label: 'Live' };
   const navItemsRestaurant: { tab: typeof activeTab; icon: React.ElementType; label: string }[] = [
     ...(showLiveOrdersTab ? [liveOrdersNavItem] : []),
