@@ -52,7 +52,7 @@ export function CXDriverJobsPage({ onClose }: { onClose?: () => void }) {
       .from("cx_jobs")
       .select("*, cx_job_stops(*)")
       .in("status", ["posted", "offered"])
-      .is("driver_id", null)
+      .is("assigned_driver_id", null)
       .order("created_at", { ascending: false })
       .limit(50);
     // If not verified, only show jobs that have widened to general pool (dispatch_round > 1) or are in fallback
@@ -64,7 +64,7 @@ export function CXDriverJobsPage({ onClose }: { onClose?: () => void }) {
     const { data: mineRows } = await supabase
       .from("cx_jobs")
       .select("*, cx_job_stops(*)")
-      .eq("driver_id", uid)
+      .eq("assigned_driver_id", uid)
       .in("status", ["accepted", "en_route_pickup", "picked_up", "en_route_dropoff"])
       .order("created_at", { ascending: false });
     setMine(mineRows ?? []);
