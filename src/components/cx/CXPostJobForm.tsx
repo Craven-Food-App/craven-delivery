@@ -54,32 +54,20 @@ export function CXPostJobForm({
     }
     setSubmitting(true);
     try {
-      const { data: job, error } = await supabase.from("cx_jobs").insert({
-        courier_restaurant_id: restaurant.id,
-        created_by: userId,
-        job_type: jobType,
-        status: "posted",
-        pickup_at: jobType === "scheduled" ? new Date(pickupAt).toISOString() : null,
-        driver_payout_offer_cents: payoutCents,
-        platform_base_cents: baseCents,
-        notes,
-        region_id: restaurant.region_id ?? null,
-      }).select().single();
-      if (error) throw error;
-
-      const stopsPayload = [
-        { job_id: job.id, sequence: 0, stop_type: "pickup", ...pickup },
-        ...dropoffs.map((d, i) => ({ job_id: job.id, sequence: i + 1, stop_type: "dropoff", ...d })),
-      ];
-      const { error: e2 } = await supabase.from("cx_job_stops").insert(stopsPayload);
-      if (e2) throw e2;
-
-      await supabase.from("cx_job_events").insert({
-        job_id: job.id, actor_id: userId, event_type: "posted",
-        metadata: { stops: stopsPayload.length, payout_cents: payoutCents },
+      const { data, error } = await supabase.functions.invoke("cx-post-job", {
+        body: {
+          restaurant_id: restaurant.id,
+          job_type: jobType,
+          pickup_at: jobType === "scheduled" ? new Date(pickupAt).toISOString() : null,
+          driver_payout_offer_cents: payoutCents,
+          notes,
+          pickup,
+          dropoffs,
+        },
       });
-
-      supabase.functions.invoke("cx-dispatch-job", { body: { job_id: job.id } }).catch(() => {});
+      if (error || data?.error) {
+        throw new Error(data?.error ?? error?.message ?? "Could not post job");
+      }
 
       toast.success("Job posted — dispatching now");
       onPosted();
