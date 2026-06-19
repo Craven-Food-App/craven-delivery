@@ -7223,28 +7223,43 @@ export type Database = {
       }
       cx_job_events: {
         Row: {
+          accuracy_m: number | null
           actor_id: string | null
           created_at: string
           event_type: string
           id: string
           job_id: string
+          lat: number | null
+          lng: number | null
           metadata: Json
+          notes: string | null
+          photo_url: string | null
         }
         Insert: {
+          accuracy_m?: number | null
           actor_id?: string | null
           created_at?: string
           event_type: string
           id?: string
           job_id: string
+          lat?: number | null
+          lng?: number | null
           metadata?: Json
+          notes?: string | null
+          photo_url?: string | null
         }
         Update: {
+          accuracy_m?: number | null
           actor_id?: string | null
           created_at?: string
           event_type?: string
           id?: string
           job_id?: string
+          lat?: number | null
+          lng?: number | null
           metadata?: Json
+          notes?: string | null
+          photo_url?: string | null
         }
         Relationships: [
           {
@@ -7263,6 +7278,8 @@ export type Database = {
           contact_name: string | null
           contact_phone: string | null
           created_at: string
+          dropoff_photo_lat: number | null
+          dropoff_photo_lng: number | null
           dropoff_photo_url: string | null
           id: string
           job_id: string
@@ -7271,6 +7288,8 @@ export type Database = {
           package_description: string | null
           package_label: string | null
           package_verified_at: string | null
+          pickup_photo_lat: number | null
+          pickup_photo_lng: number | null
           pickup_photo_url: string | null
           proof_notes: string | null
           sequence: number
@@ -7285,6 +7304,8 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          dropoff_photo_lat?: number | null
+          dropoff_photo_lng?: number | null
           dropoff_photo_url?: string | null
           id?: string
           job_id: string
@@ -7293,6 +7314,8 @@ export type Database = {
           package_description?: string | null
           package_label?: string | null
           package_verified_at?: string | null
+          pickup_photo_lat?: number | null
+          pickup_photo_lng?: number | null
           pickup_photo_url?: string | null
           proof_notes?: string | null
           sequence: number
@@ -7307,6 +7330,8 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          dropoff_photo_lat?: number | null
+          dropoff_photo_lng?: number | null
           dropoff_photo_url?: string | null
           id?: string
           job_id?: string
@@ -7315,6 +7340,8 @@ export type Database = {
           package_description?: string | null
           package_label?: string | null
           package_verified_at?: string | null
+          pickup_photo_lat?: number | null
+          pickup_photo_lng?: number | null
           pickup_photo_url?: string | null
           proof_notes?: string | null
           sequence?: number
