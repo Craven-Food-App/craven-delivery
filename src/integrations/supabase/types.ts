@@ -7099,6 +7099,262 @@ export type Database = {
           },
         ]
       }
+      cx_driver_verification: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          insurance_doc_url: string | null
+          insurance_expires_on: string | null
+          max_package_size: string | null
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          vehicle_class: string | null
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          insurance_doc_url?: string | null
+          insurance_expires_on?: string | null
+          max_package_size?: string | null
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_class?: string | null
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          insurance_doc_url?: string | null
+          insurance_expires_on?: string | null
+          max_package_size?: string | null
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_class?: string | null
+        }
+        Relationships: []
+      }
+      cx_job_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          job_id: string
+          metadata: Json
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          job_id: string
+          metadata?: Json
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          job_id?: string
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_job_events_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cx_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cx_job_stops: {
+        Row: {
+          address: string
+          completed_at: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          job_id: string
+          latitude: number | null
+          longitude: number | null
+          package_description: string | null
+          sequence: number
+          stop_type: string
+        }
+        Insert: {
+          address: string
+          completed_at?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          latitude?: number | null
+          longitude?: number | null
+          package_description?: string | null
+          sequence: number
+          stop_type: string
+        }
+        Update: {
+          address?: string
+          completed_at?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          latitude?: number | null
+          longitude?: number | null
+          package_description?: string | null
+          sequence?: number
+          stop_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_job_stops_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cx_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cx_jobs: {
+        Row: {
+          assigned_driver_id: string | null
+          cancelled_reason: string | null
+          courier_restaurant_id: string
+          created_at: string
+          created_by: string
+          dispatch_deadline_at: string | null
+          driver_payout_offer_cents: number
+          estimated_distance_meters: number | null
+          estimated_duration_seconds: number | null
+          id: string
+          job_type: Database["public"]["Enums"]["cx_job_type"]
+          notes: string | null
+          optimized_polyline: string | null
+          pickup_at: string | null
+          platform_base_cents: number
+          region_id: string | null
+          status: Database["public"]["Enums"]["cx_job_status"]
+          total_charge_cents: number | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_driver_id?: string | null
+          cancelled_reason?: string | null
+          courier_restaurant_id: string
+          created_at?: string
+          created_by: string
+          dispatch_deadline_at?: string | null
+          driver_payout_offer_cents: number
+          estimated_distance_meters?: number | null
+          estimated_duration_seconds?: number | null
+          id?: string
+          job_type: Database["public"]["Enums"]["cx_job_type"]
+          notes?: string | null
+          optimized_polyline?: string | null
+          pickup_at?: string | null
+          platform_base_cents: number
+          region_id?: string | null
+          status?: Database["public"]["Enums"]["cx_job_status"]
+          total_charge_cents?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_driver_id?: string | null
+          cancelled_reason?: string | null
+          courier_restaurant_id?: string
+          created_at?: string
+          created_by?: string
+          dispatch_deadline_at?: string | null
+          driver_payout_offer_cents?: number
+          estimated_distance_meters?: number | null
+          estimated_duration_seconds?: number | null
+          id?: string
+          job_type?: Database["public"]["Enums"]["cx_job_type"]
+          notes?: string | null
+          optimized_polyline?: string | null
+          pickup_at?: string | null
+          platform_base_cents?: number
+          region_id?: string | null
+          status?: Database["public"]["Enums"]["cx_job_status"]
+          total_charge_cents?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_jobs_courier_restaurant_id_fkey"
+            columns: ["courier_restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "cx_jobs_courier_restaurant_id_fkey"
+            columns: ["courier_restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cx_pricing_config: {
+        Row: {
+          active: boolean
+          created_at: string
+          dispatch_timeout_seconds: number
+          id: string
+          job_type: Database["public"]["Enums"]["cx_job_type"]
+          minimum_driver_payout_cents: number
+          per_mile_floor_cents: number
+          per_stop_floor_cents: number
+          platform_base_cents: number
+          region_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          dispatch_timeout_seconds?: number
+          id?: string
+          job_type: Database["public"]["Enums"]["cx_job_type"]
+          minimum_driver_payout_cents: number
+          per_mile_floor_cents?: number
+          per_stop_floor_cents?: number
+          platform_base_cents: number
+          region_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          dispatch_timeout_seconds?: number
+          id?: string
+          job_type?: Database["public"]["Enums"]["cx_job_type"]
+          minimum_driver_payout_cents?: number
+          per_mile_floor_cents?: number
+          per_stop_floor_cents?: number
+          platform_base_cents?: number
+          region_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cxo_acknowledgments: {
         Row: {
           agreed_checkbox: boolean
@@ -9641,6 +9897,8 @@ export type Database = {
           avoid_highways: boolean | null
           avoid_tolls: boolean | null
           created_at: string
+          cx_opt_in: boolean
+          cx_tier_verified: boolean
           data_export_completed: boolean | null
           data_export_last_request_at: string | null
           data_export_requested: boolean | null
@@ -9672,6 +9930,8 @@ export type Database = {
           avoid_highways?: boolean | null
           avoid_tolls?: boolean | null
           created_at?: string
+          cx_opt_in?: boolean
+          cx_tier_verified?: boolean
           data_export_completed?: boolean | null
           data_export_last_request_at?: string | null
           data_export_requested?: boolean | null
@@ -9703,6 +9963,8 @@ export type Database = {
           avoid_highways?: boolean | null
           avoid_tolls?: boolean | null
           created_at?: string
+          cx_opt_in?: boolean
+          cx_tier_verified?: boolean
           data_export_completed?: boolean | null
           data_export_last_request_at?: string | null
           data_export_requested?: boolean | null
@@ -27365,6 +27627,7 @@ export type Database = {
           background_check_authorized: boolean | null
           banking_complete: boolean | null
           business_license_url: string | null
+          business_type: string
           business_verified_at: string | null
           chat_enabled: boolean | null
           city: string | null
@@ -27441,6 +27704,7 @@ export type Database = {
           background_check_authorized?: boolean | null
           banking_complete?: boolean | null
           business_license_url?: string | null
+          business_type?: string
           business_verified_at?: string | null
           chat_enabled?: boolean | null
           city?: string | null
@@ -27517,6 +27781,7 @@ export type Database = {
           background_check_authorized?: boolean | null
           banking_complete?: boolean | null
           business_license_url?: string | null
+          business_type?: string
           business_verified_at?: string | null
           chat_enabled?: boolean | null
           city?: string | null
@@ -33102,6 +33367,7 @@ export type Database = {
       is_craven_founder: { Args: never; Returns: boolean }
       is_craven_support: { Args: { _user_id: string }; Returns: boolean }
       is_cto_or_admin: { Args: { user_uuid: string }; Returns: boolean }
+      is_cx_admin: { Args: { _user_id: string }; Returns: boolean }
       is_cxo_or_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_diamond_driver: { Args: { p_driver_id: string }; Returns: boolean }
       is_executive: { Args: { user_uuid: string }; Returns: boolean }
@@ -34165,6 +34431,10 @@ export type Database = {
         Returns: string
       }
       user_has_cpo_partnership_access: { Args: never; Returns: boolean }
+      user_owns_courier_restaurant: {
+        Args: { _restaurant_id: string; _user_id: string }
+        Returns: boolean
+      }
       validate_appointment_status_transition: {
         Args: { new_status: string; old_status: string }
         Returns: boolean
@@ -34233,6 +34503,18 @@ export type Database = {
         | "passed"
         | "failed"
         | "auto_failed"
+      cx_job_status:
+        | "draft"
+        | "posted"
+        | "offered"
+        | "accepted"
+        | "en_route_pickup"
+        | "picked_up"
+        | "en_route_dropoff"
+        | "delivered"
+        | "cancelled"
+        | "failed"
+      cx_job_type: "on_demand" | "scheduled" | "bulk_route"
       feeder_tier: "Feeder" | "Gold" | "Platinum" | "Diamond" | "Ultimate"
       internal_message_channel: "direct" | "group"
       internal_task_priority: "low" | "medium" | "high" | "urgent"
@@ -34500,6 +34782,19 @@ export const Constants = {
         "failed",
         "auto_failed",
       ],
+      cx_job_status: [
+        "draft",
+        "posted",
+        "offered",
+        "accepted",
+        "en_route_pickup",
+        "picked_up",
+        "en_route_dropoff",
+        "delivered",
+        "cancelled",
+        "failed",
+      ],
+      cx_job_type: ["on_demand", "scheduled", "bulk_route"],
       feeder_tier: ["Feeder", "Gold", "Platinum", "Diamond", "Ultimate"],
       internal_message_channel: ["direct", "group"],
       internal_task_priority: ["low", "medium", "high", "urgent"],
