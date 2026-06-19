@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import { CXPostJobForm } from "@/components/cx/CXPostJobForm";
 import { CXJobList } from "@/components/cx/CXJobList";
+import { CXCourierDocumentsCard } from "@/components/cx/CXCourierDocumentsCard";
 import cravenLogo from "@/assets/craven-logo.png";
 
 const TABS = [
@@ -355,16 +356,7 @@ export default function CourierPortalView({
               </div>
             </Card>
 
-            <Card className="p-4">
-              <h2 className="text-base font-semibold mb-1">Documents</h2>
-              <p className="text-sm text-slate-600">
-                Commercial auto insurance, business license, and W-9 are required to stay live. Manage them under{" "}
-                <button className="text-orange-600 underline" onClick={() => navigate("/merchant/documents")}>
-                  business documents
-                </button>
-                .
-              </p>
-            </Card>
+            <CXCourierDocumentsCard restaurantId={restaurant.id} />
           </TabsContent>
         </div>
       </Tabs>

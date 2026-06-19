@@ -7099,6 +7099,83 @@ export type Database = {
           },
         ]
       }
+      cx_courier_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          expires_at: string | null
+          file_name: string | null
+          file_url: string
+          id: string
+          rejection_reason: string | null
+          restaurant_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          expires_at?: string | null
+          file_name?: string | null
+          file_url: string
+          id?: string
+          rejection_reason?: string | null
+          restaurant_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          expires_at?: string | null
+          file_name?: string | null
+          file_url?: string
+          id?: string
+          rejection_reason?: string | null
+          restaurant_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_courier_documents_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "cx_courier_documents_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_courier_documents_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "cx_courier_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       cx_driver_verification: {
         Row: {
           created_at: string
