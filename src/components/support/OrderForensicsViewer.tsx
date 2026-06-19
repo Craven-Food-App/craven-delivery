@@ -156,6 +156,30 @@ function isUsablePhotoUrl(url: string | null | undefined): url is string {
 
 const ProofImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
   const [errored, setErrored] = useState(false);
+  const [resolved, setResolved] = useState<string>(src);
+
+  useEffect(() => {
+    setErrored(false);
+    setResolved(src);
+    // If this is a public URL pointing at a private bucket (delivery-photos),
+    // the public URL will 400. Convert it to a short-lived signed URL.
+    const match = src.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?|$)/);
+    if (!match) return;
+    const bucket = match[1];
+    const path = decodeURIComponent(match[2]);
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .storage
+        .from(bucket)
+        .createSignedUrl(path, 60 * 60);
+      if (!cancelled && !error && data?.signedUrl) setResolved(data.signedUrl);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);
+
   if (errored) {
     return (
       <div className="h-48 flex flex-col items-center justify-center bg-muted/40 rounded border text-xs text-muted-foreground gap-1 px-3 text-center">
@@ -168,9 +192,9 @@ const ProofImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
     );
   }
   return (
-    <a href={src} target="_blank" rel="noopener noreferrer">
+    <a href={resolved} target="_blank" rel="noopener noreferrer">
       <img
-        src={src}
+        src={resolved}
         alt={alt}
         loading="lazy"
         onError={() => setErrored(true)}
@@ -572,13 +596,7 @@ const OrderForensicsViewer: React.FC = () => {
                   </div>
                   <div className="grid sm:grid-cols-[200px_1fr] gap-3 items-start">
                     {selected.signature_url ? (
-                      <a href={selected.signature_url} target="_blank" rel="noopener noreferrer">
-                        <img
-                          src={selected.signature_url}
-                          alt="Signature"
-                          className="w-full h-24 object-contain bg-white border rounded"
-                        />
-                      </a>
+                      <ProofImage src={selected.signature_url} alt="Signature" />
                     ) : (
                       <div className="h-24 flex items-center justify-center bg-muted/40 rounded border text-xs text-muted-foreground">
                         No signature
