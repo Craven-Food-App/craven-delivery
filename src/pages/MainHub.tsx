@@ -82,6 +82,7 @@ const isPortalInDepartment = (portalId: string, deptId: string): boolean => {
         "driver-operations",
         "support-operations",
         "customer-success",
+        "cx-courier",
       ].includes(portalId);
     case "finance":
       return ["cfo", "foundational-invites"].includes(portalId);
@@ -109,7 +110,7 @@ const isPortalInDepartment = (portalId: string, deptId: string): boolean => {
     case "support":
       return ["support-operations", "customer-success", "mail-center"].includes(portalId);
     case "logistics":
-      return ["coo", "driver-operations", "merchant-operations"].includes(portalId);
+      return ["coo", "driver-operations", "merchant-operations", "cx-courier"].includes(portalId);
     default:
       return true;
   }
@@ -1366,6 +1367,14 @@ const MainHub: React.FC = () => {
       color: "#fa8c16",
     },
     {
+      id: "cx-courier",
+      name: "Crave'N Express (CX) Dispatch",
+      description: "Courier merchant dispatch — post & manage on-demand courier jobs",
+      icon: RocketOutlined,
+      path: "/merchant-portal",
+      color: "#f97316",
+    },
+    {
       id: "intern",
       name: "Intern Portal",
       description: "Intern workspace for training, tasks, and performance",
@@ -1474,7 +1483,7 @@ const MainHub: React.FC = () => {
       id: "operations-delivery",
       title: "Operations & Delivery",
       subtitle: "Field operations and service delivery",
-      portalIds: ["driver-operations", "merchant-operations", "coo", "cxo"],
+      portalIds: ["driver-operations", "merchant-operations", "cx-courier", "coo", "cxo"],
     },
     {
       id: "technology-engineering",
