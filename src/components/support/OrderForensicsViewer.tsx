@@ -596,13 +596,7 @@ const OrderForensicsViewer: React.FC = () => {
                   </div>
                   <div className="grid sm:grid-cols-[200px_1fr] gap-3 items-start">
                     {selected.signature_url ? (
-                      <a href={selected.signature_url} target="_blank" rel="noopener noreferrer">
-                        <img
-                          src={selected.signature_url}
-                          alt="Signature"
-                          className="w-full h-24 object-contain bg-white border rounded"
-                        />
-                      </a>
+                      <ProofImage src={selected.signature_url} alt="Signature" />
                     ) : (
                       <div className="h-24 flex items-center justify-center bg-muted/40 rounded border text-xs text-muted-foreground">
                         No signature
