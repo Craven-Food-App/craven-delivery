@@ -437,3 +437,34 @@ function ReferenceCard({ r, onContacted }: any) {
     </Card>
   );
 }
+
+function DocOpenLink({ doc, getUrl }: { doc: any; getUrl: (d: any) => Promise<string> }) {
+  const [loading, setLoading] = useState(false);
+  async function handleClick(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setLoading(true);
+    const url = await getUrl(doc);
+    setLoading(false);
+    // Use a synthetic anchor to bypass popup blockers (synchronous user gesture chain best-effort)
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  return (
+    <Button
+      size="compact-xs"
+      variant="light"
+      color="orange"
+      loading={loading}
+      leftSection={<IconExternalLink size={12} />}
+      onClick={handleClick}
+    >
+      {doc.file_name || 'View file'}
+    </Button>
+  );
+}
