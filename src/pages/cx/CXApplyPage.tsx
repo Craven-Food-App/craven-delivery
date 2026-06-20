@@ -313,7 +313,7 @@ export default function CXApplyPage() {
       </div>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-8 py-8">
-        {step === 1 && <Step1 form={form} set={set} />}
+        {step === 1 && <Step1 form={form} set={set} appId={appId} />}
         {step === 2 && <Step2 form={form} set={set} />}
         {step === 3 && <Step3 form={form} set={set} setBool={setBool} />}
         {step === 4 && <Step4 docs={docs} uploading={uploading} onUpload={handleUpload} onRemove={removeDoc} />}
