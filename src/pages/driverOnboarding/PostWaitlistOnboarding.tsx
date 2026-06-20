@@ -591,6 +591,17 @@ export const PostWaitlistOnboarding: React.FC = () => {
         <Card className="shadow-lg border-none">
           <CardContent className="p-8">
             {renderStepContent()}
+            {SIGNING_STEPS[currentStep] && applicationData && (
+              <div className="mt-6">
+                <ESignSignatureBlock
+                  documentTitle={FEEDER_AGREEMENTS[SIGNING_STEPS[currentStep]].title}
+                  documentText={FEEDER_AGREEMENTS[SIGNING_STEPS[currentStep]].text}
+                  defaultName={`${applicationData.first_name || ''} ${applicationData.last_name || ''}`.trim()}
+                  showError={showSignError}
+                  onChange={(s) => setSignatures(prev => ({ ...prev, [currentStep]: s }))}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
