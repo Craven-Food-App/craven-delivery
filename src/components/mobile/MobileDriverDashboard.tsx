@@ -1946,11 +1946,11 @@ export const MobileDriverDashboard: React.FC = () => {
       for (const b of batch) {
         const { data: od } = await supabase
           .from('orders')
-          .select('id, order_number, subtotal_cents, customer_name, customer_id, customer_phone, delivery_notes, dropoff_address, payout_cents, tip_cents, distance_km')
+          .select('id, order_number, subtotal_cents, customer_name, customer_id, customer_phone, delivery_notes, dropoff_address, delivery_address, payout_cents, tip_cents, distance_km')
           .eq('id', b.order_id)
           .maybeSingle();
         if (od) {
-          orderRows.push(od);
+          orderRows.push({ ...od, dropoff_address: (od as any).dropoff_address ?? (od as any).delivery_address });
         } else {
           const addr = b.dropoff_address;
           const addressStr =
@@ -2054,7 +2054,7 @@ export const MobileDriverDashboard: React.FC = () => {
     const { data: orderData } = await supabase
       .from('orders')
       .select(`
-        id, order_number, subtotal_cents, customer_name, customer_id, customer_phone, delivery_notes, tip_cents, dropoff_address, payout_cents, distance_km
+        id, order_number, subtotal_cents, customer_name, customer_id, customer_phone, delivery_notes, tip_cents, dropoff_address, delivery_address, payout_cents, distance_km
       `)
       .eq('id', current.order_id)
       .maybeSingle();
