@@ -391,9 +391,10 @@ export const PostWaitlistOnboarding: React.FC = () => {
 
       // Move to next step or complete
       if (currentStep >= STEPS.length) {
-        navigate('/enhanced-onboarding');
+        setCompleted(true);
       } else {
         setCurrentStep(currentStep + 1);
+        setShowSignError(false);
       }
     } catch (error: any) {
       console.error('Error saving data:', error);
