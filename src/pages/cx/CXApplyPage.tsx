@@ -581,3 +581,48 @@ function Agreement({ title, body }: any) {
     </div>
   );
 }
+
+function LogoUploader({ form, set, appId }: any) {
+  const [busy, setBusy] = useState(false);
+  async function pick(file: File) {
+    if (!appId) { toast.error("Application not ready yet"); return; }
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("application_id", appId);
+      fd.append("doc_type", "company_logo");
+      const { data, error } = await supabase.functions.invoke("cx-upload-doc", { body: fd });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const url = data?.document?.file_url;
+      if (url) {
+        await supabase.from("cx_applications").update({ logo_url: url }).eq("id", appId);
+        set("logo_url")({ target: { value: url } });
+        toast.success("Logo uploaded");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Logo upload failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-black/20 p-4">
+      <div className="size-20 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+        {form.logo_url
+          ? <img src={form.logo_url} alt="Company logo" className="w-full h-full object-contain bg-white" />
+          : <Building2 className="text-slate-500" size={28} />}
+      </div>
+      <div className="flex-1">
+        <div className="font-semibold text-sm">Company logo</div>
+        <p className="text-xs text-slate-400 mt-0.5">Square PNG or JPG, transparent background preferred. Shown in Crave'N dispatch and admin tools.</p>
+        <label className={`mt-2 inline-flex items-center gap-2 px-3 h-8 rounded-md text-xs cursor-pointer ${busy ? "bg-white/10" : "bg-orange-500 hover:bg-orange-600 text-white"}`}>
+          {busy ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+          {form.logo_url ? "Replace logo" : "Upload logo"}
+          <input type="file" hidden accept="image/png,image/jpeg,image/svg+xml" onChange={(e) => { const f = e.target.files?.[0]; if (f) pick(f); e.currentTarget.value = ""; }} />
+        </label>
+      </div>
+    </div>
+  );
+}
