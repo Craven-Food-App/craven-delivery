@@ -121,7 +121,9 @@ export default function CXApplications() {
 
       <Drawer opened={!!selected} onClose={() => setSelected(null)} position="right" size="xl"
         title={selected && <Group gap="xs">
-          <IconBuildingFactory2 size={18} color="#F97316" />
+          {selected.logo_url
+            ? <img src={selected.logo_url} alt="" style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'contain', background: '#fff', border: '1px solid #eee' }} />
+            : <IconBuildingFactory2 size={18} color="#F97316" />}
           <Text fw={700}>{selected.legal_name || 'CX Application'}</Text>
           <Badge color={STATUS_COLORS[(selected.status||'submitted')] || 'gray'} variant="light">{(selected.status||'submitted').replace('_',' ')}</Badge>
         </Group>}
