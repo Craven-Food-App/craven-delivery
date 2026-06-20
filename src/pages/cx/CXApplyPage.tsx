@@ -219,17 +219,29 @@ export default function CXApplyPage() {
     if (!appId) return;
     setSubmitting(true);
     const now = new Date().toISOString();
+    // Capture E-SIGN Act compliance metadata
+    let ipAddress: string | null = null;
+    try {
+      const r = await fetch("https://api.ipify.org?format=json");
+      ipAddress = (await r.json())?.ip ?? null;
+    } catch { /* non-fatal */ }
+
     const { error } = await supabase.from("cx_applications").update({
       status: "submitted",
       submitted_at: now,
+      signature_typed: form.signature_typed,
+      certified_truthful: !!form.certified_truthful,
+      ach_intent: !!form.ach_intent,
       msa_signed_at: now,
       carrier_agreement_signed_at: now,
       indemnification_signed_at: now,
       signature_payload: {
-        typed: form.signature_typed,
+        typed_name: form.signature_typed,
         agreements: ["msa", "carrier_agreement", "indemnification"],
         signed_at: now,
         user_agent: navigator.userAgent,
+        ip_address: ipAddress,
+        consent_text: "I agree to sign electronically under the federal E-SIGN Act (15 U.S.C. § 7001 et seq.) and applicable state UETA. My typed name above is my legally binding signature.",
       },
     }).eq("id", appId);
     if (error) { toast.error(error.message); setSubmitting(false); return; }
