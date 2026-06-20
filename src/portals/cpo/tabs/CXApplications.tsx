@@ -305,7 +305,7 @@ function ApplicationReview({ app, onChange, onClose }: any) {
                       <Text size="xs" c="dimmed">{spec.description}</Text>
                       {d && (
                         <Group gap="xs" mt="xs" wrap="wrap">
-                          <Button size="compact-xs" variant="light" leftSection={<IconExternalLink size={12}/>} onClick={() => openDoc(d)}>{d.file_name || 'View file'}</Button>
+                          <DocOpenLink doc={d} getUrl={getSignedDocUrl} />
                           {spec.needsExpiration && (
                             <TextInput size="xs" type="date" value={d.expires_at || ''} onChange={(e) => setDocExpiry(d, e.currentTarget.value)} placeholder="Expires" w={150}/>
                           )}
@@ -355,9 +355,23 @@ function ApplicationReview({ app, onChange, onClose }: any) {
             <Divider my="sm"/>
             <LegalRow label="Indemnification Addendum" at={app.indemnification_signed_at} />
             <Divider my="sm"/>
-            <Text size="xs" c="dimmed">Typed signature</Text>
-            <Text size="lg" fs="italic" ff="serif">{app.signature_typed || '—'}</Text>
-            <Text size="xs" c="dimmed" mt="xs">Certified truthful: {app.certified_truthful ? '✓' : '—'} · ACH intent: {app.ach_intent ? '✓' : '—'}</Text>
+            <Text size="xs" c="dimmed">Typed signature (E-SIGN Act)</Text>
+            <Text size="xl" fs="italic" ff="cursive, serif" c="dark" mt={4}>
+              {app.signature_typed || app.signature_payload?.typed_name || app.signature_payload?.typed || '—'}
+            </Text>
+            <Text size="xs" c="dimmed" mt="xs">
+              Certified truthful: {app.certified_truthful ? '✓' : '—'} · ACH intent: {app.ach_intent ? '✓' : '—'}
+            </Text>
+            {app.signature_payload && (
+              <Stack gap={2} mt="sm">
+                <Text size="xs" c="dimmed">Signed at: {app.signature_payload.signed_at ? new Date(app.signature_payload.signed_at).toLocaleString() : '—'}</Text>
+                <Text size="xs" c="dimmed">IP address: {app.signature_payload.ip_address || '—'}</Text>
+                <Text size="xs" c="dimmed" lineClamp={2}>User-agent: {app.signature_payload.user_agent || '—'}</Text>
+                {app.signature_payload.consent_text && (
+                  <Text size="xs" c="dimmed" mt={4} fs="italic">"{app.signature_payload.consent_text}"</Text>
+                )}
+              </Stack>
+            )}
           </Card>
         </Tabs.Panel>
 
