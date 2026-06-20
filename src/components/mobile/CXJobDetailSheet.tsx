@@ -1,10 +1,11 @@
 // @ts-nocheck
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { X, ChevronLeft, DollarSign, ArrowRight, HelpCircle } from "lucide-react";
-
-const BROWSER_KEY = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined;
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+import { MAPBOX_CONFIG, MAPBOX_STYLE } from "@/config/mapbox";
 
 function metersToMiles(m?: number | null) {
   if (!m) return null;
@@ -36,27 +37,130 @@ function completeByTime(job: any) {
   return { time, day: isToday ? "Today" : d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) };
 }
 
-function staticMapUrl(stops: any[]) {
-  if (!BROWSER_KEY || stops.length === 0) return null;
-  const markers: string[] = [];
-  const pickup = stops.find((s) => s.stop_type === "pickup");
-  const dropoffs = stops.filter((s) => s.stop_type === "dropoff");
-  if (pickup?.latitude && pickup?.longitude) {
-    markers.push(`markers=color:0x0F172A%7Clabel:S%7C${pickup.latitude},${pickup.longitude}`);
+function CXRouteMap({ stops }: { stops: any[] }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<any>(null);
+
+  const points = useMemo(
+    () =>
+      stops
+        .filter((s) => s.latitude && s.longitude)
+        .map((s) => ({
+          lng: Number(s.longitude),
+          lat: Number(s.latitude),
+          type: s.stop_type as "pickup" | "dropoff",
+        })),
+    [stops],
+  );
+
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current || points.length === 0) return;
+    try {
+      mapboxgl.accessToken = MAPBOX_CONFIG.accessToken;
+      const map = new mapboxgl.Map({
+        container: containerRef.current,
+        style: MAPBOX_STYLE,
+        center: [points[0].lng, points[0].lat],
+        zoom: 10,
+        interactive: false,
+        attributionControl: false,
+      });
+      mapRef.current = map;
+
+      map.on("load", async () => {
+        // Markers
+        const pickup = points.find((p) => p.type === "pickup") || points[0];
+        const dropoffs = points.filter((p) => p.type === "dropoff");
+        const last = dropoffs[dropoffs.length - 1] || points[points.length - 1];
+
+        const addLabeledMarker = (lng: number, lat: number, label: string) => {
+          const el = document.createElement("div");
+          el.style.cssText =
+            "width:54px;height:54px;border-radius:50%;background:#0F2A2A;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;letter-spacing:0.05em;box-shadow:0 4px 12px rgba(0,0,0,0.25);border:3px solid #fff;";
+          el.textContent = label;
+          new mapboxgl.Marker({ element: el, anchor: "center" })
+            .setLngLat([lng, lat])
+            .addTo(map);
+        };
+        const addDotMarker = (lng: number, lat: number) => {
+          const el = document.createElement("div");
+          el.style.cssText =
+            "width:14px;height:14px;border-radius:50%;background:#0F2A2A;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3);";
+          new mapboxgl.Marker({ element: el, anchor: "center" })
+            .setLngLat([lng, lat])
+            .addTo(map);
+        };
+
+        addLabeledMarker(pickup.lng, pickup.lat, "START");
+        dropoffs.slice(0, -1).forEach((d) => addDotMarker(d.lng, d.lat));
+        if (last) addLabeledMarker(last.lng, last.lat, "END");
+
+        // Route via Mapbox Directions
+        let routeCoords: [number, number][] = points.map((p) => [p.lng, p.lat]);
+        try {
+          const coordStr = points.map((p) => `${p.lng},${p.lat}`).join(";");
+          const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}?geometries=geojson&overview=full&access_token=${MAPBOX_CONFIG.accessToken}`;
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.routes?.[0]?.geometry?.coordinates) {
+              routeCoords = data.routes[0].geometry.coordinates;
+            }
+          }
+        } catch {
+          /* fall back to straight line */
+        }
+
+        if (map.getSource("cx-route")) {
+          (map.getSource("cx-route") as any).setData({
+            type: "Feature",
+            properties: {},
+            geometry: { type: "LineString", coordinates: routeCoords },
+          });
+        } else {
+          map.addSource("cx-route", {
+            type: "geojson",
+            data: {
+              type: "Feature",
+              properties: {},
+              geometry: { type: "LineString", coordinates: routeCoords },
+            },
+          });
+          map.addLayer({
+            id: "cx-route-line",
+            type: "line",
+            source: "cx-route",
+            layout: { "line-join": "round", "line-cap": "round" },
+            paint: { "line-color": "#0F2A2A", "line-width": 4 },
+          });
+        }
+
+        // Fit bounds
+        const bounds = new mapboxgl.LngLatBounds();
+        routeCoords.forEach((c) => bounds.extend(c as [number, number]));
+        points.forEach((p) => bounds.extend([p.lng, p.lat]));
+        map.fitBounds(bounds, { padding: 40, duration: 0 });
+      });
+    } catch (e) {
+      console.error("CXRouteMap init failed", e);
+    }
+
+    return () => {
+      try {
+        mapRef.current?.remove();
+      } catch {}
+      mapRef.current = null;
+    };
+  }, [points]);
+
+  if (points.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center text-slate-500 text-sm">
+        Map unavailable
+      </div>
+    );
   }
-  const last = dropoffs[dropoffs.length - 1];
-  if (last?.latitude && last?.longitude) {
-    markers.push(`markers=color:0x0F172A%7Clabel:E%7C${last.latitude},${last.longitude}`);
-  }
-  dropoffs.slice(0, -1).forEach((d) => {
-    if (d.latitude && d.longitude) markers.push(`markers=size:small%7Ccolor:0x0F172A%7C${d.latitude},${d.longitude}`);
-  });
-  const pathPts = stops
-    .filter((s) => s.latitude && s.longitude)
-    .map((s) => `${s.latitude},${s.longitude}`)
-    .join("%7C");
-  const path = pathPts ? `&path=color:0x0F172AFF%7Cweight:4%7C${pathPts}` : "";
-  return `https://maps.googleapis.com/maps/api/staticmap?size=640x320&scale=2&maptype=roadmap&${markers.join("&")}${path}&key=${BROWSER_KEY}`;
+  return <div ref={containerRef} className="w-full h-full" />;
 }
 
 export function CXJobDetailSheet({
@@ -96,7 +200,6 @@ export function CXJobDetailSheet({
   const dur = secondsToHrMin(job.estimated_duration_seconds);
   const due = completeByTime(job);
   const payout = ((job.driver_payout_offer_cents || 0) / 100).toFixed(2);
-  const mapUrl = staticMapUrl(stops);
 
   if (showItems) {
     return <ItemSummaryView stops={dropoffs} pickup={pickup} onBack={() => setShowItems(false)} job={job} />;
@@ -119,11 +222,7 @@ export function CXJobDetailSheet({
       <div className="flex-1 overflow-y-auto">
         {/* Map */}
         <div className="bg-slate-200 h-64 w-full relative">
-          {mapUrl ? (
-            <img src={mapUrl} alt="Route map" className="w-full h-full object-cover" />
-          ) : (
-            <div className="h-full flex items-center justify-center text-slate-500 text-sm">Map unavailable</div>
-          )}
+          <CXRouteMap stops={stops} />
         </div>
 
         {/* Merchant + price */}
