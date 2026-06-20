@@ -7099,6 +7099,333 @@ export type Database = {
           },
         ]
       }
+      cx_application_documents: {
+        Row: {
+          application_id: string
+          created_at: string
+          doc_type: string
+          expires_at: string | null
+          file_name: string | null
+          file_url: string
+          id: string
+          notes: string | null
+          updated_at: string
+          uploaded_at: string
+          verified: boolean | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          doc_type: string
+          expires_at?: string | null
+          file_name?: string | null
+          file_url: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          uploaded_at?: string
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          doc_type?: string
+          expires_at?: string | null
+          file_name?: string | null
+          file_url?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          uploaded_at?: string
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_application_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "cx_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cx_application_events: {
+        Row: {
+          actor_id: string | null
+          actor_label: string | null
+          application_id: string
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_label?: string | null
+          application_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_label?: string | null
+          application_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_application_events_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "cx_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cx_application_references: {
+        Row: {
+          application_id: string
+          company_name: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_notes: string | null
+          contact_phone: string | null
+          contacted_at: string | null
+          created_at: string
+          id: string
+          relationship: string | null
+          years_worked: string | null
+        }
+        Insert: {
+          application_id: string
+          company_name: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_notes?: string | null
+          contact_phone?: string | null
+          contacted_at?: string | null
+          created_at?: string
+          id?: string
+          relationship?: string | null
+          years_worked?: string | null
+        }
+        Update: {
+          application_id?: string
+          company_name?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_notes?: string | null
+          contact_phone?: string | null
+          contacted_at?: string | null
+          created_at?: string
+          id?: string
+          relationship?: string | null
+          years_worked?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_application_references_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "cx_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cx_applications: {
+        Row: {
+          ach_intent: boolean | null
+          business_address_line1: string | null
+          business_address_line2: string | null
+          business_city: string | null
+          business_state: string | null
+          business_structure: string | null
+          business_zip: string | null
+          carrier_agreement_signed_at: string | null
+          certified_truthful: boolean | null
+          claims_history: string | null
+          created_at: string
+          current_clients: string | null
+          current_step: number
+          daily_volume_capacity: number | null
+          dba: string | null
+          decision_notes: string | null
+          dispatch_contact_name: string | null
+          dispatch_contact_phone: string | null
+          driver_model: string | null
+          driver_onboarding_standards: string | null
+          drug_testing_program: boolean | null
+          edit_token: string
+          ein: string | null
+          fleet_size: number | null
+          hours_of_operation: string | null
+          id: string
+          incident_reporting_process: string | null
+          indemnification_signed_at: string | null
+          internal_notes: string | null
+          legal_name: string | null
+          msa_signed_at: string | null
+          mvr_program: boolean | null
+          mvr_provider: string | null
+          ops_contact_email: string | null
+          ops_contact_name: string | null
+          ops_contact_phone: string | null
+          owner_email: string | null
+          owner_mobile: string | null
+          owner_name: string | null
+          owner_phone: string | null
+          owner_title: string | null
+          ownership_pct: number | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          service_cities: string | null
+          service_zips: string | null
+          signature_drawn_url: string | null
+          signature_ip: string | null
+          signature_payload: Json | null
+          signature_typed: string | null
+          state_of_incorporation: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          vehicle_mix: Json | null
+          verticals: string | null
+          website: string | null
+          years_in_operation: number | null
+        }
+        Insert: {
+          ach_intent?: boolean | null
+          business_address_line1?: string | null
+          business_address_line2?: string | null
+          business_city?: string | null
+          business_state?: string | null
+          business_structure?: string | null
+          business_zip?: string | null
+          carrier_agreement_signed_at?: string | null
+          certified_truthful?: boolean | null
+          claims_history?: string | null
+          created_at?: string
+          current_clients?: string | null
+          current_step?: number
+          daily_volume_capacity?: number | null
+          dba?: string | null
+          decision_notes?: string | null
+          dispatch_contact_name?: string | null
+          dispatch_contact_phone?: string | null
+          driver_model?: string | null
+          driver_onboarding_standards?: string | null
+          drug_testing_program?: boolean | null
+          edit_token?: string
+          ein?: string | null
+          fleet_size?: number | null
+          hours_of_operation?: string | null
+          id?: string
+          incident_reporting_process?: string | null
+          indemnification_signed_at?: string | null
+          internal_notes?: string | null
+          legal_name?: string | null
+          msa_signed_at?: string | null
+          mvr_program?: boolean | null
+          mvr_provider?: string | null
+          ops_contact_email?: string | null
+          ops_contact_name?: string | null
+          ops_contact_phone?: string | null
+          owner_email?: string | null
+          owner_mobile?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          owner_title?: string | null
+          ownership_pct?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_cities?: string | null
+          service_zips?: string | null
+          signature_drawn_url?: string | null
+          signature_ip?: string | null
+          signature_payload?: Json | null
+          signature_typed?: string | null
+          state_of_incorporation?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          vehicle_mix?: Json | null
+          verticals?: string | null
+          website?: string | null
+          years_in_operation?: number | null
+        }
+        Update: {
+          ach_intent?: boolean | null
+          business_address_line1?: string | null
+          business_address_line2?: string | null
+          business_city?: string | null
+          business_state?: string | null
+          business_structure?: string | null
+          business_zip?: string | null
+          carrier_agreement_signed_at?: string | null
+          certified_truthful?: boolean | null
+          claims_history?: string | null
+          created_at?: string
+          current_clients?: string | null
+          current_step?: number
+          daily_volume_capacity?: number | null
+          dba?: string | null
+          decision_notes?: string | null
+          dispatch_contact_name?: string | null
+          dispatch_contact_phone?: string | null
+          driver_model?: string | null
+          driver_onboarding_standards?: string | null
+          drug_testing_program?: boolean | null
+          edit_token?: string
+          ein?: string | null
+          fleet_size?: number | null
+          hours_of_operation?: string | null
+          id?: string
+          incident_reporting_process?: string | null
+          indemnification_signed_at?: string | null
+          internal_notes?: string | null
+          legal_name?: string | null
+          msa_signed_at?: string | null
+          mvr_program?: boolean | null
+          mvr_provider?: string | null
+          ops_contact_email?: string | null
+          ops_contact_name?: string | null
+          ops_contact_phone?: string | null
+          owner_email?: string | null
+          owner_mobile?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          owner_title?: string | null
+          ownership_pct?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_cities?: string | null
+          service_zips?: string | null
+          signature_drawn_url?: string | null
+          signature_ip?: string | null
+          signature_payload?: Json | null
+          signature_typed?: string | null
+          state_of_incorporation?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          vehicle_mix?: Json | null
+          verticals?: string | null
+          website?: string | null
+          years_in_operation?: number | null
+        }
+        Relationships: []
+      }
       cx_courier_documents: {
         Row: {
           created_at: string
@@ -33742,6 +34069,7 @@ export type Database = {
       is_craven_support: { Args: { _user_id: string }; Returns: boolean }
       is_cto_or_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_cx_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_cx_reviewer: { Args: { _user: string }; Returns: boolean }
       is_cxo_or_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_diamond_driver: { Args: { p_driver_id: string }; Returns: boolean }
       is_executive: { Args: { user_uuid: string }; Returns: boolean }
