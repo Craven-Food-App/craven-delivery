@@ -60,6 +60,8 @@ export const PostWaitlistOnboarding: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, boolean>>({});
+  const [signatures, setSignatures] = useState<Record<number, { typedName: string; agreed: boolean; isValid: boolean }>>({});
+  const [showSignError, setShowSignError] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
