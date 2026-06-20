@@ -8,9 +8,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Upload, CheckCircle, ArrowRight, FileText, Car, CreditCard, Shield, Camera, FileCheck, DollarSign } from 'lucide-react';
+import { ArrowLeft, Save, Upload, CheckCircle, ArrowRight, FileText, Car, CreditCard, Shield, Camera, FileCheck, DollarSign, Printer } from 'lucide-react';
 import { message } from 'antd';
 import { generateICAPDF } from '@/utils/generateICAPDF';
+import { ESignSignatureBlock } from '@/components/feeder/ESignSignatureBlock';
+import { FEEDER_AGREEMENTS, FeederAgreementKey } from '@/lib/feeder/agreements';
+import { recordFeederSignature, loadFeederSignatures } from '@/lib/feeder/recordSignature';
+import { openFeederAgreementsPrintWindow } from '@/lib/feeder/printAgreements';
+
+// Steps that require an E-SIGN signature
+const SIGNING_STEPS: Record<number, FeederAgreementKey> = {
+  6: 'BACKGROUND_CHECK',
+  7: 'CRIMINAL_HISTORY',
+  8: 'FACIAL_IMAGE',
+  9: 'ELECTRONIC_1099',
+  10: 'W9',
+  11: 'ICA',
+};
 
 interface ApplicationData {
   id: string;
