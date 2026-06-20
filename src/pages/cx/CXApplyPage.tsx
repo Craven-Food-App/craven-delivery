@@ -219,17 +219,29 @@ export default function CXApplyPage() {
     if (!appId) return;
     setSubmitting(true);
     const now = new Date().toISOString();
+    // Capture E-SIGN Act compliance metadata
+    let ipAddress: string | null = null;
+    try {
+      const r = await fetch("https://api.ipify.org?format=json");
+      ipAddress = (await r.json())?.ip ?? null;
+    } catch { /* non-fatal */ }
+
     const { error } = await supabase.from("cx_applications").update({
       status: "submitted",
       submitted_at: now,
+      signature_typed: form.signature_typed,
+      certified_truthful: !!form.certified_truthful,
+      ach_intent: !!form.ach_intent,
       msa_signed_at: now,
       carrier_agreement_signed_at: now,
       indemnification_signed_at: now,
       signature_payload: {
-        typed: form.signature_typed,
+        typed_name: form.signature_typed,
         agreements: ["msa", "carrier_agreement", "indemnification"],
         signed_at: now,
         user_agent: navigator.userAgent,
+        ip_address: ipAddress,
+        consent_text: "I agree to sign electronically under the federal E-SIGN Act (15 U.S.C. § 7001 et seq.) and applicable state UETA. My typed name above is my legally binding signature.",
       },
     }).eq("id", appId);
     if (error) { toast.error(error.message); setSubmitting(false); return; }
@@ -301,7 +313,7 @@ export default function CXApplyPage() {
       </div>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-8 py-8">
-        {step === 1 && <Step1 form={form} set={set} />}
+        {step === 1 && <Step1 form={form} set={set} appId={appId} />}
         {step === 2 && <Step2 form={form} set={set} />}
         {step === 3 && <Step3 form={form} set={set} setBool={setBool} />}
         {step === 4 && <Step4 docs={docs} uploading={uploading} onUpload={handleUpload} onRemove={removeDoc} />}
@@ -350,9 +362,11 @@ function Field({ label, children, required }: any) {
 }
 const inputCls = "bg-black/30 border-white/10 text-white placeholder:text-slate-500";
 
-function Step1({ form, set }: any) {
+function Step1({ form, set, appId }: any) {
+  // Step1 receives appId via closure-style prop; we pass it from parent below.
   return (
     <Section title="Company profile" subtitle="Tell us about your legal business entity.">
+      <LogoUploader form={form} set={set} appId={appId} />
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Legal business name" required><Input className={inputCls} value={form.legal_name || ""} onChange={set("legal_name")} /></Field>
         <Field label="DBA / trade name"><Input className={inputCls} value={form.dba || ""} onChange={set("dba")} /></Field>
@@ -564,6 +578,51 @@ function Agreement({ title, body }: any) {
         <span className="font-semibold text-sm">{title}</span>
       </div>
       <div className="p-4 max-h-48 overflow-y-auto text-xs leading-relaxed text-slate-300 whitespace-pre-wrap">{body}</div>
+    </div>
+  );
+}
+
+function LogoUploader({ form, set, appId }: any) {
+  const [busy, setBusy] = useState(false);
+  async function pick(file: File) {
+    if (!appId) { toast.error("Application not ready yet"); return; }
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("application_id", appId);
+      fd.append("doc_type", "company_logo");
+      const { data, error } = await supabase.functions.invoke("cx-upload-doc", { body: fd });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const url = data?.document?.file_url;
+      if (url) {
+        await supabase.from("cx_applications").update({ logo_url: url }).eq("id", appId);
+        set("logo_url")({ target: { value: url } });
+        toast.success("Logo uploaded");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Logo upload failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-black/20 p-4">
+      <div className="size-20 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+        {form.logo_url
+          ? <img src={form.logo_url} alt="Company logo" className="w-full h-full object-contain bg-white" />
+          : <Building2 className="text-slate-500" size={28} />}
+      </div>
+      <div className="flex-1">
+        <div className="font-semibold text-sm">Company logo</div>
+        <p className="text-xs text-slate-400 mt-0.5">Square PNG or JPG, transparent background preferred. Shown in Crave'N dispatch and admin tools.</p>
+        <label className={`mt-2 inline-flex items-center gap-2 px-3 h-8 rounded-md text-xs cursor-pointer ${busy ? "bg-white/10" : "bg-orange-500 hover:bg-orange-600 text-white"}`}>
+          {busy ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+          {form.logo_url ? "Replace logo" : "Upload logo"}
+          <input type="file" hidden accept="image/png,image/jpeg,image/svg+xml" onChange={(e) => { const f = e.target.files?.[0]; if (f) pick(f); e.currentTarget.value = ""; }} />
+        </label>
+      </div>
     </div>
   );
 }

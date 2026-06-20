@@ -7275,6 +7275,7 @@ export type Database = {
           indemnification_signed_at: string | null
           internal_notes: string | null
           legal_name: string | null
+          logo_url: string | null
           msa_signed_at: string | null
           mvr_program: boolean | null
           mvr_provider: string | null
@@ -7335,6 +7336,7 @@ export type Database = {
           indemnification_signed_at?: string | null
           internal_notes?: string | null
           legal_name?: string | null
+          logo_url?: string | null
           msa_signed_at?: string | null
           mvr_program?: boolean | null
           mvr_provider?: string | null
@@ -7395,6 +7397,7 @@ export type Database = {
           indemnification_signed_at?: string | null
           internal_notes?: string | null
           legal_name?: string | null
+          logo_url?: string | null
           msa_signed_at?: string | null
           mvr_program?: boolean | null
           mvr_provider?: string | null

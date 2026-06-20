@@ -121,7 +121,9 @@ export default function CXApplications() {
 
       <Drawer opened={!!selected} onClose={() => setSelected(null)} position="right" size="xl"
         title={selected && <Group gap="xs">
-          <IconBuildingFactory2 size={18} color="#F97316" />
+          {selected.logo_url
+            ? <img src={selected.logo_url} alt="" style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'contain', background: '#fff', border: '1px solid #eee' }} />
+            : <IconBuildingFactory2 size={18} color="#F97316" />}
           <Text fw={700}>{selected.legal_name || 'CX Application'}</Text>
           <Badge color={STATUS_COLORS[(selected.status||'submitted')] || 'gray'} variant="light">{(selected.status||'submitted').replace('_',' ')}</Badge>
         </Group>}
@@ -138,19 +140,20 @@ function ApplicationReview({ app, onChange, onClose }: any) {
   const [events, setEvents] = useState<any[]>([]);
   const [notes, setNotes] = useState(app.internal_notes || '');
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>('overview');
   const [acting, setActing] = useState(false);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
+  const reload = useCallback(async (showLoader = false) => {
+    if (showLoader) setLoading(true);
     const [d, r, e] = await Promise.all([
       supabase.from('cx_application_documents').select('*').eq('application_id', app.id),
       supabase.from('cx_application_references').select('*').eq('application_id', app.id),
       supabase.from('cx_application_events').select('*').eq('application_id', app.id).order('created_at', { ascending: false }),
     ]);
     setDocs(d.data || []); setRefs(r.data || []); setEvents(e.data || []);
-    setLoading(false);
+    if (showLoader) setLoading(false);
   }, [app.id]);
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => { reload(true); }, [reload]);
 
   const allRequiredVerified = CX_REQUIRED_DOCS.filter(d => d.required).every(d => docs.find((x:any) => x.doc_type === d.key && x.verified));
   const atLeastOneRefContacted = refs.some(r => r.contacted_at);
@@ -169,18 +172,26 @@ function ApplicationReview({ app, onChange, onClose }: any) {
     if (status === 'approved' || status === 'rejected') onClose();
   }
   async function verifyDoc(doc: any, verified: boolean) {
-    await supabase.from('cx_application_documents').update({ verified, verified_at: verified ? new Date().toISOString() : null }).eq('id', doc.id);
-    await supabase.from('cx_application_events').insert({ application_id: app.id, event_type: 'doc_verified', payload: { doc_type: doc.doc_type, verified } });
-    reload();
+    // Optimistic update so UI doesn't flicker / change tabs
+    setDocs((prev) => prev.map((x: any) => x.id === doc.id ? { ...x, verified, verified_at: verified ? new Date().toISOString() : null } : x));
+    const { error } = await supabase.from('cx_application_documents').update({ verified, verified_at: verified ? new Date().toISOString() : null }).eq('id', doc.id);
+    if (error) { toast.error(error.message); reload(); return; }
+    toast.success(verified ? 'Document verified' : 'Verification removed');
+    supabase.from('cx_application_events').insert({ application_id: app.id, event_type: 'doc_verified', payload: { doc_type: doc.doc_type, verified } });
   }
   async function setDocExpiry(doc: any, exp: string) {
-    await supabase.from('cx_application_documents').update({ expires_at: exp || null }).eq('id', doc.id); reload();
+    setDocs((prev) => prev.map((x: any) => x.id === doc.id ? { ...x, expires_at: exp || null } : x));
+    await supabase.from('cx_application_documents').update({ expires_at: exp || null }).eq('id', doc.id);
   }
-  async function openDoc(doc: any) {
+  async function getSignedDocUrl(doc: any): Promise<string> {
+    // The stored file_url is already a 7-day signed URL from upload; try to use it directly.
+    // If expired, refresh via edge function.
     try {
       const { data } = await supabase.functions.invoke('cx-doc-signed-url', { body: { path: doc.file_url } });
-      window.open(data?.url || doc.file_url, '_blank');
-    } catch { window.open(doc.file_url, '_blank'); }
+      return data?.url || doc.file_url;
+    } catch {
+      return doc.file_url;
+    }
   }
   async function markRefContacted(r: any, contact_notes: string) {
     await supabase.from('cx_application_references').update({ contacted_at: new Date().toISOString(), contact_notes }).eq('id', r.id);
@@ -196,7 +207,7 @@ function ApplicationReview({ app, onChange, onClose }: any) {
 
   return (
     <Stack gap="md">
-      <Tabs defaultValue="overview" variant="pills" color="orange">
+      <Tabs value={activeTab} onChange={(v) => v && setActiveTab(v)} variant="pills" color="orange" keepMounted={false}>
         <Tabs.List grow>
           <Tabs.Tab value="overview" leftSection={<IconClipboardList size={14} />}>Overview</Tabs.Tab>
           <Tabs.Tab value="docs" leftSection={<IconFileText size={14} />}>Documents</Tabs.Tab>
@@ -296,7 +307,7 @@ function ApplicationReview({ app, onChange, onClose }: any) {
                       <Text size="xs" c="dimmed">{spec.description}</Text>
                       {d && (
                         <Group gap="xs" mt="xs" wrap="wrap">
-                          <Button size="compact-xs" variant="light" leftSection={<IconExternalLink size={12}/>} onClick={() => openDoc(d)}>{d.file_name || 'View file'}</Button>
+                          <DocOpenLink doc={d} getUrl={getSignedDocUrl} />
                           {spec.needsExpiration && (
                             <TextInput size="xs" type="date" value={d.expires_at || ''} onChange={(e) => setDocExpiry(d, e.currentTarget.value)} placeholder="Expires" w={150}/>
                           )}
@@ -346,9 +357,23 @@ function ApplicationReview({ app, onChange, onClose }: any) {
             <Divider my="sm"/>
             <LegalRow label="Indemnification Addendum" at={app.indemnification_signed_at} />
             <Divider my="sm"/>
-            <Text size="xs" c="dimmed">Typed signature</Text>
-            <Text size="lg" fs="italic" ff="serif">{app.signature_typed || '—'}</Text>
-            <Text size="xs" c="dimmed" mt="xs">Certified truthful: {app.certified_truthful ? '✓' : '—'} · ACH intent: {app.ach_intent ? '✓' : '—'}</Text>
+            <Text size="xs" c="dimmed">Typed signature (E-SIGN Act)</Text>
+            <Text size="xl" fs="italic" ff="cursive, serif" c="dark" mt={4}>
+              {app.signature_typed || app.signature_payload?.typed_name || app.signature_payload?.typed || '—'}
+            </Text>
+            <Text size="xs" c="dimmed" mt="xs">
+              Certified truthful: {app.certified_truthful ? '✓' : '—'} · ACH intent: {app.ach_intent ? '✓' : '—'}
+            </Text>
+            {app.signature_payload && (
+              <Stack gap={2} mt="sm">
+                <Text size="xs" c="dimmed">Signed at: {app.signature_payload.signed_at ? new Date(app.signature_payload.signed_at).toLocaleString() : '—'}</Text>
+                <Text size="xs" c="dimmed">IP address: {app.signature_payload.ip_address || '—'}</Text>
+                <Text size="xs" c="dimmed" lineClamp={2}>User-agent: {app.signature_payload.user_agent || '—'}</Text>
+                {app.signature_payload.consent_text && (
+                  <Text size="xs" c="dimmed" mt={4} fs="italic">"{app.signature_payload.consent_text}"</Text>
+                )}
+              </Stack>
+            )}
           </Card>
         </Tabs.Panel>
 
@@ -410,5 +435,36 @@ function ReferenceCard({ r, onContacted }: any) {
       </Group>
       <Textarea size="xs" mt="xs" placeholder="Notes from the call…" value={notes} onChange={(e) => setNotes(e.currentTarget.value)} minRows={2} autosize />
     </Card>
+  );
+}
+
+function DocOpenLink({ doc, getUrl }: { doc: any; getUrl: (d: any) => Promise<string> }) {
+  const [loading, setLoading] = useState(false);
+  async function handleClick(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setLoading(true);
+    const url = await getUrl(doc);
+    setLoading(false);
+    // Use a synthetic anchor to bypass popup blockers (synchronous user gesture chain best-effort)
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  return (
+    <Button
+      size="compact-xs"
+      variant="light"
+      color="orange"
+      loading={loading}
+      leftSection={<IconExternalLink size={12} />}
+      onClick={handleClick}
+    >
+      {doc.file_name || 'View file'}
+    </Button>
   );
 }
