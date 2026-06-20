@@ -1005,7 +1005,7 @@ export const MobileDriverDashboard: React.FC = () => {
           if (row.status && row.status !== 'pending') return;
           const { data: order } = await supabase
             .from('orders')
-            .select('pickup_address, dropoff_address, payout_cents, distance_km, restaurant_id, order_number, tip_cents, restaurants(name, restaurant_type, logo_url, image_url)')
+            .select('pickup_address, dropoff_address, delivery_address, payout_cents, distance_km, restaurant_id, order_number, tip_cents, restaurants(name, restaurant_type, logo_url, image_url)')
             .eq('id', row.order_id)
             .maybeSingle();
           if (!order) {
@@ -1043,7 +1043,7 @@ export const MobileDriverDashboard: React.FC = () => {
             restaurant_id: (order as any).restaurant_id,
             restaurant_name: restaurantName,
             pickup_address: order.pickup_address,
-            dropoff_address: order.dropoff_address,
+            dropoff_address: order.dropoff_address ?? (order as any).delivery_address,
             payout_cents: (order as any).payout_cents || 0,
             distance_km: Number(order.distance_km) || 0,
             distance_mi: ((Number(order.distance_km) || 0) * 0.621371).toFixed(1),
@@ -1946,11 +1946,11 @@ export const MobileDriverDashboard: React.FC = () => {
       for (const b of batch) {
         const { data: od } = await supabase
           .from('orders')
-          .select('id, order_number, subtotal_cents, customer_name, customer_id, customer_phone, delivery_notes, dropoff_address, payout_cents, tip_cents, distance_km')
+          .select('id, order_number, subtotal_cents, customer_name, customer_id, customer_phone, delivery_notes, dropoff_address, delivery_address, payout_cents, tip_cents, distance_km')
           .eq('id', b.order_id)
           .maybeSingle();
         if (od) {
-          orderRows.push(od);
+          orderRows.push({ ...od, dropoff_address: (od as any).dropoff_address ?? (od as any).delivery_address });
         } else {
           const addr = b.dropoff_address;
           const addressStr =
@@ -2054,7 +2054,7 @@ export const MobileDriverDashboard: React.FC = () => {
     const { data: orderData } = await supabase
       .from('orders')
       .select(`
-        id, order_number, subtotal_cents, customer_name, customer_id, customer_phone, delivery_notes, tip_cents, dropoff_address, payout_cents, distance_km
+        id, order_number, subtotal_cents, customer_name, customer_id, customer_phone, delivery_notes, tip_cents, dropoff_address, delivery_address, payout_cents, distance_km
       `)
       .eq('id', current.order_id)
       .maybeSingle();
@@ -2137,7 +2137,7 @@ export const MobileDriverDashboard: React.FC = () => {
         order_number: (orderData as any).order_number,
         restaurant_name: current.restaurant_name,
         pickup_address: current.pickup_address,
-        dropoff_address: (orderData as any).dropoff_address || current.dropoff_address,
+        dropoff_address: (orderData as any).dropoff_address || (orderData as any).delivery_address || current.dropoff_address,
         payout_cents: (orderData as any).payout_cents || current.payout_cents,
         distance_mi: current.distance_mi,
         isTestOrder: current.isTestOrder,
