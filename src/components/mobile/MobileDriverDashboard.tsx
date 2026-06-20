@@ -1005,7 +1005,7 @@ export const MobileDriverDashboard: React.FC = () => {
           if (row.status && row.status !== 'pending') return;
           const { data: order } = await supabase
             .from('orders')
-            .select('pickup_address, dropoff_address, payout_cents, distance_km, restaurant_id, order_number, tip_cents, restaurants(name, restaurant_type, logo_url, image_url)')
+            .select('pickup_address, dropoff_address, delivery_address, payout_cents, distance_km, restaurant_id, order_number, tip_cents, restaurants(name, restaurant_type, logo_url, image_url)')
             .eq('id', row.order_id)
             .maybeSingle();
           if (!order) {
@@ -1043,7 +1043,7 @@ export const MobileDriverDashboard: React.FC = () => {
             restaurant_id: (order as any).restaurant_id,
             restaurant_name: restaurantName,
             pickup_address: order.pickup_address,
-            dropoff_address: order.dropoff_address,
+            dropoff_address: order.dropoff_address ?? (order as any).delivery_address,
             payout_cents: (order as any).payout_cents || 0,
             distance_km: Number(order.distance_km) || 0,
             distance_mi: ((Number(order.distance_km) || 0) * 0.621371).toFixed(1),
