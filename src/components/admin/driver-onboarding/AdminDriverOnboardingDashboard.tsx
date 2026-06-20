@@ -16,6 +16,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, differenceInDays } from 'date-fns';
+import { loadFeederSignatures } from '@/lib/feeder/recordSignature';
+import { openFeederAgreementsPrintWindow } from '@/lib/feeder/printAgreements';
+import { Printer } from 'lucide-react';
 
 interface DriverOnboardingData {
   id: string;
