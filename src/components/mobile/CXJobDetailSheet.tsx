@@ -76,7 +76,7 @@ function CXRouteMap({ stops }: { stops: any[] }) {
         const addLabeledMarker = (lng: number, lat: number, label: string) => {
           const el = document.createElement("div");
           el.style.cssText =
-            "width:54px;height:54px;border-radius:50%;background:#0F2A2A;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;letter-spacing:0.05em;box-shadow:0 4px 12px rgba(0,0,0,0.25);border:3px solid #fff;";
+            "width:54px;height:54px;border-radius:50%;background:#f97316;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;letter-spacing:0.05em;box-shadow:0 4px 12px rgba(0,0,0,0.25);border:3px solid #fff;";
           el.textContent = label;
           new mapboxgl.Marker({ element: el, anchor: "center" })
             .setLngLat([lng, lat])
@@ -85,7 +85,7 @@ function CXRouteMap({ stops }: { stops: any[] }) {
         const addDotMarker = (lng: number, lat: number) => {
           const el = document.createElement("div");
           el.style.cssText =
-            "width:14px;height:14px;border-radius:50%;background:#0F2A2A;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3);";
+            "width:14px;height:14px;border-radius:50%;background:#f97316;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.3);";
           new mapboxgl.Marker({ element: el, anchor: "center" })
             .setLngLat([lng, lat])
             .addTo(map);
@@ -131,7 +131,7 @@ function CXRouteMap({ stops }: { stops: any[] }) {
             type: "line",
             source: "cx-route",
             layout: { "line-join": "round", "line-cap": "round" },
-            paint: { "line-color": "#0F2A2A", "line-width": 4 },
+            paint: { "line-color": "#f97316", "line-width": 4 },
           });
         }
 
@@ -209,7 +209,7 @@ export function CXJobDetailSheet({
     <div className="fixed inset-0 z-[100] bg-white flex flex-col">
       {/* Header */}
       <div
-        className="bg-[#0F2A2A] text-white px-4 pb-3 flex items-center"
+        className="bg-orange-500 text-white px-4 pb-3 flex items-center"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
       >
         <button onClick={onClose} className="p-1 -ml-1" aria-label="Close">
@@ -241,9 +241,9 @@ export function CXJobDetailSheet({
           </div>
 
           {/* Toll/parking pill */}
-          <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full border-2 border-emerald-400/70 bg-emerald-50/40">
-            <span className="h-5 w-5 rounded-full border-2 border-emerald-600 flex items-center justify-center">
-              <DollarSign className="h-3 w-3 text-emerald-700" />
+          <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full border-2 border-orange-400/70 bg-orange-50/40">
+            <span className="h-5 w-5 rounded-full border-2 border-orange-600 flex items-center justify-center">
+              <DollarSign className="h-3 w-3 text-orange-700" />
             </span>
             <span className="text-xs font-semibold tracking-wider text-slate-800">TOLL/PARKING REIMBURSED</span>
           </div>
@@ -281,7 +281,7 @@ export function CXJobDetailSheet({
             <SummaryCell label="Distance" value={miles ? `${miles.toFixed(0)} mi` : "—"} />
             <button
               onClick={() => setShowItems(true)}
-              className="col-span-2 text-emerald-700 text-sm font-semibold py-1"
+              className="col-span-2 text-orange-700 text-sm font-semibold py-1"
             >
               View All Items
             </button>
@@ -299,7 +299,7 @@ export function CXJobDetailSheet({
             <div className="text-2xl font-bold text-slate-900">
               {dropoffs.length} {dropoffs.length === 1 ? "Delivery" : "Deliveries"}
             </div>
-            <button onClick={() => setShowItems(true)} className="text-emerald-700 text-sm font-semibold">
+            <button onClick={() => setShowItems(true)} className="text-orange-700 text-sm font-semibold">
               View All
             </button>
           </div>
@@ -340,7 +340,7 @@ function ItemSummaryView({ stops, pickup, onBack, job }: { stops: any[]; pickup:
   return (
     <div className="fixed inset-0 z-[110] bg-white flex flex-col">
       <div
-        className="bg-[#0F2A2A] text-white px-4 pb-3 flex items-center"
+        className="bg-orange-500 text-white px-4 pb-3 flex items-center"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
       >
         <button onClick={onBack} className="p-1 -ml-1" aria-label="Back">
