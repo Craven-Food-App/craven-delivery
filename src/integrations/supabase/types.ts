@@ -11134,42 +11134,54 @@ export type Database = {
         Row: {
           agreement_type: string
           agreement_version: string
+          consent_statement: string | null
           created_at: string | null
+          document_text: string | null
           driver_id: string
           id: string
           ip_address: string | null
           latitude: number | null
           longitude: number | null
+          metadata: Json | null
           signature_image_url: string | null
           signed_at: string | null
+          signed_pdf_url: string | null
           typed_name: string | null
           user_agent: string | null
         }
         Insert: {
           agreement_type?: string
           agreement_version?: string
+          consent_statement?: string | null
           created_at?: string | null
+          document_text?: string | null
           driver_id: string
           id?: string
           ip_address?: string | null
           latitude?: number | null
           longitude?: number | null
+          metadata?: Json | null
           signature_image_url?: string | null
           signed_at?: string | null
+          signed_pdf_url?: string | null
           typed_name?: string | null
           user_agent?: string | null
         }
         Update: {
           agreement_type?: string
           agreement_version?: string
+          consent_statement?: string | null
           created_at?: string | null
+          document_text?: string | null
           driver_id?: string
           id?: string
           ip_address?: string | null
           latitude?: number | null
           longitude?: number | null
+          metadata?: Json | null
           signature_image_url?: string | null
           signed_at?: string | null
+          signed_pdf_url?: string | null
           typed_name?: string | null
           user_agent?: string | null
         }

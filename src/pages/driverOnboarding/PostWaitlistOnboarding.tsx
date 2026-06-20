@@ -8,9 +8,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Upload, CheckCircle, ArrowRight, FileText, Car, CreditCard, Shield, Camera, FileCheck, DollarSign } from 'lucide-react';
+import { ArrowLeft, Save, Upload, CheckCircle, ArrowRight, FileText, Car, CreditCard, Shield, Camera, FileCheck, DollarSign, Printer } from 'lucide-react';
 import { message } from 'antd';
 import { generateICAPDF } from '@/utils/generateICAPDF';
+import { ESignSignatureBlock } from '@/components/feeder/ESignSignatureBlock';
+import { FEEDER_AGREEMENTS, FeederAgreementKey } from '@/lib/feeder/agreements';
+import { recordFeederSignature, loadFeederSignatures } from '@/lib/feeder/recordSignature';
+import { openFeederAgreementsPrintWindow } from '@/lib/feeder/printAgreements';
+
+// Steps that require an E-SIGN signature
+const SIGNING_STEPS: Record<number, FeederAgreementKey> = {
+  6: 'BACKGROUND_CHECK',
+  7: 'CRIMINAL_HISTORY',
+  8: 'FACIAL_IMAGE',
+  9: 'ELECTRONIC_1099',
+  10: 'W9',
+  11: 'ICA',
+};
 
 interface ApplicationData {
   id: string;
@@ -46,6 +60,9 @@ export const PostWaitlistOnboarding: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, boolean>>({});
+  const [signatures, setSignatures] = useState<Record<number, { typedName: string; agreed: boolean; isValid: boolean }>>({});
+  const [showSignError, setShowSignError] = useState(false);
+  const [completed, setCompleted] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -142,6 +159,30 @@ export const PostWaitlistOnboarding: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !applicationData) return;
+
+      // E-SIGN gate: every signing step requires typed name + consent checkbox
+      const agreementKey = SIGNING_STEPS[currentStep];
+      if (agreementKey) {
+        const sig = signatures[currentStep];
+        if (!sig?.isValid) {
+          setShowSignError(true);
+          message.error('Type your full legal name and check the consent box to sign.');
+          setSaving(false);
+          return;
+        }
+        const { error: sigErr } = await recordFeederSignature({
+          driverId: applicationData.id,
+          agreementKey,
+          capture: { typedName: sig.typedName, agreed: sig.agreed },
+          extraMetadata: { onboarding_step: currentStep, user_id: user.id },
+        });
+        if (sigErr) {
+          message.error(sigErr);
+          setSaving(false);
+          return;
+        }
+        setShowSignError(false);
+      }
 
       let updateData: any = {};
 
@@ -351,9 +392,10 @@ export const PostWaitlistOnboarding: React.FC = () => {
 
       // Move to next step or complete
       if (currentStep >= STEPS.length) {
-        navigate('/enhanced-onboarding');
+        setCompleted(true);
       } else {
         setCurrentStep(currentStep + 1);
+        setShowSignError(false);
       }
     } catch (error: any) {
       console.error('Error saving data:', error);
@@ -477,6 +519,40 @@ export const PostWaitlistOnboarding: React.FC = () => {
 
   if (!applicationData) return null;
 
+  if (completed) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+        <Card className="w-full max-w-xl shadow-lg border-none">
+          <CardContent className="p-8 text-center space-y-5">
+            <CheckCircle className="h-16 w-16 mx-auto text-emerald-500" />
+            <h2 className="text-2xl font-bold">All Agreements Signed</h2>
+            <p className="text-gray-600 text-sm">
+              Every consent and contract has been electronically signed under the federal E-SIGN Act.
+              A complete audit trail (timestamp, IP, browser, agreement version) is attached to each
+              signature and stored with your file.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+              <Button
+                className="bg-orange-500 hover:bg-orange-600"
+                onClick={async () => {
+                  const sigs = await loadFeederSignatures(applicationData.id);
+                  openFeederAgreementsPrintWindow(applicationData, sigs);
+                }}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Print / Download Signed Agreements
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/enhanced-onboarding')}>
+                Continue
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const CurrentStepIcon = STEPS[currentStep - 1]?.icon || FileText;
 
   return (
@@ -549,6 +625,17 @@ export const PostWaitlistOnboarding: React.FC = () => {
         <Card className="shadow-lg border-none">
           <CardContent className="p-8">
             {renderStepContent()}
+            {SIGNING_STEPS[currentStep] && applicationData && (
+              <div className="mt-6">
+                <ESignSignatureBlock
+                  documentTitle={FEEDER_AGREEMENTS[SIGNING_STEPS[currentStep]].title}
+                  documentText={FEEDER_AGREEMENTS[SIGNING_STEPS[currentStep]].text}
+                  defaultName={`${applicationData.first_name || ''} ${applicationData.last_name || ''}`.trim()}
+                  showError={showSignError}
+                  onChange={(s) => setSignatures(prev => ({ ...prev, [currentStep]: s }))}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 

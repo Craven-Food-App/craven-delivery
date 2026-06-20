@@ -16,6 +16,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, differenceInDays } from 'date-fns';
+import { loadFeederSignatures } from '@/lib/feeder/recordSignature';
+import { openFeederAgreementsPrintWindow } from '@/lib/feeder/printAgreements';
+import { Printer } from 'lucide-react';
 
 interface DriverOnboardingData {
   id: string;
@@ -559,6 +562,43 @@ export function AdminDriverOnboardingDashboard() {
                         <span className="font-medium text-emerald-600">{format(new Date(selectedDriver.onboarding_completed_at), 'PPp')}</span>
                       </div>
                     )}
+                  </div>
+
+                  {/* Signed Agreements */}
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-orange-900">Signed Agreements Packet</div>
+                      <div className="text-xs text-orange-800/80">
+                        E-SIGN audit trail with timestamps, IP, browser, and full document text.
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                      onClick={async () => {
+                        const appId = selectedDriver.application?.id || selectedDriver.application_id;
+                        if (!appId) { toast.error('No application id'); return; }
+                        const sigs = await loadFeederSignatures(appId);
+                        if (sigs.length === 0) {
+                          toast.message('No signed agreements yet — opening blank packet template.');
+                        }
+                        openFeederAgreementsPrintWindow(
+                          {
+                            id: appId,
+                            first_name: selectedDriver.application?.first_name,
+                            last_name: selectedDriver.application?.last_name,
+                            email: selectedDriver.application?.email,
+                            phone: selectedDriver.application?.phone,
+                            city: selectedDriver.application?.city,
+                            state: selectedDriver.application?.state,
+                          },
+                          sigs
+                        );
+                      }}
+                    >
+                      <Printer className="h-4 w-4 mr-2" />
+                      View / Print
+                    </Button>
                   </div>
                 </div>
               </>
