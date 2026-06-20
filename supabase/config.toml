@@ -228,3 +228,8 @@ verify_jwt = false
 
 [functions.scan-invoice-pdf]
 verify_jwt = true
+[functions.cx-upload-doc]
+verify_jwt = false
+
+[functions.cx-doc-signed-url]
+verify_jwt = false
