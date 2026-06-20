@@ -519,6 +519,40 @@ export const PostWaitlistOnboarding: React.FC = () => {
 
   if (!applicationData) return null;
 
+  if (completed) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+        <Card className="w-full max-w-xl shadow-lg border-none">
+          <CardContent className="p-8 text-center space-y-5">
+            <CheckCircle className="h-16 w-16 mx-auto text-emerald-500" />
+            <h2 className="text-2xl font-bold">All Agreements Signed</h2>
+            <p className="text-gray-600 text-sm">
+              Every consent and contract has been electronically signed under the federal E-SIGN Act.
+              A complete audit trail (timestamp, IP, browser, agreement version) is attached to each
+              signature and stored with your file.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+              <Button
+                className="bg-orange-500 hover:bg-orange-600"
+                onClick={async () => {
+                  const sigs = await loadFeederSignatures(applicationData.id);
+                  openFeederAgreementsPrintWindow(applicationData, sigs);
+                }}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Print / Download Signed Agreements
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/enhanced-onboarding')}>
+                Continue
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const CurrentStepIcon = STEPS[currentStep - 1]?.icon || FileText;
 
   return (
