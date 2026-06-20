@@ -21181,37 +21181,58 @@ export type Database = {
       }
       merchant_partnership_requests: {
         Row: {
+          business_name: string | null
+          business_type: string | null
+          contact_name: string | null
           created_at: string | null
+          email: string | null
           id: string
           message_to_business: string | null
+          notes: string | null
           order_frequency: string | null
+          phone: string | null
           requester_email: string | null
           requester_name: string | null
-          restaurant_master_id: string
+          restaurant_master_id: string | null
+          status: string | null
           user_id: string | null
           what_matters_most: string[] | null
           would_refer: string | null
         }
         Insert: {
+          business_name?: string | null
+          business_type?: string | null
+          contact_name?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
           message_to_business?: string | null
+          notes?: string | null
           order_frequency?: string | null
+          phone?: string | null
           requester_email?: string | null
           requester_name?: string | null
-          restaurant_master_id: string
+          restaurant_master_id?: string | null
+          status?: string | null
           user_id?: string | null
           what_matters_most?: string[] | null
           would_refer?: string | null
         }
         Update: {
+          business_name?: string | null
+          business_type?: string | null
+          contact_name?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
           message_to_business?: string | null
+          notes?: string | null
           order_frequency?: string | null
+          phone?: string | null
           requester_email?: string | null
           requester_name?: string | null
-          restaurant_master_id?: string
+          restaurant_master_id?: string | null
+          status?: string | null
           user_id?: string | null
           what_matters_most?: string[] | null
           would_refer?: string | null
