@@ -362,9 +362,11 @@ function Field({ label, children, required }: any) {
 }
 const inputCls = "bg-black/30 border-white/10 text-white placeholder:text-slate-500";
 
-function Step1({ form, set }: any) {
+function Step1({ form, set, appId }: any) {
+  // Step1 receives appId via closure-style prop; we pass it from parent below.
   return (
     <Section title="Company profile" subtitle="Tell us about your legal business entity.">
+      <LogoUploader form={form} set={set} appId={appId} />
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Legal business name" required><Input className={inputCls} value={form.legal_name || ""} onChange={set("legal_name")} /></Field>
         <Field label="DBA / trade name"><Input className={inputCls} value={form.dba || ""} onChange={set("dba")} /></Field>
