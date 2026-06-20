@@ -2137,7 +2137,7 @@ export const MobileDriverDashboard: React.FC = () => {
         order_number: (orderData as any).order_number,
         restaurant_name: current.restaurant_name,
         pickup_address: current.pickup_address,
-        dropoff_address: (orderData as any).dropoff_address || current.dropoff_address,
+        dropoff_address: (orderData as any).dropoff_address || (orderData as any).delivery_address || current.dropoff_address,
         payout_cents: (orderData as any).payout_cents || current.payout_cents,
         distance_mi: current.distance_mi,
         isTestOrder: current.isTestOrder,
