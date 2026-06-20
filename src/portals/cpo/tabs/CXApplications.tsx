@@ -138,19 +138,20 @@ function ApplicationReview({ app, onChange, onClose }: any) {
   const [events, setEvents] = useState<any[]>([]);
   const [notes, setNotes] = useState(app.internal_notes || '');
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>('overview');
   const [acting, setActing] = useState(false);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
+  const reload = useCallback(async (showLoader = false) => {
+    if (showLoader) setLoading(true);
     const [d, r, e] = await Promise.all([
       supabase.from('cx_application_documents').select('*').eq('application_id', app.id),
       supabase.from('cx_application_references').select('*').eq('application_id', app.id),
       supabase.from('cx_application_events').select('*').eq('application_id', app.id).order('created_at', { ascending: false }),
     ]);
     setDocs(d.data || []); setRefs(r.data || []); setEvents(e.data || []);
-    setLoading(false);
+    if (showLoader) setLoading(false);
   }, [app.id]);
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => { reload(true); }, [reload]);
 
   const allRequiredVerified = CX_REQUIRED_DOCS.filter(d => d.required).every(d => docs.find((x:any) => x.doc_type === d.key && x.verified));
   const atLeastOneRefContacted = refs.some(r => r.contacted_at);
@@ -169,18 +170,26 @@ function ApplicationReview({ app, onChange, onClose }: any) {
     if (status === 'approved' || status === 'rejected') onClose();
   }
   async function verifyDoc(doc: any, verified: boolean) {
-    await supabase.from('cx_application_documents').update({ verified, verified_at: verified ? new Date().toISOString() : null }).eq('id', doc.id);
-    await supabase.from('cx_application_events').insert({ application_id: app.id, event_type: 'doc_verified', payload: { doc_type: doc.doc_type, verified } });
-    reload();
+    // Optimistic update so UI doesn't flicker / change tabs
+    setDocs((prev) => prev.map((x: any) => x.id === doc.id ? { ...x, verified, verified_at: verified ? new Date().toISOString() : null } : x));
+    const { error } = await supabase.from('cx_application_documents').update({ verified, verified_at: verified ? new Date().toISOString() : null }).eq('id', doc.id);
+    if (error) { toast.error(error.message); reload(); return; }
+    toast.success(verified ? 'Document verified' : 'Verification removed');
+    supabase.from('cx_application_events').insert({ application_id: app.id, event_type: 'doc_verified', payload: { doc_type: doc.doc_type, verified } });
   }
   async function setDocExpiry(doc: any, exp: string) {
-    await supabase.from('cx_application_documents').update({ expires_at: exp || null }).eq('id', doc.id); reload();
+    setDocs((prev) => prev.map((x: any) => x.id === doc.id ? { ...x, expires_at: exp || null } : x));
+    await supabase.from('cx_application_documents').update({ expires_at: exp || null }).eq('id', doc.id);
   }
-  async function openDoc(doc: any) {
+  async function getSignedDocUrl(doc: any): Promise<string> {
+    // The stored file_url is already a 7-day signed URL from upload; try to use it directly.
+    // If expired, refresh via edge function.
     try {
       const { data } = await supabase.functions.invoke('cx-doc-signed-url', { body: { path: doc.file_url } });
-      window.open(data?.url || doc.file_url, '_blank');
-    } catch { window.open(doc.file_url, '_blank'); }
+      return data?.url || doc.file_url;
+    } catch {
+      return doc.file_url;
+    }
   }
   async function markRefContacted(r: any, contact_notes: string) {
     await supabase.from('cx_application_references').update({ contacted_at: new Date().toISOString(), contact_notes }).eq('id', r.id);
@@ -196,7 +205,7 @@ function ApplicationReview({ app, onChange, onClose }: any) {
 
   return (
     <Stack gap="md">
-      <Tabs defaultValue="overview" variant="pills" color="orange">
+      <Tabs value={activeTab} onChange={(v) => v && setActiveTab(v)} variant="pills" color="orange" keepMounted={false}>
         <Tabs.List grow>
           <Tabs.Tab value="overview" leftSection={<IconClipboardList size={14} />}>Overview</Tabs.Tab>
           <Tabs.Tab value="docs" leftSection={<IconFileText size={14} />}>Documents</Tabs.Tab>
