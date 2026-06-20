@@ -794,7 +794,10 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       },
       customer: {
         name: formatCustomerNameForDriver(resolvedCustomerName) || '—',
-        address: formatAddress(orderDetails?.dropoff_address) || '—',
+        address:
+          formatAddress(orderDetails?.dropoff_address) ||
+          formatAddress((orderDetails as any)?.delivery_address) ||
+          '—',
         deliveryNotes: orderDetails?.delivery_notes || '',
         phone: orderDetails?.customer_phone || '—',
       },
