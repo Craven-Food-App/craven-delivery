@@ -23,6 +23,7 @@ import OrderHistory from "./pages/OrderHistory";
 import DriverAuth from "./pages/DriverAuth";
 const CXLandingPage = lazy(() => import("./pages/cx/CXLandingPage"));
 const CXSignupPage = lazy(() => import("./pages/cx/CXSignupPage"));
+const CXApplyPage = lazy(() => import("./pages/cx/CXApplyPage"));
 const CXPortal = lazy(() => import("./pages/cx/CXPortal"));
 import FeederHub from "./pages/FeederHub";
 import IndependentContractorAgreement from "./pages/IndependentContractorAgreement";
@@ -543,7 +544,8 @@ const App = () => {
                   <Route path="/register" element={<RestaurantRegister />} />
                   <Route path="/auth" element={<RestaurantAuth />} />
                   <Route path="/cx" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXLandingPage /></Suspense>} />
-                  <Route path="/cx/signup" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXSignupPage /></Suspense>} />
+                  <Route path="/cx/signup" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXApplyPage /></Suspense>} />
+                  <Route path="/cx/apply" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXApplyPage /></Suspense>} />
                   <Route path="/cx/portal" element={<Suspense fallback={<SuspenseLoader message="Loading CX Portal" />}><CXPortal /></Suspense>} />
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
@@ -727,7 +729,8 @@ const App = () => {
               <Route path="/" element={<Index />} />
           <Route path="/restaurants" element={<Restaurants />} />
           <Route path="/cx" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXLandingPage /></Suspense>} />
-          <Route path="/cx/signup" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXSignupPage /></Suspense>} />
+          <Route path="/cx/signup" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXApplyPage /></Suspense>} />
+          <Route path="/cx/apply" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXApplyPage /></Suspense>} />
           <Route path="/cx/portal" element={<Suspense fallback={<SuspenseLoader message="Loading CX Portal" />}><CXPortal /></Suspense>} />
           <Route path="/restaurants/cuisine/:cuisine" element={<CuisineResults />} />
           <Route path="/favorites" element={<Favorites />} />

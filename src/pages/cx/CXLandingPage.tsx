@@ -44,7 +44,7 @@ export default function CXLandingPage() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <Button asChild size="lg" className="bg-orange-500 hover:bg-orange-600 text-white">
-              <Link to="/cx/signup">Sign up as a courier <ArrowRight className="ml-2 h-4 w-4"/></Link>
+              <Link to="/cx/apply">Apply as a courier company <ArrowRight className="ml-2 h-4 w-4"/></Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10">
               <Link to="/cx/portal">Open courier portal</Link>

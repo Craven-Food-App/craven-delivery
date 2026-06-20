@@ -42,7 +42,7 @@ const EmbeddedCComms = React.lazy(() => import('@/portals/internal-comms/Embedde
 const TABS: PortalTab[] = [
   { id: 'pipeline', label: 'Pipeline', description: 'Deal pipeline and strategic partners.', section: 'Operations', icon: IconLine },
   { id: 'prospects', label: 'Prospect Queue', description: 'Receive CEO pushes, execute outreach, and convert to pipeline.', section: 'Operations', icon: IconPhoneCall },
-  { id: 'cx-applications', label: 'CX Applications', description: "Crave'N Express courier company applications submitted from /cx/signup.", section: 'Operations', icon: IconTruckDelivery },
+  { id: 'cx-applications', label: 'CX Applications', description: "Crave'N Express courier company applications submitted from /cx/apply.", section: 'Operations', icon: IconTruckDelivery },
   {
     id: 'vendors',
     label: 'Vendors',
