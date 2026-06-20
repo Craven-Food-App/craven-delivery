@@ -159,6 +159,30 @@ export const PostWaitlistOnboarding: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !applicationData) return;
 
+      // E-SIGN gate: every signing step requires typed name + consent checkbox
+      const agreementKey = SIGNING_STEPS[currentStep];
+      if (agreementKey) {
+        const sig = signatures[currentStep];
+        if (!sig?.isValid) {
+          setShowSignError(true);
+          message.error('Type your full legal name and check the consent box to sign.');
+          setSaving(false);
+          return;
+        }
+        const { error: sigErr } = await recordFeederSignature({
+          driverId: applicationData.id,
+          agreementKey,
+          capture: { typedName: sig.typedName, agreed: sig.agreed },
+          extraMetadata: { onboarding_step: currentStep, user_id: user.id },
+        });
+        if (sigErr) {
+          message.error(sigErr);
+          setSaving(false);
+          return;
+        }
+        setShowSignError(false);
+      }
+
       let updateData: any = {};
 
       switch (currentStep) {
