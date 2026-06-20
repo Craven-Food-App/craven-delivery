@@ -14,6 +14,7 @@ import {
   CX_CARRIER_AGREEMENT_TEXT,
   CX_INDEMNIFICATION_TEXT,
 } from "@/lib/cx/agreements";
+import { openCXAgreementsPrintWindow } from "@/lib/cx/printAgreements";
 import {
   Check,
   CheckCircle2,
@@ -28,6 +29,7 @@ import {
   Truck,
   ClipboardCheck,
   PenTool,
+  Printer,
 } from "lucide-react";
 
 type StepId = 1 | 2 | 3 | 4 | 5 | 6;
@@ -269,7 +271,20 @@ export default function CXApplyPage() {
             within 2 business days.
           </p>
           <div className="mt-6 text-sm text-slate-400">Reference ID: <span className="font-mono text-orange-300">{appId?.slice(0, 8).toUpperCase()}</span></div>
-          <Button asChild className="mt-8 bg-orange-500 hover:bg-orange-600"><Link to="/cx">Back to Crave'N Express</Link></Button>
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              onClick={() => openCXAgreementsPrintWindow({ ...form, id: appId })}
+              className="bg-white text-[#0F172A] hover:bg-slate-100"
+            >
+              <Printer className="mr-2 h-4 w-4" /> Print / Download Signed Agreements
+            </Button>
+            <Button asChild className="bg-orange-500 hover:bg-orange-600">
+              <Link to="/cx">Back to Crave'N Express</Link>
+            </Button>
+          </div>
+          <p className="text-xs text-slate-500 mt-4">
+            Keep a copy of your signed Master Services Agreement, Independent Carrier Agreement, and Indemnification Addendum for your records.
+          </p>
         </div>
       </div>
     );
