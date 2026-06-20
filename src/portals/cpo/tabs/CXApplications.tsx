@@ -8,11 +8,12 @@ import {
 import {
   IconRefresh, IconTruckDelivery, IconCheck, IconX, IconMail, IconPhone,
   IconFileText, IconShieldCheck, IconUsers, IconHistory, IconNotes,
-  IconExternalLink, IconBuildingFactory2, IconClipboardList,
+  IconExternalLink, IconBuildingFactory2, IconClipboardList, IconPrinter,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CX_REQUIRED_DOCS } from '@/lib/cx/requiredDocs';
+import { openCXAgreementsPrintWindow } from '@/lib/cx/printAgreements';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'gray', submitted: 'yellow', under_review: 'orange',
@@ -351,6 +352,18 @@ function ApplicationReview({ app, onChange, onClose }: any) {
 
         <Tabs.Panel value="legal" pt="md">
           <Card withBorder p="md" radius="md">
+            <Group justify="space-between" mb="sm">
+              <Text fw={700} size="sm">Executed Agreements</Text>
+              <Button
+                size="xs"
+                variant="light"
+                color="orange"
+                leftSection={<IconPrinter size={14} />}
+                onClick={() => openCXAgreementsPrintWindow(app)}
+              >
+                Print / Save PDF
+              </Button>
+            </Group>
             <LegalRow label="Master Services Agreement" at={app.msa_signed_at} />
             <Divider my="sm"/>
             <LegalRow label="Independent Carrier Agreement" at={app.carrier_agreement_signed_at} />
