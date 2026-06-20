@@ -221,32 +221,28 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
               el.style.display = 'none';
             }
           } else {
-            // Fallback: standard markers
-            if (!editable) {
-              new mapboxgl.Marker({ color: '#3b82f6' })
-                .setLngLat(currentLocation)
+            // Crave'N-branded START / END markers (matches CX courier sheet)
+            const addLabeledMarker = (lng: number, lat: number, label: string) => {
+              const el = document.createElement('div');
+              el.style.cssText =
+                "width:54px;height:54px;border-radius:50%;background:#f97316;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;letter-spacing:0.05em;box-shadow:0 4px 12px rgba(0,0,0,0.25);border:3px solid #fff;";
+              el.textContent = label;
+              new mapboxgl.Marker({ element: el, anchor: 'center' })
+                .setLngLat([lng, lat])
                 .addTo(map.current);
-            }
+            };
 
-            if (pickupCoords) {
-              new mapboxgl.Marker({ color: '#ef4444' })
-                .setLngLat(pickupCoords)
-                .addTo(map.current);
-            }
-
-            if (dropoffCoords && !editable) {
-              new mapboxgl.Marker({ color: '#22c55e' })
-                .setLngLat(dropoffCoords)
-                .addTo(map.current);
-            }
+            if (pickupCoords) addLabeledMarker(pickupCoords[0], pickupCoords[1], 'START');
+            if (dropoffCoords && !editable) addLabeledMarker(dropoffCoords[0], dropoffCoords[1], 'END');
           }
 
           // Draw route if requested
           if (showRoute && pickupCoords && dropoffCoords) {
             try {
-              const waypoints = `${currentLocation[0]},${currentLocation[1]};${pickupCoords[0]},${pickupCoords[1]};${dropoffCoords[0]},${dropoffCoords[1]}`;
+              // Route strictly from pickup -> dropoff (matches CX courier sheet)
+              const waypoints = `${pickupCoords[0]},${pickupCoords[1]};${dropoffCoords[0]},${dropoffCoords[1]}`;
               const routeResponse = await fetch(
-                `https://api.mapbox.com/directions/v5/mapbox/driving/${waypoints}?geometries=geojson&access_token=${tokenData.token}`
+                `https://api.mapbox.com/directions/v5/mapbox/driving/${waypoints}?geometries=geojson&overview=full&access_token=${tokenData.token}`
               );
               const routeData = await routeResponse.json();
 
@@ -271,17 +267,16 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
                     'line-cap': 'round'
                   },
                   paint: {
-                    'line-color': '#ef4444',
+                    'line-color': '#f97316',
                     'line-width': 4
                   }
                 });
 
                 const bounds = new mapboxgl.LngLatBounds();
-                bounds.extend(currentLocation);
                 if (pickupCoords) bounds.extend(pickupCoords);
                 if (dropoffCoords) bounds.extend(dropoffCoords);
                 
-                map.current.fitBounds(bounds, { padding: 50 });
+                map.current.fitBounds(bounds, { padding: 60, duration: 0 });
               }
             } catch (routeErr) {
               console.error('Route fetch error:', routeErr);
