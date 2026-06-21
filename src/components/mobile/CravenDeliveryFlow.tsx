@@ -842,12 +842,24 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       try {
         const { data: orderData } = await supabase
           .from('orders')
-          .select('pickup_code, restaurant_id')
+          .select('pickup_code, restaurant_id, customer_phone, delivery_notes, dropoff_address, delivery_address')
           .eq('id', orderDetails.order_id)
           .maybeSingle();
         
         if (orderData?.pickup_code) {
           setPickupCode(orderData.pickup_code);
+        }
+
+        if (orderData) {
+          setFetchedCustomer((prev) => ({
+            phone: orderData.customer_phone ?? prev.phone ?? null,
+            deliveryNotes: orderData.delivery_notes ?? prev.deliveryNotes ?? null,
+            dropoffAddress:
+              orderData.dropoff_address ??
+              (orderData as any).delivery_address ??
+              prev.dropoffAddress ??
+              null,
+          }));
         }
         
         if (orderData?.restaurant_id) {
