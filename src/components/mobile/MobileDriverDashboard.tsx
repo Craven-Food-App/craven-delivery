@@ -2831,6 +2831,8 @@ export const MobileDriverDashboard: React.FC = () => {
               dropoffCount={1}
               tags={[]}
               getOffersUntil={getOffersUntil}
+              pickupAddress={a.pickup_address}
+              dropoffAddress={a.dropoff_address}
               cleanPayOffer={mapCleanPayOffer(activeOfferCleanPay)}
               onAccept={() => {
                 if (isRetailOrder) setRetailOfferStep(2);
@@ -2877,6 +2879,8 @@ export const MobileDriverDashboard: React.FC = () => {
               dropoffCount={list.length}
               tags={['Same pickup · nearby drop-offs']}
               getOffersUntil={getUntil}
+              pickupAddress={a.pickup_address}
+              dropoffAddress={list[list.length - 1]?.dropoff_address ?? a.dropoff_address}
               cleanPayOffer={mapCleanPayOffer(activeOfferCleanPay)}
               onAccept={() => {
                 if (isRo) setRetailOfferStep(2);
