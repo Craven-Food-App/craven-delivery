@@ -840,7 +840,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     
     const fetchOrderData = async () => {
       try {
-        const { data: orderData } = await supabase
+        const { data: orderData } = await (supabase as any)
           .from('orders')
           .select('pickup_code, restaurant_id, customer_phone, delivery_notes, dropoff_address, delivery_address')
           .eq('id', orderDetails.order_id)
