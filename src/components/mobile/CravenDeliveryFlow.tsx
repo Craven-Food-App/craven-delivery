@@ -156,12 +156,34 @@ const formatAddress = (address: any): string => {
   if (!address) return '';
   if (typeof address === 'string') return address;
   if (typeof address === 'object') {
-    const parts = [
-      address.street || address.address,
-      address.city,
-      address.state,
-      address.zip || address.zip_code
-    ].filter(Boolean);
+    const street =
+      address.street ||
+      address.address ||
+      address.street_address ||
+      address.line1 ||
+      address.address_line_1 ||
+      address.address_line1 ||
+      address.addr1 ||
+      '';
+    const unitRaw =
+      address.unit ||
+      address.apt ||
+      address.apartment ||
+      address.suite ||
+      address.line2 ||
+      address.address_line_2 ||
+      address.address_line2 ||
+      '';
+    const unit = unitRaw
+      ? /^(apt|unit|ste|suite|#)/i.test(String(unitRaw).trim())
+        ? String(unitRaw).trim()
+        : `Apt ${String(unitRaw).trim()}`
+      : '';
+    const streetFull = [street, unit].filter(Boolean).join(' ').trim();
+    const cityState = [address.city, address.state].filter(Boolean).join(', ');
+    const zip = address.zip || address.zip_code || address.postal_code;
+    const parts = [streetFull, cityState, zip].filter(Boolean);
+    if (parts.length === 0 && address.formatted) return String(address.formatted);
     return parts.join(', ');
   }
   return String(address);

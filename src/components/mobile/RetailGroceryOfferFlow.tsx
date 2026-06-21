@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { DeliveryMap } from './DeliveryMap';
 
 // ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
 const C = {
@@ -42,6 +43,11 @@ export interface RetailGroceryOfferFlowProps {
   tags?: string[];
   /** e.g. "1:00 PM" */
   getOffersUntil?: string;
+  /** Pickup address (object or string) — when provided with dropoffAddress, an interactive
+   * Crave'N orange route map (CX-style) is rendered above the card. */
+  pickupAddress?: any;
+  /** Dropoff address (object or string) for the route. */
+  dropoffAddress?: any;
   /** When set, shows Clean Pay Standard offer breakdown before accept (step 1). */
   cleanPayOffer?: {
     basePayDollars: number;
@@ -101,12 +107,16 @@ export const RetailGroceryOfferFlow: React.FC<RetailGroceryOfferFlowProps> = ({
   dropoffCount,
   tags = [],
   getOffersUntil,
+  pickupAddress,
+  dropoffAddress,
   cleanPayOffer,
   onAccept,
   onReject,
   onStartRoute,
 }) => {
   const tripSummary = `${stops} stop${stops !== 1 ? 's' : ''} • ${totalMiles.toFixed(1)} miles • ${durationText}`;
+
+  const showRouteMap = !!(pickupAddress && dropoffAddress);
 
   return (
     <div
@@ -122,11 +132,34 @@ export const RetailGroceryOfferFlow: React.FC<RetailGroceryOfferFlowProps> = ({
         pointerEvents: 'none',
       }}
     >
+      {/* CX-style route map fills the space above the bottom card */}
+      {showRouteMap && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            pointerEvents: 'auto',
+            zIndex: 0,
+          }}
+        >
+          <DeliveryMap
+            pickupAddress={pickupAddress}
+            dropoffAddress={dropoffAddress}
+            showRoute
+            className="w-full h-full"
+          />
+        </div>
+      )}
       <div
         style={{
           pointerEvents: 'auto',
           fontFamily: '-apple-system, SF Pro Text, Helvetica Neue, sans-serif',
           fontVariantNumeric: 'tabular-nums',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {/* Top bar: "Get offers until" — optional */}

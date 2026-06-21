@@ -111,8 +111,11 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
         const fallbackCenter = MAPBOX_CONFIG.center as [number, number];
         const destination = destCoords ?? fallbackCenter;
         const hasRealDestination = !!destCoords;
-        const shouldFetchRoute = hasDriverLocation && destCoords && (
-          Math.abs(Number(origin[0]) - Number(destination[0])) > 0.01 || Math.abs(Number(origin[1]) - Number(destination[1])) > 0.01
+        const shouldFetchRoute = !!(
+          hasDriverLocation && driverLngLat && destCoords && (
+            Math.abs(Number(driverLngLat[0]) - Number(destCoords[0])) > 0.0005 ||
+            Math.abs(Number(driverLngLat[1]) - Number(destCoords[1])) > 0.0005
+          )
         );
 
         map.current = new mapboxgl.Map({
@@ -127,29 +130,29 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
           const mapInstance = map.current;
           if (!mapInstance) return;
 
+          // Crave'N CX-style labeled markers (matches courier sheet)
+          const makeLabeledMarker = (label: string) => {
+            const el = document.createElement('div');
+            el.style.cssText =
+              "width:54px;height:54px;border-radius:50%;background:#f97316;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;letter-spacing:0.05em;box-shadow:0 4px 12px rgba(0,0,0,0.25);border:3px solid #fff;";
+            el.textContent = label;
+            return el;
+          };
+
           if (hasDriverLocation && driverLngLat) {
-            const driverEl = document.createElement('div');
-            driverEl.className = 'step-one-driver-marker';
-            driverEl.style.cssText = `
-              width: 40px; height: 40px;
-              background-image: url('${driverNavIcon}');
-              background-size: contain; background-repeat: no-repeat; background-position: center;
-            `;
-            driverMarkerRef.current = new mapboxgl.Marker({ element: driverEl, anchor: 'center' })
+            driverMarkerRef.current = new mapboxgl.Marker({
+              element: makeLabeledMarker('START'),
+              anchor: 'center',
+            })
               .setLngLat(driverLngLat)
               .addTo(mapInstance);
           }
 
           if (hasRealDestination) {
-            const destEl = document.createElement('div');
-            destEl.style.cssText = `
-              width: 32px; height: 32px; border-radius: 50%;
-              background: #fff; border: 2px solid ${useCustomerDestination ? '#2563eb' : '#f26419'};
-              display: flex; align-items: center; justify-content: center;
-              font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            `;
-            destEl.textContent = useCustomerDestination ? '🏠' : '🍴';
-            destinationMarkerRef.current = new mapboxgl.Marker({ element: destEl, anchor: 'center' })
+            destinationMarkerRef.current = new mapboxgl.Marker({
+              element: makeLabeledMarker('END'),
+              anchor: 'center',
+            })
               .setLngLat(destCoords)
               .addTo(mapInstance);
           }
@@ -249,7 +252,7 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
           type: 'line',
           source: 'step-one-route',
           layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: { 'line-color': '#f26419', 'line-width': 4 },
+          paint: { 'line-color': '#f97316', 'line-width': 4 },
         });
       }
     } catch (e) {
