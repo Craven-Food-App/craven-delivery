@@ -418,6 +418,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [restaurantLogo, setRestaurantLogo] = useState<string | null>(null);
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState<string | null>(null);
+  const [fetchedCustomer, setFetchedCustomer] = useState<{
+    phone?: string | null;
+    deliveryNotes?: string | null;
+    dropoffAddress?: any;
+  }>({});
   const [showTransition, setShowTransition] = useState(false);
   const [transitionMessage, setTransitionMessage] = useState('');
   const [transitionType, setTransitionType] = useState<'pickup' | 'arrival'>('pickup');
@@ -800,6 +805,12 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     const resolvedCustomerName = customerName || orderDetails?.customer_name;
     const rawId = orderDetails?.id || orderDetails?.order_id;
     const shortId = rawId && typeof rawId === 'string' ? (rawId.split('-')[1] || rawId.slice(-6)) : null;
+    const dropoffAddress =
+      orderDetails?.dropoff_address ??
+      (orderDetails as any)?.delivery_address ??
+      fetchedCustomer.dropoffAddress;
+    const customerPhone = orderDetails?.customer_phone || fetchedCustomer.phone || '—';
+    const deliveryNotes = orderDetails?.delivery_notes || fetchedCustomer.deliveryNotes || '';
     return {
       id: rawId || 'CRAVEN-' + Math.floor(Math.random() * 9000 + 1000),
       order_number: orderDetails?.order_number || shortId || undefined,
@@ -812,34 +823,43 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         name: orderDetails?.restaurant_name || '—',
         address: formatAddress(orderDetails?.pickup_address) || '—',
         pickupCode: pickupCode || 'LOADING...',
-        phone: orderDetails?.customer_phone || '—',
+        phone: customerPhone,
       },
       customer: {
         name: formatCustomerNameForDriver(resolvedCustomerName) || '—',
-        address:
-          formatAddress(orderDetails?.dropoff_address) ||
-          formatAddress((orderDetails as any)?.delivery_address) ||
-          '—',
-        deliveryNotes: orderDetails?.delivery_notes || '',
-        phone: orderDetails?.customer_phone || '—',
+        address: formatAddress(dropoffAddress) || '—',
+        deliveryNotes,
+        phone: customerPhone,
       },
       items: orderDetails?.items || [],
     };
-  }, [orderDetails, pickupCode, customerName]);
+  }, [orderDetails, pickupCode, customerName, fetchedCustomer]);
 
   useEffect(() => {
     if (isTestOrder || !orderDetails.order_id) return;
     
     const fetchOrderData = async () => {
       try {
-        const { data: orderData } = await supabase
+        const { data: orderData } = await (supabase as any)
           .from('orders')
-          .select('pickup_code, restaurant_id')
+          .select('pickup_code, restaurant_id, customer_phone, delivery_notes, dropoff_address, delivery_address')
           .eq('id', orderDetails.order_id)
           .maybeSingle();
         
         if (orderData?.pickup_code) {
           setPickupCode(orderData.pickup_code);
+        }
+
+        if (orderData) {
+          setFetchedCustomer((prev) => ({
+            phone: orderData.customer_phone ?? prev.phone ?? null,
+            deliveryNotes: orderData.delivery_notes ?? prev.deliveryNotes ?? null,
+            dropoffAddress:
+              orderData.dropoff_address ??
+              (orderData as any).delivery_address ??
+              prev.dropoffAddress ??
+              null,
+          }));
         }
         
         if (orderData?.restaurant_id) {
@@ -2132,6 +2152,9 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       const dropoff = orderDetails?.dropoff_address;
       const customerLat = typeof dropoff === 'object' && dropoff != null ? (dropoff.latitude ?? dropoff.lat) : undefined;
       const customerLng = typeof dropoff === 'object' && dropoff != null ? (dropoff.longitude ?? dropoff.lng) : undefined;
+      const pickup = orderDetails?.pickup_address;
+      const pickupLat = typeof pickup === 'object' && pickup != null ? ((pickup as any).latitude ?? (pickup as any).lat) : undefined;
+      const pickupLng = typeof pickup === 'object' && pickup != null ? ((pickup as any).longitude ?? (pickup as any).lng) : undefined;
       const deliveryByRaw =
         orderDetails?.estimated_delivery_time ??
         orderDetails?.max_delivery_time ??
@@ -2149,6 +2172,9 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           customerAddress={currentOrder.customer.address}
           customerLat={customerLat != null ? Number(customerLat) : undefined}
           customerLng={customerLng != null ? Number(customerLng) : undefined}
+          originLat={pickupLat != null ? Number(pickupLat) : undefined}
+          originLng={pickupLng != null ? Number(pickupLng) : undefined}
+          originAddress={currentOrder.store.address && currentOrder.store.address !== '—' ? currentOrder.store.address : undefined}
           orderNumber={orderNum}
           isTestOrder={isTestOrder}
           estimatedPay={payAmount}
