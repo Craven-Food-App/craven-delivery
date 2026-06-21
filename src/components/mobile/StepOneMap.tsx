@@ -18,6 +18,16 @@ export interface StepOneMapProps {
   destinationLng?: number;
   destinationAddress?: string;
   destinationName?: string;
+  /**
+   * Optional origin override. When provided, the map draws the route from this
+   * origin to the destination (e.g. restaurant → customer for the dropoff leg)
+   * instead of driver → destination. Used by the customer leg so the driver
+   * sees the full route just like the CX courier accept sheet.
+   */
+  originLat?: number;
+  originLng?: number;
+  originAddress?: string;
+  originLabel?: string;
   className?: string;
 }
 
@@ -37,6 +47,10 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
   destinationLng,
   destinationAddress,
   destinationName = 'Customer',
+  originLat,
+  originLng,
+  originAddress,
+  originLabel = 'PICKUP',
   className = '',
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -52,6 +66,8 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
   const { location } = useDriverLocation();
 
   const driverLngLat = location ? [location.longitude, location.latitude] as [number, number] : null;
+  const hasOriginOverride =
+    (originLat != null && originLng != null) || !!originAddress?.trim();
 
   const geocode = useCallback(async (address: string, token: string): Promise<[number, number] | null> => {
     if (!address?.trim()) return null;
@@ -107,14 +123,26 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
             destCoords = await geocode(storeAddress, token);
           }
         }
-        const hasDriverLocation = !!driverLngLat;
+        // Resolve origin: explicit override (e.g. restaurant pickup) → driver location.
+        let originCoords: [number, number] | null = null;
+        if (hasOriginOverride) {
+          if (originLat != null && originLng != null) {
+            originCoords = [originLng, originLat];
+          } else if (originAddress) {
+            originCoords = await geocode(originAddress, token);
+          }
+        }
+        if (!originCoords && driverLngLat) {
+          originCoords = driverLngLat;
+        }
+        const hasOrigin = !!originCoords;
         const fallbackCenter = MAPBOX_CONFIG.center as [number, number];
         const destination = destCoords ?? fallbackCenter;
         const hasRealDestination = !!destCoords;
         const shouldFetchRoute = !!(
-          hasDriverLocation && driverLngLat && destCoords && (
-            Math.abs(Number(driverLngLat[0]) - Number(destCoords[0])) > 0.0005 ||
-            Math.abs(Number(driverLngLat[1]) - Number(destCoords[1])) > 0.0005
+          hasOrigin && originCoords && destCoords && (
+            Math.abs(Number(originCoords[0]) - Number(destCoords[0])) > 0.0005 ||
+            Math.abs(Number(originCoords[1]) - Number(destCoords[1])) > 0.0005
           )
         );
 
@@ -139,12 +167,12 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
             return el;
           };
 
-          if (hasDriverLocation && driverLngLat) {
+          if (hasOrigin && originCoords) {
             driverMarkerRef.current = new mapboxgl.Marker({
-              element: makeLabeledMarker('START'),
+              element: makeLabeledMarker(hasOriginOverride ? originLabel : 'START'),
               anchor: 'center',
             })
-              .setLngLat(driverLngLat)
+              .setLngLat(originCoords)
               .addTo(mapInstance);
           }
 
@@ -158,8 +186,8 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
           }
 
           try {
-            if (shouldFetchRoute && driverLngLat && destCoords) {
-              const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLngLat[0]},${driverLngLat[1]};${destCoords[0]},${destCoords[1]}?geometries=geojson&alternatives=true&access_token=${token}`;
+            if (shouldFetchRoute && originCoords && destCoords) {
+              const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${originCoords[0]},${originCoords[1]};${destCoords[0]},${destCoords[1]}?geometries=geojson&alternatives=true&overview=full&access_token=${token}`;
               const res = await fetch(url);
               const data = await res.json();
               if (cancelled) return;
@@ -172,7 +200,7 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
                 }));
                 setRouteOptions(options);
                 const bounds = new mapboxgl.LngLatBounds();
-                bounds.extend(driverLngLat);
+                bounds.extend(originCoords);
                 bounds.extend(destCoords);
                 mapInstance.fitBounds(bounds, { padding: 80, maxZoom: 16 });
               } else {
