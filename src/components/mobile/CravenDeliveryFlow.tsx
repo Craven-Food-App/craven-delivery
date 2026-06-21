@@ -2132,6 +2132,9 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       const dropoff = orderDetails?.dropoff_address;
       const customerLat = typeof dropoff === 'object' && dropoff != null ? (dropoff.latitude ?? dropoff.lat) : undefined;
       const customerLng = typeof dropoff === 'object' && dropoff != null ? (dropoff.longitude ?? dropoff.lng) : undefined;
+      const pickup = orderDetails?.pickup_address;
+      const pickupLat = typeof pickup === 'object' && pickup != null ? ((pickup as any).latitude ?? (pickup as any).lat) : undefined;
+      const pickupLng = typeof pickup === 'object' && pickup != null ? ((pickup as any).longitude ?? (pickup as any).lng) : undefined;
       const deliveryByRaw =
         orderDetails?.estimated_delivery_time ??
         orderDetails?.max_delivery_time ??
@@ -2149,6 +2152,9 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           customerAddress={currentOrder.customer.address}
           customerLat={customerLat != null ? Number(customerLat) : undefined}
           customerLng={customerLng != null ? Number(customerLng) : undefined}
+          originLat={pickupLat != null ? Number(pickupLat) : undefined}
+          originLng={pickupLng != null ? Number(pickupLng) : undefined}
+          originAddress={currentOrder.store.address && currentOrder.store.address !== '—' ? currentOrder.store.address : undefined}
           orderNumber={orderNum}
           isTestOrder={isTestOrder}
           estimatedPay={payAmount}
