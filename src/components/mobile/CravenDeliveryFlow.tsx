@@ -418,6 +418,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [restaurantLogo, setRestaurantLogo] = useState<string | null>(null);
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState<string | null>(null);
+  const [fetchedCustomer, setFetchedCustomer] = useState<{
+    phone?: string | null;
+    deliveryNotes?: string | null;
+    dropoffAddress?: any;
+  }>({});
   const [showTransition, setShowTransition] = useState(false);
   const [transitionMessage, setTransitionMessage] = useState('');
   const [transitionType, setTransitionType] = useState<'pickup' | 'arrival'>('pickup');
@@ -800,6 +805,12 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     const resolvedCustomerName = customerName || orderDetails?.customer_name;
     const rawId = orderDetails?.id || orderDetails?.order_id;
     const shortId = rawId && typeof rawId === 'string' ? (rawId.split('-')[1] || rawId.slice(-6)) : null;
+    const dropoffAddress =
+      orderDetails?.dropoff_address ??
+      (orderDetails as any)?.delivery_address ??
+      fetchedCustomer.dropoffAddress;
+    const customerPhone = orderDetails?.customer_phone || fetchedCustomer.phone || '—';
+    const deliveryNotes = orderDetails?.delivery_notes || fetchedCustomer.deliveryNotes || '';
     return {
       id: rawId || 'CRAVEN-' + Math.floor(Math.random() * 9000 + 1000),
       order_number: orderDetails?.order_number || shortId || undefined,
@@ -812,20 +823,17 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         name: orderDetails?.restaurant_name || '—',
         address: formatAddress(orderDetails?.pickup_address) || '—',
         pickupCode: pickupCode || 'LOADING...',
-        phone: orderDetails?.customer_phone || '—',
+        phone: customerPhone,
       },
       customer: {
         name: formatCustomerNameForDriver(resolvedCustomerName) || '—',
-        address:
-          formatAddress(orderDetails?.dropoff_address) ||
-          formatAddress((orderDetails as any)?.delivery_address) ||
-          '—',
-        deliveryNotes: orderDetails?.delivery_notes || '',
-        phone: orderDetails?.customer_phone || '—',
+        address: formatAddress(dropoffAddress) || '—',
+        deliveryNotes,
+        phone: customerPhone,
       },
       items: orderDetails?.items || [],
     };
-  }, [orderDetails, pickupCode, customerName]);
+  }, [orderDetails, pickupCode, customerName, fetchedCustomer]);
 
   useEffect(() => {
     if (isTestOrder || !orderDetails.order_id) return;
