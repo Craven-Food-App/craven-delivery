@@ -178,6 +178,10 @@ export interface DeliveryFlowStepThreeProps {
   customerAddress: string;
   customerLat?: number;
   customerLng?: number;
+  /** Origin (typically the restaurant/pickup) so the map draws pickup→customer route. */
+  originLat?: number;
+  originLng?: number;
+  originAddress?: string;
   orderNumber: string;
   isTestOrder: boolean;
   estimatedPay: number;
@@ -205,6 +209,9 @@ export const DeliveryFlowStepThree: React.FC<DeliveryFlowStepThreeProps> = ({
   customerAddress,
   customerLat,
   customerLng,
+  originLat,
+  originLng,
+  originAddress,
   orderNumber,
   isTestOrder,
   estimatedPay,
@@ -331,6 +338,10 @@ export const DeliveryFlowStepThree: React.FC<DeliveryFlowStepThreeProps> = ({
           destinationLng={customerLng}
           destinationAddress={customerAddress}
           destinationName={customerName}
+          originLat={originLat}
+          originLng={originLng}
+          originAddress={originAddress}
+          originLabel="PICKUP"
           className="w-full h-full"
         />
       </Box>
