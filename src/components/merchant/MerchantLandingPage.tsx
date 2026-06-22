@@ -41,7 +41,6 @@ export default function MerchantLandingPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectType = searchParams.get('type');
-  const navigate = useNavigate();
 
   // Redirect courier signups to the dedicated CX application page
   useEffect(() => {
