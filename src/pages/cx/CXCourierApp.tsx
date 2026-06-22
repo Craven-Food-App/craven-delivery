@@ -639,14 +639,14 @@ function AccountScreen() {
         </div>
       </div>
 
-      {[
+      {([
         { icon: Shield, label: 'Background Check', val: 'Cleared' },
         { icon: Truck, label: 'Vehicle', val: '2021 Honda Civic' },
         { icon: Wallet, label: 'Payout Method', val: 'Stripe Connect' },
         { icon: Bell, label: 'Notifications', val: 'On' },
         { icon: Settings, label: 'App Settings', val: '' },
         { icon: LogOut, label: 'Sign Out', val: '' },
-      ].map((r, i) => (
+      ] as { icon: any; label: string; val: string }[]).map((r, i) => (
         <div key={i} style={{
           marginTop: 8, background: CX.panel, border: `1px solid ${CX.line}`, borderRadius: 10,
           padding: '14px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
