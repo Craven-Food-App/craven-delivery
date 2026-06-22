@@ -1,4 +1,4 @@
-import cxLogoAsset from "@/assets/cx-logo.png.asset.json";
+import cxLogo from "@/assets/cx-logo.png";
 
 const SIZES = {
   sm: 28,
