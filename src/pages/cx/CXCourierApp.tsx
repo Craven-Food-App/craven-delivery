@@ -197,9 +197,7 @@ function JobBoardScreen({ online, onAccept }: { online: boolean; onAccept: (j: J
   const clusterJobs = useMemo(
     () => {
       if (!clusterId) return [];
-      const matched = MOCK_JOBS.filter(j => j.cluster === clusterId);
-      // fallback: if no jobs explicitly tagged to this cluster, show all
-      return matched.length > 0 ? matched : MOCK_JOBS;
+      return MOCK_JOBS.filter(j => j.cluster === clusterId);
     },
     [clusterId]
   );
