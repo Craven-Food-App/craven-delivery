@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Truck, PackageCheck, MapPin, Clock } from "lucide-react";
+import { Truck, PackageCheck, MapPin, Clock, Package, ArrowRight } from "lucide-react";
 
 const features = [
   { icon: Truck, title: "On-demand & scheduled", desc: "Single pickup, scheduled windows, or multi-stop bulk routes." },
@@ -13,6 +13,28 @@ const CXIntroSection = () => {
   return (
     <section className="py-16 px-4 bg-[#0F172A] text-white">
       <div className="max-w-6xl mx-auto">
+        {/* Customer-facing send-a-package banner */}
+        <Link
+          to="/cx/send"
+          className="group block mb-10 rounded-2xl border border-orange-500/40 bg-gradient-to-r from-orange-500/15 via-orange-500/10 to-teal-500/10 p-5 sm:p-6 hover:border-orange-400 transition"
+        >
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-xl bg-orange-500 grid place-items-center shrink-0">
+              <Package className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] font-bold tracking-[0.18em] text-orange-300 uppercase">For customers</div>
+              <div className="text-lg sm:text-xl font-bold leading-tight mt-0.5">
+                Need to send something? Get a Feeder to deliver it.
+              </div>
+              <p className="text-sm text-slate-300 mt-1">
+                From your house to a friend's, store pickups, gifts, documents — same-day, photo-verified.
+              </p>
+            </div>
+            <ArrowRight className="h-5 w-5 text-orange-300 shrink-0 group-hover:translate-x-0.5 transition" />
+          </div>
+        </Link>
+
         <div className="flex flex-col lg:flex-row gap-10 lg:items-end justify-between mb-10">
           <div className="max-w-2xl">
             <span className="inline-block text-xs font-bold tracking-[0.2em] text-orange-400 mb-3">
