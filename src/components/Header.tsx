@@ -141,6 +141,7 @@ const Header = () => {
                 {restaurantsVisible && (
                   <Link to="/restaurants" className="text-foreground hover:text-primary transition-colors">Place an Order</Link>
                 )}
+                <Link to="/cx/send" className="text-foreground hover:text-primary transition-colors">Send a Package</Link>
                 <Link to="/feeder" className="text-foreground hover:text-primary transition-colors">Become a Feeder</Link>
                 
               </nav>
@@ -412,6 +413,13 @@ const Header = () => {
                 )}
                 {!isFeederSubdomain && !isMerchantSubdomain && (
                   <>
+                    <Link
+                      to="/cx/send"
+                      className="block text-lg font-semibold text-foreground hover:text-primary"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Send a Package
+                    </Link>
                     <Link 
                       to="/feeder" 
                       className="block text-lg font-semibold text-foreground hover:text-primary"
