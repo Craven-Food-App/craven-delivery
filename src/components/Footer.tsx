@@ -33,7 +33,7 @@ const columns: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: "Become a Feeder", to: "/feeder" },
       { label: "Crave'n for Merchants", to: "/merchant/signup" },
-      { label: "Crave'N Express (Courier Co.)", to: "/merchant/signup?type=courier" },
+      { label: "Crave'N Express (Courier Co.)", to: "/cx/apply" },
       { label: "Find a Courier (CX)", to: "/cx" },
       { label: "Get Feeders for Deliveries", to: "/business/feeders" },
       { label: "Crave'n for Business", to: "/business" },
