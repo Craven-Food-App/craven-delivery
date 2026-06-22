@@ -63,26 +63,27 @@ type Job = {
   pieces: number;
   weightLbs: number;
   proofRequired: ('photo' | 'signature' | 'recipient')[];
+  cluster?: string;
 };
 
 const MOCK_JOBS: Job[] = [
-  { id: 'CX-8841', merchant: 'AutoZone #4421', category: 'Auto Parts', payout: 18.50, miles: 4.2, windowMins: 45, vehicle: 'Car',
+  { id: 'CX-8841', merchant: 'AutoZone #4421', category: 'Auto Parts', payout: 18.50, miles: 4.2, windowMins: 45, vehicle: 'Car', cluster: 'c2',
     pickup: { label: '2410 Reynolds Rd, Toledo OH 43615', lat: 41.6428, lng: -83.6555, contact: 'Mgr · Rick' },
     dropoff: { label: '1980 N Holland Sylvania Rd', apt: 'Suite 204', contact: 'D. Harper', phone: '(419) 555-0142', notes: 'Loading dock on east side', lat: 41.6802, lng: -83.6711 },
     badge: 'BONUS', pieces: 2, weightLbs: 14, proofRequired: ['photo', 'recipient'] },
-  { id: 'CX-8852', merchant: 'Walgreens Pharmacy', category: 'Pharmacy', payout: 12.25, miles: 2.1, windowMins: 30, vehicle: 'Car',
+  { id: 'CX-8852', merchant: 'Walgreens Pharmacy', category: 'Pharmacy', payout: 12.25, miles: 2.1, windowMins: 30, vehicle: 'Car', cluster: 'c2',
     pickup: { label: '3402 W Central Ave', lat: 41.6711, lng: -83.6312 },
     dropoff: { label: '4120 N Detroit Ave', apt: 'Apt 3B', contact: 'M. Alvarez', phone: '(419) 555-0193', notes: 'Hand directly to recipient — Rx', lat: 41.6982, lng: -83.6189 },
     pieces: 1, weightLbs: 1, proofRequired: ['signature', 'recipient'] },
-  { id: 'CX-8867', merchant: 'Bloom & Co Floral', category: 'Floral', payout: 22.00, miles: 6.8, windowMins: 60, vehicle: 'SUV',
+  { id: 'CX-8867', merchant: 'Bloom & Co Floral', category: 'Floral', payout: 22.00, miles: 6.8, windowMins: 60, vehicle: 'SUV', cluster: 'c3',
     pickup: { label: '128 N Erie St', lat: 41.6582, lng: -83.5402 },
     dropoff: { label: '5800 Monroe St', apt: 'Front desk', contact: 'Sienna L.', phone: '(419) 555-0118', notes: 'Keep upright', lat: 41.7012, lng: -83.6892 },
     badge: 'PRIORITY', pieces: 1, weightLbs: 4, proofRequired: ['photo'] },
-  { id: 'CX-8871', merchant: 'Office Depot #1182', category: 'B2B', payout: 35.75, miles: 11.4, windowMins: 90, vehicle: 'Van',
+  { id: 'CX-8871', merchant: 'Office Depot #1182', category: 'B2B', payout: 35.75, miles: 11.4, windowMins: 90, vehicle: 'Van', cluster: 'c4',
     pickup: { label: '5333 Monroe St', lat: 41.6912, lng: -83.6651 },
     dropoff: { label: '1611 N Reynolds Rd', apt: 'Bay 4 — Receiving', contact: 'Warehouse', phone: '(419) 555-0177', notes: 'POD required, BOL #884121', lat: 41.6602, lng: -83.6781 },
     badge: 'STACKED', pieces: 6, weightLbs: 88, proofRequired: ['photo', 'signature'] },
-  { id: 'CX-8889', merchant: 'Best Buy #284', category: 'Retail', payout: 16.40, miles: 3.6, windowMins: 40, vehicle: 'Car',
+  { id: 'CX-8889', merchant: 'Best Buy #284', category: 'Retail', payout: 16.40, miles: 3.6, windowMins: 40, vehicle: 'Car', cluster: 'c2',
     pickup: { label: '5001 Monroe St', lat: 41.6889, lng: -83.6612 },
     dropoff: { label: '2600 W Sylvania Ave', apt: 'Unit 12', contact: 'J. Kim', phone: '(419) 555-0166', lat: 41.7102, lng: -83.6312 },
     pieces: 1, weightLbs: 6, proofRequired: ['photo', 'recipient'] },
@@ -193,6 +194,12 @@ function JobBoardScreen({ online, onAccept }: { online: boolean; onAccept: (j: J
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<mapboxgl.Map | null>(null);
   const [previewJob, setPreviewJob] = useState<Job | null>(null);
+  const [clusterId, setClusterId] = useState<string | null>(null);
+  const clusterJobs = useMemo(
+    () => (clusterId ? MOCK_JOBS.filter(j => j.cluster === clusterId) : []),
+    [clusterId]
+  );
+  const activeCluster = CLUSTERS.find(c => c.id === clusterId) || null;
 
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
@@ -209,7 +216,8 @@ function JobBoardScreen({ online, onAccept }: { online: boolean; onAccept: (j: J
 
       map.on('load', () => {
         CLUSTERS.forEach((c) => {
-          const size = 30 + c.count * 4;
+          const jobCount = MOCK_JOBS.filter(j => j.cluster === c.id).length || c.count;
+          const size = 30 + jobCount * 4;
           const el = document.createElement('div');
           el.style.cssText = `
             width:${size}px;height:${size}px;border-radius:999px;
@@ -219,7 +227,8 @@ function JobBoardScreen({ online, onAccept }: { online: boolean; onAccept: (j: J
             color:#fff;font-weight:800;font-size:14px;cursor:pointer;
             border:2px solid #fff;font-family:${MONO};
           `;
-          el.textContent = String(c.count);
+          el.textContent = String(jobCount);
+          el.onclick = () => setClusterId(c.id);
           new mapboxgl.Marker(el).setLngLat([c.lng, c.lat]).addTo(map);
         });
 
@@ -294,6 +303,150 @@ function JobBoardScreen({ online, onAccept }: { online: boolean; onAccept: (j: J
       {previewJob && (
         <JobPreviewSheet job={previewJob} onClose={() => setPreviewJob(null)} onAccept={() => { onAccept(previewJob); setPreviewJob(null); }} />
       )}
+
+      {activeCluster && clusterJobs.length > 0 && !previewJob && (
+        <ClusterCarousel
+          cluster={activeCluster}
+          jobs={clusterJobs}
+          onClose={() => setClusterId(null)}
+          onSelect={(j) => setPreviewJob(j)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// CLUSTER CAROUSEL — Roadie-style swipeable cards at bottom
+// ============================================================
+function ClusterCarousel({
+  cluster, jobs, onClose, onSelect,
+}: {
+  cluster: { id: string; label: string; count: number };
+  jobs: Job[];
+  onClose: () => void;
+  onSelect: (j: Job) => void;
+}) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [idx, setIdx] = useState(0);
+
+  const onScroll = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const card = el.clientWidth - 24;
+    setIdx(Math.round(el.scrollLeft / card));
+  };
+
+  return (
+    <div className="cx-fade" style={{
+      position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 40,
+      paddingBottom: 'calc(env(safe-area-inset-bottom,0px) + 8px)',
+    }}>
+      {/* Header pill */}
+      <div style={{
+        margin: '0 12px 8px', background: CX.ink, color: '#fff',
+        borderTopLeftRadius: 12, borderTopRightRadius: 12,
+        padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        boxShadow: CX.shadowLg,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            width: 22, height: 22, borderRadius: 999, background: CX.orange,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, fontWeight: 900, fontFamily: MONO,
+          }}>{jobs.length}</div>
+          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.6px' }}>
+            AVAILABLE GIGS · {cluster.label.toUpperCase()}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: MONO }}>
+            {idx + 1} OF {jobs.length}
+          </div>
+          <button onClick={onClose} style={{
+            background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
+            width: 26, height: 26, borderRadius: 999, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <X size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* Horizontal carousel */}
+      <div
+        ref={scrollerRef}
+        onScroll={onScroll}
+        style={{
+          display: 'flex', overflowX: 'auto', overflowY: 'hidden',
+          scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
+          gap: 12, padding: '0 12px 4px', scrollbarWidth: 'none',
+        }}
+      >
+        {jobs.map((j) => (
+          <button
+            key={j.id}
+            onClick={() => onSelect(j)}
+            className="cx-tap"
+            style={{
+              flex: '0 0 calc(100% - 24px)', scrollSnapAlign: 'center',
+              background: CX.surface, border: `1px solid ${CX.line}`, borderRadius: 14,
+              borderTop: `3px solid ${CX.orange}`,
+              padding: '14px', textAlign: 'left', cursor: 'pointer',
+              boxShadow: CX.shadowLg, color: CX.text,
+              display: 'flex', flexDirection: 'column', gap: 8,
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 10, fontFamily: MONO, color: CX.sub, letterSpacing: '0.5px' }}>
+                  {j.id} · {j.category.toUpperCase()}
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: CX.ink, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {j.merchant}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: CX.orange, fontFamily: MONO, lineHeight: 1 }}>
+                  ${j.payout.toFixed(2)}
+                </div>
+                <div style={{ fontSize: 10, color: CX.sub, marginTop: 3, fontFamily: MONO }}>
+                  {j.miles} MI · {j.windowMins}M
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: 8, background: CX.tealSoft,
+                border: `1px solid ${CX.teal}55`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Truck size={16} color={CX.tealDeep} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, color: CX.sub, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {j.pickup.label}
+                </div>
+                <div style={{ fontSize: 10, color: CX.subSoft, marginTop: 1 }}>
+                  {j.vehicle} · {j.pieces} pc · {j.weightLbs} lb
+                </div>
+              </div>
+              <ChevronRight size={16} color={CX.subSoft} />
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Dots */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 5, padding: '6px 0 2px' }}>
+        {jobs.map((_, i) => (
+          <span key={i} style={{
+            width: i === idx ? 18 : 6, height: 6, borderRadius: 999,
+            background: i === idx ? CX.orange : CX.lineStrong,
+            transition: 'all .2s',
+          }} />
+        ))}
+      </div>
     </div>
   );
 }
