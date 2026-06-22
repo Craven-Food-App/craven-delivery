@@ -19,7 +19,7 @@ export default function CXLandingPage() {
     <div className="min-h-screen bg-gradient-to-b from-[#0F172A] via-[#0F172A] to-[#1E293B] text-white">
       <header className="px-4 sm:px-8 py-5 flex items-center justify-between border-b border-white/10">
         <Link to="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md bg-orange-500 grid place-items-center font-bold text-white">CX</div>
+          <CXLogo size="md" />
           <div className="leading-tight">
             <div className="text-sm tracking-wide text-orange-400 font-semibold">CRAVE'N EXPRESS</div>
             <div className="text-xs text-slate-300">Courier marketplace</div>

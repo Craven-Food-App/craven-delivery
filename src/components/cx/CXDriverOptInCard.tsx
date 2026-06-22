@@ -42,7 +42,7 @@ export function CXDriverOptInCard({ driverId }: { driverId: string }) {
   return (
     <Card className="p-4 border-orange-200">
       <div className="flex items-start gap-3">
-        <div className="h-10 w-10 rounded-lg bg-[#0F172A] grid place-items-center text-white font-bold shrink-0">CX</div>
+        <CXLogo size="lg" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <div className="font-semibold">Crave'N Express jobs</div>

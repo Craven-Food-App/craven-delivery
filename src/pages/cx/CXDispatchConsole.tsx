@@ -135,9 +135,7 @@ export default function CXDispatchConsole() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-md bg-orange-500 grid place-items-center text-white text-xs font-bold">
-              CX
-            </div>
+            <CXLogo size="sm" />
             <div className="leading-tight">
               <div className="text-sm font-semibold">Dispatch Console</div>
               <div className="text-[11px] text-slate-500">Live package & shipment dispatch</div>

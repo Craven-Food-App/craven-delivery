@@ -223,7 +223,7 @@ export default function CXPortal() {
       <aside className={`${navOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-60 bg-[#070D1A] border-r border-slate-800 flex flex-col transition-transform`}>
         <div className="px-4 py-4 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded bg-gradient-to-br from-orange-500 to-orange-600 grid place-items-center font-bold text-white text-sm shadow-lg shadow-orange-500/20">CX</div>
+            <CXLogo size="md" />
             <div className="leading-tight">
               <div className="text-[10px] tracking-[0.15em] text-orange-500 font-bold">CRAVE'N EXPRESS</div>
               <div className="text-[10px] text-slate-500 font-mono">DISPATCH v2.0</div>
