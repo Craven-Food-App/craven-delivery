@@ -297,29 +297,46 @@ function JobBoardScreen({ online, onAccept }: { online: boolean; onAccept: (j: J
         </div>
       </div>
 
-      {/* Job list */}
-      <div style={{ flex: 1, overflowY: 'auto', background: CX.bg }}>
-        <div style={{ padding: '14px 16px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.6px', color: CX.ink }}>NEARBY JOBS</div>
-          <div style={{ fontSize: 10, color: CX.sub, fontFamily: MONO, letterSpacing: '0.5px' }}>SORT · PAYOUT</div>
+      {/* Job list area with swipe transition */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: CX.bg }}>
+        {/* Nearby jobs panel */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          transform: clusterId ? 'translateX(-100%)' : 'translateX(0)',
+          transition: 'transform 0.35s cubic-bezier(0.32,0.72,0,1)',
+          overflowY: 'auto',
+        }}>
+          <div style={{ padding: '14px 16px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.6px', color: CX.ink }}>NEARBY JOBS</div>
+            <div style={{ fontSize: 10, color: CX.sub, fontFamily: MONO, letterSpacing: '0.5px' }}>SORT · PAYOUT</div>
+          </div>
+          {MOCK_JOBS.map((j) => (
+            <JobCard key={j.id} job={j} onClick={() => setPreviewJob(j)} />
+          ))}
+          <div style={{ height: 24 }} />
         </div>
-        {MOCK_JOBS.map((j) => (
-          <JobCard key={j.id} job={j} onClick={() => setPreviewJob(j)} />
-        ))}
-        <div style={{ height: 24 }} />
+
+        {/* Cluster carousel panel */}
+        {activeCluster && clusterJobs.length > 0 && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            transform: clusterId ? 'translateX(0)' : 'translateX(100%)',
+            transition: 'transform 0.35s cubic-bezier(0.32,0.72,0,1)',
+            display: 'flex', flexDirection: 'column',
+            zIndex: clusterId ? 30 : 0,
+          }}>
+            <ClusterCarousel
+              cluster={activeCluster}
+              jobs={clusterJobs}
+              onClose={() => setClusterId(null)}
+              onSelect={(j) => setPreviewJob(j)}
+            />
+          </div>
+        )}
       </div>
 
       {previewJob && (
         <JobPreviewSheet job={previewJob} onClose={() => setPreviewJob(null)} onAccept={() => { onAccept(previewJob); setPreviewJob(null); }} />
-      )}
-
-      {activeCluster && clusterJobs.length > 0 && !previewJob && (
-        <ClusterCarousel
-          cluster={activeCluster}
-          jobs={clusterJobs}
-          onClose={() => setClusterId(null)}
-          onSelect={(j) => setPreviewJob(j)}
-        />
       )}
     </div>
   );
