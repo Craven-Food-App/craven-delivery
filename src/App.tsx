@@ -25,6 +25,7 @@ const CXLandingPage = lazy(() => import("./pages/cx/CXLandingPage"));
 const CXSignupPage = lazy(() => import("./pages/cx/CXSignupPage"));
 const CXApplyPage = lazy(() => import("./pages/cx/CXApplyPage"));
 const CXPortal = lazy(() => import("./pages/cx/CXPortal"));
+const CXCourierApp = lazy(() => import("./pages/cx/CXCourierApp"));
 import FeederHub from "./pages/FeederHub";
 import IndependentContractorAgreement from "./pages/IndependentContractorAgreement";
 import FeederPrivacyPolicy from "./pages/FeederPrivacyPolicy";
@@ -547,6 +548,7 @@ const App = () => {
                   <Route path="/cx/signup" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXApplyPage /></Suspense>} />
                   <Route path="/cx/apply" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXApplyPage /></Suspense>} />
                   <Route path="/cx/portal" element={<Suspense fallback={<SuspenseLoader message="Loading CX Portal" />}><CXPortal /></Suspense>} />
+                  <Route path="/cx-courier-app" element={<Suspense fallback={<SuspenseLoader message="Loading CX Courier App" />}><CXCourierApp /></Suspense>} />
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
                   <Route path="/dashboard" element={<Suspense fallback={<SuspenseLoader message="Loading Dashboard" />}><RestaurantDashboard /></Suspense>} />
@@ -732,6 +734,7 @@ const App = () => {
           <Route path="/cx/signup" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXApplyPage /></Suspense>} />
           <Route path="/cx/apply" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXApplyPage /></Suspense>} />
           <Route path="/cx/portal" element={<Suspense fallback={<SuspenseLoader message="Loading CX Portal" />}><CXPortal /></Suspense>} />
+          <Route path="/cx-courier-app" element={<Suspense fallback={<SuspenseLoader message="Loading CX Courier App" />}><CXCourierApp /></Suspense>} />
           <Route path="/restaurants/cuisine/:cuisine" element={<CuisineResults />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/order-history" element={<OrderHistory />} />
