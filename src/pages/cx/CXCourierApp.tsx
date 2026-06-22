@@ -90,10 +90,9 @@ const MOCK_JOBS: Job[] = [
 ];
 
 const CLUSTERS = [
-  { id: 'c1', lat: 41.6512, lng: -83.6481, count: 3, label: 'West Toledo' },
-  { id: 'c2', lat: 41.6912, lng: -83.6651, count: 5, label: 'Monroe Corridor' },
-  { id: 'c3', lat: 41.6582, lng: -83.5402, count: 2, label: 'Downtown' },
-  { id: 'c4', lat: 41.7012, lng: -83.6892, count: 4, label: 'Sylvania' },
+  { id: 'c2', lat: 41.6912, lng: -83.6651, count: 3, label: 'Monroe Corridor' },
+  { id: 'c3', lat: 41.6582, lng: -83.5402, count: 1, label: 'Downtown' },
+  { id: 'c4', lat: 41.7012, lng: -83.6892, count: 1, label: 'Sylvania' },
 ];
 
 // ============================================================
@@ -198,9 +197,7 @@ function JobBoardScreen({ online, onAccept }: { online: boolean; onAccept: (j: J
   const clusterJobs = useMemo(
     () => {
       if (!clusterId) return [];
-      const matched = MOCK_JOBS.filter(j => j.cluster === clusterId);
-      // fallback: if no jobs explicitly tagged to this cluster, show all
-      return matched.length > 0 ? matched : MOCK_JOBS;
+      return MOCK_JOBS.filter(j => j.cluster === clusterId);
     },
     [clusterId]
   );
@@ -221,7 +218,8 @@ function JobBoardScreen({ online, onAccept }: { online: boolean; onAccept: (j: J
 
       map.on('load', () => {
         CLUSTERS.forEach((c) => {
-          const jobCount = MOCK_JOBS.filter(j => j.cluster === c.id).length || c.count;
+          const jobCount = MOCK_JOBS.filter(j => j.cluster === c.id).length;
+          if (jobCount === 0) return;
           const size = 30 + jobCount * 4;
           const el = document.createElement('div');
           el.style.cssText = `
