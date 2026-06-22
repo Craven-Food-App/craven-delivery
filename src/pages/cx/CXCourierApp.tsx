@@ -63,6 +63,7 @@ type Job = {
   pieces: number;
   weightLbs: number;
   proofRequired: ('photo' | 'signature' | 'recipient')[];
+  cluster?: string;
 };
 
 const MOCK_JOBS: Job[] = [
