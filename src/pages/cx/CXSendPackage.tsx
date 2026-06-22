@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { CXLogo } from "@/components/cx/CXLogo";
 
 type Size = "envelope" | "small" | "medium" | "large";
 
@@ -81,7 +82,7 @@ export default function CXSendPackage() {
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
           <Link to="/" className="p-2 -ml-2 rounded-md hover:bg-slate-100"><ArrowLeft className="h-5 w-5" /></Link>
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-md bg-orange-500 grid place-items-center text-white text-xs font-bold">CX</div>
+            <CXLogo size="sm" />
             <div className="leading-tight">
               <div className="text-sm font-semibold">Send a Package</div>
               <div className="text-[11px] text-slate-500">Crave'N Express · same-day courier</div>
