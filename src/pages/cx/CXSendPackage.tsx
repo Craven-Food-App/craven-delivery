@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 type Size = "envelope" | "small" | "medium" | "large";
 
@@ -31,6 +32,7 @@ export default function CXSendPackage() {
   const [pickup, setPickup] = useState({ name: "", phone: "", address: "", notes: "" });
   const [dropoff, setDropoff] = useState({ name: "", phone: "", address: "", notes: "" });
   const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     document.title = "Send a Package — Crave'N Express";
@@ -40,13 +42,37 @@ export default function CXSendPackage() {
   const speedMeta = SPEED_OPTIONS.find((s) => s.id === speed)!;
   const total = Math.max(4.99, sizeMeta.price + speedMeta.extra);
 
-  const submit = () => {
+  const submit = async () => {
     if (!pickup.address || !dropoff.address) {
       toast({ title: "Missing address", description: "Pickup and drop-off addresses are required.", variant: "destructive" });
       return;
     }
-    toast({ title: "Request submitted", description: "We're finding a Feeder to pick up your package." });
-    setTimeout(() => navigate("/"), 1200);
+    setSubmitting(true);
+    const { data, error } = await supabase.functions.invoke("cx-dispatch-job", {
+      body: {
+        requester_type: "customer",
+        size,
+        description,
+        speed,
+        pickup,
+        dropoff,
+        total_cents: Math.round(total * 100),
+      },
+    });
+    setSubmitting(false);
+    if (error || (data as { error?: string })?.error) {
+      toast({
+        title: "Couldn't submit request",
+        description: (data as { error?: string })?.error || error?.message || "Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({
+      title: "Request sent",
+      description: "Broadcasting to nearby Feeders and CX couriers — first to accept wins.",
+    });
+    setTimeout(() => navigate("/"), 1400);
   };
 
   return (
@@ -215,8 +241,13 @@ export default function CXSendPackage() {
               Continue <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
-            <Button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white" onClick={submit}>
-              <Package className="h-4 w-4 mr-2" /> Request pickup · ${total.toFixed(2)}
+            <Button
+              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+              onClick={submit}
+              disabled={submitting}
+            >
+              <Package className="h-4 w-4 mr-2" />
+              {submitting ? "Dispatching…" : `Request pickup · $${total.toFixed(2)}`}
             </Button>
           )}
         </div>

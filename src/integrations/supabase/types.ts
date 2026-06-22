@@ -7506,6 +7506,86 @@ export type Database = {
           },
         ]
       }
+      cx_dispatch_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          job_id: string
+          metadata: Json
+          pool: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          job_id: string
+          metadata?: Json
+          pool?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          job_id?: string
+          metadata?: Json
+          pool?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_dispatch_events_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cx_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cx_dispatch_settings: {
+        Row: {
+          auto_dispatch_enabled: boolean
+          company_dispatch_mode: string
+          created_at: string
+          customer_dispatch_mode: string
+          cx_exclusive_seconds: number
+          default_radius_miles: number
+          eligible_feeder_tiers: string[]
+          id: string
+          merchant_dispatch_mode: string
+          singleton: boolean
+          updated_at: string
+        }
+        Insert: {
+          auto_dispatch_enabled?: boolean
+          company_dispatch_mode?: string
+          created_at?: string
+          customer_dispatch_mode?: string
+          cx_exclusive_seconds?: number
+          default_radius_miles?: number
+          eligible_feeder_tiers?: string[]
+          id?: string
+          merchant_dispatch_mode?: string
+          singleton?: boolean
+          updated_at?: string
+        }
+        Update: {
+          auto_dispatch_enabled?: boolean
+          company_dispatch_mode?: string
+          created_at?: string
+          customer_dispatch_mode?: string
+          cx_exclusive_seconds?: number
+          default_radius_miles?: number
+          eligible_feeder_tiers?: string[]
+          id?: string
+          merchant_dispatch_mode?: string
+          singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cx_driver_verification: {
         Row: {
           created_at: string
@@ -7708,13 +7788,22 @@ export type Database = {
       cx_jobs: {
         Row: {
           assigned_driver_id: string | null
+          broadcast_started_at: string | null
           cancelled_reason: string | null
-          courier_restaurant_id: string
+          claimed_at: string | null
+          claimed_by_pool: string | null
+          claimed_by_user_id: string | null
+          courier_restaurant_id: string | null
           created_at: string
           created_by: string
+          cx_exclusive_until: string | null
           dispatch_deadline_at: string | null
+          dispatch_mode: string
+          dispatch_radius_miles: number
           dispatch_round: number
-          driver_payout_offer_cents: number
+          dispatch_status: string
+          driver_payout_offer_cents: number | null
+          eligible_feeder_tiers: string[]
           estimated_distance_meters: number | null
           estimated_duration_seconds: number | null
           expires_at: string | null
@@ -7724,8 +7813,9 @@ export type Database = {
           notes: string | null
           optimized_polyline: string | null
           pickup_at: string | null
-          platform_base_cents: number
+          platform_base_cents: number | null
           region_id: string | null
+          requester_type: string
           status: Database["public"]["Enums"]["cx_job_status"]
           tier_open: boolean
           total_charge_cents: number | null
@@ -7733,13 +7823,22 @@ export type Database = {
         }
         Insert: {
           assigned_driver_id?: string | null
+          broadcast_started_at?: string | null
           cancelled_reason?: string | null
-          courier_restaurant_id: string
+          claimed_at?: string | null
+          claimed_by_pool?: string | null
+          claimed_by_user_id?: string | null
+          courier_restaurant_id?: string | null
           created_at?: string
           created_by: string
+          cx_exclusive_until?: string | null
           dispatch_deadline_at?: string | null
+          dispatch_mode?: string
+          dispatch_radius_miles?: number
           dispatch_round?: number
-          driver_payout_offer_cents: number
+          dispatch_status?: string
+          driver_payout_offer_cents?: number | null
+          eligible_feeder_tiers?: string[]
           estimated_distance_meters?: number | null
           estimated_duration_seconds?: number | null
           expires_at?: string | null
@@ -7749,8 +7848,9 @@ export type Database = {
           notes?: string | null
           optimized_polyline?: string | null
           pickup_at?: string | null
-          platform_base_cents: number
+          platform_base_cents?: number | null
           region_id?: string | null
+          requester_type?: string
           status?: Database["public"]["Enums"]["cx_job_status"]
           tier_open?: boolean
           total_charge_cents?: number | null
@@ -7758,13 +7858,22 @@ export type Database = {
         }
         Update: {
           assigned_driver_id?: string | null
+          broadcast_started_at?: string | null
           cancelled_reason?: string | null
-          courier_restaurant_id?: string
+          claimed_at?: string | null
+          claimed_by_pool?: string | null
+          claimed_by_user_id?: string | null
+          courier_restaurant_id?: string | null
           created_at?: string
           created_by?: string
+          cx_exclusive_until?: string | null
           dispatch_deadline_at?: string | null
+          dispatch_mode?: string
+          dispatch_radius_miles?: number
           dispatch_round?: number
-          driver_payout_offer_cents?: number
+          dispatch_status?: string
+          driver_payout_offer_cents?: number | null
+          eligible_feeder_tiers?: string[]
           estimated_distance_meters?: number | null
           estimated_duration_seconds?: number | null
           expires_at?: string | null
@@ -7774,8 +7883,9 @@ export type Database = {
           notes?: string | null
           optimized_polyline?: string | null
           pickup_at?: string | null
-          platform_base_cents?: number
+          platform_base_cents?: number | null
           region_id?: string | null
+          requester_type?: string
           status?: Database["public"]["Enums"]["cx_job_status"]
           tier_open?: boolean
           total_charge_cents?: number | null
@@ -33343,6 +33453,10 @@ export type Database = {
       check_violation_threshold: {
         Args: { p_hours_back?: number; p_threshold?: number; p_user_id: string }
         Returns: boolean
+      }
+      claim_cx_job: {
+        Args: { p_job_id: string; p_pool: string }
+        Returns: Json
       }
       claim_next_merchant_prospect: {
         Args: { p_owner_user_id?: string }
