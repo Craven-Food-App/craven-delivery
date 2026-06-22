@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { CXPostJobForm } from "@/components/cx/CXPostJobForm";
 import { CXJobList } from "@/components/cx/CXJobList";
+import { CXLogo } from "@/components/cx/CXLogo";
 
 type Tab = "dispatch" | "post" | "active" | "history" | "fleet" | "analytics";
 
