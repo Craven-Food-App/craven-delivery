@@ -544,7 +544,6 @@ export default function MerchantLandingPage() {
     'Grocery',
     'Bakery',
     'Coffee',
-    'Courier Service',
   ];
 
   // Prioritize user-entered city, then detected location, then fallback
