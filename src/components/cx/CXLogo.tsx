@@ -13,7 +13,7 @@ export function CXLogo({ size = "md", className = "" }: { size?: Size; className
   const px = SIZES[size];
   return (
     <img
-      src={cxLogo}
+      src={cxLogoAsset.url}
       alt="Crave'N Express"
       width={px}
       height={px}
