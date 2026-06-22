@@ -218,7 +218,8 @@ function JobBoardScreen({ online, onAccept }: { online: boolean; onAccept: (j: J
 
       map.on('load', () => {
         CLUSTERS.forEach((c) => {
-          const jobCount = MOCK_JOBS.filter(j => j.cluster === c.id).length || c.count;
+          const jobCount = MOCK_JOBS.filter(j => j.cluster === c.id).length;
+          if (jobCount === 0) return;
           const size = 30 + jobCount * 4;
           const el = document.createElement('div');
           el.style.cssText = `
