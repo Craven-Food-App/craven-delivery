@@ -25,6 +25,7 @@ const CXLandingPage = lazy(() => import("./pages/cx/CXLandingPage"));
 const CXSignupPage = lazy(() => import("./pages/cx/CXSignupPage"));
 const CXApplyPage = lazy(() => import("./pages/cx/CXApplyPage"));
 const CXPortal = lazy(() => import("./pages/cx/CXPortal"));
+const CXCourierApp = lazy(() => import("./pages/cx/CXCourierApp"));
 import FeederHub from "./pages/FeederHub";
 import IndependentContractorAgreement from "./pages/IndependentContractorAgreement";
 import FeederPrivacyPolicy from "./pages/FeederPrivacyPolicy";
