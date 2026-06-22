@@ -672,7 +672,7 @@ function AccountScreen() {
 // BOTTOM NAV
 // ============================================================
 function BottomNav({ tab, setTab, hasActive }: { tab: Tab; setTab: (t: Tab) => void; hasActive: boolean }) {
-  const items: { id: Tab; label: string; icon: React.ElementType; dot?: boolean }[] = [
+  const items: { id: Tab; label: string; icon: any; dot?: boolean }[] = [
     { id: 'jobs', label: 'Jobs', icon: MapPin },
     { id: 'active', label: 'Active', icon: Navigation2, dot: hasActive },
     { id: 'earnings', label: 'Earnings', icon: DollarSign },
