@@ -413,6 +413,13 @@ const Header = () => {
                 )}
                 {!isFeederSubdomain && !isMerchantSubdomain && (
                   <>
+                    <Link
+                      to="/cx/send"
+                      className="block text-lg font-semibold text-foreground hover:text-primary"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Send a Package
+                    </Link>
                     <Link 
                       to="/feeder" 
                       className="block text-lg font-semibold text-foreground hover:text-primary"
