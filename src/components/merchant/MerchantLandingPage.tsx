@@ -654,6 +654,13 @@ export default function MerchantLandingPage() {
                 </p>
               </div>
 
+              <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">
+                <span className="font-semibold">Running a courier or delivery company?</span>{' '}
+                <Link to="/cx/apply" className="font-semibold underline hover:text-orange-700">
+                  Apply on Crave'N Express instead →
+                </Link>
+              </div>
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Business Section */}
                 <div>
