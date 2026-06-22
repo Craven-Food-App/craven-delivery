@@ -575,6 +575,7 @@ function ActiveDeliveryFlow({ job, onComplete, onBack }: { job: Job | null; onCo
 function StageHeader({ job, stage }: { job: Job; stage: Stage }) {
   const idx = STAGE_ORDER.indexOf(stage);
   const pct = Math.round((idx / (STAGE_ORDER.length - 1)) * 100);
+  const label = (STAGE_LABEL[stage] || String(stage || '')).toUpperCase();
   return (
     <div style={{ background: CX.surface, borderBottom: `1px solid ${CX.line}` }}>
       <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -584,7 +585,7 @@ function StageHeader({ job, stage }: { job: Job; stage: Stage }) {
         }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 10, color: CX.sub, letterSpacing: '0.7px', fontWeight: 800 }}>
-            STAGE {idx + 1} OF {STAGE_ORDER.length - 1} · {STAGE_LABEL[stage].toUpperCase()}
+            STAGE {Math.max(idx, 0) + 1} OF {STAGE_ORDER.length - 1} · {label}
           </div>
           <div style={{ fontSize: 13, fontWeight: 800, color: CX.ink, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {job.merchant} · <span style={{ fontFamily: MONO, color: CX.orange }}>${job.payout.toFixed(2)}</span>

@@ -5,7 +5,7 @@ export const MAPBOX_STYLE = 'mapbox://styles/mapbox/light-v11';
 export const HIGHWAY_OVERLAY_COLOR = '#f97316';
 
 export const MAPBOX_CONFIG = {
-  accessToken: import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiY3JhdmUtbiIsImEiOiJjbWZpbXN4NmUwMG0wMmpxNDNkc2lmNWhiIn0._lEfvdpBUJpz-RYDV02ZAA',
+  accessToken: import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiY3JhdmUtbiIsImEiOiJjbWVxb21qbTQyNTRnMm1vaHg5bDZwcmw2In0.aOsYrL2B0cjfcCGW1jHAdw',
   style: MAPBOX_STYLE,
   center: [-83.5555, 41.6528], // Toledo, OH default
   zoom: 10
