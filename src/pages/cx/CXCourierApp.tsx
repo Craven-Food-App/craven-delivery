@@ -196,7 +196,12 @@ function JobBoardScreen({ online, onAccept }: { online: boolean; onAccept: (j: J
   const [previewJob, setPreviewJob] = useState<Job | null>(null);
   const [clusterId, setClusterId] = useState<string | null>(null);
   const clusterJobs = useMemo(
-    () => (clusterId ? MOCK_JOBS.filter(j => j.cluster === clusterId) : []),
+    () => {
+      if (!clusterId) return [];
+      const matched = MOCK_JOBS.filter(j => j.cluster === clusterId);
+      // fallback: if no jobs explicitly tagged to this cluster, show all
+      return matched.length > 0 ? matched : MOCK_JOBS;
+    },
     [clusterId]
   );
   const activeCluster = CLUSTERS.find(c => c.id === clusterId) || null;
@@ -228,7 +233,11 @@ function JobBoardScreen({ online, onAccept }: { online: boolean; onAccept: (j: J
             border:2px solid #fff;font-family:${MONO};
           `;
           el.textContent = String(jobCount);
-          el.onclick = () => setClusterId(c.id);
+          el.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            console.log('[CX] cluster clicked', c.id);
+            setClusterId(c.id);
+          });
           new mapboxgl.Marker(el).setLngLat([c.lng, c.lat]).addTo(map);
         });
 
