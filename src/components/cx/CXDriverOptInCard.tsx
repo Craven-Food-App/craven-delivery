@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Truck, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { CXLogo } from "@/components/cx/CXLogo";
 
 /**
  * Drop into Feeder driver settings/preferences.

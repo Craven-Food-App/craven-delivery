@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Truck, Route, Clock, ShieldCheck, ArrowRight } from "lucide-react";
 import { useEffect } from "react";
+import { CXLogo } from "@/components/cx/CXLogo";
 
 export default function CXLandingPage() {
   useEffect(() => {
