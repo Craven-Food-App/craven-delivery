@@ -659,6 +659,7 @@ const Restaurants = () => {
     { id: 'all', label: 'Main', icon: IconHome, active: activeCategory === 'all' },
     { id: 'restaurants', label: 'Restaurants', icon: IconToolsKitchen2, active: activeCategory === 'restaurants' },
     { id: 'grocery', label: 'Grocery', icon: IconBuildingStore, active: activeCategory === 'grocery' },
+    { id: 'send-package', label: 'Send Package', icon: IconPackage, active: activeCategory === 'send-package' },
     { id: 'convenience', label: 'C Stores', icon: IconCoffee, active: activeCategory === 'convenience' },
     { id: 'beauty', label: 'Cosmetics', icon: IconHeart, active: activeCategory === 'beauty' },
     { id: 'apparel', label: 'Apparel', icon: IconShirt, active: activeCategory === 'apparel' },
@@ -695,6 +696,9 @@ const Restaurants = () => {
     } else if (categoryId === 'account') {
       // Navigate to customer dashboard account tab
       navigate('/account');
+      return;
+    } else if (categoryId === 'send-package') {
+      navigate('/cx/send');
       return;
     }
     
