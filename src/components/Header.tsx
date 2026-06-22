@@ -141,6 +141,7 @@ const Header = () => {
                 {restaurantsVisible && (
                   <Link to="/restaurants" className="text-foreground hover:text-primary transition-colors">Place an Order</Link>
                 )}
+                <Link to="/cx/send" className="text-foreground hover:text-primary transition-colors">Send a Package</Link>
                 <Link to="/feeder" className="text-foreground hover:text-primary transition-colors">Become a Feeder</Link>
                 
               </nav>
