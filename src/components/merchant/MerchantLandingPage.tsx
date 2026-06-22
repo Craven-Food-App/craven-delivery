@@ -41,6 +41,15 @@ export default function MerchantLandingPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectType = searchParams.get('type');
+  const navigate = useNavigate();
+
+  // Redirect courier signups to the dedicated CX application page
+  useEffect(() => {
+    if (preselectType === 'courier') {
+      navigate('/cx/apply', { replace: true });
+    }
+  }, [preselectType, navigate]);
+
   const [formData, setFormData] = useState<MerchantSignupForm>({
     storeName: '',
     storeAddress: '',
@@ -49,7 +58,7 @@ export default function MerchantLandingPage() {
     zipCode: '',
     email: '',
     phone: '',
-    businessType: preselectType === 'courier' ? 'Courier Service' : '',
+    businessType: '',
   });
   
   const [earningsEstimate, setEarningsEstimate] = useState<EarningsEstimate | null>(null);
