@@ -90,10 +90,9 @@ const MOCK_JOBS: Job[] = [
 ];
 
 const CLUSTERS = [
-  { id: 'c1', lat: 41.6512, lng: -83.6481, count: 3, label: 'West Toledo' },
-  { id: 'c2', lat: 41.6912, lng: -83.6651, count: 5, label: 'Monroe Corridor' },
-  { id: 'c3', lat: 41.6582, lng: -83.5402, count: 2, label: 'Downtown' },
-  { id: 'c4', lat: 41.7012, lng: -83.6892, count: 4, label: 'Sylvania' },
+  { id: 'c2', lat: 41.6912, lng: -83.6651, count: 3, label: 'Monroe Corridor' },
+  { id: 'c3', lat: 41.6582, lng: -83.5402, count: 1, label: 'Downtown' },
+  { id: 'c4', lat: 41.7012, lng: -83.6892, count: 1, label: 'Sylvania' },
 ];
 
 // ============================================================
