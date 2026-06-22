@@ -7793,7 +7793,7 @@ export type Database = {
           claimed_at: string | null
           claimed_by_pool: string | null
           claimed_by_user_id: string | null
-          courier_restaurant_id: string
+          courier_restaurant_id: string | null
           created_at: string
           created_by: string
           cx_exclusive_until: string | null
@@ -7802,7 +7802,7 @@ export type Database = {
           dispatch_radius_miles: number
           dispatch_round: number
           dispatch_status: string
-          driver_payout_offer_cents: number
+          driver_payout_offer_cents: number | null
           eligible_feeder_tiers: string[]
           estimated_distance_meters: number | null
           estimated_duration_seconds: number | null
@@ -7813,7 +7813,7 @@ export type Database = {
           notes: string | null
           optimized_polyline: string | null
           pickup_at: string | null
-          platform_base_cents: number
+          platform_base_cents: number | null
           region_id: string | null
           requester_type: string
           status: Database["public"]["Enums"]["cx_job_status"]
@@ -7828,7 +7828,7 @@ export type Database = {
           claimed_at?: string | null
           claimed_by_pool?: string | null
           claimed_by_user_id?: string | null
-          courier_restaurant_id: string
+          courier_restaurant_id?: string | null
           created_at?: string
           created_by: string
           cx_exclusive_until?: string | null
@@ -7837,7 +7837,7 @@ export type Database = {
           dispatch_radius_miles?: number
           dispatch_round?: number
           dispatch_status?: string
-          driver_payout_offer_cents: number
+          driver_payout_offer_cents?: number | null
           eligible_feeder_tiers?: string[]
           estimated_distance_meters?: number | null
           estimated_duration_seconds?: number | null
@@ -7848,7 +7848,7 @@ export type Database = {
           notes?: string | null
           optimized_polyline?: string | null
           pickup_at?: string | null
-          platform_base_cents: number
+          platform_base_cents?: number | null
           region_id?: string | null
           requester_type?: string
           status?: Database["public"]["Enums"]["cx_job_status"]
@@ -7863,7 +7863,7 @@ export type Database = {
           claimed_at?: string | null
           claimed_by_pool?: string | null
           claimed_by_user_id?: string | null
-          courier_restaurant_id?: string
+          courier_restaurant_id?: string | null
           created_at?: string
           created_by?: string
           cx_exclusive_until?: string | null
@@ -7872,7 +7872,7 @@ export type Database = {
           dispatch_radius_miles?: number
           dispatch_round?: number
           dispatch_status?: string
-          driver_payout_offer_cents?: number
+          driver_payout_offer_cents?: number | null
           eligible_feeder_tiers?: string[]
           estimated_distance_meters?: number | null
           estimated_duration_seconds?: number | null
@@ -7883,7 +7883,7 @@ export type Database = {
           notes?: string | null
           optimized_polyline?: string | null
           pickup_at?: string | null
-          platform_base_cents?: number
+          platform_base_cents?: number | null
           region_id?: string | null
           requester_type?: string
           status?: Database["public"]["Enums"]["cx_job_status"]
