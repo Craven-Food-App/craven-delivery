@@ -365,8 +365,9 @@ function ClusterCarousel({
 
   return (
     <div className="cx-fade" style={{
-      position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 40,
+      flex: 1, display: 'flex', flexDirection: 'column',
       paddingBottom: 'calc(env(safe-area-inset-bottom,0px) + 8px)',
+      overflow: 'hidden',
     }}>
       {/* Header pill */}
       <div style={{
