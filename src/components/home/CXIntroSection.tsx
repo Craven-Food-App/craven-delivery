@@ -30,7 +30,7 @@ const CXIntroSection = () => {
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <Button asChild size="lg" className="bg-orange-500 hover:bg-orange-600 text-white">
-              <Link to="/merchant/signup?type=courier">Sign up as a courier company</Link>
+              <Link to="/cx/apply">Sign up as a courier company</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 bg-transparent">
               <Link to="/cx">Need a courier? Find one →</Link>

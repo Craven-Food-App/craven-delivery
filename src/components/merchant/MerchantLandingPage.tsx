@@ -41,6 +41,14 @@ export default function MerchantLandingPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectType = searchParams.get('type');
+
+  // Redirect courier signups to the dedicated CX application page
+  useEffect(() => {
+    if (preselectType === 'courier') {
+      navigate('/cx/apply', { replace: true });
+    }
+  }, [preselectType, navigate]);
+
   const [formData, setFormData] = useState<MerchantSignupForm>({
     storeName: '',
     storeAddress: '',
@@ -49,7 +57,7 @@ export default function MerchantLandingPage() {
     zipCode: '',
     email: '',
     phone: '',
-    businessType: preselectType === 'courier' ? 'Courier Service' : '',
+    businessType: '',
   });
   
   const [earningsEstimate, setEarningsEstimate] = useState<EarningsEstimate | null>(null);
@@ -536,7 +544,6 @@ export default function MerchantLandingPage() {
     'Grocery',
     'Bakery',
     'Coffee',
-    'Courier Service',
   ];
 
   // Prioritize user-entered city, then detected location, then fallback
@@ -645,6 +652,13 @@ export default function MerchantLandingPage() {
                 <p className="text-sm sm:text-base text-gray-600">
                   Create your merchant profile and begin onboarding. No long-term contract. If it doesn't make sense, you walk.
                 </p>
+              </div>
+
+              <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">
+                <span className="font-semibold">Running a courier or delivery company?</span>{' '}
+                <Link to="/cx/apply" className="font-semibold underline hover:text-orange-700">
+                  Apply on Crave'N Express instead →
+                </Link>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
