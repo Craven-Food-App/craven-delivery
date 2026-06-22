@@ -737,6 +737,7 @@ const App = () => {
           <Route path="/cx/apply" element={<Suspense fallback={<SuspenseLoader message="Loading CX" />}><CXApplyPage /></Suspense>} />
           <Route path="/cx/portal" element={<Suspense fallback={<SuspenseLoader message="Loading CX Portal" />}><CXPortal /></Suspense>} />
           <Route path="/cx-courier-app" element={<Suspense fallback={<SuspenseLoader message="Loading CX Courier App" />}><CXCourierApp /></Suspense>} />
+          <Route path="/cx/send" element={<Suspense fallback={<SuspenseLoader message="Loading Send a Package" />}><CXSendPackage /></Suspense>} />
           <Route path="/restaurants/cuisine/:cuisine" element={<CuisineResults />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/order-history" element={<OrderHistory />} />
