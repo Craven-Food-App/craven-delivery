@@ -140,11 +140,11 @@ export default function CXPortal() {
       picked_up: "bg-purple-100 text-purple-700 border-purple-300",
       en_route_dropoff: "bg-purple-100 text-purple-700 border-purple-300",
       delivered: "bg-emerald-100 text-emerald-700 border-emerald-300",
-      cancelled: "bg-slate-200 text-slate-400 border-slate-600",
+      cancelled: "bg-slate-200 text-slate-500 border-slate-300",
       failed: "bg-rose-100 text-rose-700 border-rose-300",
     };
     return (
-      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider border ${map[status] ?? "bg-slate-200 text-slate-400 border-slate-600"}`}>
+      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider border ${map[status] ?? "bg-slate-200 text-slate-500 border-slate-300"}`}>
         {status.replace(/_/g," ")}
       </span>
     );
@@ -306,7 +306,7 @@ export default function CXPortal() {
             <Button
               size="sm"
               onClick={() => setTab("post")}
-              className="bg-orange-500 hover:bg-orange-600 text-slate-900 h-7 px-3 text-xs gap-1"
+              className="bg-orange-500 hover:bg-orange-600 text-white h-7 px-3 text-xs gap-1"
             >
               <PlusCircle className="h-3.5 w-3.5"/> New
             </Button>
