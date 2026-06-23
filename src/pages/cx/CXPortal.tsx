@@ -132,7 +132,7 @@ export default function CXPortal() {
 
   const StatusPill = ({ status }: { status: string }) => {
     const map: Record<string, string> = {
-      draft: "bg-slate-200 text-slate-400 border-slate-600",
+      draft: "bg-slate-200 text-slate-700 border-slate-300",
       posted: "bg-amber-100 text-amber-700 border-amber-300",
       offered: "bg-blue-100 text-blue-700 border-blue-300",
       accepted: "bg-indigo-100 text-indigo-700 border-indigo-300",
