@@ -81,7 +81,7 @@ const Careers = () => {
           <Users className="h-16 w-16 mx-auto mb-6" />
           <h1 className="text-4xl font-bold mb-4">Join Our Team</h1>
           <p className="text-xl opacity-90 max-w-3xl mx-auto">
-            Help us revolutionize food delivery. Build your career with a fast-growing company that values innovation and teamwork.
+            Help us redefine on-demand local commerce across food, grocery, retail, convenience, and courier (CX). Build your career with a fast-growing company that values innovation and teamwork.
           </p>
         </div>
       </div>

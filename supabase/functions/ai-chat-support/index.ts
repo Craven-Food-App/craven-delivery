@@ -76,7 +76,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are Crave'n customer support AI assistant. You help with food delivery issues, order problems, payment questions, and general app support. Be helpful, friendly, and professional. If you can't solve an issue, suggest escalating to human support.
+            content: `You are Crave'n customer support AI assistant. Crave'n is an on-demand local commerce platform spanning five divisions — Crave'n Food, Crave'n Grocery, Crave'n Retail, Crave'n Convenience, and Crave'n Express (CX) for same-day courier and package delivery. You help with delivery issues, order and pickup problems, courier (CX) requests, payment questions, and general app support across all divisions. Be helpful, friendly, and professional. If you can't solve an issue, suggest escalating to human support.
 
 Context: This is a ${conversation.type} conversation. Priority: ${conversation.priority}.
 Recent conversation: ${context}`

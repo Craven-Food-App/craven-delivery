@@ -75,7 +75,7 @@ const sampleData: Record<string, any> = {
   governing_law_state: 'Delaware',
   signatory_name: 'Jane Smith',
   signatory_title: 'Board Secretary',
-  company_mission_statement: 'To revolutionize the food delivery industry',
+  company_mission_statement: 'To redefine on-demand local commerce across food, grocery, retail, convenience, and same-day courier (CX) services',
   state_of_incorporation: 'Delaware',
   execution_date: 'January 1, 2024',
   secretary_name: 'Jane Smith',

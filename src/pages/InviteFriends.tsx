@@ -119,7 +119,7 @@ const InviteFriends: React.FC = () => {
 
   const shareByText = async () => {
     const text = encodeURIComponent(
-      `Try Crave’n for food delivery. Use my link on your first order:\n${referralLink}`
+      `Try Crave’n — food, grocery, retail, convenience, and same-day courier (CX), all in one app. Use my link on your first order:\n${referralLink}`
     );
     window.location.href = `sms:?body=${text}`;
   };

@@ -59,8 +59,7 @@ export default function Success() {
           {/* Thank You Message */}
           <div className="mx-auto mt-12 max-w-md rounded-2xl bg-gradient-to-br from-[hsl(var(--primary))]/10 to-[hsl(var(--secondary))]/10 p-6 text-center ring-1 ring-border">
             <p className="text-sm leading-6 text-foreground">
-              Your contribution helps us continue building the future of local food delivery. 
-              We couldn't do this without friends and family like you.
+              Your contribution helps us continue building the future of on-demand local commerce — food, grocery, retail, convenience, and courier (CX). We couldn't do this without friends and family like you.
             </p>
           </div>
         </div>

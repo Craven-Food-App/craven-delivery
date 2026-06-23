@@ -1094,8 +1094,8 @@ const Restaurants = () => {
           {/* Logo and Tagline */}
           <Box style={{ position: 'relative', zIndex: 10 }}>
             <Title order={1} style={{ fontSize: '72px', fontWeight: 900, marginBottom: '8px', letterSpacing: '-0.05em', color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>Craven.</Title>
-            <Text size="xl" fw={300} c="white" style={{ maxWidth: '320px', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-              Your premium choice for food delivery.
+            <Text size="xl" fw={300} c="white" style={{ maxWidth: '360px', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+              Food, grocery, retail, convenience &amp; courier (CX) — on demand.
             </Text>
           </Box>
 

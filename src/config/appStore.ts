@@ -23,7 +23,7 @@ export const appStoreConfig: AppStoreConfig = {
   bundleId: 'com.craven.delivery.driver',
   version: '1.0.0',
   buildNumber: '1',
-  description: 'Join the Crave\'n delivery network and earn money delivering food to customers. Flexible schedule, competitive pay, and professional support.',
+  description: 'Join the Crave\'n Feeder network and earn money delivering across food, grocery, retail, convenience, and Crave\'n Express (CX) courier jobs. Flexible schedule, competitive pay, and professional support.',
   keywords: [
     'delivery',
     'driver',
