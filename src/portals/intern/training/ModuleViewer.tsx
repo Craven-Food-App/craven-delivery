@@ -51,7 +51,7 @@ function generateModuleContent(module: TrainingModule): ContentSection[] {
             <div class="text-center text-white"><div class="text-6xl mb-4">🚀</div><h2 class="text-2xl font-bold">Welcome Video</h2></div>
           </div>
           <h3 class="text-xl font-bold">Our Mission</h3>
-          <p class="text-gray-600">At Crave'n Delivery, we're revolutionizing food delivery by connecting customers with local restaurants while supporting businesses and providing flexible opportunities for delivery partners.</p>
+          <p class="text-gray-600">At Crave'n, we power on-demand local commerce — food, grocery, retail, convenience, and same-day courier (CX) — connecting customers and businesses with local merchants and Feeders while creating flexible opportunities for delivery partners.</p>
           <h3 class="text-xl font-bold">Our Values</h3>
           <ul class="space-y-2"><li><strong>Customer First:</strong> Every decision starts with customer experience</li><li><strong>Innovation:</strong> We constantly seek better ways to serve</li><li><strong>Integrity:</strong> We do the right thing</li><li><strong>Teamwork:</strong> Together we achieve more</li></ul>
         </div>`,

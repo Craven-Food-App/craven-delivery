@@ -134,7 +134,7 @@ const DEFAULT_FORM_VALUES: ArticlesFormValues = {
   principalPostalCode: '43604',
   principalCounty: 'Lucas',
   purpose:
-    'To engage in the business of food delivery, logistics, and any lawful act or activity for which corporations may be organized under Chapter 1701 of the Ohio Revised Code.',
+    'To engage in the business of on-demand local commerce — including food delivery, grocery delivery, retail delivery, convenience delivery, and same-day courier and logistics services (Crave\'n Express / CX) — and any lawful act or activity for which corporations may be organized under Chapter 1701 of the Ohio Revised Code.',
   duration: 'Perpetual',
   effectiveDate: dayjs(),
   contactEmail: 'legal@cravenusa.com',

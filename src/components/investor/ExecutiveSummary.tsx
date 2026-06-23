@@ -223,19 +223,23 @@ const ExecutiveSummary: React.FC = () => {
             <section className="prose max-w-none">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Company Overview</h2>
               <p className="text-gray-700 leading-relaxed mb-4">
-                Crave'n Inc. is a technology-enabled food delivery platform designed to serve underserved secondary markets 
-                (Tier-2 and Tier-3 cities) with fair, transparent, and sustainable delivery infrastructure. Unlike incumbent 
-                platforms that extract 30%+ commissions from merchants, Crave'n operates on a merchant-first model with 
-                industry-leading 15% commission rates.
+                Crave'n Inc. is a technology-enabled on-demand local commerce platform spanning five divisions —
+                Crave'n Food, Crave'n Grocery, Crave'n Retail, Crave'n Convenience, and Crave'n Express (CX) for
+                same-day courier and logistics — designed to serve underserved secondary markets (Tier-2 and
+                Tier-3 cities) with fair, transparent, and sustainable infrastructure. Unlike incumbent platforms
+                that extract 30%+ commissions from merchants, Crave'n operates on a merchant-first model with an
+                industry-leading 15% commission cap across every division.
               </p>
             </section>
 
             <section className="prose max-w-none">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Market Opportunity</h2>
               <p className="text-gray-700 leading-relaxed mb-4">
-                The U.S. food delivery market exceeds $150 billion annually, with the fastest growth occurring in secondary 
-                markets where current platforms fail to provide sustainable economics. These markets represent a significant 
-                untapped opportunity for a platform optimized for lower-density operations.
+                The combined U.S. on-demand markets that Crave'n serves — food delivery, grocery, retail,
+                convenience, and same-day courier/logistics — represent several hundred billion dollars annually,
+                with the fastest growth occurring in secondary markets where current platforms fail to provide
+                sustainable economics. These markets represent a significant untapped opportunity for a multi-vertical
+                platform optimized for lower-density operations.
               </p>
             </section>
 

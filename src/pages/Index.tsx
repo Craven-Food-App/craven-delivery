@@ -49,24 +49,29 @@ const Index = () => {
   // JSON-LD Structured Data
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "FoodEstablishment",
+    "@type": "Organization",
     name: "Crave'n",
-    description: "Food delivery from local restaurants",
+    description: "On-demand network for food, grocery, retail, convenience, and same-day courier (CX) delivery.",
     url: "https://cravenusa.com",
     logo: "https://cravenusa.com/craven-logo.png",
     address: { "@type": "PostalAddress", addressCountry: "US" },
-    servesCuisine: ["American", "Italian", "Chinese", "Mexican", "Indian", "Japanese", "Thai"],
-    priceRange: "$$",
-    aggregateRating: { "@type": "AggregateRating", ratingValue: "4.8", reviewCount: "2500" },
+    sameAs: ["https://cravenusa.com"],
+    department: [
+      { "@type": "Organization", name: "Crave'n Food" },
+      { "@type": "Organization", name: "Crave'n Grocery" },
+      { "@type": "Organization", name: "Crave'n Retail" },
+      { "@type": "Organization", name: "Crave'n Convenience" },
+      { "@type": "Organization", name: "Crave'n Express (CX)" },
+    ],
   };
 
   return (
     <>
       <Helmet>
-        <title>Crave'n - Membership | Zero Delivery Fees & Exclusive Benefits</title>
+        <title>Crave'n — Food, Grocery, Retail, Convenience &amp; Courier (CX), On Demand</title>
         <meta
           name="description"
-          content="Join our membership for $8.99/month and enjoy zero delivery fees, priority support, and exclusive perks. Limited lifetime memberships available for $249."
+          content="One app for everything local. Order food, groceries, retail, and convenience items — or send a package with Crave'n Express (CX). Powered by local Feeders."
         />
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>

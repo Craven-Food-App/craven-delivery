@@ -220,8 +220,7 @@ ${formData.message}
               maw={700}
               style={heroImageUrl ? { textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' } : {}}
             >
-              Join our growing network of restaurants, drivers, and businesses.
-              Together, we're revolutionizing food delivery and creating opportunities for everyone.
+              Join our growing network of restaurants, grocery, retail, convenience merchants, courier companies, Feeders, and businesses. Together, we're redefining on-demand local commerce and creating opportunities for everyone.
             </Text>
           </Stack>
         </Container>
