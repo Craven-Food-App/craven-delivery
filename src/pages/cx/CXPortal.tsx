@@ -193,11 +193,11 @@ export default function CXPortal() {
                   <span className="font-mono text-[10px] text-orange-600">#{j.id.slice(0,6).toUpperCase()}</span>
                   <StatusPill status={j.status}/>
                 </div>
-                <div className="text-slate-400 flex items-center gap-1 truncate">
+                <div className="text-slate-700 flex items-center gap-1 truncate">
                   <MapPin className="h-3 w-3 text-orange-500 shrink-0"/>
                   <span className="truncate text-[11px]">{pickup?.address ?? "—"}</span>
                 </div>
-                <div className="text-slate-400 flex items-center gap-1 truncate mt-0.5">
+                <div className="text-slate-700 flex items-center gap-1 truncate mt-0.5">
                   <ArrowRight className="h-3 w-3 text-slate-400 shrink-0"/>
                   <span className="truncate text-[11px]">{dropoff?.address ?? "—"}</span>
                 </div>
