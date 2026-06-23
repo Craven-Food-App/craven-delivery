@@ -1,116 +1,61 @@
+## Deliverable
 
-# Crave'N Express (CX) — Enterprise Courier Company Application & Onboarding
+A polished **enterprise-grade executive brief** for Crave'N Express (CX) — designed to hand to the owner/CEO of a small-to-mid courier company. Produced as both **`.docx`** (editable) and **`.pdf`** (sendable), saved to `/mnt/documents/` with a `<presentation-artifact>` preview.
 
-You're right — the current `/cx/signup` is a 6-field intake form. That's a lead capture, not an application. For a B2B courier company being granted dispatch rights into your driver pool, this needs to look like the merchant + driver onboarding flows combined: a multi-step gated application with document uploads, verification, and a structured review workflow in the CPO portal.
+## Look & Feel
 
-## What gets built
+- Institutional Fortune-500 memo style: Georgia serif body, justified, generous margins, section dividers.
+- Crave'N orange (`#FF6A00`) accents for section headers, rules, and the CX wordmark.
+- CX logo on cover + footer; "Crave'N Express — Powered by Crave'N, Delivered by Our Drivers" tagline.
+- Cover, table of contents, numbered sections, footer with page numbers and `support@cravenusa.com`.
 
-### 1. Public multi-step CX Application (`/cx/apply`)
-Replaces the current single-page form. 6 gated steps with autosave (draft persisted to DB so applicants can resume).
+## Document Outline (≈10-12 pages)
 
-```text
-Step 1 — Company Profile
-  Legal name, DBA, EIN, business structure (LLC/Corp/Sole Prop/Partnership),
-  state of incorporation, years in operation, website, business address
+1. **Cover** — CX logo, title "Crave'N Express Courier Partnership Brief", "Prepared for: [Courier Company]", date.
+2. **Executive Summary** — one page: what CX is, who it's for, the partnership offer in 3 bullets.
+3. **What is Crave'N Express** — short positioning: a dispatch + driver-network layer that lets independent courier companies post jobs and have them fulfilled by CX-vetted drivers (the Feeder network) without building their own dispatch tech or driver pool.
+4. **How It Works — End-to-End Operation**
+   - Courier creates a job in the CX portal (on-demand / scheduled / bulk route).
+   - Job is dispatched: CX-priority window first to top-tier Feeders, then opens to the full driver pool, first-accept wins.
+   - Driver picks up → in-transit tracking → proof of delivery → automatic payout.
+   - 15-mile dispatch radius; Elite + Ultimate tier priority on company shipments.
+   - Simple diagram (ASCII flow): Courier → CX Dispatch → Driver Pool → Customer → Settlement.
+5. **Roles & Responsibilities** — clean two-column table:
+   - **Courier provides**: customer relationship, pricing to end-client, job details, driver payout offer.
+   - **Crave'N Express provides**: dispatch tech, vetted driver network, tracking, POD, payouts, support.
+6. **The Economics — How Money Flows** (the core ask)
+   - Per-job waterfall (worked example, $10.99 job):
+     - Courier charges client: **$10.99**
+     - Driver payout (set by courier): **$8.00** (≈73%)
+     - CX platform base fee: **$2.99** (≈27%)
+     - Courier gross margin on the job = client price − $10.99 (everything above is upside).
+   - Subscription tiers table:
+     - **CX Starter** — $49/mo · 100 jobs included · $0.75 overage
+     - **CX Growth** — $149/mo · 500 jobs included · $0.50 overage
+     - **CX Fleet** — $399/mo · 2,000 jobs included · $0.35 overage
+   - Per-job base fee table: On-demand $2.99 · Scheduled $3.99 · Bulk route $4.99.
+   - Plain-English margin summary: "You keep 100% of what you charge your client above the CX platform fee + driver payout. CX never touches your customer relationship or invoicing."
+7. **Sample Monthly Scenarios** — three small P&L blocks (50, 250, 1,000 jobs/mo) showing courier revenue, driver cost, CX cost, courier net.
+8. **Service Levels & Trust** — vetted drivers, background checks, tier system (rolling 60-day), forensics/GPS tracking, support coverage.
+9. **Onboarding** — 4-step path: sign agreement → connect Stripe payout → set service area → first job live (typical: <72 hours).
+10. **Why This Works for a Small-to-Mid Courier** — three short paragraphs: no tech build, variable cost model, instant overflow capacity.
+11. **Next Steps & Contact** — clear CTA, contact line, signature block.
 
-Step 2 — Primary Contact & Ownership
-  Owner/officer name, title, email, phone, mobile, ownership %
-  Secondary operations contact, dispatch contact (24/7)
+## Technical Approach
 
-Step 3 — Operations & Service Area
-  Cities/zips served, daily volume capacity, hours of operation,
-  vehicle mix (cars/vans/trucks/cargo bikes), fleet size,
-  W-2 vs 1099 driver model, current client base / verticals
+- Use the **docx skill** (`docx-js` via Node) to author the file at US Letter, Georgia body, Arial Black headers, orange (`#FF6A00`) accents, with real tables (DXA widths), bullet lists via `LevelFormat.BULLET`, footer with page numbers.
+- Embed `src/assets/cx-logo.png` on the cover and in the footer via `ImageRun` (base64).
+- Validate the `.docx`, then convert to PDF with LibreOffice (`run_libreoffice.py --convert-to pdf`).
+- Render every PDF page to JPG with `pdftoppm` and visually QA each page (no overflow, no clipped tables, orange accents render, logo intact). Fix and re-render until clean.
+- Save final files as:
+  - `/mnt/documents/CraveN-Express-Courier-Partnership-Brief.docx`
+  - `/mnt/documents/CraveN-Express-Courier-Partnership-Brief.pdf`
+- Emit `<presentation-artifact>` tags for both.
 
-Step 4 — Compliance Documents (uploads, required)
-  • Commercial Auto Insurance Certificate ($1M min liability)
-  • General Liability Insurance Certificate
-  • Workers' Comp Certificate (or exemption affidavit)
-  • Business License (state + city)
-  • Articles of Incorporation / Operating Agreement
-  • W-9
-  • DOT / MC Authority (if applicable, conditional)
-  • EIN Verification Letter (IRS CP-575 or 147C)
+## Out of Scope
 
-Step 5 — Background & Safety Attestation
-  MVR program in place (yes/no + provider), drug testing program,
-  driver onboarding standards, incident reporting process,
-  prior carrier references (3), claims history (last 24mo)
+- No code changes to the app.
+- No changes to subscription pricing or fee structure (uses the existing numbers already in `cx_subscription_plans`).
+- No customization of the recipient courier's name — left as `[Courier Company]` placeholder for you to fill in (easy edit in the .docx).
 
-Step 6 — Legal & Sign
-  Master Services Agreement (MSA) — full text + e-signature
-  Independent Contractor / Carrier Agreement — e-sign
-  Indemnification & Insurance Addendum — e-sign
-  W-9 attestation, certification of truthfulness, ACH/payout intent
-```
-
-Each step validates before advancing. Step 4 uploads go to a private storage bucket. Step 6 captures typed + drawn signature with IP/timestamp.
-
-### 2. Database
-New tables (replace shoe-horning into `merchant_partnership_requests`):
-
-- `cx_applications` — one row per company, all step data, `status` (draft / submitted / under_review / contacted / docs_pending / approved / rejected / activated), `submitted_at`, `reviewed_by`, `decision_notes`, `signed_msa_url`, `signature_payload` jsonb
-- `cx_application_documents` — `application_id`, `doc_type`, `file_url`, `file_name`, `uploaded_at`, `verified` bool, `verified_by`, `expires_at` (for insurance/license)
-- `cx_application_references` — carrier references from step 5
-- `cx_application_events` — audit log (every status change, doc verification, note, email sent)
-
-Private storage bucket: `cx-applications` with RLS so applicants only see their own drafts; CPO/exec roles see all.
-
-### 3. CPO Portal — CX Applications (rebuilt)
-Replaces the current single-modal review. Becomes a full review workspace:
-
-- **List view** — filters by status, search, sortable columns, expiring-doc badges
-- **Detail drawer** (full-height side panel, not a small modal) with tabs:
-  - **Overview** — company snapshot, status timeline, quick approve/reject/contacted with required note
-  - **Documents** — every uploaded file with inline PDF/image viewer, per-doc verify button, expiration date input, "request replacement" action
-  - **Compliance** — checklist of required items (auto-ticks as docs are verified); cannot approve until all required = verified
-  - **References** — reference list with "mark called" + notes per reference
-  - **Signed Agreements** — MSA, carrier agreement, indemnification — view signed PDFs
-  - **Activity Log** — full audit trail
-  - **Notes** — internal CPO/exec notes thread
-- **Approve action** = gated on: all required docs verified + MSA signed + at least 1 reference contacted. On approve → creates CX partner record, provisions CX portal access, sends activation email.
-
-### 4. Routes & access
-- `/cx/apply` — public multi-step (replaces `/cx/signup`); old route redirects
-- `/cx/apply/resume?token=…` — resume draft via emailed link
-- CPO Portal → CX Applications tab — already exists, gets rebuilt
-
-### 5. Notifications (deferred per your earlier call)
-Hooks left in `cx_application_events` so email/notification wiring can be added later without schema changes.
-
----
-
-## Technical section
-
-**Files added**
-- `src/pages/cx/CXApplyPage.tsx` (multi-step wrapper)
-- `src/pages/cx/steps/Step1Company.tsx` … `Step6Sign.tsx`
-- `src/pages/cx/components/CXDocUpload.tsx`, `CXSignaturePad.tsx`, `CXProgressRail.tsx`
-- `src/portals/cpo/tabs/CXApplications.tsx` (rebuilt — list)
-- `src/portals/cpo/components/CXApplicationDrawer.tsx` (review workspace)
-- `src/portals/cpo/components/CXDocViewer.tsx`, `CXComplianceChecklist.tsx`, `CXActivityLog.tsx`
-- `src/hooks/useCXApplication.ts` (autosave + state)
-- `src/lib/cx/requiredDocs.ts`, `src/lib/cx/agreements.ts` (MSA + carrier agreement HTML)
-
-**Files modified**
-- `src/pages/cx/CXSignupPage.tsx` → redirect to `/cx/apply`
-- `src/App.tsx` (or router file) — new routes
-- `src/portals/cpo/CPOPortal.tsx` — wire rebuilt tab
-
-**Migration**
-- `cx_applications`, `cx_application_documents`, `cx_application_references`, `cx_application_events` with GRANTs + RLS (applicant sees own draft via session token; authenticated CPO/exec roles see all via `has_permission`)
-- Storage bucket `cx-applications` (private) + RLS
-
-**Reuses existing patterns**
-- Signature pad: same flow as executive onboarding
-- Doc viewer: same component pattern as merchant/driver doc review
-- Drawer layout: matches existing UnifiedPortalShell drawer
-
-**Out of scope (call out)**
-- Email notifications (you said skip — hooks left in place)
-- Stripe subscription billing after approval (already separately scoped in CX spec)
-- Driver-pool opt-in flow (separate feature)
-
----
-
-Confirm and I'll build it end-to-end. If you want to trim scope (e.g., fewer steps, skip references, skip e-sign MSA on v1), say which sections to cut.
+Approve and I'll generate both files and post the previews.
