@@ -565,7 +565,7 @@ export const AndroidEnrollmentPopup: React.FC<AndroidEnrollmentPopupProps> = ({
             <h1 className="brand-logo">CRAVE'N</h1>
             <h2 className="content-title">Join Our Exclusive Android Beta Program</h2>
             <p className="content-description">
-              Be among the first 100 testers to experience the future of on-demand local commerce — food, grocery, retail, convenience, and courier (CX). Get exclusive early access and earn up to $75 in rewards.
+              Be among the first 100 testers to experience the future of on-demand local commerce, food, grocery, retail, convenience, and courier (CX). Get exclusive early access and earn up to $75 in rewards.
             </p>
 
             <div className="features-grid">

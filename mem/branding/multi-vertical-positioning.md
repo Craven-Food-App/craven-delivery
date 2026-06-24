@@ -5,7 +5,7 @@ type: design
 ---
 Crave'N positioning across all surfaces:
 
-- **Tagline:** "Food, grocery, retail, convenience, and courier — on demand."
+- **Tagline:** "Food, grocery, retail, convenience, and courier, on demand."
 - **Divisions (canonical order):** Crave'N Food · Crave'N Grocery · Crave'N Retail · Crave'N Convenience · Crave'N Express (CX)
 - Never describe Crave'N as just "food delivery" or "your food delivery partner" in customer-facing copy, SEO, JSON-LD, AI prompts, pitch decks, or onboarding/training.
 - JSON-LD `@type` should be `Organization` (with `department` listing all five divisions), not `FoodEstablishment`.

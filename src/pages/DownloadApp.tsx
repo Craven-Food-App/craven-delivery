@@ -20,7 +20,7 @@ export const DownloadApp = () => {
           </div>
           <h1 className="text-4xl font-bold text-gray-900">Get the Crave'n App</h1>
           <p className="text-lg text-gray-600">
-            Install the app for the best on-demand experience — food, grocery, retail, convenience, and courier (CX), all in one place.
+            Install the app for the best on-demand experience, food, grocery, retail, convenience, and courier (CX), all in one place.
           </p>
           
           {isStandalone && (

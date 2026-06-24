@@ -74,7 +74,7 @@ export default function Support() {
             </h1>
             
             <p className="mx-auto mt-6 max-w-2xl text-xl leading-8 text-white/90 sm:text-2xl">
-              Join our friends and family in supporting the future of on-demand local commerce — food, grocery, retail, convenience, and courier (CX).
+              Join our friends and family in supporting the future of on-demand local commerce, food, grocery, retail, convenience, and courier (CX).
             </p>
             
             <div className="mt-10 flex items-center justify-center gap-x-6">

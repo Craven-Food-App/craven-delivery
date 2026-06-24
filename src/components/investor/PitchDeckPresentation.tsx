@@ -27,7 +27,7 @@ const PitchDeckPresentation: React.FC = () => {
     {
       type: 'hero',
       title: "Crave'n Delivery Platform",
-      subtitle: "Fair, fast, transparent on-demand commerce — food, grocery, retail, convenience &amp; courier (CX) — for underserved local markets",
+      subtitle: "Fair, fast, transparent on-demand commerce, food, grocery, retail, convenience &amp; courier (CX), for underserved local markets",
       tag: "Seed Round Pitch",
       content: (
         <div className="mt-12 flex items-center justify-center space-x-4 opacity-80">

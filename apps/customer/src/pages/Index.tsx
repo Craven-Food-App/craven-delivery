@@ -101,10 +101,10 @@ const Index = () => {
   return (
     <>
       <Helmet>
-        <title>Crave'n — Food, Grocery, Retail, Convenience &amp; Courier (CX), On Demand</title>
+        <title>Crave'n, Food, Grocery, Retail, Convenience &amp; Courier (CX), On Demand</title>
         <meta
           name="description"
-          content="One app for everything local. Order food, groceries, retail, and convenience items — or send a package with Crave'n Express (CX). Powered by local Feeders."
+          content="One app for everything local. Order food, groceries, retail, and convenience items, or send a package with Crave'n Express (CX). Powered by local Feeders."
         />
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>

@@ -51,7 +51,7 @@ function generateModuleContent(module: TrainingModule): ContentSection[] {
             <div class="text-center text-white"><div class="text-6xl mb-4">🚀</div><h2 class="text-2xl font-bold">Welcome Video</h2></div>
           </div>
           <h3 class="text-xl font-bold">Our Mission</h3>
-          <p class="text-gray-600">At Crave'n, we power on-demand local commerce — food, grocery, retail, convenience, and same-day courier (CX) — connecting customers and businesses with local merchants and Feeders while creating flexible opportunities for delivery partners.</p>
+          <p class="text-gray-600">At Crave'n, we power on-demand local commerce, food, grocery, retail, convenience, and same-day courier (CX), connecting customers and businesses with local merchants and Feeders while creating flexible opportunities for delivery partners.</p>
           <h3 class="text-xl font-bold">Our Values</h3>
           <ul class="space-y-2"><li><strong>Customer First:</strong> Every decision starts with customer experience</li><li><strong>Innovation:</strong> We constantly seek better ways to serve</li><li><strong>Integrity:</strong> We do the right thing</li><li><strong>Teamwork:</strong> Together we achieve more</li></ul>
         </div>`,
@@ -91,7 +91,7 @@ function generateModuleContent(module: TrainingModule): ContentSection[] {
         id: 'safety',
         title: 'Safety Overview',
         content: `<div class="space-y-6">
-          <div class="bg-red-50 border border-red-200 rounded-xl p-6"><div class="flex items-center gap-3 mb-4"><div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white text-xl">⚠️</div><h3 class="text-xl font-bold text-red-800">Safety is Our Priority</h3></div><p class="text-red-700">Safety isn't just a policy—it's a core value. Every team member is responsible for maintaining a safe environment.</p></div>
+          <div class="bg-red-50 border border-red-200 rounded-xl p-6"><div class="flex items-center gap-3 mb-4"><div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white text-xl">⚠️</div><h3 class="text-xl font-bold text-red-800">Safety is Our Priority</h3></div><p class="text-red-700">Safety isn't just a policy-it's a core value. Every team member is responsible for maintaining a safe environment.</p></div>
           <h3 class="text-xl font-bold">Key Safety Principles</h3>
           <div class="space-y-3"><div class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg"><span class="text-2xl">🛡️</span><div><h4 class="font-bold">Prevention First</h4><p class="text-sm text-gray-600">Identify hazards before they cause harm</p></div></div><div class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg"><span class="text-2xl">📢</span><div><h4 class="font-bold">Speak Up</h4><p class="text-sm text-gray-600">Report unsafe conditions immediately</p></div></div></div>
         </div>`,
