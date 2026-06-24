@@ -104,19 +104,8 @@ const Hero = () => {
             </h2>
 
             <p className="text-lg md:text-xl lg:text-2xl mb-6 opacity-95 font-medium max-w-3xl mx-auto drop-shadow-md">
-              One app for everything local — order from restaurants, grocery, retail, and convenience stores, or send a package with Crave'n Express (CX). Powered by your local Feeders.
+              One app for everything local. Order from restaurants, grocery, retail, and convenience stores, or send a package with Crave'n Express (CX). Powered by your local Feeders.
             </p>
-
-            <div className="flex flex-wrap justify-center gap-2 md:gap-3 text-xs md:text-sm font-semibold tracking-wide">
-              {["Food", "Grocery", "Retail", "Convenience", "Express (CX)"].map((d) => (
-                <span
-                  key={d}
-                  className="px-3 py-1 rounded-full bg-orange-500/90 text-white border border-white/20 shadow-md"
-                >
-                  {d}
-                </span>
-              ))}
-            </div>
           </div>
         </div>
       </section>
@@ -137,7 +126,7 @@ const Hero = () => {
                 Founded by entrepreneur Torrance Stroman, Crave'n was built around honesty, transparency, opportunity, and long-term sustainability for everyone involved in the delivery ecosystem. Our platform helps restaurants expand their reach without excessive commission structures while creating fairer opportunities for drivers and a better experience for customers.
               </p>
               <p>
-                Crave'n is no longer just food delivery. We power local commerce across food, grocery, retail, convenience, and our on-demand courier service — Crave'n Express (CX) — so merchants grow, Feeders succeed, customers feel valued, and local economies become stronger.
+                Crave'n is no longer just food delivery. We power local commerce across food, grocery, retail, convenience, and our on-demand courier service Crave'n Express (CX), so merchants grow, Feeders succeed, customers feel valued, and local economies become stronger.
               </p>
             </div>
           </div>
