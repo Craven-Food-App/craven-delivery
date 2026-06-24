@@ -134,7 +134,7 @@ const DEFAULT_FORM_VALUES: ArticlesFormValues = {
   principalPostalCode: '43604',
   principalCounty: 'Lucas',
   purpose:
-    'To engage in the business of on-demand local commerce — including food delivery, grocery delivery, retail delivery, convenience delivery, and same-day courier and logistics services (Crave\'n Express / CX) — and any lawful act or activity for which corporations may be organized under Chapter 1701 of the Ohio Revised Code.',
+    'To engage in the business of on-demand local commerce, including food delivery, grocery delivery, retail delivery, convenience delivery, and same-day courier and logistics services (Crave\'n Express / CX), and any lawful act or activity for which corporations may be organized under Chapter 1701 of the Ohio Revised Code.',
   duration: 'Perpetual',
   effectiveDate: dayjs(),
   contactEmail: 'legal@cravenusa.com',
@@ -1187,7 +1187,7 @@ const ArticlesOfIncorporationGenerator: React.FC = () => {
     const payload = parts.join('|');
     const humanReadable = [
       `Type: ${sanitizeText(meta.docTypeCode).toUpperCase()}`,
-      `Filed: ${meta.filingDate ? meta.filingDate.format('MM/DD/YYYY') : '—'} ${sanitizeText(meta.filingTime)}`,
+      `Filed: ${meta.filingDate ? meta.filingDate.format('MM/DD/YYYY') : '-'} ${sanitizeText(meta.filingTime)}`,
       `Submission: ${sanitizeText(meta.submissionNumber)}`,
       `Charter: ${sanitizeText(meta.charterNumber)}`,
       `Entity: ${sanitizeText(meta.entityNumber)}`,

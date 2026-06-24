@@ -25,7 +25,7 @@ const TermsOfService = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
               <p className="text-muted-foreground mb-4">
-                By accessing or using Crave'n's on-demand local commerce platform — which spans food, grocery, retail, convenience, and Crave'n Express (CX) courier services, and includes the Crave'n Customer App and website, the Crave'n Feeder App, the Crave'n CX Driver App, the Crave'n Partner Portal, the Crave'n CX Courier Portal, and the Crave'n Merchant, Admin, Corporate, CX Courier, and Orders Tablet Apps (collectively, the "Service") — you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the Service.
+                By accessing or using Crave'n's on-demand local commerce platform, which spans food, grocery, retail, convenience, and Crave'n Express (CX) courier services, and includes the Crave'n Customer App and website, the Crave'n Feeder App, the Crave'n CX Driver App, the Crave'n Partner Portal, the Crave'n CX Courier Portal, and the Crave'n Merchant, Admin, Corporate, CX Courier, and Orders Tablet Apps (collectively, the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the Service.
               </p>
               <p className="text-muted-foreground mb-4">
                 These Terms form a binding agreement between you and Crave'n Inc., 1121 W Sylvania Ave., Toledo, OH 43612 ("Crave'n," "we," "us," or "our"). These Terms incorporate by reference our Privacy Policy and any other policies posted on the Service.
@@ -160,7 +160,7 @@ const TermsOfService = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">7a. Clean Pay, Mileage Pay &amp; Order History</h2>
               <p className="text-muted-foreground mb-4">
-                Crave'n provides Feeders with "Clean Pay" — a fully itemized pay breakdown shown before accepting
+                Crave'n provides Feeders with "Clean Pay", a fully itemized pay breakdown shown before accepting
                 and after completing every delivery. The breakdown includes Base Pay, Delivery Fee Share, Customer
                 Tip, Promo and Peak Bonuses, Mileage Pay, Adjustments, and the Total Guaranteed Pay.
               </p>
@@ -180,7 +180,7 @@ const TermsOfService = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">7b. Delivery Photo Proof</h2>
               <p className="text-muted-foreground">
-                For all delivery flows — including retail, restaurants, and Live Driver Testing — Feeders are
+                For all delivery flows, including retail, restaurants, and Live Driver Testing, Feeders are
                 required to follow the on-screen photo guide and capture a clear drop-off photo as proof of
                 delivery. Failure to provide an acceptable proof photo may result in delivery rejection, pay
                 adjustment, or account review.
@@ -231,7 +231,7 @@ const TermsOfService = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">10. Intellectual Property</h2>
               <p className="text-muted-foreground mb-4">
-                All content on the Service—including text, graphics, logos, icons, images, software, and other materials—is the property of Crave'n Inc. or its licensors and is protected by intellectual property laws. You may not copy, modify, distribute, or create derivative works without prior written authorization.
+                All content on the Service-including text, graphics, logos, icons, images, software, and other materials-is the property of Crave'n Inc. or its licensors and is protected by intellectual property laws. You may not copy, modify, distribute, or create derivative works without prior written authorization.
               </p>
             </section>
 

@@ -276,7 +276,7 @@ const Restaurants = () => {
   const [accountPopupPosition, setAccountPopupPosition] = useState({ top: 0, left: 0 });
   const [showMenuIcons, setShowMenuIcons] = useState(false);
   const [showMapView, setShowMapView] = useState(false);
-  // Default to Tampa HQ (6759 Nebraska Ave) — overwritten by browser geolocation if granted
+  // Default to Tampa HQ (6759 Nebraska Ave), overwritten by browser geolocation if granted
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 27.9766, lng: -82.4563 });
   const { selectedAddress, setSelectedAddress } = useDeliveryAddress();
 
@@ -503,7 +503,7 @@ const Restaurants = () => {
     });
   };
 
-  // Notifications functionality — fetch from DB, not mock data
+  // Notifications functionality, fetch from DB, not mock data
   const fetchNotifications = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -805,7 +805,7 @@ const Restaurants = () => {
     return emojiMap[filter] || '🏷️';
   };
 
-  // Unified emoji lookup — checks category sub-filter map first, then cuisine map
+  // Unified emoji lookup, checks category sub-filter map first, then cuisine map
   const getFilterEmoji = (filter: string) => {
     const catEmoji = getCategoryFilterEmoji(filter);
     if (catEmoji !== '🏷️') return catEmoji;
@@ -1095,7 +1095,7 @@ const Restaurants = () => {
           <Box style={{ position: 'relative', zIndex: 10 }}>
             <Title order={1} style={{ fontSize: '72px', fontWeight: 900, marginBottom: '8px', letterSpacing: '-0.05em', color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>Craven.</Title>
             <Text size="xl" fw={300} c="white" style={{ maxWidth: '360px', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-              Food, grocery, retail, convenience &amp; courier (CX) — on demand.
+              Food, grocery, retail, convenience &amp; courier (CX), on demand.
             </Text>
           </Box>
 
@@ -1511,7 +1511,7 @@ const Restaurants = () => {
           </Box>
         )}
 
-        {/* Category Filter Buttons - Mobile (Sticky) — All filters: cuisines + every category */}
+        {/* Category Filter Buttons - Mobile (Sticky), All filters: cuisines + every category */}
         <Box
           component="nav"
           style={{
@@ -1645,7 +1645,7 @@ const Restaurants = () => {
         }}>
           <Box component="main">
 
-            {/* Main Customer Ad — smooth crossfade between creatives */}
+            {/* Main Customer Ad, smooth crossfade between creatives */}
             <MainCustomerAdPanel ad={activeMainCustomerAd} maxHeight={240} variant="web-mobile" />
 
             {/* Great Deals - Restaurants with Promotions */}
@@ -1674,7 +1674,7 @@ const Restaurants = () => {
               </Title>
             </Box>
 
-            {/* Restaurants Near You — location-based nearby */}
+            {/* Restaurants Near You, location-based nearby */}
             <Box>
               <RestaurantGrid
                 searchQuery={searchQuery}
@@ -2385,7 +2385,7 @@ const Restaurants = () => {
 
           {/* Home sections stay visible; pills filter the list below (same idea as mobile “View more”). */}
             <>
-              {/* Main Customer Ad — smooth crossfade between creatives */}
+              {/* Main Customer Ad, smooth crossfade between creatives */}
               <MainCustomerAdPanel ad={activeMainCustomerAd} maxHeight={280} variant="web-desktop" />
 
               {/* Great Deals - Restaurants with Promotions */}
@@ -2496,7 +2496,7 @@ const Restaurants = () => {
                 </div>
               </div>
 
-              {/* View more — narrowed when a category pill is selected */}
+              {/* View more, narrowed when a category pill is selected */}
               <div className="bg-white py-8 border-t border-gray-200" ref={resultsRef}>
                 <div className="max-w-7xl mx-auto px-4">
                   <div className="mb-6">
