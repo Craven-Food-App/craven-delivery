@@ -1037,6 +1037,23 @@ const Checkout: React.FC = () => {
               lat: pinLocation?.lat || null,
               lng: pinLocation?.lng || null
             } : null,
+            dropoff_address: formData.deliveryMethod === 'delivery' ? {
+              name: formData.name,
+              phone: formData.phone,
+              email: formData.email,
+              address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`,
+              street: formData.address,
+              city: formData.city,
+              state: formData.state,
+              zip: formData.zip,
+              apt_suite: formData.aptSuite,
+              special_instructions: userDeliveryPreferences.instructions || null,
+              leave_at_door: userDeliveryPreferences.leaveAtDoor || false,
+              lat: pinLocation?.lat || null,
+              lng: pinLocation?.lng || null,
+              latitude: pinLocation?.lat || null,
+              longitude: pinLocation?.lng || null,
+            } : null,
             pickup_address: {
               name: restaurant.name,
               address: restaurant.address || 'Restaurant address',

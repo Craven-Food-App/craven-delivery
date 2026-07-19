@@ -32,6 +32,11 @@ import {
 } from '@/lib/orderTracking';
 import FeederCleanPayCard from '@/components/mobile/FeederCleanPayCard';
 import {
+  formatAddress as formatOrderAddress,
+  resolveOrderCustomerPhone,
+  resolveOrderDropoffAddress,
+} from '@/lib/formatAddress';
+import {
   getFeederCleanPaySummary,
   syncFeederCleanPayAdjustmentAtPickup,
   formatCleanPayMoney,
@@ -152,42 +157,7 @@ function driverStatusToCleanPayStage(driverStatus: string): FeederCleanPayFlowSt
 
 // ===== UTILITY FUNCTIONS =====
 
-const formatAddress = (address: any): string => {
-  if (!address) return '';
-  if (typeof address === 'string') return address;
-  if (typeof address === 'object') {
-    const street =
-      address.street ||
-      address.address ||
-      address.street_address ||
-      address.line1 ||
-      address.address_line_1 ||
-      address.address_line1 ||
-      address.addr1 ||
-      '';
-    const unitRaw =
-      address.unit ||
-      address.apt ||
-      address.apartment ||
-      address.suite ||
-      address.line2 ||
-      address.address_line_2 ||
-      address.address_line2 ||
-      '';
-    const unit = unitRaw
-      ? /^(apt|unit|ste|suite|#)/i.test(String(unitRaw).trim())
-        ? String(unitRaw).trim()
-        : `Apt ${String(unitRaw).trim()}`
-      : '';
-    const streetFull = [street, unit].filter(Boolean).join(' ').trim();
-    const cityState = [address.city, address.state].filter(Boolean).join(', ');
-    const zip = address.zip || address.zip_code || address.postal_code;
-    const parts = [streetFull, cityState, zip].filter(Boolean);
-    if (parts.length === 0 && address.formatted) return String(address.formatted);
-    return parts.join(', ');
-  }
-  return String(address);
-};
+const formatAddress = (address: any): string => formatOrderAddress(address);
 
 const copyToClipboard = async (text: string) => {
   try {
@@ -806,10 +776,16 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     const rawId = orderDetails?.id || orderDetails?.order_id;
     const shortId = rawId && typeof rawId === 'string' ? (rawId.split('-')[1] || rawId.slice(-6)) : null;
     const dropoffAddress =
-      orderDetails?.dropoff_address ??
-      (orderDetails as any)?.delivery_address ??
-      fetchedCustomer.dropoffAddress;
-    const customerPhone = orderDetails?.customer_phone || fetchedCustomer.phone || '—';
+      resolveOrderDropoffAddress({
+        dropoff_address: orderDetails?.dropoff_address,
+        delivery_address: (orderDetails as any)?.delivery_address,
+      }) ?? fetchedCustomer.dropoffAddress;
+    const customerPhone =
+      resolveOrderCustomerPhone({
+        customer_phone: orderDetails?.customer_phone || fetchedCustomer.phone,
+        dropoff_address: dropoffAddress ?? orderDetails?.dropoff_address,
+        delivery_address: (orderDetails as any)?.delivery_address,
+      }) || '—';
     const deliveryNotes = orderDetails?.delivery_notes || fetchedCustomer.deliveryNotes || '';
     return {
       id: rawId || 'CRAVEN-' + Math.floor(Math.random() * 9000 + 1000),
@@ -835,9 +811,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     };
   }, [orderDetails, pickupCode, customerName, fetchedCustomer]);
 
+  // Always load address/phone/notes for real order IDs — including isTestOrder previews.
+  // (Mutating side-effects elsewhere still no-op for test orders.)
   useEffect(() => {
-    if (isTestOrder || !orderDetails.order_id) return;
-    
+    if (!orderDetails.order_id) return;
+
     const fetchOrderData = async () => {
       try {
         const { data: orderData } = await (supabase as any)
@@ -845,33 +823,30 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           .select('pickup_code, restaurant_id, customer_phone, delivery_notes, dropoff_address, delivery_address')
           .eq('id', orderDetails.order_id)
           .maybeSingle();
-        
+
         if (orderData?.pickup_code) {
           setPickupCode(orderData.pickup_code);
         }
 
         if (orderData) {
+          const resolvedDropoff = resolveOrderDropoffAddress(orderData);
+          const resolvedPhone = resolveOrderCustomerPhone(orderData);
           setFetchedCustomer((prev) => ({
-            phone: orderData.customer_phone ?? prev.phone ?? null,
+            phone: resolvedPhone || prev.phone || null,
             deliveryNotes: orderData.delivery_notes ?? prev.deliveryNotes ?? null,
-            dropoffAddress:
-              orderData.dropoff_address ??
-              (orderData as any).delivery_address ??
-              prev.dropoffAddress ??
-              null,
+            dropoffAddress: resolvedDropoff ?? prev.dropoffAddress ?? null,
           }));
         }
-        
+
         if (orderData?.restaurant_id) {
           setRestaurantId(orderData.restaurant_id);
-          
-          // Fetch restaurant logo
+
           const { data: restaurant } = await supabase
             .from('restaurants')
             .select('image_url, logo_url')
             .eq('id', orderData.restaurant_id)
             .maybeSingle();
-          
+
           if (restaurant?.logo_url) {
             setRestaurantLogo(restaurant.logo_url);
           } else if (restaurant?.image_url) {
@@ -883,7 +858,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       }
     };
     fetchOrderData();
-  }, [orderDetails.order_id, isTestOrder]);
+  }, [orderDetails.order_id]);
 
   // When the active delivery flow opens with the Feeder heading to the store,
   // record `feeder_route_started_at` so the merchant sees "En route" only after
@@ -2149,9 +2124,12 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
 
     if (status === DRIVER_STATUS.TO_CUSTOMER) {
       const orderNum = currentOrder.order_number ?? currentOrder.id.split('-')[1] ?? currentOrder.id.slice(-6);
-      const dropoff = orderDetails?.dropoff_address;
-      const customerLat = typeof dropoff === 'object' && dropoff != null ? (dropoff.latitude ?? dropoff.lat) : undefined;
-      const customerLng = typeof dropoff === 'object' && dropoff != null ? (dropoff.longitude ?? dropoff.lng) : undefined;
+      const dropoff = resolveOrderDropoffAddress({
+        dropoff_address: orderDetails?.dropoff_address ?? fetchedCustomer.dropoffAddress,
+        delivery_address: (orderDetails as any)?.delivery_address,
+      });
+      const customerLat = typeof dropoff === 'object' && dropoff != null ? ((dropoff as any).latitude ?? (dropoff as any).lat) : undefined;
+      const customerLng = typeof dropoff === 'object' && dropoff != null ? ((dropoff as any).longitude ?? (dropoff as any).lng) : undefined;
       const pickup = orderDetails?.pickup_address;
       const pickupLat = typeof pickup === 'object' && pickup != null ? ((pickup as any).latitude ?? (pickup as any).lat) : undefined;
       const pickupLng = typeof pickup === 'object' && pickup != null ? ((pickup as any).longitude ?? (pickup as any).lng) : undefined;
@@ -2679,6 +2657,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         }
         displayOrderId={displayOrderId}
         orderDetails={completedDetails}
+        cleanPaySummary={summary}
         onContinue={onCompleteDelivery}
         orderId={(orderDetails as any)?.id ?? null}
         customerId={(orderDetails as any)?.customer_id ?? null}

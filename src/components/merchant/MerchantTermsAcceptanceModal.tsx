@@ -49,10 +49,12 @@ const MerchantTermsAcceptanceModal: React.FC<Props> = ({
     >
       <Stack gap="md">
         <Text size="sm" c="dimmed">
-          We&apos;ve added formal merchant terms. You&apos;ll need to accept to continue receiving orders and using merchant tools.
+          We&apos;ve updated the Merchant Terms of Service. You&apos;ll need to accept the current version to continue
+          receiving orders and using merchant tools.
         </Text>
         <Text size="sm">
-          By continuing, you agree to Crave&apos;n&apos;s Merchant Terms, including commission structure, payout handling, refunds,
+          By continuing, you agree to Crave&apos;n&apos;s Merchant Terms, including fees and payouts, optional paid
+          features, Drive On-Demand (when used), CX courier tools (when applicable), integrations, data use, refunds,
           chargebacks, and operational standards.
         </Text>
         <Checkbox

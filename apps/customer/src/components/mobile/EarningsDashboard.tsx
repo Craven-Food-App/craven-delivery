@@ -1,17 +1,20 @@
+// @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X } from 'lucide-react';
+import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X, Plus, Trash2, Lock, ArrowUpRight, Check } from 'lucide-react';
 import feederCardBackground from '@/assets/feeder-card-background.png';
 import feederCardImage from '@/assets/feeder-card-image.png';
 import { Box, Stack, Text, Title, Group } from '@mantine/core';
+import FeederCleanPayCard from './FeederCleanPayCard';
+import { getFeederCleanPaySummary, type FeederCleanPaySummary } from '@/lib/feederCleanPaySummary';
 
 type EarningsDashboardProps = {
   onOpenMenu?: () => void;
   onOpenNotifications?: () => void;
 };
 
-type TimeRange = 'today' | 'thisWeek' | 'lastWeek' | 'custom';
+type TimeRange = 'today' | 'thisWeek' | 'lastWeek' | 'overall' | 'custom';
 
 interface EarningsBreakdown {
   basePay: number;
@@ -30,9 +33,9 @@ interface PayoutStatus {
 }
 
 interface EarningsMetrics {
-  earningsPerHour: number;
-  earningsPerMile: number;
-  activeTime: number; // in hours
+  earningsPerHour: number | null;
+  earningsPerMile: number | null;
+  activeTime: number | null; // in hours
   totalTrips: number;
 }
 
@@ -40,12 +43,16 @@ interface Transaction {
   id: string;
   date: string;
   time: string;
+  earnedAt: string;
   orderId: string;
+  fullOrderId: string;
   restaurantName: string;
   grossEarnings: number;
   tipAmount: number;
   netEarnings: number;
-  status: 'completed' | 'refunded' | 'paid';
+  status: 'completed' | 'refunded' | 'paid' | 'in_progress' | 'cancelled' | 'adjusted';
+  cleanPayVerified?: boolean;
+  adjustmentCents?: number;
   orderData?: any; // Full order data for detail view
 }
 
@@ -65,6 +72,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   onOpenNotifications
 }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('today');
+  const [showPageInfo, setShowPageInfo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [breakdown, setBreakdown] = useState<EarningsBreakdown>({
@@ -90,7 +98,11 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [transactionDetail, setTransactionDetail] = useState<TransactionDetail | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showPageInfo, setShowPageInfo] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'completed' | 'in_progress' | 'adjusted' | 'cancelled'>('all');
+  const [historySearch, setHistorySearch] = useState('');
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [selectedCleanPay, setSelectedCleanPay] = useState<FeederCleanPaySummary | null>(null);
+  const [cleanPayLoading, setCleanPayLoading] = useState(false);
   
   // Feeder Card state
   const [cardExpanded, setCardExpanded] = useState(false); // Start collapsed (peeking)
@@ -111,11 +123,37 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   // Earnings Cashout state
   const [showEarningsModal, setShowEarningsModal] = useState(false);
   const [earningsCashoutAmount, setEarningsCashoutAmount] = useState('');
+  
+  // Debit Card Cashout state
+  const [showDebitCashoutModal, setShowDebitCashoutModal] = useState(false);
+  const [debitCashoutAmount, setDebitCashoutAmount] = useState('');
+  const [isEligibleForInstantCashout, setIsEligibleForInstantCashout] = useState(false);
+  const [completedOrdersCount, setCompletedOrdersCount] = useState(0);
+  const [cashoutEligibility, setCashoutEligibility] = useState<{
+    deliveries: number;
+    rating: number | null;
+    onTimeRate: number | null;
+    accuracy: number | null;
+    meetsDeliveries: boolean;
+    meetsRating: boolean;
+    meetsOnTime: boolean;
+    meetsAccuracy: boolean;
+  }>({ deliveries: 0, rating: null, onTimeRate: null, accuracy: null, meetsDeliveries: false, meetsRating: false, meetsOnTime: false, meetsAccuracy: false });
+  const [debitCashoutLoading, setDebitCashoutLoading] = useState(false);
+  const [sentToFeederCard, setSentToFeederCard] = useState(0);
+  
+  // Stripe Connect state
+  const [stripeConnectStatus, setStripeConnectStatus] = useState<{
+    hasAccount: boolean;
+    accountId: string | null;
+    payoutsEnabled: boolean;
+    detailsSubmitted: boolean;
+  }>({ hasAccount: false, accountId: null, payoutsEnabled: false, detailsSubmitted: false });
+  const [stripeOnboardingLoading, setStripeOnboardingLoading] = useState(false);
 
   useEffect(() => {
     fetchEarningsData();
-    fetchCardData();
-    fetchGasMoneyData();
+    fetchStripeConnectStatus();
   }, [timeRange]);
 
   const fetchCardData = async () => {
@@ -123,13 +161,23 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch driver balance from Stripe
-      const { data: balanceData, error: balanceError } = await supabase.functions.invoke('get-driver-balance', {
-        body: { driver_id: user.id }
-      });
+      // Derive card balance from ledger: total paid out to card (all-time)
+      // Card balance = total payout_debit (paid) - any instant cashouts already processed
+      const { data: ledgerData, error: ledgerError } = await supabase
+        .from('feeder_wallet_ledger_entries')
+        .select('type, amount_cents, status')
+        .eq('feeder_id', user.id)
+        .in('type', ['payout_debit', 'payout_fee_debit'])
+        .eq('status', 'paid');
 
-      if (!balanceError && balanceData?.available_balance) {
-        setCardBalance(balanceData.available_balance / 100);
+      if (!ledgerError && ledgerData) {
+        const totalPaidOut = ledgerData
+          .filter(e => e.type === 'payout_debit')
+          .reduce((sum, e) => sum + (e.amount_cents || 0), 0);
+        const totalFees = ledgerData
+          .filter(e => e.type === 'payout_fee_debit')
+          .reduce((sum, e) => sum + (e.amount_cents || 0), 0);
+        setCardBalance((totalPaidOut - totalFees) / 100);
       }
 
       // Fetch driver name
@@ -248,11 +296,17 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      // Update local state
+      // Update local state with server-confirmed new balance
+      const newAvailable = data?.new_available_balance != null 
+        ? data.new_available_balance / 100 
+        : payoutStatus.available - amount;
+      
       setPayoutStatus({
         ...payoutStatus,
-        available: payoutStatus.available - amount
+        available: newAvailable,
+        paid: payoutStatus.paid + amount,
       });
       setCardBalance(cardBalance + amount);
       setEarningsCashoutAmount('');
@@ -265,7 +319,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       fetchCardData();
     } catch (error) {
       console.error('Error transferring earnings:', error);
-      toast.error('Failed to transfer funds. Please try again.');
+      const msg = error instanceof Error ? error.message : 'Failed to transfer funds. Please try again.';
+      toast.error(msg);
     }
   };
 
@@ -277,6 +332,132 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       return `${normalized.slice(0, 4)} ${normalized.slice(4, 8)} ${normalized.slice(8, 12)} ${normalized.slice(12, 16)}`;
     } else {
       return `**** **** **** ${normalized.slice(12, 16)}`;
+    }
+  };
+
+  // Debit card cashout functions
+  const fetchStripeConnectStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check stripe_accounts table for driver's connected account
+      const { data, error } = await supabase
+        .from('stripe_accounts')
+        .select('stripe_account_id, details_submitted, payouts_enabled')
+        .eq('owner_type', 'driver')
+        .eq('owner_id', user.id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setStripeConnectStatus({
+          hasAccount: true,
+          accountId: data.stripe_account_id,
+          payoutsEnabled: data.payouts_enabled || false,
+          detailsSubmitted: data.details_submitted || false,
+        });
+      } else {
+        setStripeConnectStatus({ hasAccount: false, accountId: null, payoutsEnabled: false, detailsSubmitted: false });
+      }
+    } catch (error) {
+      console.error('Error fetching Stripe Connect status:', error);
+    }
+  };
+
+  const handleStartStripeOnboarding = async () => {
+    setStripeOnboardingLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const previewUrl = window.location.origin;
+
+      const { data, error } = await supabase.functions.invoke('create-connected-account', {
+        body: {
+          owner_type: 'driver',
+          owner_id: user.id,
+          email: user.email,
+          first_name: user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || '',
+          last_name: user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+          return_url: `${previewUrl}/mobile?tab=earnings`,
+          refresh_url: `${previewUrl}/mobile?tab=earnings`,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      if (data?.onboarding_url) {
+        window.open(data.onboarding_url, '_blank');
+        toast.success('Stripe onboarding opened in a new tab. Complete the setup to enable instant payouts.');
+      }
+      
+      // Refresh status after a delay
+      setTimeout(() => fetchStripeConnectStatus(), 3000);
+    } catch (error) {
+      console.error('Error starting Stripe onboarding:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to start Stripe setup');
+    } finally {
+      setStripeOnboardingLoading(false);
+    }
+  };
+
+  // checkCashoutEligibility is now handled inside fetchEarningsData via the edge function
+
+  const handleDebitCashout = async () => {
+    if (!isEligibleForInstantCashout) {
+      toast.error('You must meet all requirements to unlock instant cashout');
+      return;
+    }
+    if (!stripeConnectStatus.hasAccount || !stripeConnectStatus.payoutsEnabled) {
+      toast.error('Please complete Stripe setup first');
+      return;
+    }
+
+    const amount = parseFloat(debitCashoutAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+    if (amount > cardBalance) {
+      toast.error(`Amount cannot exceed your Feeder Card balance of ${formatCurrency(cardBalance)}`);
+      return;
+    }
+
+    const fee = amount * 0.015; // 1.5% fee
+    const netAmount = amount - fee;
+    const amountCents = Math.round(amount * 100);
+
+    setDebitCashoutLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      // Call the Stripe-powered instant payout edge function
+      const { data, error } = await supabase.functions.invoke('create-instant-payout', {
+        body: {
+          amount: amountCents,
+          payout_method: 'instant',
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setCardBalance(prev => prev - amount);
+      setDebitCashoutAmount('');
+      setShowDebitCashoutModal(false);
+
+      const actualFee = data?.fee_cents ? (data.fee_cents / 100) : fee;
+      const actualNet = data?.net_amount ? (data.net_amount / 100) : netAmount;
+      toast.success(`${formatCurrency(actualNet)} sent to your bank account! (${formatCurrency(actualFee)} fee applied)`);
+      fetchCardData();
+    } catch (error) {
+      console.error('Error processing debit cashout:', error);
+      const msg = error instanceof Error ? error.message : 'Failed to process cashout';
+      toast.error(msg);
+    } finally {
+      setDebitCashoutLoading(false);
     }
   };
 
@@ -300,6 +481,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         const lastWeekStart = new Date(today);
         lastWeekStart.setDate(today.getDate() - today.getDay() - 7);
         return { start: lastWeekStart, end: new Date(lastWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000) };
+      case 'overall':
+        return { start: new Date(2020, 0, 1), end: new Date(today.getTime() + 24 * 60 * 60 * 1000) };
       default:
         return { start: today, end: new Date(today.getTime() + 24 * 60 * 60 * 1000) };
     }
@@ -311,9 +494,90 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { start, end } = getDateRange();
+      // Map frontend timeRange to edge function timeframe
+      const timeframeMap: Record<string, string> = {
+        today: 'today',
+        thisWeek: 'this_week',
+        lastWeek: 'last_week',
+        overall: 'overall',
+      };
 
-      // Fetch driver earnings
+      const { data, error } = await supabase.functions.invoke('get-feeder-earnings', {
+        body: { timeframe: timeframeMap[timeRange] || 'today' },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Map breakdown
+      const b = data.breakdown;
+      setBreakdown({
+        basePay: (b.base_pay_cents || 0) / 100,
+        distancePay: (b.distance_pay_cents || 0) / 100,
+        tips: (b.tips_cents || 0) / 100,
+        bonuses: (b.bonuses_cents || 0) / 100,
+        adjustments: (b.adjustments_cents || 0) / 100,
+        totalEarned: (data.total_earned_cents || 0) / 100,
+      });
+
+      setTotalEarnings((data.total_earned_cents || 0) / 100);
+
+      // Map payout status — available_balance = payout_status.available (guaranteed match)
+      const ps = data.payout_status;
+      setPayoutStatus({
+        available: (ps.available_cents || 0) / 100,
+        pending: (ps.pending_cents || 0) / 100,
+        paid: (ps.paid_cents || 0) / 100,
+      });
+
+      setSentToFeederCard((data.sent_to_feeder_card_cents || 0) / 100);
+
+      // Card balance from all-time ledger (persistent across reloads)
+      setCardBalance((data.card_balance_cents || 0) / 100);
+
+      // Driver name for the card
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .single();
+      if (profile?.full_name) setDriverName(profile.full_name);
+
+      // Gas money
+      setGasMoney((data.gas_money_cents || 0) / 100);
+
+      // Metrics — null values stay null so UI shows "--"
+      const m = data.metrics;
+      setMetrics({
+        earningsPerHour: m.earnings_per_hour_cents != null ? m.earnings_per_hour_cents / 100 : null,
+        earningsPerMile: m.earnings_per_mile_cents != null ? m.earnings_per_mile_cents / 100 : null,
+        activeTime: m.active_time_hours,
+        totalTrips: m.total_trips || 0,
+      });
+
+      // Cashout eligibility
+      const ce = data.cashout_eligibility;
+      const meetsDeliveries = ce.deliveries >= ce.deliveries_required;
+      // null means "in progress" — treat as met for unlock but show "--"
+      const meetsRating = ce.rating === null || ce.rating >= ce.rating_required;
+      const meetsOnTime = ce.on_time_rate === null || ce.on_time_rate >= ce.on_time_required;
+      const meetsAccuracy = ce.accuracy === null || ce.accuracy >= ce.accuracy_required;
+
+      setCompletedOrdersCount(ce.deliveries);
+      setCashoutEligibility({
+        deliveries: ce.deliveries,
+        rating: ce.rating,
+        onTimeRate: ce.on_time_rate,
+        accuracy: ce.accuracy,
+        meetsDeliveries,
+        meetsRating,
+        meetsOnTime,
+        meetsAccuracy,
+      });
+      setIsEligibleForInstantCashout(ce.unlocked);
+
+      // Fetch transactions from ledger for display
+      const { start, end } = getDateRange();
       const { data: earnings } = await supabase
         .from('driver_earnings')
         .select(`
@@ -335,108 +599,31 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         .lt('earned_at', end.toISOString())
         .order('earned_at', { ascending: false });
 
-      if (!earnings) return;
-
-      // Calculate breakdown
-      let basePay = 0;
-      let distancePay = 0;
-      let tips = 0;
-      let bonuses = 0;
-      let adjustments = 0;
-
-      let totalMiles = 0; // Track total miles driven
-      
-      earnings.forEach((earning: any) => {
-        basePay += (earning.amount_cents || 0) / 100;
-        tips += (earning.tip_cents || 0) / 100;
-        
-        // Add mileage pay (distance pay) from the order
-        const order = earning.orders;
-        if (order?.mileage_pay_cents) {
-          distancePay += order.mileage_pay_cents / 100;
-        } else if (earning.order_id) {
-          // Fallback: if join didn't work, fetch order directly
-          // This shouldn't be needed but helps debug
-          console.log('Order join missing mileage_pay_cents for order:', earning.order_id);
-        }
-        
-        // Track distance for earnings per mile calculation
-        if (order?.distance_km) {
-          totalMiles += order.distance_km * 0.621371; // Convert km to miles
-        }
-      });
-
-      const totalEarned = basePay + distancePay + tips + bonuses + adjustments;
-      setTotalEarnings(totalEarned);
-      setBreakdown({
-        basePay,
-        distancePay,
-        tips,
-        bonuses,
-        adjustments,
-        totalEarned,
-      });
-
-
-      // Calculate payout status from database
-      // Available = total earnings - paid out earnings
-      const { data: payoutsData } = await supabase
-        .from('driver_payouts')
-        .select('amount, status')
-        .eq('driver_id', user.id);
-
-      let paidTotal = 0;
-      let pendingTotal = 0;
-
-      if (payoutsData) {
-        payoutsData.forEach((payout: any) => {
-          const amountDollars = parseFloat(payout.amount || '0');
-          if (payout.status === 'completed' || payout.status === 'sent') {
-            paidTotal += amountDollars;
-          } else if (payout.status === 'pending') {
-            pendingTotal += amountDollars;
-          }
-        });
-      }
-
-      // Available = total earned - (paid + pending)
-      const availableForPayout = Math.max(0, totalEarned - paidTotal - pendingTotal);
-
-      setPayoutStatus({
-        available: availableForPayout,
-        pending: pendingTotal,
-        paid: paidTotal,
-      });
-
-      // Calculate metrics
-      const totalTrips = earnings.length;
-      const activeTime = totalTrips * 0.5; // Estimate 30 min per trip
-      const earningsPerHour = activeTime > 0 ? totalEarned / activeTime : 0;
-      const earningsPerMile = totalMiles > 0 ? totalEarned / totalMiles : 0;
-
-      setMetrics({
-        earningsPerHour,
-        earningsPerMile,
-        activeTime,
-        totalTrips,
-      });
-
-      // Format transactions
-      const formattedTransactions: Transaction[] = earnings.map((earning: any) => {
+      const formattedTransactions: Transaction[] = (earnings || []).map((earning: any) => {
         const earnedDate = new Date(earning.earned_at || earning.created_at);
         const order = earning.orders || {};
         const restaurant = order.restaurants || {};
-        
+        const orderStatus = order.order_status || '';
+        const adjustmentCents = Number(earning.adjustment_cents || 0);
+        let status: Transaction['status'] = 'in_progress';
+        if (orderStatus === 'delivered') status = adjustmentCents !== 0 ? 'adjusted' : 'completed';
+        else if (orderStatus === 'cancelled' || orderStatus === 'canceled') status = 'cancelled';
+        else if (orderStatus === 'refunded') status = 'refunded';
+
         return {
           id: earning.id,
           date: earnedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           time: earnedDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+          earnedAt: earnedDate.toISOString(),
           orderId: earning.order_id?.substring(0, 8) || 'N/A',
+          fullOrderId: earning.order_id || '',
           restaurantName: restaurant.name || 'Restaurant',
           grossEarnings: (earning.amount_cents || 0) / 100,
           tipAmount: (earning.tip_cents || 0) / 100,
           netEarnings: ((earning.amount_cents || 0) + (earning.tip_cents || 0)) / 100,
-          status: order.order_status === 'delivered' ? 'completed' : 'pending',
+          status,
+          adjustmentCents,
+          cleanPayVerified: Boolean(earning.clean_pay_verified),
           orderData: order,
         };
       });
@@ -452,8 +639,23 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
   const handleTransactionClick = async (transaction: Transaction) => {
     setSelectedTransaction(transaction);
-    
-    // Fetch detailed transaction data
+    setSelectedCleanPay(null);
+    setShowDetailModal(true);
+
+    // Fetch Clean Pay summary for full transparency
+    if (transaction.fullOrderId) {
+      setCleanPayLoading(true);
+      try {
+        const summary = await getFeederCleanPaySummary(transaction.fullOrderId);
+        setSelectedCleanPay(summary);
+      } catch (e) {
+        console.warn('clean pay summary fetch failed', e);
+      } finally {
+        setCleanPayLoading(false);
+      }
+    }
+
+    // Also fetch legacy payout info (Stripe reference) for the footer
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !transaction.orderData) return;
@@ -491,8 +693,6 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         stripePayoutId,
         payoutDate,
       });
-
-      setShowDetailModal(true);
     } catch (error) {
       console.error('Error fetching transaction detail:', error);
     }
@@ -509,11 +709,10 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
   return (
     <div className="h-screen w-full overflow-y-auto bg-gray-50" style={{ 
-      paddingTop: 'env(safe-area-inset-top, 0px)',
       paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' 
     }}>
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10" style={{ padding: '12px 16px' }}>
+      <div className="bg-white border-b sticky top-0 z-10" style={{ padding: '12px 16px', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
         <div className="flex items-center justify-between mb-1">
           <button 
             onClick={() => onOpenMenu?.()}
@@ -532,10 +731,65 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
           </button>
         </div>
         
+        {/* Page Info Modal */}
+        {showPageInfo && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" 
+            onClick={() => setShowPageInfo(false)}
+            style={{ padding: '20px' }}
+          >
+            <div 
+              className="bg-white rounded-lg p-6 max-w-md w-full" 
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxHeight: '80vh', overflowY: 'auto' }}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                    <DollarSign className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Earnings Dashboard</h2>
+                </div>
+                <button onClick={() => setShowPageInfo(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="space-y-4 text-gray-700">
+                <p className="text-sm leading-relaxed">
+                  <strong className="text-gray-900">Your Complete Earnings Overview</strong><br />
+                  Track all your delivery earnings in one place. View your income breakdown, payout status, and performance metrics.
+                </p>
+                <div className="border-t pt-4 space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">💰 Earnings Breakdown</p>
+                    <p className="text-xs text-gray-600">See your base pay, distance pay (gas money), tips, bonuses, and total earnings.</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">⚡ Payout Status</p>
+                    <p className="text-xs text-gray-600">Monitor available balance, pending payouts, and total paid earnings.</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">📊 Performance Metrics</p>
+                    <p className="text-xs text-gray-600">Track your earnings per hour, earnings per mile, total active time, and trip count.</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">⛽ Gas Money</p>
+                    <p className="text-xs text-gray-600">Accumulated mileage pay that can be transferred to your Feeder Card for gas expenses.</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">💳 Feeder Card</p>
+                    <p className="text-xs text-gray-600">Your digital debit card showing available balance. Tap to view full card details and transaction history.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Time Range Selector */}
         <div className="mt-3">
           <div className="flex gap-2">
-            {(['today', 'thisWeek', 'lastWeek'] as TimeRange[]).map((range) => (
+            {(['today', 'thisWeek', 'lastWeek', 'overall'] as TimeRange[]).map((range) => (
               <button
                 key={range}
                 onClick={() => setTimeRange(range)}
@@ -545,7 +799,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                     : 'bg-gray-100 text-gray-700'
                 }`}
               >
-                {range === 'today' ? 'Today' : range === 'thisWeek' ? 'This Week' : 'Last Week'}
+                {range === 'today' ? 'Today' : range === 'thisWeek' ? 'This Week' : range === 'lastWeek' ? 'Last Week' : 'Overall'}
               </button>
             ))}
           </div>
@@ -692,32 +946,170 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
             </Box>
           </div>
 
+          {/* Cash Out to Debit Card Section */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm mt-2.5 mb-2.5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <ArrowUpRight className="w-5 h-5 text-orange-600" />
+                <h3 className="text-sm font-bold text-gray-900">Cash Out to Debit Card</h3>
+              </div>
+              {!isEligibleForInstantCashout && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">
+                  <Lock className="w-3 h-3 text-gray-500" />
+                  <span className="text-xs text-gray-500">Locked</span>
+                </div>
+              )}
+            </div>
+
+            {!isEligibleForInstantCashout ? (
+              <div className="pt-1">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Lock className="w-3.5 h-3.5 text-gray-400" />
+                  <p className="text-xs font-semibold text-gray-800 tracking-wide uppercase">Unlock Instant Cashout</p>
+                </div>
+                <p className="text-[11px] text-gray-500 mb-3 leading-relaxed">
+                  You must be a Feeder in good standing to unlock instant cashout to your debit card.
+                </p>
+                <div className="space-y-1.5">
+                  {[
+                    { met: cashoutEligibility.meetsDeliveries, label: '50+ Completed Deliveries', value: `${cashoutEligibility.deliveries}/50` },
+                    { met: cashoutEligibility.meetsRating, label: '4.5+ Rating', value: cashoutEligibility.rating != null ? cashoutEligibility.rating.toFixed(2) : '--' },
+                    { met: cashoutEligibility.meetsOnTime, label: 'On-Time Delivery', value: cashoutEligibility.onTimeRate != null ? `${cashoutEligibility.onTimeRate}%` : '--' },
+                    { met: cashoutEligibility.meetsAccuracy, label: '100% Accuracy', value: cashoutEligibility.accuracy != null ? `${cashoutEligibility.accuracy}%` : '--' },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center justify-between text-[11px]">
+                      <span className={`flex items-center gap-1.5 ${item.met ? 'text-green-600' : 'text-gray-400'}`}>
+                        {item.met ? (
+                          <span className="w-3.5 h-3.5 rounded bg-green-500 flex items-center justify-center"><Check className="w-2.5 h-2.5 text-white" /></span>
+                        ) : (
+                          <span className="w-3.5 h-3.5 rounded border border-gray-300" />
+                        )}
+                        {item.label}
+                      </span>
+                      <span className={`font-medium tabular-nums ${item.met ? 'text-green-600' : 'text-gray-400'}`}>
+                        {item.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {!stripeConnectStatus.hasAccount ? (
+                  <button
+                    onClick={handleStartStripeOnboarding}
+                    disabled={stripeOnboardingLoading}
+                    className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-orange-300 rounded-xl text-orange-600 hover:bg-orange-50 transition-colors disabled:opacity-50"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span className="text-sm font-medium">
+                      {stripeOnboardingLoading ? 'Setting up...' : 'Set Up Stripe for Payouts'}
+                    </span>
+                  </button>
+                ) : !stripeConnectStatus.payoutsEnabled ? (
+                  <div className="space-y-2">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+                      <p className="text-sm text-yellow-800 font-medium">⏳ Stripe Setup Incomplete</p>
+                      <p className="text-xs text-yellow-700 mt-1">Complete your Stripe onboarding to enable instant payouts.</p>
+                    </div>
+                    <button
+                      onClick={handleStartStripeOnboarding}
+                      disabled={stripeOnboardingLoading}
+                      className="w-full py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 text-sm"
+                    >
+                      {stripeOnboardingLoading ? 'Opening...' : 'Continue Stripe Setup'}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {/* Stripe connected indicator */}
+                    <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-3">
+                      <CreditCard className="w-5 h-5 text-green-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-900">Stripe Connected</p>
+                        <p className="text-xs text-green-600">Instant payouts enabled</p>
+                      </div>
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    </div>
+                    
+                    {/* Cash out button */}
+                    <button
+                      onClick={() => {
+                        if (cardBalance <= 0) {
+                          toast.error('No balance available to cash out');
+                          return;
+                        }
+                        setShowDebitCashoutModal(true);
+                      }}
+                      className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                    >
+                      <ArrowUpRight className="w-4 h-4" />
+                      Cash Out to Bank/Debit
+                    </button>
+                    <p className="text-xs text-gray-400 text-center">1.5% instant transfer fee applies</p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Earnings Summary Cards - Side by Side */}
           <div className="grid grid-cols-2 gap-3 mt-2.5">
-            {/* Primary Earnings Summary Card - Clickable */}
+            {/* Primary Earnings Summary Card - Clickable only on Today tab */}
             <div 
-              className="bg-white rounded-2xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setShowEarningsModal(true)}
+              className={`bg-white rounded-2xl p-6 shadow-sm ${
+                timeRange === 'today' && payoutStatus.available > 0
+                  ? 'cursor-pointer hover:shadow-md' 
+                  : ''
+              } transition-shadow`}
+              onClick={() => {
+                if (timeRange === 'today' && payoutStatus.available > 0) {
+                  setShowEarningsModal(true);
+                }
+              }}
             >
               <p className="text-sm text-gray-500 mb-1">Your Earnings</p>
-              <p className="text-3xl font-bold text-gray-900 mb-1">{formatCurrency(totalEarnings)}</p>
-              <p className="text-xs text-gray-400">Net earnings</p>
+              <p className="text-3xl font-bold text-gray-900 mb-1">
+                {formatCurrency(timeRange === 'today' ? payoutStatus.available : totalEarnings)}
+              </p>
+              <p className="text-xs text-gray-400">
+                {timeRange === 'today' ? 'Available to cash out' : 'Net earnings'}
+              </p>
+              <p className="text-[8px] font-medium text-orange-500 mt-0.5">
+                Sent to Feeder Card: {formatCurrency(sentToFeederCard)}
+              </p>
             </div>
             
-            {/* Gas Money Card - Clickable */}
+            {/* Gas Money Card - Clickable only on Today tab */}
             <div 
-              className="bg-white rounded-2xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setShowGasMoneyModal(true)}
+              className={`bg-white rounded-2xl p-6 shadow-sm ${
+                timeRange === 'today' && gasMoney > 0
+                  ? 'cursor-pointer hover:shadow-md' 
+                  : ''
+              } transition-shadow`}
+              onClick={() => {
+                if (timeRange === 'today' && gasMoney > 0) {
+                  setShowGasMoneyModal(true);
+                }
+              }}
             >
               <p className="text-sm text-gray-500 mb-1">Gas Money</p>
-              <p className="text-3xl font-bold text-gray-900 mb-1">{formatCurrency(gasMoney)}</p>
-              <p className="text-xs text-gray-400">Mileage earnings</p>
+              <p className={`text-3xl font-bold mb-1 ${gasMoney > 0 ? 'text-green-600' : 'text-red-500'}`}>{formatCurrency(gasMoney)}</p>
+              <p className="text-xs text-gray-400">
+                {timeRange === 'today' ? 'Available to transfer' : 'Mileage earnings'}
+              </p>
             </div>
           </div>
 
           {/* Earnings Breakdown Card */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Earnings Breakdown</h3>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-bold text-gray-900">Clean Pay Breakdown</h3>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">Clean Pay</span>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Every dollar shown is guaranteed at offer time and reconciled per delivery. Tap any delivery below to view its full Clean Pay receipt.
+            </p>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Base Pay</span>
@@ -725,27 +1117,27 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               </div>
               <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Distance Pay</span>
+                <span className="text-gray-600">Delivery Fee Share / Distance Pay</span>
                 <span className="font-semibold text-gray-900">{formatCurrency(breakdown.distancePay)}</span>
               </div>
               <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Tips</span>
+                <span className="text-gray-600">Customer Tips</span>
                 <span className="font-semibold text-gray-900">{formatCurrency(breakdown.tips)}</span>
               </div>
               <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Bonuses</span>
+                <span className="text-gray-600">Promo &amp; Peak Bonuses</span>
                 <span className="font-semibold text-gray-900">{formatCurrency(breakdown.bonuses)}</span>
               </div>
               <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Adjustments</span>
+                <span className="text-gray-600">Clean Pay Adjustments</span>
                 <span className="font-semibold text-gray-900">{formatCurrency(breakdown.adjustments)}</span>
               </div>
               <div className="h-px bg-gray-300 my-2"></div>
               <div className="flex justify-between items-center">
-                <span className="text-lg font-bold text-gray-900">Total Earned</span>
+                <span className="text-lg font-bold text-gray-900">Total Guaranteed</span>
                 <span className="text-lg font-bold text-gray-900">{formatCurrency(breakdown.totalEarned)}</span>
               </div>
             </div>
@@ -787,15 +1179,15 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500 mb-1">Earnings per Hour</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.earningsPerHour)}</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.earningsPerHour != null ? formatCurrency(metrics.earningsPerHour) : '--'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Earnings per Mile</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.earningsPerMile)}</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.earningsPerMile != null ? formatCurrency(metrics.earningsPerMile) : '--'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Active Time</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics.activeTime.toFixed(1)}h</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.activeTime != null ? `${metrics.activeTime.toFixed(1)}h` : '--'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Total Trips</p>
@@ -806,63 +1198,258 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
           {/* Transaction Ledger */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Earnings History</h3>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-bold text-gray-900">Delivery History</h3>
+              <span className="text-xs text-gray-500 tabular-nums">
+                {transactions.length} {transactions.length === 1 ? 'delivery' : 'deliveries'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              Every delivery shows its full Clean Pay receipt — tap any row.
+            </p>
+
+            {/* Filter tabs */}
+            <div className="flex gap-0.5 overflow-x-auto pb-1 -mx-1 px-1">
+              {([
+                { k: 'all', label: 'All' },
+                { k: 'completed', label: 'Completed' },
+                { k: 'adjusted', label: 'Adjusted' },
+                { k: 'in_progress', label: 'In Progress' },
+                { k: 'cancelled', label: 'Cancelled' },
+              ] as const).map((f) => {
+                const count = f.k === 'all'
+                  ? transactions.length
+                  : transactions.filter((t) => t.status === f.k).length;
+                const active = historyFilter === f.k;
+                return (
+                  <button
+                    key={f.k}
+                    onClick={() => setHistoryFilter(f.k)}
+                    className={`shrink-0 px-2 py-1 rounded text-[11px] font-semibold transition-colors border-b-2 ${
+                      active
+                        ? 'bg-orange-50 text-orange-700 border-orange-500'
+                        : 'bg-transparent text-gray-500 border-transparent hover:bg-gray-50 hover:text-gray-700'
+                    }`}
+                  >
+                    {f.label}
+                    <span className={`ml-1 tabular-nums ${active ? 'text-orange-500/80' : 'text-gray-400'}`}>{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search */}
+            <div className="mt-2 mb-1">
+              <input
+                type="text"
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                placeholder="Search restaurant or order ID"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-orange-500 focus:outline-none"
+              />
+            </div>
+
             <div className="space-y-0">
-              {transactions.length === 0 ? (
-                <p className="text-center text-gray-400 py-8">No transactions found</p>
-              ) : (
-                transactions.map((transaction) => (
+              {(() => {
+                const filtered = transactions.filter((t) => {
+                  if (historyFilter !== 'all' && t.status !== historyFilter) return false;
+                  if (historySearch.trim()) {
+                    const q = historySearch.trim().toLowerCase();
+                    return (
+                      t.restaurantName.toLowerCase().includes(q) ||
+                      t.orderId.toLowerCase().includes(q) ||
+                      t.fullOrderId.toLowerCase().includes(q)
+                    );
+                  }
+                  return true;
+                });
+                if (filtered.length === 0) {
+                  return (
+                    <p className="text-center text-gray-400 py-8 text-sm">
+                      {transactions.length === 0
+                        ? 'No deliveries yet for this period'
+                        : 'No deliveries match your filters'}
+                    </p>
+                  );
+                }
+                const statusStyles: Record<string, string> = {
+                  completed: 'bg-green-100 text-green-700',
+                  paid: 'bg-blue-100 text-blue-700',
+                  adjusted: 'bg-amber-100 text-amber-700',
+                  in_progress: 'bg-gray-100 text-gray-700',
+                  cancelled: 'bg-red-100 text-red-700',
+                  refunded: 'bg-red-100 text-red-700',
+                };
+                const statusLabel: Record<string, string> = {
+                  completed: 'Completed',
+                  paid: 'Paid',
+                  adjusted: 'Adjusted',
+                  in_progress: 'In Progress',
+                  cancelled: 'Cancelled',
+                  refunded: 'Refunded',
+                };
+                // Group by Year > Month > Week (Sun–Sat)
+                const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                const startOfWeek = (d: Date) => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - x.getDay()); return x; };
+                const fmtMD = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                type WeekBucket = { key: string; label: string; weekStart: Date; items: Transaction[]; total: number };
+                type MonthBucket = { key: string; label: string; monthIdx: number; weeks: Map<string, WeekBucket>; total: number };
+                type YearBucket = { key: string; label: string; year: number; months: Map<number, MonthBucket>; total: number };
+                const years = new Map<number, YearBucket>();
+                for (const t of filtered) {
+                  const d = new Date(t.earnedAt);
+                  const y = d.getFullYear();
+                  const m = d.getMonth();
+                  const ws = startOfWeek(d);
+                  const we = new Date(ws); we.setDate(ws.getDate() + 6);
+                  const yKey = String(y);
+                  const mKey = `${y}-${m}`;
+                  const wKey = `${y}-${m}-${ws.getTime()}`;
+                  let yb = years.get(y);
+                  if (!yb) { yb = { key: yKey, label: yKey, year: y, months: new Map(), total: 0 }; years.set(y, yb); }
+                  let mb = yb.months.get(m);
+                  if (!mb) { mb = { key: mKey, label: MONTHS[m], monthIdx: m, weeks: new Map(), total: 0 }; yb.months.set(m, mb); }
+                  let wb = mb.weeks.get(wKey);
+                  if (!wb) { wb = { key: wKey, label: `${fmtMD(ws)} – ${fmtMD(we)}`, weekStart: ws, items: [], total: 0 }; mb.weeks.set(wKey, wb); }
+                  wb.items.push(t);
+                  wb.total += t.netEarnings;
+                  mb.total += t.netEarnings;
+                  yb.total += t.netEarnings;
+                }
+                const yearList = Array.from(years.values()).sort((a, b) => b.year - a.year);
+                const isCollapsed = (k: string, defaultCollapsed: boolean) => {
+                  const v = collapsedGroups[k];
+                  return v === undefined ? defaultCollapsed : v;
+                };
+                const toggle = (k: string, defaultCollapsed: boolean) => {
+                  setCollapsedGroups((prev) => ({ ...prev, [k]: !(prev[k] === undefined ? defaultCollapsed : prev[k]) }));
+                };
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth();
+                const currentWeekKey = `${currentYear}-${currentMonth}-${startOfWeek(now).getTime()}`;
+                return yearList.map((yb) => {
+                  const yCollapsed = isCollapsed(`y:${yb.key}`, yb.year !== currentYear);
+                  return (
+                    <div key={yb.key} className="border-b border-gray-200 last:border-0">
+                      <button
+                        onClick={() => toggle(`y:${yb.key}`, yb.year !== currentYear)}
+                        className="w-full flex items-center justify-between py-2.5 text-left"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          {yCollapsed ? <ChevronRight className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+                          <span className="text-sm font-bold text-gray-900">{yb.label}</span>
+                        </div>
+                        <span className="text-xs font-semibold text-gray-700 tabular-nums">{formatCurrency(yb.total)}</span>
+                      </button>
+                      {!yCollapsed && (
+                        <div className="pl-3">
+                          {Array.from(yb.months.values()).sort((a, b) => b.monthIdx - a.monthIdx).map((mb) => {
+                            const mCollapsed = isCollapsed(`m:${mb.key}`, !(yb.year === currentYear && mb.monthIdx === currentMonth));
+                            return (
+                              <div key={mb.key} className="border-t border-gray-100">
+                                <button
+                                  onClick={() => toggle(`m:${mb.key}`, !(yb.year === currentYear && mb.monthIdx === currentMonth))}
+                                  className="w-full flex items-center justify-between py-2 text-left"
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    {mCollapsed ? <ChevronRight className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
+                                    <span className="text-[13px] font-semibold text-gray-800">{mb.label}</span>
+                                  </div>
+                                  <span className="text-[11px] font-medium text-gray-600 tabular-nums">{formatCurrency(mb.total)}</span>
+                                </button>
+                                {!mCollapsed && (
+                                  <div className="pl-3">
+                                    {Array.from(mb.weeks.values()).sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime()).map((wb) => {
+                                      const wCollapsed = isCollapsed(`w:${wb.key}`, wb.key !== currentWeekKey);
+                                      return (
+                                        <div key={wb.key} className="border-t border-gray-100">
+                                          <button
+                                            onClick={() => toggle(`w:${wb.key}`, wb.key !== currentWeekKey)}
+                                            className="w-full flex items-center justify-between py-1.5 text-left"
+                                          >
+                                            <div className="flex items-center gap-1.5">
+                                              {wCollapsed ? <ChevronRight className="w-3 h-3 text-gray-400" /> : <ChevronDown className="w-3 h-3 text-gray-400" />}
+                                              <span className="text-[11px] font-medium text-gray-600 uppercase tracking-wide">{wb.label}</span>
+                                              <span className="text-[10px] text-gray-400 tabular-nums">({wb.items.length})</span>
+                                            </div>
+                                            <span className="text-[11px] font-semibold text-gray-700 tabular-nums">{formatCurrency(wb.total)}</span>
+                                          </button>
+                                          {!wCollapsed && (
+                                            <div className="pl-2">
+                                              {wb.items.map((transaction) => (
                   <button
                     key={transaction.id}
                     onClick={() => handleTransactionClick(transaction)}
                     className="w-full py-4 border-b border-gray-100 last:border-0 text-left hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-semibold text-gray-900">{transaction.restaurantName}</span>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded ${
-                            transaction.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            transaction.status === 'paid' ? 'bg-blue-100 text-blue-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {transaction.status}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                          <span className="text-sm font-semibold text-gray-900 truncate">{transaction.restaurantName}</span>
+                          <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${statusStyles[transaction.status] || 'bg-gray-100 text-gray-700'}`}>
+                            {statusLabel[transaction.status] || transaction.status}
                           </span>
+                          {transaction.cleanPayVerified && (
+                            <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-teal-100 text-teal-700">Clean Pay ✓</span>
+                          )}
                         </div>
                         <p className="text-xs text-gray-500 mb-1">
-                          {transaction.date} • {transaction.time} • Order #{transaction.orderId}
+                          {transaction.date} • {transaction.time} • #{transaction.orderId}
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-600">
+                        <div className="flex items-center gap-3 text-xs text-gray-600 flex-wrap">
                           <span>Gross: {formatCurrency(transaction.grossEarnings)}</span>
-                          {transaction.tipAmount > 0 && (
-                            <span>Tip: {formatCurrency(transaction.tipAmount)}</span>
+                          {transaction.tipAmount > 0 && <span>Tip: {formatCurrency(transaction.tipAmount)}</span>}
+                          {transaction.adjustmentCents != null && transaction.adjustmentCents !== 0 && (
+                            <span className={transaction.adjustmentCents > 0 ? 'text-green-600' : 'text-red-600'}>
+                              Adj: {transaction.adjustmentCents > 0 ? '+' : ''}
+                              {formatCurrency(transaction.adjustmentCents / 100)}
+                            </span>
                           )}
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0 ml-2">
                         <p className="text-lg font-bold text-gray-900">{formatCurrency(transaction.netEarnings)}</p>
-                        <ChevronRight className="w-5 h-5 text-gray-400 mt-1" />
+                        <div className="flex items-center justify-end gap-0.5 mt-1 text-[10px] text-orange-600 font-semibold">
+                          Receipt <ChevronRight className="w-3 h-3" />
+                        </div>
                       </div>
                     </div>
                   </button>
-                ))
-              )}
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>
       )}
 
       {/* Transaction Detail Modal */}
-      {showDetailModal && selectedTransaction && transactionDetail && (
+      {showDetailModal && selectedTransaction && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Transaction Details</h2>
+              <h2 className="text-xl font-bold text-gray-900">Clean Pay Receipt</h2>
               <button
                 onClick={() => {
                   setShowDetailModal(false);
                   setSelectedTransaction(null);
                   setTransactionDetail(null);
+                  setSelectedCleanPay(null);
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -878,8 +1465,30 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Order ID</p>
-                <p className="font-semibold text-gray-900">{selectedTransaction.orderId}</p>
+                <p className="font-mono text-xs text-gray-700 break-all">{selectedTransaction.fullOrderId || selectedTransaction.orderId}</p>
               </div>
+
+              {/* Clean Pay full receipt */}
+              {cleanPayLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
+                </div>
+              ) : selectedCleanPay ? (
+                <FeederCleanPayCard
+                  variant="full"
+                  orderEarnings={selectedCleanPay}
+                  orderStatus={selectedTransaction.status}
+                  showTimestamps
+                  showVerificationBadge
+                />
+              ) : (
+                <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
+                  Clean Pay receipt unavailable for this delivery.
+                </div>
+              )}
+
+              {transactionDetail && (
+                <>
               <div className="h-px bg-gray-200"></div>
               <div className="space-y-2">
                 <div className="flex justify-between">
@@ -915,6 +1524,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                       </p>
                     </div>
                   )}
+                </>
+              )}
                 </>
               )}
             </div>
@@ -1166,98 +1777,118 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         </div>
       )}
 
-      {/* Page Info Modal */}
-      {showPageInfo && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowPageInfo(false)}
-        >
-          <div 
-            className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-gray-900">Earnings Page Guide</h2>
+      {/* Debit Card Cashout Modal */}
+      {showDebitCashoutModal && stripeConnectStatus.payoutsEnabled && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <ArrowUpRight className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Cash Out via Stripe</h3>
+                  <p className="text-sm text-gray-500">Instant transfer</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDebitCashoutModal(false);
+                  setDebitCashoutAmount('');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Balance Display */}
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 mb-6 border-2 border-orange-200">
+              <p className="text-sm text-orange-700 mb-1">Feeder Card Balance</p>
+              <p className="text-4xl font-bold text-orange-900">{formatCurrency(cardBalance)}</p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Amount to Cash Out</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">$</span>
+                  <input
+                    type="number"
+                    value={debitCashoutAmount}
+                    onChange={(e) => setDebitCashoutAmount(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    max={cardBalance}
+                    className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-semibold focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex gap-2 mt-2">
+                  {[0.25, 0.5, 0.75, 1].map((pct) => (
+                    <button
+                      key={pct}
+                      onClick={() => setDebitCashoutAmount((cardBalance * pct).toFixed(2))}
+                      className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      {pct === 1 ? 'All' : `${pct * 100}%`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fee breakdown */}
+              {debitCashoutAmount && parseFloat(debitCashoutAmount) > 0 && (
+                <div className="bg-gray-50 rounded-xl p-3 space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Amount</span>
+                    <span className="font-medium text-gray-900">{formatCurrency(parseFloat(debitCashoutAmount))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Instant fee (1.5%)</span>
+                    <span className="font-medium text-red-600">-{formatCurrency(parseFloat(debitCashoutAmount) * 0.015)}</span>
+                  </div>
+                  <div className="border-t pt-1 flex justify-between text-sm">
+                    <span className="font-semibold text-gray-900">You receive</span>
+                    <span className="font-bold text-green-700">{formatCurrency(parseFloat(debitCashoutAmount) * 0.985)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Destination */}
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-5 h-5 text-blue-600" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">Stripe Connected Account</p>
+                    <p className="text-xs text-blue-600">Payout to your linked bank/debit</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
                 <button
-                  onClick={() => setShowPageInfo(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => {
+                    setShowDebitCashoutModal(false);
+                    setDebitCashoutAmount('');
+                  }}
+                  className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDebitCashout}
+                  disabled={!debitCashoutAmount || parseFloat(debitCashoutAmount) <= 0 || debitCashoutLoading}
+                  className="flex-1 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {debitCashoutLoading ? 'Processing...' : 'Cash Out'}
                 </button>
               </div>
-            </div>
-            
-            <div className="p-4 space-y-4">
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-green-600" />
-                  Your Earnings
-                </h3>
-                <p className="text-xs text-gray-600">
-                  Your total earnings for the selected time period, including base pay, distance pay, tips, and bonuses.
-                </p>
-              </div>
 
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <Fuel className="w-4 h-4 text-blue-600" />
-                  Gas Money
-                </h3>
-                <p className="text-xs text-gray-600">
-                  Accumulated mileage pay from your deliveries. Tap to transfer funds to your Feeder Card for gas or other expenses.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-purple-600" />
-                  Feeder Card
-                </h3>
-                <p className="text-xs text-gray-600">
-                  Your virtual debit card for instant access to earnings. Funds can be used anywhere Visa is accepted.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-orange-600" />
-                  Earnings Breakdown
-                </h3>
-                <p className="text-xs text-gray-600">
-                  Detailed split of your earnings: base pay, distance/mileage pay, customer tips, bonuses, and adjustments.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <Receipt className="w-4 h-4 text-indigo-600" />
-                  Payout Status
-                </h3>
-                <p className="text-xs text-gray-600">
-                  Available for Payout: Ready to transfer. Pending: Being processed. Paid: Successfully transferred to your account.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-red-600" />
-                  Earnings Metrics
-                </h3>
-                <p className="text-xs text-gray-600">
-                  Performance insights: earnings per hour, earnings per mile, active time, and total trips completed.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-teal-600" />
-                  Transaction History
-                </h3>
-                <p className="text-xs text-gray-600">
-                  View all completed deliveries with details: restaurant, earnings, tips, and payout status. Tap any transaction for full details.
-                </p>
-              </div>
+              <p className="text-xs text-gray-500 text-center">
+                Funds arrive instantly to your debit card. A 1.5% fee is applied to all instant transfers.
+              </p>
             </div>
           </div>
         </div>

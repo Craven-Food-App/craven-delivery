@@ -465,6 +465,8 @@ serve(async (req) => {
         customer_name: customer_info?.name || '',
         customer_phone: customer_info?.phone || '',
         delivery_address: delivery_method === 'delivery' ? delivery_address : null,
+        // Keep dropoff_address in sync — feeder UI historically reads this field first.
+        dropoff_address: delivery_method === 'delivery' ? delivery_address : null,
         pickup_address: pickup_address,
         estimated_delivery_time: new Date(Date.now() + 45 * 60000).toISOString(),
         // Promo fields (will be updated after redemption)

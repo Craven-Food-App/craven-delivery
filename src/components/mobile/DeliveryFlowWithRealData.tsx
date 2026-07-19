@@ -5,21 +5,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import ActiveDeliveryFlow from './ActiveDeliveryFlow';
-
-const formatAddress = (addr: any): string => {
-  if (!addr) return '';
-  if (typeof addr === 'string') return addr;
-  if (typeof addr === 'object') {
-    const parts = [
-      addr.address || addr.street,
-      addr.city,
-      addr.state,
-      addr.zip_code || addr.zip,
-    ].filter(Boolean);
-    return parts.join(', ');
-  }
-  return String(addr);
-};
+import {
+  resolveOrderCustomerPhone,
+  resolveOrderDropoffAddress,
+} from '@/lib/formatAddress';
 
 interface DeliveryFlowWithRealDataProps {
   onCompleteDelivery: () => void;
@@ -60,7 +49,7 @@ const DeliveryFlowWithRealData: React.FC<DeliveryFlowWithRealDataProps> = ({ onC
         if (!orderErr && orderRow) {
           const r = orderRow.restaurants as any;
           const pickupAddr = orderRow.pickup_address || (r ? { address: r.address, city: r.city, state: r.state, zip_code: r.zip_code } : null);
-          const dropoffAddr = orderRow.dropoff_address || orderRow.delivery_address;
+          const dropoffAddr = resolveOrderDropoffAddress(orderRow as any);
           setOrderDetails({
             id: orderRow.id,
             order_id: orderRow.id,
@@ -68,8 +57,9 @@ const DeliveryFlowWithRealData: React.FC<DeliveryFlowWithRealDataProps> = ({ onC
             restaurant_name: r?.name || 'Restaurant',
             pickup_address: pickupAddr,
             dropoff_address: dropoffAddr,
+            delivery_address: (orderRow as any).delivery_address,
             customer_name: orderRow.customer_name || 'Customer',
-            customer_phone: orderRow.customer_phone,
+            customer_phone: resolveOrderCustomerPhone(orderRow as any) || orderRow.customer_phone,
             delivery_notes: '',
             payout_cents: orderRow.payout_cents ?? orderRow.driver_payout_cents ?? 850,
             subtotal_cents: 0,

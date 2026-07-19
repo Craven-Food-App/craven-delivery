@@ -224,8 +224,8 @@ export const FeederCleanPayCard: React.FC<FeederCleanPayCardProps> = ({
               </Button>
             ) : null}
             {onViewEarningsReceipt ? (
-              <Button variant="outline" color="gray" size="sm" fullWidth onClick={onViewEarningsReceipt}>
-                View Earnings Receipt
+              <Button variant="outline" color="orange" size="sm" fullWidth onClick={onViewEarningsReceipt}>
+                View Clean Pay
               </Button>
             ) : null}
             {onReturnToMap ? (

@@ -56,7 +56,7 @@ import type { OrderAssignment } from '@/components/mobile/feederOrderTypes';
 import FeederPendingOffersPanel from '@/components/mobile/FeederPendingOffersPanel';
 import { claimOrderAssignment, claimOrderAssignmentsBatch } from '@/lib/claimOrderAssignment';
 import { formatPickupKey } from '@/lib/deliveryRouteKeys';
-import { formatAddress } from '@/lib/formatAddress';
+import { formatAddress, resolveOrderCustomerPhone, resolveOrderDropoffAddress } from '@/lib/formatAddress';
 import { setOrderDriverArrivedAtStore, setOrderPickupParkingSpot } from '@/lib/orderDriverPresence';
 import { DEFAULT_MAX_BATCH_DROPOFF_MILES, sumPayoutCents } from '@/lib/feederOfferBatching';
 import FeederCleanPayCard from '@/components/mobile/FeederCleanPayCard';
@@ -1043,7 +1043,7 @@ export const MobileDriverDashboard: React.FC = () => {
             restaurant_id: (order as any).restaurant_id,
             restaurant_name: restaurantName,
             pickup_address: order.pickup_address,
-            dropoff_address: order.dropoff_address ?? (order as any).delivery_address,
+            dropoff_address: resolveOrderDropoffAddress(order as any) ?? order.dropoff_address,
             payout_cents: (order as any).payout_cents || 0,
             distance_km: Number(order.distance_km) || 0,
             distance_mi: ((Number(order.distance_km) || 0) * 0.621371).toFixed(1),
@@ -1950,17 +1950,10 @@ export const MobileDriverDashboard: React.FC = () => {
           .eq('id', b.order_id)
           .maybeSingle();
         if (od) {
-          orderRows.push({ ...od, dropoff_address: (od as any).dropoff_address ?? (od as any).delivery_address });
+          orderRows.push({ ...od, dropoff_address: resolveOrderDropoffAddress(od as any) });
         } else {
-          const addr = b.dropoff_address;
-          const addressStr =
-            typeof addr === 'string'
-              ? addr
-              : addr && typeof addr === 'object'
-                ? [ (addr as any).street, (addr as any).address, (addr as any).city, (addr as any).state, (addr as any).zip, (addr as any).zip_code]
-                    .filter(Boolean)
-                    .join(', ') || '—'
-                : '—';
+          const addr = resolveOrderDropoffAddress(b as any) ?? b.dropoff_address;
+          const addressStr = formatAddress(addr) || '—';
           orderRows.push({
             id: b.order_id,
             order_number: b.order_number,
@@ -1969,7 +1962,7 @@ export const MobileDriverDashboard: React.FC = () => {
             customer_id: null,
             customer_phone: null,
             delivery_notes: null,
-            dropoff_address: b.dropoff_address,
+            dropoff_address: addr,
             payout_cents: b.payout_cents,
             tip_cents: b.tip_cents,
             distance_km: b.distance_km,
@@ -1989,16 +1982,8 @@ export const MobileDriverDashboard: React.FC = () => {
       const totalPayout = sumPayoutCents(batch);
       const totalTips = batch.reduce((s, b) => s + (b.tip_cents || 0), 0);
       const ordersForPickup = orderRows.map((o) => {
-        const addr = o.dropoff_address;
-        const addressStr = o._labelFallback
-          ? o._labelFallback
-          : typeof addr === 'string'
-            ? addr
-            : addr && typeof addr === 'object'
-              ? [addr.street, addr.address, addr.city, addr.state, addr.zip, addr.zip_code]
-                  .filter(Boolean)
-                  .join(', ') || '—'
-              : '—';
+        const addr = resolveOrderDropoffAddress(o) ?? o.dropoff_address;
+        const addressStr = o._labelFallback ? o._labelFallback : formatAddress(addr) || '—';
         return {
           id: o.id,
           order_number: o.order_number,
@@ -2100,12 +2085,12 @@ export const MobileDriverDashboard: React.FC = () => {
           .flatMap((item: any) =>
             Array.from({ length: Math.max(1, Number(item.quantity || 0)) }, () => item.barcode).filter(Boolean)
           ),
-        address:
-          typeof (orderData as any)?.dropoff_address === 'string'
-            ? (orderData as any).dropoff_address
-            : typeof current.dropoff_address === 'string'
-              ? current.dropoff_address
-              : '—',
+        address: formatAddress(
+          resolveOrderDropoffAddress({
+            dropoff_address: (orderData as any)?.dropoff_address ?? current.dropoff_address,
+            delivery_address: (orderData as any)?.delivery_address,
+          })
+        ) || '—',
       },
     ];
     if (!orderData) {
@@ -2117,7 +2102,7 @@ export const MobileDriverDashboard: React.FC = () => {
         order_number: current.order_number,
         restaurant_name: current.restaurant_name,
         pickup_address: current.pickup_address,
-        dropoff_address: current.dropoff_address,
+        dropoff_address: resolveOrderDropoffAddress(current as any) ?? current.dropoff_address,
         payout_cents: current.payout_cents,
         distance_mi: current.distance_mi,
         isTestOrder: current.isTestOrder,
@@ -2125,7 +2110,7 @@ export const MobileDriverDashboard: React.FC = () => {
         subtotal_cents: current.subtotal_cents ?? current.payout_cents,
         tip_cents: (current as any).tip_cents,
         customer_name: resolvedCustomerName,
-        customer_phone: undefined,
+        customer_phone: resolveOrderCustomerPhone(current as any) || undefined,
         delivery_notes: undefined,
         ordersForPickup: retailPickupOrders,
       });
@@ -2137,7 +2122,10 @@ export const MobileDriverDashboard: React.FC = () => {
         order_number: (orderData as any).order_number,
         restaurant_name: current.restaurant_name,
         pickup_address: current.pickup_address,
-        dropoff_address: (orderData as any).dropoff_address || (orderData as any).delivery_address || current.dropoff_address,
+        dropoff_address:
+          resolveOrderDropoffAddress(orderData as any) ??
+          resolveOrderDropoffAddress(current as any) ??
+          current.dropoff_address,
         payout_cents: (orderData as any).payout_cents || current.payout_cents,
         distance_mi: current.distance_mi,
         isTestOrder: current.isTestOrder,
@@ -2145,7 +2133,10 @@ export const MobileDriverDashboard: React.FC = () => {
         subtotal_cents: (orderData as any).subtotal_cents || current.payout_cents,
         tip_cents: (orderData as any).tip_cents ?? (current as any).tip_cents,
         customer_name: resolvedCustomerName,
-        customer_phone: (orderData as any).customer_phone,
+        customer_phone:
+          resolveOrderCustomerPhone(orderData as any) ||
+          resolveOrderCustomerPhone(current as any) ||
+          undefined,
         delivery_notes: (orderData as any).delivery_notes,
         ordersForPickup: retailPickupOrders,
       });
@@ -2648,9 +2639,22 @@ export const MobileDriverDashboard: React.FC = () => {
             restaurant_id: s.restaurant_id ?? (activeDelivery as any).restaurant_id,
             pickup_key: s.pickup_key,
             pickup_address: s.pickup_address ?? activeDelivery.pickup_address ?? '',
-            dropoff_address: s.dropoff_address ?? (typeof s.dropoff_address === 'object' ? s.dropoff_address?.address : null) ?? activeDelivery.dropoff_address ?? '',
+            dropoff_address:
+              resolveOrderDropoffAddress({
+                dropoff_address: s.dropoff_address ?? activeDelivery.dropoff_address,
+                delivery_address: s.delivery_address ?? (activeDelivery as any).delivery_address,
+              }) ??
+              s.dropoff_address ??
+              activeDelivery.dropoff_address ??
+              '',
+            delivery_address: s.delivery_address ?? (activeDelivery as any).delivery_address,
             customer_name: s.customer_name ?? s.customerName ?? activeDelivery.customer_name ?? '',
-            customer_phone: s.customer_phone ?? activeDelivery.customer_phone,
+            customer_phone:
+              resolveOrderCustomerPhone({
+                customer_phone: s.customer_phone ?? activeDelivery.customer_phone,
+                dropoff_address: s.dropoff_address ?? activeDelivery.dropoff_address,
+                delivery_address: s.delivery_address ?? (activeDelivery as any).delivery_address,
+              }) || undefined,
             delivery_notes: s.delivery_notes ?? activeDelivery.delivery_notes ?? '',
             payout_cents: s.payout_cents ?? activeDelivery.payout_cents ?? 0,
             tip_cents: s.tip_cents ?? (activeDelivery as any).tip_cents ?? 0,

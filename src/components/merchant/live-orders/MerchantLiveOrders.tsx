@@ -819,8 +819,8 @@ export function MerchantLiveOrders({
           background: "#fff",
           fontVariantNumeric: "tabular-nums",
           overflow: "hidden",
-          borderColor: behind ? "#fecaca" : "#e5e7eb",
-          boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+          borderColor: behind ? "#dc2626" : "#e5e7eb",
+          boxShadow: behind ? "none" : "0 1px 2px rgba(15,23,42,0.04)",
         }}
       >
         {/* Colored header strip — matches DoorDash tablet card */}
