@@ -250,7 +250,13 @@ const Restaurants = () => {
   const [mainCustomerAdIndex, setMainCustomerAdIndex] = useState(0);
   const [activeFilter, setActiveFilter] = useState('deals');
   const [showMobileNav, setShowMobileNav] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const fromUrl = searchParams.get('category');
+    if (fromUrl && ['all', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health', 'browse'].includes(fromUrl)) {
+      return fromUrl;
+    }
+    return 'all';
+  });
   const [availableCuisines, setAvailableCuisines] = useState<string[]>([]);
   
   // Mobile app states
@@ -277,6 +283,18 @@ const Restaurants = () => {
   const [showMenuIcons, setShowMenuIcons] = useState(false);
   const [showMapView, setShowMapView] = useState(false);
   // Default to Tampa HQ (6759 Nebraska Ave), overwritten by browser geolocation if granted
+
+  // Deep-link from Crave Wheel: /restaurants?category=grocery|apparel|...
+  useEffect(() => {
+    const fromUrl = searchParams.get('category');
+    if (!fromUrl) return;
+    if (['all', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health', 'browse'].includes(fromUrl)) {
+      setActiveCategory(fromUrl);
+      if (['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(fromUrl)) {
+        setCuisineFilter(fromUrl);
+      }
+    }
+  }, [searchParams]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 27.9766, lng: -82.4563 });
   const { selectedAddress, setSelectedAddress } = useDeliveryAddress();
 
@@ -1027,6 +1045,18 @@ const Restaurants = () => {
   // Check authentication on mobile devices (both app and web)
   useEffect(() => {
     const checkAuth = async () => {
+      // Guest browse from Crave Wheel / Home (URL or session flag)
+      const browseAsGuest =
+        searchParams.get('browse') === 'guest' ||
+        sessionStorage.getItem('browse_as_guest') === 'true';
+      if (browseAsGuest) {
+        sessionStorage.setItem('browse_as_guest', 'true');
+        setIsGuest(true);
+        setShowMain(true);
+        setCheckingAuth(false);
+        return;
+      }
+
       // Check if user is guest (from localStorage)
       const guestMode = localStorage.getItem('guest_mode') === 'true';
       if (guestMode) {
@@ -1055,7 +1085,7 @@ const Restaurants = () => {
     };
     
     checkAuth();
-  }, [isMobile, navigate]);
+  }, [isMobile, navigate, searchParams]);
 
   // Show loading state while checking auth (prevents flash)
   if (isMobile && checkingAuth) {
@@ -1641,7 +1671,7 @@ const Restaurants = () => {
           overflowY: 'auto', 
           backgroundColor: 'white',
           paddingTop: '125px',
-          paddingBottom: 'calc(70px + env(safe-area-inset-bottom, 0px))'
+          paddingBottom: 'calc(96px + env(safe-area-inset-bottom, 0px))'
         }}>
           <Box component="main">
 

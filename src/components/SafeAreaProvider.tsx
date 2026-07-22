@@ -63,19 +63,12 @@ export function SafeAreaProvider({ children }: SafeAreaProviderProps) {
     <div className="safe-area-container">
       {/* Top safe area spacer - for status bar, notch, camera */}
       <div className="safe-area-top-spacer" aria-hidden="true" />
-      
-      {/* Main content area */}
+
+      {/* Main content — bottom safe-area is handled by the fixed bottom nav.
+          A flex bottom spacer shortens this box and overflow:hidden clips fixed nav. */}
       <div className="safe-area-content">
         {children}
       </div>
-      
-      {/* Bottom safe area spacer - for home indicator (iOS only) */}
-      {!isAndroid && (
-      <div 
-          className="safe-area-bottom-spacer" 
-        aria-hidden="true"
-      />
-      )}
     </div>
   );
 }

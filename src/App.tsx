@@ -17,6 +17,7 @@ const Capacitor = getCapacitor();
 import { supabase } from "@/integrations/supabase/client";
 import { CartProvider } from "@/contexts/CartContext";
 import { DeliveryAddressProvider } from "@/contexts/DeliveryAddressContext";
+import GlobalMobileBottomNav from "@/components/mobile/GlobalMobileBottomNav";
 import Index from "./pages/Index";
 import Favorites from "./pages/Favorites";
 import OrderHistory from "./pages/OrderHistory";
@@ -951,6 +952,9 @@ const App = () => {
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+
+        {/* Mobile web customer bottom nav (Crave Wheel) — hidden on desktop / admin via component logic */}
+        <GlobalMobileBottomNav />
 
         {/* Desktop Floating Chat Button */}
         <div className="fixed bottom-6 right-6 z-50 hidden md:block">

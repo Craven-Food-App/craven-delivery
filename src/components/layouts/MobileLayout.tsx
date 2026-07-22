@@ -43,8 +43,8 @@ export function MobileLayout({ children, showBottomNav = true }: MobileLayoutPro
     location.pathname.startsWith(path)
   );
   
-  // Bottom navigation height including safe area
-  const bottomNavHeight = shouldShowNav ? '64px' : '0px';
+  // Bottom navigation height including raised C housing + safe area
+  const bottomNavHeight = shouldShowNav ? '96px' : '0px';
   
   // Scroll to top on route change
   useEffect(() => {
