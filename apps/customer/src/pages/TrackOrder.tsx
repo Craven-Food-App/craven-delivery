@@ -14,11 +14,9 @@ import {
   Loader,
   Button,
   Divider,
-  UnstyledButton,
 } from '@mantine/core';
 import {
   IconChevronLeft,
-  IconPhone,
   IconMessageCircle,
   IconNavigation,
   IconAlertCircle,
@@ -205,7 +203,6 @@ const TrackOrder: React.FC = () => {
             city,
             state,
             zip_code,
-            phone,
             latitude,
             longitude,
             image_url
@@ -857,19 +854,6 @@ const TrackOrder: React.FC = () => {
                 <Text size="xs" c="dimmed" style={{ lineHeight: 1.45 }}>
                   {restaurantAddress}
                 </Text>
-              )}
-              {restaurant.phone && (
-                <UnstyledButton
-                  component="a"
-                  href={`tel:${restaurant.phone}`}
-                  mt={8}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                >
-                  <IconPhone size={13} color={BRAND} />
-                  <Text size="xs" fw={600} c={BRAND}>
-                    {restaurant.phone}
-                  </Text>
-                </UnstyledButton>
               )}
             </Box>
           )}
