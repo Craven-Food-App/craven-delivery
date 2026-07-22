@@ -259,7 +259,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   appearance: none;
   border: 0;
   background: transparent;
@@ -268,6 +268,7 @@
   opacity: 0;
   transform: translate(-50%, 0) scale(0.35);
   touch-action: manipulation;
+  min-width: 56px;
 }
 
 .crave-wheel-item.is-open {
@@ -280,65 +281,98 @@
 
 .crave-wheel-item:focus-visible .crave-wheel-orb {
   outline: 2px solid var(--crave-orange);
-  outline-offset: 3px;
+  outline-offset: 4px;
+  border-radius: 8px;
 }
 
 .crave-wheel-item:active .crave-wheel-orb,
 .crave-wheel-item.is-selected .crave-wheel-orb {
-  transform: scale(0.94);
-  border-color: var(--crave-orange);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.25), 0 6px 14px rgba(15, 23, 42, 0.12);
+  transform: scale(0.92);
 }
 
+/* Hyper-realistic emoji glyphs — icon scale, no photo plate */
 .crave-wheel-orb {
   width: var(--crave-item-size, 56px);
   height: var(--crave-item-size, 56px);
-  min-width: 44px;
-  min-height: 44px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #1c1c1e;
   position: relative;
-  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+  transition: transform 120ms ease;
+}
+
+.crave-wheel-emoji {
+  display: block;
+  font-size: calc(var(--crave-item-size, 56px) * 0.72);
+  line-height: 1;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
+  user-select: none;
+  pointer-events: none;
+  /* Prefer colorful emoji presentation on all platforms */
+  font-family:
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Noto Color Emoji',
+    'Android Emoji',
+    sans-serif;
+}
+
+.crave-wheel-glyph {
+  display: block;
+  width: 88%;
+  height: 88%;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
+  pointer-events: none;
 }
 
 .crave-wheel-item.is-disabled .crave-wheel-orb {
-  opacity: 0.72;
-  color: #9ca3af;
+  opacity: 0.55;
+}
+
+.crave-wheel-item.is-disabled .crave-wheel-emoji,
+.crave-wheel-item.is-disabled .crave-wheel-glyph {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)) grayscale(0.2);
 }
 
 .crave-wheel-badge {
   position: absolute;
-  top: -4px;
-  right: -6px;
+  top: -2px;
+  right: -10px;
   background: var(--crave-orange);
   color: #fff;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 2px 5px;
-  border-radius: 8px;
+  border-radius: 6px;
   line-height: 1.2;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
 .crave-wheel-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: #1c1c1e;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
   text-align: center;
   line-height: 1.15;
-  max-width: 72px;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+  max-width: 78px;
+  letter-spacing: 0.02em;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.85),
+    0 0 10px rgba(0, 0, 0, 0.55),
+    0 0 1px rgba(0, 0, 0, 1);
 }
 
 .crave-wheel-item.is-disabled .crave-wheel-label {
-  color: #6b7280;
+  color: #ffe8d9;
+  opacity: 0.95;
 }
 
 /* Particles */
@@ -453,7 +487,7 @@
   }
 
   .crave-wheel-label {
-    font-size: 9px;
-    max-width: 64px;
+    font-size: 11px;
+    max-width: 72px;
   }
 }

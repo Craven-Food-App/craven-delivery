@@ -164,6 +164,7 @@ interface Restaurant {
   marketplaceStatus?: 'ACTIVE' | 'REQUESTABLE' | 'COMING_SOON';
   request_count?: number;
   marketplace_type?: string;
+  restaurant_type?: string;
 }
 interface RestaurantGridProps {
   searchQuery?: string;
@@ -179,7 +180,19 @@ interface RestaurantGridProps {
   useNearbyByLocation?: boolean;
   marketplaceType?: 'restaurant' | 'retail' | 'mall' | null;
   targetLocation?: { lat: number; lng: number } | null;
+  /** Client-side exclusive filter: keep rows whose cuisine/name contains any keyword */
+  cuisineKeywords?: string[];
 }
+
+function matchesCuisineKeywords(
+  restaurant: { cuisine_type?: string; name?: string; restaurant_type?: string },
+  keywords?: string[]
+): boolean {
+  if (!keywords?.length) return true;
+  const hay = `${restaurant.cuisine_type || ''} ${restaurant.name || ''} ${restaurant.restaurant_type || ''}`.toLowerCase();
+  return keywords.some((k) => hay.includes(k.toLowerCase()));
+}
+
 const RestaurantGrid = ({
   searchQuery,
   deliveryAddress,
@@ -194,6 +207,7 @@ const RestaurantGrid = ({
   useNearbyByLocation = false,
   marketplaceType = null,
   targetLocation = null,
+  cuisineKeywords,
 }: RestaurantGridProps = {}) => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -236,7 +250,7 @@ const RestaurantGrid = ({
     } else {
       fetchRestaurants();
     }
-  }, [searchQuery, deliveryAddress, cuisineFilter, userLocation, categoryFilter, customRestaurants, useMarketplaceCatalog, useNearbyByLocation, marketplaceType]);
+  }, [searchQuery, deliveryAddress, cuisineFilter, cuisineKeywords, userLocation, categoryFilter, customRestaurants, useMarketplaceCatalog, useNearbyByLocation, marketplaceType]);
 
   const fetchNearbyByLocation = async () => {
     setLoading(true);
@@ -261,6 +275,7 @@ const RestaurantGrid = ({
           id: row.id,
           name: row.name,
           cuisine_type: row.cuisine_type || row.category || '',
+          restaurant_type: row.restaurant_type || undefined,
           image_url: row.logo_url || row.image_url,
           latitude: row.lat != null ? Number(row.lat) : undefined,
           longitude: row.lng != null ? Number(row.lng) : undefined,
@@ -318,6 +333,7 @@ const RestaurantGrid = ({
               id: row.id,
               name: row.name,
               cuisine_type: row.cuisine_type || row.category || '',
+              restaurant_type: row.restaurant_type || undefined,
               image_url: row.logo_url || row.image_url,
               latitude: row.lat != null ? Number(row.lat) : undefined,
               longitude: row.lng != null ? Number(row.lng) : undefined,
@@ -343,6 +359,9 @@ const RestaurantGrid = ({
         } catch {
           // Keep best-effort nearby list if catalog enrichment fails
         }
+      }
+      if (cuisineKeywords?.length) {
+        list = list.filter((r) => matchesCuisineKeywords(r, cuisineKeywords));
       }
       if (excludeCuisine) {
         const excludeList = excludeCuisine.split(',').map((c: string) => c.trim().toLowerCase());
@@ -377,6 +396,7 @@ const RestaurantGrid = ({
         id: row.id,
         name: row.name,
         cuisine_type: row.cuisine_type || row.category || '',
+        restaurant_type: row.restaurant_type || undefined,
         image_url: row.logo_url || row.image_url,
         latitude: row.lat != null ? Number(row.lat) : undefined,
         longitude: row.lng != null ? Number(row.lng) : undefined,
@@ -394,6 +414,9 @@ const RestaurantGrid = ({
         list = list.filter((r) => (r.marketplace_type || 'restaurant') === 'retail' || isRetailOrApparel(r.cuisine_type));
       } else if (marketplaceType === 'mall') {
         list = list.filter((r) => (r.marketplace_type || 'restaurant') === 'mall');
+      }
+      if (cuisineKeywords?.length) {
+        list = list.filter((r) => matchesCuisineKeywords(r, cuisineKeywords));
       }
       if (excludeCuisine) {
         const excludeList = excludeCuisine.split(',').map((c: string) => c.trim().toLowerCase());
@@ -433,11 +456,15 @@ const RestaurantGrid = ({
         is_promoted: restaurant.is_promoted || false
       }));
 
-      // Filter by cuisine if provided and not 'all' (case-insensitive)
+      // Filter by cuisine if provided and not 'all' (case-insensitive contains)
       if (cuisineFilter && cuisineFilter !== 'all') {
+        const needle = cuisineFilter.toLowerCase();
         filteredData = filteredData.filter((restaurant: Restaurant) =>
-          restaurant.cuisine_type?.toLowerCase() === cuisineFilter.toLowerCase()
+          (restaurant.cuisine_type || '').toLowerCase().includes(needle)
         );
+      }
+      if (cuisineKeywords?.length) {
+        filteredData = filteredData.filter((r) => matchesCuisineKeywords(r, cuisineKeywords));
       }
 
       // Exclude specific cuisine types if provided (supports comma-separated list)

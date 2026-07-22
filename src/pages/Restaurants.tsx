@@ -33,6 +33,11 @@ import { Carousel } from '@mantine/carousel';
 import { useMediaQuery } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  getExclusiveCategoryConfig,
+  isExclusiveCategory,
+  RESTAURANTS_CATEGORY_PARAM_IDS,
+} from '@/lib/exclusiveCategoryConfig';
 import { 
   IconSearch, 
   IconMapPin, 
@@ -252,7 +257,7 @@ const Restaurants = () => {
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [activeCategory, setActiveCategory] = useState(() => {
     const fromUrl = searchParams.get('category');
-    if (fromUrl && ['all', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health', 'browse'].includes(fromUrl)) {
+    if (fromUrl && (RESTAURANTS_CATEGORY_PARAM_IDS as readonly string[]).includes(fromUrl)) {
       return fromUrl;
     }
     return 'all';
@@ -284,15 +289,14 @@ const Restaurants = () => {
   const [showMapView, setShowMapView] = useState(false);
   // Default to Tampa HQ (6759 Nebraska Ave), overwritten by browser geolocation if granted
 
-  // Deep-link from Crave Wheel: /restaurants?category=grocery|apparel|...
+  const exclusiveCategory = getExclusiveCategoryConfig(activeCategory);
+
+  // Deep-link from Crave Wheel: /restaurants?category=grocery|apparel|restaurants|...
   useEffect(() => {
     const fromUrl = searchParams.get('category');
     if (!fromUrl) return;
-    if (['all', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health', 'browse'].includes(fromUrl)) {
+    if ((RESTAURANTS_CATEGORY_PARAM_IDS as readonly string[]).includes(fromUrl)) {
       setActiveCategory(fromUrl);
-      if (['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(fromUrl)) {
-        setCuisineFilter(fromUrl);
-      }
     }
   }, [searchParams]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 27.9766, lng: -82.4563 });
@@ -358,13 +362,24 @@ const Restaurants = () => {
   };
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (searchQuery) params.set('search', searchQuery);
-    if (location) params.set('location', location);
-    if (cuisineFilter && cuisineFilter !== 'all') params.set('cuisine', cuisineFilter);
-    if (sortBy !== 'rating') params.set('sort', sortBy);
-    setSearchParams(params);
-  }, [searchQuery, location, cuisineFilter, sortBy, setSearchParams]);
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        if (searchQuery) params.set('search', searchQuery);
+        else params.delete('search');
+        if (location) params.set('location', location);
+        else params.delete('location');
+        if (cuisineFilter && cuisineFilter !== 'all') params.set('cuisine', cuisineFilter);
+        else params.delete('cuisine');
+        if (sortBy !== 'rating') params.set('sort', sortBy);
+        else params.delete('sort');
+        if (activeCategory && activeCategory !== 'all') params.set('category', activeCategory);
+        else params.delete('category');
+        return params;
+      },
+      { replace: true }
+    );
+  }, [searchQuery, location, cuisineFilter, sortBy, activeCategory, setSearchParams]);
 
   useEffect(() => {
     if (selectedAddress?.street_address && selectedAddress?.city && selectedAddress?.state && selectedAddress?.zip_code) {
@@ -695,34 +710,20 @@ const Restaurants = () => {
 
   const handleCategoryClick = (categoryId: string) => {
     setActiveCategory(categoryId);
-    
-    // Handle different category types
+
     if (categoryId === 'all' || categoryId === 'browse') {
       setCuisineFilter('all');
-    } else if (categoryId === 'restaurants') {
-      // Filter to show restaurants (excluding apparel, retail, kids, late nate hunger)
+    } else if (isExclusiveCategory(categoryId)) {
       setCuisineFilter('all');
-      // Scroll to the Restaurants section
-      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      return;
-    } else if (['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
-      setCuisineFilter(categoryId);
     } else if (categoryId === 'orders') {
-      // Navigate to orders page
       navigate('/order-history');
       return;
     } else if (categoryId === 'account') {
-      // Navigate to customer dashboard account tab
       navigate('/account');
       return;
     } else if (categoryId === 'send-package') {
       navigate('/cx/send');
       return;
-    }
-    
-    // Scroll to results section for restaurant categories
-    if (['all', 'browse', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
-      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -1675,6 +1676,25 @@ const Restaurants = () => {
         }}>
           <Box component="main">
 
+            {exclusiveCategory ? (
+              <Box px="md" pt="md" pb="sm" style={{ backgroundColor: 'white' }}>
+                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '20px', lineHeight: 1.2, margin: 0, marginBottom: 12 }}>
+                  {exclusiveCategory.title}
+                </Title>
+                <RestaurantGrid
+                  searchQuery={searchQuery}
+                  deliveryAddress={location}
+                  targetLocation={selectedLocationCoords}
+                  sectionTitle={exclusiveCategory.sectionTitle}
+                  columns={1}
+                  marketplaceType={exclusiveCategory.marketplaceType}
+                  cuisineKeywords={exclusiveCategory.cuisineKeywords}
+                  useNearbyByLocation={!!exclusiveCategory.useNearbyByLocation}
+                  useMarketplaceCatalog={!!exclusiveCategory.useMarketplaceCatalog}
+                />
+              </Box>
+            ) : (
+              <>
             {/* Main Customer Ad, smooth crossfade between creatives */}
             <MainCustomerAdPanel ad={activeMainCustomerAd} maxHeight={240} variant="web-mobile" />
 
@@ -1822,6 +1842,8 @@ const Restaurants = () => {
                 />
               </Box>
             </Box>
+              </>
+            )}
 
             {/* Spacing for Nav */}
             <Box style={{ height: '64px' }} />
@@ -2413,7 +2435,23 @@ const Restaurants = () => {
             </div>
           </div>
 
-          {/* Home sections stay visible; pills filter the list below (same idea as mobile “View more”). */}
+          {/* Exclusive category from Crave Wheel / category nav — only that marketplace */}
+          {exclusiveCategory ? (
+            <div className="max-w-7xl mx-auto px-4 py-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">{exclusiveCategory.title}</h2>
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
+                targetLocation={selectedLocationCoords}
+                sectionTitle={exclusiveCategory.sectionTitle}
+                columns={1}
+                marketplaceType={exclusiveCategory.marketplaceType}
+                cuisineKeywords={exclusiveCategory.cuisineKeywords}
+                useNearbyByLocation={!!exclusiveCategory.useNearbyByLocation}
+                useMarketplaceCatalog={!!exclusiveCategory.useMarketplaceCatalog}
+              />
+            </div>
+          ) : (
             <>
               {/* Main Customer Ad, smooth crossfade between creatives */}
               <MainCustomerAdPanel ad={activeMainCustomerAd} maxHeight={280} variant="web-desktop" />
@@ -2541,6 +2579,7 @@ const Restaurants = () => {
                 </div>
               </div>
             </>
+          )}
         </div>
       </div>
 

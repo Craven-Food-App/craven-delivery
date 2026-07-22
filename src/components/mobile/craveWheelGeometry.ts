@@ -24,11 +24,11 @@ export function getWheelRadius(viewportWidth: number): number {
   return 168;
 }
 
-/** Item button diameter in px. */
+/** Item button diameter in px — sized for emoji icon glyphs. */
 export function getWheelItemSize(viewportWidth: number): number {
   if (viewportWidth <= 320) return 52;
-  if (viewportWidth <= 390) return 56;
-  return 60;
+  if (viewportWidth <= 390) return 58;
+  return 64;
 }
 
 /**

@@ -159,9 +159,6 @@ export const CraveWheel: React.FC<CraveWheelProps> = ({
         {CRAVE_WHEEL_SERVICES.map((service, index) => {
           const pos = layout[index];
           if (!pos) return null;
-          const Icon = service.icon;
-          const label =
-            viewportWidth <= 360 && service.shortLabel ? service.shortLabel : service.label;
           const isDisabled = service.comingSoon || !service.enabled;
 
           return (
@@ -196,12 +193,22 @@ export const CraveWheel: React.FC<CraveWheelProps> = ({
               onClick={() => handleSelect(service)}
             >
               <span className="crave-wheel-orb">
-                <Icon size={Math.round(itemSize * 0.42)} stroke={1.8} />
+                {service.Icon ? (
+                  <service.Icon
+                    className="crave-wheel-glyph"
+                    width="100%"
+                    height="100%"
+                  />
+                ) : (
+                  <span className="crave-wheel-emoji" aria-hidden="true">
+                    {service.emoji}
+                  </span>
+                )}
                 {service.badge ? (
                   <span className="crave-wheel-badge">{service.badge}</span>
                 ) : null}
               </span>
-              <span className="crave-wheel-label">{label}</span>
+              <span className="crave-wheel-label">{service.label}</span>
             </button>
           );
         })}

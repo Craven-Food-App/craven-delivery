@@ -1,12 +1,5 @@
-import type { ComponentType, CSSProperties } from 'react';
-import {
-  IconBuildingStore,
-  IconCoffee,
-  IconFirstAidKit,
-  IconPackage,
-  IconShirt,
-  IconToolsKitchen2,
-} from '@tabler/icons-react';
+import type { ComponentType, SVGProps } from 'react';
+import { MilkGallonIcon } from '@/components/mobile/craveWheelIcons';
 
 export type CraveWheelServiceId =
   | 'retail'
@@ -20,7 +13,10 @@ export interface CraveWheelService {
   id: CraveWheelServiceId;
   label: string;
   shortLabel?: string;
-  icon: ComponentType<{ size?: number | string; stroke?: number; color?: string; style?: CSSProperties }>;
+  /** Native emoji glyph when no custom Icon is set */
+  emoji?: string;
+  /** Optional custom icon glyph (SVG) — preferred over emoji when present */
+  Icon?: ComponentType<SVGProps<SVGSVGElement>>;
   path: string;
   enabled: boolean;
   comingSoon: boolean;
@@ -31,14 +27,14 @@ export interface CraveWheelService {
 
 /**
  * Left → right around the upper arc.
- * Restaurants sits near top-center.
+ * Food sits near top-center.
  */
 export const CRAVE_WHEEL_SERVICES: CraveWheelService[] = [
   {
     id: 'retail',
     label: 'Retail',
-    icon: IconShirt,
-    path: '/restaurants?category=apparel',
+    emoji: '👟',
+    path: '/restaurants?category=apparel&browse=guest',
     enabled: true,
     comingSoon: false,
     analyticsEvent: 'crave_wheel_service_selected',
@@ -47,8 +43,8 @@ export const CRAVE_WHEEL_SERVICES: CraveWheelService[] = [
   {
     id: 'grocery',
     label: 'Grocery',
-    icon: IconBuildingStore,
-    path: '/restaurants?category=grocery',
+    Icon: MilkGallonIcon,
+    path: '/restaurants?category=grocery&browse=guest',
     enabled: true,
     comingSoon: false,
     analyticsEvent: 'crave_wheel_service_selected',
@@ -56,10 +52,9 @@ export const CRAVE_WHEEL_SERVICES: CraveWheelService[] = [
   },
   {
     id: 'restaurants',
-    label: 'Restaurants',
-    shortLabel: 'Food',
-    icon: IconToolsKitchen2,
-    path: '/restaurants?category=all&browse=guest',
+    label: 'Food',
+    emoji: '🍜',
+    path: '/restaurants?category=restaurants&browse=guest',
     enabled: true,
     comingSoon: false,
     analyticsEvent: 'crave_wheel_service_selected',
@@ -67,10 +62,9 @@ export const CRAVE_WHEEL_SERVICES: CraveWheelService[] = [
   },
   {
     id: 'convenience',
-    label: 'Convenience',
-    shortLabel: 'C-Store',
-    icon: IconCoffee,
-    path: '/restaurants?category=convenience',
+    label: 'Store',
+    emoji: '🏪',
+    path: '/restaurants?category=convenience&browse=guest',
     enabled: true,
     comingSoon: false,
     analyticsEvent: 'crave_wheel_service_selected',
@@ -78,9 +72,9 @@ export const CRAVE_WHEEL_SERVICES: CraveWheelService[] = [
   },
   {
     id: 'pharmacy',
-    label: 'Pharmacy',
-    icon: IconFirstAidKit,
-    path: '/restaurants?category=health',
+    label: 'RX',
+    emoji: '💊',
+    path: '/restaurants?category=health&browse=guest',
     enabled: true,
     comingSoon: false,
     analyticsEvent: 'crave_wheel_service_selected',
@@ -88,9 +82,8 @@ export const CRAVE_WHEEL_SERVICES: CraveWheelService[] = [
   },
   {
     id: 'send_package',
-    label: 'Send Package',
-    shortLabel: 'Send',
-    icon: IconPackage,
+    label: 'Package',
+    emoji: '📦',
     path: '',
     enabled: false,
     comingSoon: true,
