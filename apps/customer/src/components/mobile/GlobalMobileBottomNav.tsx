@@ -1,43 +1,134 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Group, Text, Badge, ActionIcon } from '@mantine/core';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { IconCurrencyDollar, IconHeart, IconShoppingBag, IconUser, IconShoppingCart } from '@tabler/icons-react';
-import { useCart } from '@/contexts/CartContext';
-import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  IconHome,
+  IconDots,
+  IconShoppingBag,
+  IconWallet,
+} from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useCraveWheel } from '@/hooks/useCraveWheel';
+import CraveWheel from '@/components/mobile/CraveWheel';
+import {
+  CRAVE_NAV_INACTIVE,
+  CRAVE_ORANGE,
+  type CraveWheelService,
+} from '@/components/mobile/craveWheelConfig';
+import cravenCLogo from '@/assets/craven-c-new.png';
+import './craveWheel.css';
+
+type NavId = 'home' | 'orders' | 'wallet' | 'more';
+
+interface SideNavItem {
+  id: NavId;
+  label: string;
+  icon: React.ComponentType<{ size?: number; stroke?: number; color?: string }>;
+  path: string;
+  requiresAuth?: boolean;
+}
+
+const LEFT_ITEMS: SideNavItem[] = [
+  { id: 'home', label: 'Home', icon: IconHome, path: '/restaurants?browse=guest' },
+  { id: 'orders', label: 'Orders', icon: IconShoppingBag, path: '/order-history' },
+];
+
+const RIGHT_ITEMS: SideNavItem[] = [
+  {
+    id: 'wallet',
+    label: 'Wallet',
+    icon: IconWallet,
+    path: '/account/my-credits',
+    requiresAuth: true,
+  },
+  {
+    id: 'more',
+    label: 'More',
+    icon: IconDots,
+    path: '/account',
+    requiresAuth: true,
+  },
+];
+
+function isNavActive(id: NavId, pathname: string): boolean {
+  switch (id) {
+    case 'home':
+      return pathname === '/' || pathname === '/restaurants';
+    case 'orders':
+      return pathname === '/order-history';
+    case 'wallet':
+      return pathname === '/account/my-credits' || pathname === '/my-credits';
+    case 'more':
+      return (
+        pathname === '/account' ||
+        (pathname.startsWith('/account/') &&
+          pathname !== '/account/my-credits')
+      );
+    default:
+      return false;
+  }
+}
 
 /**
- * Global Mobile Bottom Navigation
- * - Always positioned at absolute bottom
- * - Respects safe area (Android/iOS)
- * - Responsive to all screen sizes
- * - Persistent across app (except certain pages)
+ * Custom Crave'n customer bottom navigation with raised center C + Crave Wheel.
  */
 const GlobalMobileBottomNav: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { cartCount } = useCart();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string } | null>(null);
+  const [itemModalOpen, setItemModalOpen] = useState(false);
+  const [cPressed, setCPressed] = useState(false);
+
+  const {
+    open,
+    reducedMotion,
+    centerBtnRef,
+    firstItemRef,
+    closeWheel,
+    toggleWheel,
+    selectService,
+  } = useCraveWheel();
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      const {
+        data: { user: u },
+      } = await supabase.auth.getUser();
+      setUser(u);
     };
-    getUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    void getUser();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (!session?.user) closeWheel('auth');
     });
-
     return () => subscription.unsubscribe();
+  }, [closeWheel]);
+
+  // Close wheel on route change (keep open during in-place search-param updates only when already closed)
+  const pathRef = useRef(location.pathname + location.search);
+  useEffect(() => {
+    const key = location.pathname + location.search;
+    if (key !== pathRef.current) {
+      pathRef.current = key;
+      if (open) closeWheel('route_change');
+    }
+  }, [location.pathname, location.search, open, closeWheel]);
+
+  // Watch item-modal-open body class (RestaurantMenuPage)
+  useEffect(() => {
+    const sync = () => setItemModalOpen(document.body.classList.contains('item-modal-open'));
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
   }, []);
 
-  // Only show on mobile
   if (!isMobile) return null;
 
-  // Hide on specific paths
   const hideOnPaths = [
     '/driver',
     '/enhanced-onboarding',
@@ -47,172 +138,123 @@ const GlobalMobileBottomNav: React.FC = () => {
     '/customer-support',
     '/checkout',
   ];
-  
-  if (hideOnPaths.some(path => location.pathname.startsWith(path))) {
+  if (hideOnPaths.some((path) => location.pathname.startsWith(path))) {
     return null;
   }
+  if (itemModalOpen) return null;
 
-  // Hide when item modal is open (body class added by RestaurantMenuPage)
-  const isItemModalOpen = document.body.classList.contains('item-modal-open');
-  if (isItemModalOpen) {
-    return null;
-  }
+  const goTo = (item: SideNavItem) => {
+    if (open) closeWheel('nav');
+    try {
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', 'bottom_navigation_selected', {
+          nav_id: item.id,
+          nav_label: item.label,
+          destination_route: item.path,
+        });
+      }
+    } catch {
+      // no-op
+    }
 
-  const navItems = [
-    {
-      id: 'shop',
-      label: 'Shop',
-      icon: IconCurrencyDollar,
-      path: '/restaurants',
-      isActive: location.pathname === '/restaurants' || location.pathname === '/',
-    },
-    {
-      id: 'favorites',
-      label: 'Favorites',
-      icon: IconHeart,
-      path: '/favorites',
-      isActive: location.pathname === '/favorites',
-    },
-    {
-      id: 'orders',
-      label: 'Orders',
-      icon: IconShoppingBag,
-      path: '/order-history',
-      isActive: location.pathname === '/order-history',
-    },
-    {
-      id: 'account',
-      label: 'Account',
-      icon: IconUser,
-      path: user ? '/account' : '/auth',
-      isActive: location.pathname === '/account',
-    },
-    {
-      id: 'cart',
-      label: 'Cart',
-      icon: IconShoppingCart,
-      path: '/checkout',
-      isActive: location.pathname === '/checkout',
-      showBadge: true,
-    },
-  ];
+    if (item.id === 'home') {
+      sessionStorage.setItem('browse_as_guest', 'true');
+      navigate('/restaurants?browse=guest');
+      return;
+    }
+    if (item.requiresAuth && !user) {
+      navigate('/auth');
+      return;
+    }
+    navigate(item.path);
+  };
 
-  return (
-      <Box
-        component="nav"
+  const renderSideItem = (item: SideNavItem) => {
+    const Icon = item.icon;
+    const active = isNavActive(item.id, location.pathname);
+    const color = active ? CRAVE_ORANGE : CRAVE_NAV_INACTIVE;
+    return (
+      <button
+        key={item.id}
+        type="button"
+        className={`crave-nav-item${active ? ' active' : ''}`}
+        aria-label={item.label}
+        aria-current={active ? 'page' : undefined}
+        onClick={() => goTo(item)}
+      >
+        <Icon size={22} stroke={active ? 2.4 : 1.9} color={color} />
+        <span className="crave-nav-item-label">{item.label}</span>
+      </button>
+    );
+  };
+
+  const onWheelSelect = (service: CraveWheelService) => {
+    selectService({
+      id: service.id,
+      label: service.label,
+      path: service.path,
+      comingSoon: service.comingSoon,
+      enabled: service.enabled,
+    });
+  };
+
+  // Portal to document.body so overflow:hidden on .safe-area-content / .safe-area-container
+  // cannot clip the fixed bar (bottom safe-area spacer shortens that box on iOS).
+  return createPortal(
+    <div className="crave-nav-root" data-crave-wheel-open={open ? 'true' : 'false'}>
+      <CraveWheel
+        open={open}
+        reducedMotion={reducedMotion}
+        firstItemRef={firstItemRef}
+        onClose={closeWheel}
+        onSelect={onWheelSelect}
+      />
+
+      <nav className="crave-nav-bar" aria-label="Customer primary">
+        <div className="crave-nav-center-anchor">
+          <div className="crave-nav-housing" aria-hidden="true" />
+          <button
+            ref={centerBtnRef}
+            type="button"
+            className={`crave-c-btn${open ? ' is-open' : ''}${cPressed ? ' is-pressed' : ''}`}
+            aria-label={open ? 'Close Crave menu' : 'Open Crave menu'}
+            aria-expanded={open}
+            aria-haspopup="menu"
+            aria-controls="crave-wheel-menu"
+            onPointerDown={() => setCPressed(true)}
+            onPointerUp={() => setCPressed(false)}
+            onPointerLeave={() => setCPressed(false)}
+            onClick={() => toggleWheel()}
+          >
+            <img src={cravenCLogo} alt="" />
+          </button>
+        </div>
+
+        <div className="crave-nav-items">
+          <div className="crave-nav-side">{LEFT_ITEMS.map(renderSideItem)}</div>
+          <div className="crave-nav-center-slot" aria-hidden="true" />
+          <div className="crave-nav-side">{RIGHT_ITEMS.map(renderSideItem)}</div>
+        </div>
+      </nav>
+
+      {/* Screen-reader live region */}
+      <div
+        id="crave-wheel-menu"
+        role="menu"
+        aria-hidden={!open}
         style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          width: '100%',
-          maxWidth: '100vw',
-          backgroundColor: 'white',
-          borderTop: '1px solid #e5e7eb',
-          boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
-          zIndex: 9999,
-          // Safe area for bottom (Android nav buttons, iOS home indicator)
-          paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
-          paddingTop: '8px',
-          // Ensure it's always visible and sticky
-          visibility: 'visible',
-          display: 'flex',
-          pointerEvents: 'auto',
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          overflow: 'hidden',
+          clip: 'rect(0 0 0 0)',
         }}
       >
-      <Group
-        justify="space-around"
-        gap={0}
-        style={{
-          width: '100%',
-          margin: '0 auto',
-          maxWidth: '100%',
-        }}
-      >
-          {navItems.map((item) => {
-            const IconComponent = item.icon;
-            const isActive = item.isActive;
-
-            return (
-            <ActionIcon
-                key={item.id}
-                onClick={() => {
-                  if (item.id === 'shop') {
-                    // Set flag to browse as guest and navigate
-                    sessionStorage.setItem('browse_as_guest', 'true');
-                    navigate('/restaurants?browse=guest');
-                  } else {
-                    navigate(item.path);
-                  }
-                }}
-                variant="subtle"
-              size="xl"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                padding: '4px 8px',
-                minWidth: '60px',
-                minHeight: '48px',
-                  flex: '1 1 0',
-                color: isActive ? '#ff6b35' : '#737373',
-                  position: 'relative',
-                backgroundColor: 'transparent',
-                borderRadius: 0,
-                // Touch-friendly size
-                touchAction: 'manipulation',
-                }}
-              >
-                <Box style={{ position: 'relative' }}>
-                <IconComponent 
-                  size={24} 
-                  stroke={isActive ? 2.5 : 2}
-                  style={{ color: isActive ? '#ff6b35' : '#737373' }} 
-                />
-                  {item.showBadge && cartCount > 0 && (
-                    <Badge
-                      size="xs"
-                      color="red"
-                      style={{
-                        position: 'absolute',
-                      top: -6,
-                      right: -6,
-                      minWidth: '18px',
-                      height: '18px',
-                      padding: '0 4px',
-                      fontSize: '10px',
-                      fontWeight: 700,
-                      borderRadius: '9px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                      }}
-                    >
-                      {cartCount > 9 ? '9+' : cartCount}
-                    </Badge>
-                  )}
-                </Box>
-              <Text 
-                size="11px" 
-                fw={isActive ? 600 : 500}
-                style={{ 
-                  color: isActive ? '#ff6b35' : '#737373',
-                  lineHeight: 1,
-                  marginTop: '2px',
-                }}
-              >
-                  {item.label}
-                </Text>
-            </ActionIcon>
-            );
-          })}
-        </Group>
-      </Box>
+        {open ? 'Crave menu opened' : 'Crave menu closed'}
+      </div>
+    </div>,
+    document.body
   );
 };
 
 export default GlobalMobileBottomNav;
-

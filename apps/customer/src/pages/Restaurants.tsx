@@ -274,11 +274,33 @@ const Restaurants = () => {
   const [activeFilter, setActiveFilter] = useState('deals');
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [showMenuIcons, setShowMenuIcons] = useState(false); // Start collapsed
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const fromUrl = searchParams.get('category');
+    if (fromUrl && ['all', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health', 'browse'].includes(fromUrl)) {
+      return fromUrl;
+    }
+    return 'all';
+  });
   const [quickFilter, setQuickFilter] = useState<string | null>(null);
   const [apparelCategoryFilter, setApparelCategoryFilter] = useState<string>('all'); // 'all', 'Apparel', 'Accessories', 'Shoes'
   // Neutral US center for map/distance only; no hardcoded delivery address
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 39.8283, lng: -98.5795 });
+
+  // Deep-link from Crave Wheel: /restaurants?category=grocery|apparel|...
+  useEffect(() => {
+    const fromUrl = searchParams.get('category');
+    if (!fromUrl) return;
+    if (['all', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health', 'browse'].includes(fromUrl)) {
+      setActiveCategory(fromUrl);
+      if (['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health', 'all', 'browse'].includes(fromUrl)) {
+        window.setTimeout(() => {
+          if (fromUrl === 'apparel' && retailSectionRef.current) {
+            retailSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 250);
+      }
+    }
+  }, [searchParams]);
 
   const mainCustomerAds = useMemo(
     () => adPlacements.filter((ad: any) => ad.placement_key === 'main_customer_ad'),
