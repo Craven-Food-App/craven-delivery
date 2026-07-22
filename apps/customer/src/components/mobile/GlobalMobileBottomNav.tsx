@@ -72,6 +72,7 @@ function isNavActive(id: NavId, pathname: string): boolean {
 
 /**
  * Custom Crave'n customer bottom navigation with raised center C + Crave Wheel.
+ * Shared by the customer Capapp and mobile web (root) app.
  */
 const GlobalMobileBottomNav: React.FC = () => {
   const location = useLocation();

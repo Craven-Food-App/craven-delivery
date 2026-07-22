@@ -72,7 +72,7 @@ function isNavActive(id: NavId, pathname: string): boolean {
 
 /**
  * Custom Crave'n customer bottom navigation with raised center C + Crave Wheel.
- * Used by the mobile web app (and customer Capapp).
+ * Shared by the customer Capapp and mobile web (root) app.
  */
 const GlobalMobileBottomNav: React.FC = () => {
   const location = useLocation();
@@ -109,6 +109,7 @@ const GlobalMobileBottomNav: React.FC = () => {
     return () => subscription.unsubscribe();
   }, [closeWheel]);
 
+  // Close wheel on route change (keep open during in-place search-param updates only when already closed)
   const pathRef = useRef(location.pathname + location.search);
   useEffect(() => {
     const key = location.pathname + location.search;
@@ -118,6 +119,7 @@ const GlobalMobileBottomNav: React.FC = () => {
     }
   }, [location.pathname, location.search, open, closeWheel]);
 
+  // Watch item-modal-open body class (RestaurantMenuPage)
   useEffect(() => {
     const sync = () => setItemModalOpen(document.body.classList.contains('item-modal-open'));
     sync();
@@ -136,6 +138,7 @@ const GlobalMobileBottomNav: React.FC = () => {
     '/auth',
     '/customer-support',
     '/checkout',
+    // Root monorepo-only portals (no-ops in customer Capapp)
     '/admin',
     '/ceo',
     '/cfo',
@@ -163,7 +166,6 @@ const GlobalMobileBottomNav: React.FC = () => {
   if (hideOnPaths.some((path) => location.pathname.startsWith(path))) {
     return null;
   }
-  // Exact /cx landing
   if (location.pathname === '/cx') return null;
   if (itemModalOpen) return null;
 
@@ -222,6 +224,8 @@ const GlobalMobileBottomNav: React.FC = () => {
     });
   };
 
+  // Portal to document.body so overflow:hidden on .safe-area-content / .safe-area-container
+  // cannot clip the fixed bar (bottom safe-area spacer shortens that box on iOS).
   return createPortal(
     <div className="crave-nav-root" data-crave-wheel-open={open ? 'true' : 'false'}>
       <CraveWheel
@@ -259,6 +263,7 @@ const GlobalMobileBottomNav: React.FC = () => {
         </div>
       </nav>
 
+      {/* Screen-reader live region */}
       <div
         id="crave-wheel-menu"
         role="menu"
