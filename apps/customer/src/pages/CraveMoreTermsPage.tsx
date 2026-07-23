@@ -6,14 +6,19 @@ const CraveMoreTermsPage: React.FC = () => {
       <div className="max-w-xl mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold mb-4">CraveMore Subscription Terms</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Last updated: January 20, 2026
+          Last updated: July 22, 2026
         </p>
 
         <p className="text-sm mb-4">
           CraveMore is an optional subscription offered by Crave’n Inc. (“Crave’n”, “we”, “us”) that may
           provide benefits such as reduced or waived delivery fees on eligible orders, promotional credits, and
           other perks described in the app. These CraveMore Subscription Terms supplement, and are incorporated
-          into, the Crave’n Terms of Service.
+          into, the Crave’n Terms of Service. Promotional CraveMore entitlements earned through referrals are
+          also described in the{" "}
+          <a href="/legal/referral" className="text-orange-600 underline font-medium">
+            Referral Program Terms
+          </a>
+          .
         </p>
 
         <h2 className="text-lg font-semibold mt-6 mb-2">1. Enrollment and Eligibility</h2>
@@ -42,7 +47,8 @@ const CraveMoreTermsPage: React.FC = () => {
         <h2 className="text-lg font-semibold mt-6 mb-2">4. Benefits and Limitations</h2>
         <p className="text-sm mb-2">
           CraveMore benefits may include, for example, reduced or waived delivery fees on eligible orders and
-          promotional credits. Benefits are subject to:
+          promotional credits. Benefits may come from a paid subscription, a free trial, or a promotional
+          entitlement (such as a referral prize). Benefits are subject to:
         </p>
         <ul className="list-disc pl-5 text-sm space-y-1 mb-4">
           <li>Availability in your area</li>
@@ -52,7 +58,16 @@ const CraveMoreTermsPage: React.FC = () => {
         </ul>
         <p className="text-sm mb-4">
           CraveMore does not guarantee that all orders will have zero delivery fees, that all Restaurants will
-          participate, or that delivery times will be faster than non‑CraveMore orders.
+          participate, or that delivery times will be faster than non‑CraveMore orders. Taxes, tips, service
+          fees, and other charges not covered by CraveMore remain your responsibility.
+        </p>
+
+        <h2 className="text-lg font-semibold mt-6 mb-2">4A. Promotional CraveMore Entitlements</h2>
+        <p className="text-sm mb-4">
+          If you earn CraveMore through a promotion (including the New Customer 365-Day Free Delivery referral
+          prize), the entitlement lasts for the stated promotional period (for example, 365 consecutive days),
+          does not auto-renew as a paid plan unless you separately enroll, and may be queued to start after an
+          existing active membership ends. See the Referral Program Terms for referral-prize rules.
         </p>
 
         <h2 className="text-lg font-semibold mt-6 mb-2">5. Cancellations</h2>

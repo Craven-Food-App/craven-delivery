@@ -34,11 +34,13 @@ import CraveMoreSubscription from "@/pages/CraveMoreSubscription";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import TermsOfServicePage from "@/pages/TermsOfServicePage";
 import CraveMoreTermsPage from "@/pages/CraveMoreTermsPage";
+import ReferralProgramTermsPage from "@/pages/ReferralProgramTermsPage";
 import WhatsNew from "@/pages/WhatsNew";
 import Notifications from "@/pages/Notifications";
 import NotificationSettings from "@/pages/NotificationSettings";
 import MyCredits from "@/pages/MyCredits";
 import InviteFriends from "@/pages/InviteFriends";
+import ReferralLanding from "@/pages/ReferralLanding";
 import CuisineResults from "@/pages/CuisineResults";
 import PromoManagement from "@/pages/admin/PromoManagement";
 import MarketDemand from "@/pages/admin/MarketDemand";
@@ -116,6 +118,9 @@ function App() {
                     <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
                     <Route path="/legal/terms" element={<TermsOfServicePage />} />
                     <Route path="/legal/cravemore" element={<CraveMoreTermsPage />} />
+                    <Route path="/legal/referral" element={<ReferralProgramTermsPage />} />
+                    <Route path="/terms" element={<ReferralProgramTermsPage />} />
+                    <Route path="/r/:code" element={<ReferralLanding />} />
                     <Route path="/promotion-details" element={<PromotionDetails />} />
                     <Route path="/whats-new" element={<WhatsNew />} />
                     <Route path="/merchant/signup" element={<MerchantLandingPage />} />

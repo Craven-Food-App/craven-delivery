@@ -15,7 +15,9 @@ import { useCart } from '@/contexts/CartContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCraveMoreOffer } from '@/hooks/useCraveMoreOffer';
 import { useNewCustomer365ReferralPromo } from '@/hooks/useNewCustomer365ReferralPromo';
+import { useReferralTracker } from '@/hooks/useReferralTracker';
 import { NewCustomer365PromoCard } from '@/components/referral/NewCustomer365PromoCard';
+import { ReferralTracker } from '@/components/referral/ReferralTracker';
 import cravenReferHero from '@/assets/crave_friend_invite .png'; // Asset file has space in name
 import { supabase } from '@/integrations/supabase/client';
 
@@ -25,7 +27,13 @@ const InviteFriends: React.FC = () => {
   const isMobile = useIsMobile();
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const { offer } = useCraveMoreOffer();
-  const { promo: promo365 } = useNewCustomer365ReferralPromo();
+  const { promo: promo365, loading: promo365Loading } = useNewCustomer365ReferralPromo();
+  const {
+    referrals,
+    loading: trackerLoading,
+    error: trackerError,
+    refresh: refreshTracker,
+  } = useReferralTracker();
   const [referralCode, setReferralCode] = useState<string>('CRAVEN10');
   const [loadingCode, setLoadingCode] = useState<boolean>(true);
 
@@ -200,8 +208,12 @@ const InviteFriends: React.FC = () => {
           </Stack>
         </Stack>
 
-        {/* New-customer 365 CraveMore promo (backend-gated; hidden if ineligible) */}
-        {promo365?.eligible && <NewCustomer365PromoCard promo={promo365} />}
+        {/* New-customer 365 CraveMore promo (always visible; progress only when backend-eligible) */}
+        <NewCustomer365PromoCard
+          promo={promo365}
+          loading={promo365Loading || loadingCode}
+          referralCode={referralCode}
+        />
 
         {/* Reward breakdown */}
         <Paper radius="md" p="md" withBorder>
@@ -325,6 +337,13 @@ const InviteFriends: React.FC = () => {
             </Button>
         </Group>
 
+        <ReferralTracker
+          referrals={referrals}
+          loading={trackerLoading}
+          error={trackerError}
+          onRefresh={refreshTracker}
+        />
+
         {/* Reward activity */}
         <Button
           variant="outline"
@@ -337,7 +356,7 @@ const InviteFriends: React.FC = () => {
             fontWeight: 500,
           }}
         >
-          View Reward Activity
+          View Wallet & Credits
         </Button>
 
         {/* How It Works expandable section */}
@@ -395,7 +414,7 @@ const InviteFriends: React.FC = () => {
         <Stack gap={4}>
           <Text style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>Program details</Text>
           <Text style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6 }}>
-            • One reward per new customer you invite.
+            • One standard reward per new customer you invite who completes a qualifying order.
           </Text>
           <Text style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6 }}>
             • A minimum first order amount is required for rewards to apply.
@@ -405,7 +424,18 @@ const InviteFriends: React.FC = () => {
             Crave’n orders.
           </Text>
           <Text style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6 }}>
+            • Eligible new customers may also earn a limited 365-day CraveMore free-delivery prize
+            using the same invite code — see the prize section above.
+          </Text>
+          <Text style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6 }}>
             • Crave’n may adjust or end this program at any time.
+          </Text>
+          <Text
+            component="a"
+            href="/legal/referral"
+            style={{ fontSize: 12, color: '#ea580c', fontWeight: 600, textDecoration: 'underline', marginTop: 4 }}
+          >
+            Full Referral Program Terms
           </Text>
         </Stack>
       </Stack>

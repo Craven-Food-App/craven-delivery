@@ -80,6 +80,7 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import MerchantTermsOfServicePage from "./pages/MerchantTermsOfServicePage";
 import CraveMoreTermsPage from "./pages/CraveMoreTermsPage";
+import ReferralProgramTermsPage from "./pages/ReferralProgramTermsPage";
 import HelpCenter from "./pages/HelpCenter";
 import Safety from "./pages/Safety";
 import ContactUs from "./pages/ContactUs";
@@ -214,6 +215,7 @@ const AdminGuide = lazy(() => import("./pages/AdminGuide"));
 const RestaurantGuide = lazy(() => import("./pages/RestaurantGuide"));
 const DriverGuide = lazy(() => import("./pages/DriverGuide"));
 const InviteFriends = lazy(() => import("./pages/InviteFriends"));
+const ReferralLanding = lazy(() => import("./pages/ReferralLanding"));
 
 const queryClient = new QueryClient();
 
@@ -784,6 +786,9 @@ const App = () => {
           <Route path="/legal/terms" element={<TermsOfServicePage />} />
           <Route path="/legal/merchant-terms" element={<MerchantTermsOfServicePage />} />
           <Route path="/legal/cravemore" element={<CraveMoreTermsPage />} />
+          <Route path="/legal/referral" element={<ReferralProgramTermsPage />} />
+          <Route path="/terms" element={<ReferralProgramTermsPage />} />
+          <Route path="/r/:code" element={<Suspense fallback={<SuspenseLoader message="Loading invite" />}><ReferralLanding /></Suspense>} />
           <Route path="/mobile" element={<MobileDriverDashboard />} />
           <Route path="/mobile/background-check-status" element={<MobileBackgroundCheckStatus />} />
           <Route path="/mobile/reset-password" element={<MobilePasswordReset />} />

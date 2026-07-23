@@ -17,11 +17,15 @@ import {
 } from '@mantine/core';
 import { IconAlertCircle, IconArrowLeft, IconUser, IconMail, IconLock } from '@tabler/icons-react';
 import cravenLogo from "@/assets/craven-logo.png";
+import { savePendingReferralCode, getPendingReferralCode } from '@/lib/referralInviteStorage';
+import { attributePendingReferralIfAny } from '@/lib/attributePendingReferral';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup'>(
+    (location.state as any)?.mode === 'signup' ? 'signup' : 'signin'
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -29,19 +33,31 @@ const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [referralCodeInput, setReferralCodeInput] = useState(
+    () => (location.state as any)?.referralCode || getPendingReferralCode() || ''
+  );
 
   // Check if already authenticated
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        // Already logged in, redirect to intended destination or restaurants
+        await attributePendingReferralIfAny(session.user.id);
         const from = (location.state as any)?.from?.pathname || '/restaurants';
         navigate(from, { replace: true });
       }
     };
     checkAuth();
   }, [navigate, location]);
+
+  useEffect(() => {
+    const fromState = (location.state as any)?.referralCode;
+    if (fromState) {
+      savePendingReferralCode(fromState);
+      setReferralCodeInput(String(fromState).toUpperCase());
+      setMode('signup');
+    }
+  }, [location.state]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +99,14 @@ const Auth: React.FC = () => {
       });
 
       if (error) throw error;
+
+      if (referralCodeInput.trim()) {
+        savePendingReferralCode(referralCodeInput.trim());
+      }
+
+      if (data.user) {
+        await attributePendingReferralIfAny(data.user.id);
+      }
 
       // Check if email confirmation is required
       if (data.user && !data.session) {
@@ -171,6 +195,16 @@ const Auth: React.FC = () => {
                   required
                   leftSection={<IconLock size={16} />}
                 />
+
+                {mode === 'signup' && (
+                  <TextInput
+                    label="Invite / promo code (optional)"
+                    placeholder="Friend’s referral code"
+                    value={referralCodeInput}
+                    onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
+                    description="If a friend invited you, enter their code to unlock rewards"
+                  />
+                )}
 
                 <Button
                   type="submit"

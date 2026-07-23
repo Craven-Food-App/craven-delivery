@@ -61,69 +61,81 @@ export function useNewCustomer365ReferralPromo() {
 
       if (error) {
         console.warn('evaluate_new_customer_365_promo:', error.message);
-        setPromo({ ok: false, eligible: false, display_state: 'ineligible', error: error.message });
+        setPromo({
+          ok: false,
+          eligible: false,
+          display_state: 'ineligible',
+          error: error.message,
+        });
         return;
       }
 
       const state = (data || {}) as NewCustomer365PromoState;
       setPromo(state);
 
-      if (state.eligible && !trackedView.current) {
-        trackedView.current = true;
-        trackEvent('new_customer_365_promo_viewed', {
-          display_state: state.display_state,
-          promotion_key: state.promotion_key,
-        });
-        if (state.display_state === 'eligible' || state.display_state === 'in_progress') {
-          trackEvent('new_customer_365_promo_eligible', {
+      try {
+        if (!trackedView.current) {
+          trackedView.current = true;
+          trackEvent('new_customer_365_promo_viewed', {
+            display_state: state.display_state,
             promotion_key: state.promotion_key,
+            eligible: state.eligible,
+          });
+          if (state.eligible) {
+            trackEvent('new_customer_365_promo_eligible', {
+              promotion_key: state.promotion_key,
+            });
+          }
+        }
+
+        if (
+          state.eligible &&
+          typeof state.qualifying_count === 'number' &&
+          lastProgress.current !== state.qualifying_count
+        ) {
+          lastProgress.current = state.qualifying_count;
+          trackEvent('new_customer_365_promo_progress', {
+            qualifying_count: state.qualifying_count,
+            required_count: state.required_count,
+            remaining_count: state.remaining_count,
           });
         }
-      }
 
-      if (
-        state.eligible &&
-        typeof state.qualifying_count === 'number' &&
-        lastProgress.current !== state.qualifying_count
-      ) {
-        lastProgress.current = state.qualifying_count;
-        trackEvent('new_customer_365_promo_progress', {
-          qualifying_count: state.qualifying_count,
-          required_count: state.required_count,
-          remaining_count: state.remaining_count,
-        });
-      }
+        if (
+          (state.display_state === 'reward_active' || state.display_state === 'reward_pending') &&
+          !trackedReward.current
+        ) {
+          trackedReward.current = true;
+          trackEvent('new_customer_365_promo_reward_issued', {
+            reward_status: state.reward_status,
+            reward_ends_at: state.reward_ends_at,
+          });
+        }
 
-      if (
-        (state.display_state === 'reward_active' || state.display_state === 'reward_pending') &&
-        !trackedReward.current
-      ) {
-        trackedReward.current = true;
-        trackEvent('new_customer_365_promo_reward_issued', {
-          reward_status: state.reward_status,
-          reward_ends_at: state.reward_ends_at,
-        });
-      }
+        if (state.display_state === 'completed' && !trackedCompleted.current) {
+          trackedCompleted.current = true;
+          trackEvent('new_customer_365_promo_completed', {
+            qualifying_count: state.qualifying_count,
+          });
+        }
 
-      if (state.display_state === 'completed' && !trackedCompleted.current) {
-        trackedCompleted.current = true;
-        trackEvent('new_customer_365_promo_completed', {
-          qualifying_count: state.qualifying_count,
-        });
-      }
-
-      if (state.display_state === 'disqualified' && !trackedDisqualified.current) {
-        trackedDisqualified.current = true;
-        trackEvent('new_customer_365_promo_disqualified', {
-          reason: state.reason,
-        });
+        if (state.display_state === 'disqualified' && !trackedDisqualified.current) {
+          trackedDisqualified.current = true;
+          trackEvent('new_customer_365_promo_disqualified', {
+            reason: state.reason,
+          });
+        }
+      } catch {
+        // Analytics must never block promo UI
       }
     } catch (err) {
       console.error('365 promo evaluate failed:', err);
-      trackEvent('new_customer_365_promo_reward_failed', {
+      setPromo({
+        ok: false,
+        eligible: false,
+        display_state: 'ineligible',
         error: err instanceof Error ? err.message : 'unknown',
       });
-      setPromo({ ok: false, eligible: false, display_state: 'ineligible' });
     } finally {
       setLoading(false);
     }

@@ -6,7 +6,7 @@ const TermsOfServicePage: React.FC = () => {
       <div className="max-w-xl mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold mb-4">Crave’n Terms of Service</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Last updated: May 2026
+          Last updated: July 22, 2026
         </p>
 
         <p className="text-sm mb-4">
@@ -77,11 +77,16 @@ const TermsOfServicePage: React.FC = () => {
           </li>
         </ul>
 
-        <h2 className="text-lg font-semibold mt-6 mb-2">6. Promotions and Credits</h2>
+        <h2 className="text-lg font-semibold mt-6 mb-2">6. Promotions, Credits, and Referrals</h2>
         <p className="text-sm mb-4">
           Promotional codes, discounts, and credits are subject to additional terms, may expire, are
           non‑transferable, and have no cash value. We may change or revoke promotions and credits where
-          permitted by law.
+          permitted by law. Customer referral offers, including Refer & Earn credits and limited
+          promotions such as the New Customer 365-Day CraveMore Free Delivery prize, are governed by the{" "}
+          <a href="/legal/referral" className="text-orange-600 underline font-medium">
+            Crave’n Referral Program Terms
+          </a>
+          , which are incorporated into these Terms by reference.
         </p>
 
         <h2 className="text-lg font-semibold mt-6 mb-2">7. Conduct and Safety</h2>
