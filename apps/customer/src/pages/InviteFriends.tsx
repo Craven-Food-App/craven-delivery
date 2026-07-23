@@ -14,6 +14,8 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCraveMoreOffer } from '@/hooks/useCraveMoreOffer';
+import { useNewCustomer365ReferralPromo } from '@/hooks/useNewCustomer365ReferralPromo';
+import { NewCustomer365PromoCard } from '@/components/referral/NewCustomer365PromoCard';
 import cravenReferHero from '@/assets/crave_friend_invite .png';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -23,6 +25,7 @@ const InviteFriends: React.FC = () => {
   const isMobile = useIsMobile();
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const { offer } = useCraveMoreOffer();
+  const { promo: promo365 } = useNewCustomer365ReferralPromo();
   const [referralCode, setReferralCode] = useState<string>('CRAVEN10');
   const [loadingCode, setLoadingCode] = useState<boolean>(true);
 
@@ -212,6 +215,9 @@ const InviteFriends: React.FC = () => {
             </Text>
           </Stack>
         </Stack>
+
+        {/* New-customer 365 CraveMore promo (backend-gated; hidden if ineligible) */}
+        {promo365?.eligible && <NewCustomer365PromoCard promo={promo365} />}
 
         {/* Reward breakdown */}
         <Paper radius="md" p="md" withBorder>

@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Settings, DollarSign, Users, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { NewCustomer365PromoAdmin } from './NewCustomer365PromoAdmin';
 
 export function ReferralSettingsManager() {
   const [selectedType, setSelectedType] = useState<'customer' | 'driver' | 'restaurant'>('driver');
@@ -376,6 +377,8 @@ export function ReferralSettingsManager() {
           </div>
         </CardContent>
       </Card>
+
+      <NewCustomer365PromoAdmin />
     </div>
   );
 }

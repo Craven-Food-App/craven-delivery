@@ -830,8 +830,9 @@ const Checkout: React.FC = () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         
-        // Check membership
+        // Check membership + promotional CraveMore entitlements (e.g. 365 referral promo)
         if (user) {
+          const now = new Date();
           const { data: membership, error: membershipError } = await supabase
             .from('user_memberships')
             .select('status, renews_at')
@@ -839,18 +840,33 @@ const Checkout: React.FC = () => {
             .eq('status', 'active')
             .maybeSingle();
 
-          // Silently handle membership query errors (RLS may block access)
           if (membershipError && membershipError.code !== 'PGRST116') {
             console.warn('Error checking membership:', membershipError);
           }
 
-          if (membership && (!membership.renews_at || new Date(membership.renews_at) > new Date())) {
+          const hasPaidMembership =
+            !!membership && (!membership.renews_at || new Date(membership.renews_at) > now);
+
+          let hasPromoEntitlement = false;
+          const { data: promoEnt, error: promoErr } = await supabase
+            .from('cravemore_promo_entitlements')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .lte('starts_at', now.toISOString())
+            .gt('ends_at', now.toISOString())
+            .limit(1)
+            .maybeSingle();
+          if (promoErr && promoErr.code !== 'PGRST116' && promoErr.code !== '42P01') {
+            console.warn('Error checking promo CraveMore:', promoErr);
+          }
+          hasPromoEntitlement = !!promoEnt;
+
+          if (hasPaidMembership || hasPromoEntitlement) {
             setHasCravemore(true);
-            
-            // Check eligibility
+
             const MIN_SUBTOTAL = 1200; // $12.00
             if (subtotal >= MIN_SUBTOTAL) {
-              // Check merchant eligibility
               const { data: merchant } = await supabase
                 .from('merchants')
                 .select('cravemore_eligible')
