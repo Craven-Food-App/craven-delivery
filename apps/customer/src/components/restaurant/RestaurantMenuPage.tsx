@@ -4058,68 +4058,147 @@ const RestaurantMenuPage = () => {
               </Grid>
             </Box>
 
-            {/* Floating Cart Button - Mobile (DoorDash Style) - Hidden when item modal is open */}
+            {/* Floating Cart — white unibody (matches C housing); L/R hit targets; C sits on top */}
             {cartItems.length > 0 && !showItemModal && (
               <Box
                 className="block lg:hidden"
                 style={{
                   position: 'fixed',
                   bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
-                  left: 16,
-                  right: 16,
+                  left: 12,
+                  right: 12,
                   zIndex: 1001,
+                  height: 56,
+                  pointerEvents: 'none',
                 }}
               >
-                <Button
-                  fullWidth
-                  size="lg"
-                  color="orange"
-                  radius="xl"
-                  onClick={() => {
-                    // Ensure cart has items before navigating
+                {(() => {
+                  const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+                  const totalLabel = `$${(
+                    cartItems.reduce((sum, item) => sum + item.quantity * item.price_cents, 0) / 100
+                  ).toFixed(2)}`;
+                  const openCart = () => {
                     if (!cartItems || cartItems.length === 0) {
                       notifications.show({
-                        title: "Cart is Empty",
-                        message: "Please add items to your cart before checking out.",
-                        color: "red",
+                        title: 'Cart is Empty',
+                        message: 'Please add items to your cart before checking out.',
+                        color: 'red',
                       });
                       return;
                     }
-                    
-                    // Save to localStorage
                     localStorage.setItem('checkout_cart', JSON.stringify(cartItems));
                     localStorage.setItem('checkout_restaurant', JSON.stringify(restaurant));
                     localStorage.setItem('checkout_delivery_method', deliveryMethod);
                     navigate('/checkout');
-                  }}
-                  style={{
-                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
-                  }}
-                  leftSection={
-                    <Badge
-                      color="white"
-                      variant="filled"
+                  };
+                  return (
+                    <Box
                       style={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        color: 'white',
-                        minWidth: '32px',
-                        height: '32px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        position: 'relative',
+                        width: '100%',
+                        height: '100%',
+                        borderRadius: 999,
+                        background: '#ffffff',
+                        border: '1px solid #e5e7eb',
+                        boxShadow: '0 8px 24px rgba(15, 23, 42, 0.12)',
+                        overflow: 'hidden',
                       }}
                     >
-                      {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-                    </Badge>
-                  }
-                  rightSection={
-                    <Text fw={700} size="lg">
-                      ${(cartItems.reduce((sum, item) => sum + item.quantity * item.price_cents, 0) / 100).toFixed(2)}
-                    </Text>
-                  }
-                >
-                  View Cart
-                </Button>
+                      <button
+                        type="button"
+                        onClick={openCart}
+                        aria-label={`${itemCount} carted items, view cart`}
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: '42%',
+                          border: 0,
+                          margin: 0,
+                          padding: '0 10px 0 18px',
+                          background: 'transparent',
+                          pointerEvents: 'auto',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-start',
+                          gap: 6,
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                      >
+                        <Text
+                          component="span"
+                          style={{
+                            fontSize: 26,
+                            fontWeight: 900,
+                            color: '#ea580c',
+                            letterSpacing: 0.1,
+                            lineHeight: 1,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {itemCount}
+                        </Text>
+                        <Text
+                          component="span"
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: '#ea580c',
+                            letterSpacing: 0.05,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          Carted Items
+                        </Text>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={openCart}
+                        aria-label={`Cart total ${totalLabel}, view cart`}
+                        style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: '42%',
+                          border: 0,
+                          margin: 0,
+                          padding: '0 16px 0 8px',
+                          background: 'transparent',
+                          pointerEvents: 'auto',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                      >
+                        <Text
+                          component="span"
+                          style={{
+                            fontSize: 24,
+                            fontWeight: 900,
+                            color: '#16a34a',
+                            letterSpacing: 0.15,
+                            whiteSpace: 'nowrap',
+                            fontVariantNumeric: 'tabular-nums',
+                            lineHeight: 1,
+                            width: '100%',
+                            textAlign: 'center',
+                          }}
+                        >
+                          {totalLabel}
+                        </Text>
+                      </button>
+                    </Box>
+                  );
+                })()}
               </Box>
             )}
 
