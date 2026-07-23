@@ -2070,14 +2070,14 @@ const Restaurants = () => {
         }}>
           {/* Address and Account */}
           <Group
-            justify="flex-start"
+            justify="space-between"
             mb="md"
-            gap="xs"
+            gap="sm"
             align="center"
             wrap="nowrap"
-            style={{ flexWrap: 'nowrap', overflow: 'hidden' }}
+            style={{ flexWrap: 'nowrap', width: '100%', minWidth: 0 }}
           >
-            <Box style={{ position: 'relative', width: '180px', flexShrink: 0 }}>
+            <Box style={{ position: 'relative', flex: '1 1 auto', minWidth: 0, maxWidth: 'calc(100% - 132px)' }}>
               <Button
                 variant="subtle"
                 data-address-selector-trigger
@@ -2088,50 +2088,31 @@ const Restaurants = () => {
                     style={{ height: '30px', width: '30px', flexShrink: 0 }}
                   />
                 }
-                rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
+                rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3', flexShrink: 0 }} />}
                 onClick={() => setShowAddressSelector(!showAddressSelector)}
-                style={{ padding: '8px', borderRadius: '12px', width: '100%', textAlign: 'left' }}
+                style={{ padding: '8px', borderRadius: '12px', width: '100%', textAlign: 'left', overflow: 'hidden' }}
+                styles={{
+                  inner: { justifyContent: 'flex-start', width: '100%', overflow: 'hidden' },
+                  label: { flex: 1, minWidth: 0, overflow: 'hidden' },
+                  section: { flexShrink: 0 },
+                }}
               >
-                <Stack gap={0} align="flex-start">
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '120px' }}>{location.split(',')[0]}...</Text>
-                </Stack>
+                <Text
+                  size="sm"
+                  fw={700}
+                  c="gray.9"
+                  lineClamp={1}
+                  style={{ width: '100%', textAlign: 'left' }}
+                >
+                  {location.split(',')[0] || location}
+                </Text>
               </Button>
             </Box>
 
-            <button
-              type="button"
-              data-map-view-toggle
-              title={showMapView ? 'View list' : 'View map'}
-              aria-label={showMapView ? 'View list' : 'View map'}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowMapView((prev) => !prev);
-              }}
-              style={{
-                flexShrink: 0,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 40,
-                height: 40,
-                border: 'none',
-                borderRadius: 9999,
-                background: 'transparent',
-                cursor: 'pointer',
-                padding: 0,
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              {showMapView ? (
-                <IconBuildingStore size={24} style={{ color: '#171717' }} />
-              ) : (
-                <IconMap2 size={24} style={{ color: '#171717' }} />
-              )}
-            </button>
             <Group
-              gap="xs"
+              gap={4}
               wrap="nowrap"
-              style={{ flexWrap: 'nowrap', flexShrink: 0 }}
+              style={{ flexWrap: 'nowrap', flexShrink: 0, marginLeft: 'auto' }}
             >
               <ActionIcon
                 onClick={() => navigate('/notifications')}
@@ -2140,7 +2121,7 @@ const Restaurants = () => {
                 radius="xl"
                 style={{ position: 'relative', flexShrink: 0 }}
               >
-                <IconBell size={24} style={{ color: '#000000' }} />
+                <IconBell size={22} style={{ color: '#000000' }} />
                 {notificationsList.filter(n => !n.read).length > 0 && (
                   <Box style={{ position: 'absolute', top: 4, right: 4, width: '10px', height: '10px', backgroundColor: '#b91c1c', borderRadius: '50%', border: '2px solid white' }} />
                 )}
@@ -2152,7 +2133,7 @@ const Restaurants = () => {
                 radius="xl"
                 style={{ flexShrink: 0 }}
               >
-                <IconUser size={24} style={{ color: '#171717' }} />
+                <IconUser size={22} style={{ color: '#171717' }} />
               </ActionIcon>
               {/* Cart Icon and count with no background */}
               <ActionIcon
@@ -2163,8 +2144,8 @@ const Restaurants = () => {
                 style={{ 
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  gap: '4px',
+                  justifyContent: 'center',
+                  gap: '2px',
                   padding: 0,
                   backgroundColor: 'transparent',
                   flexShrink: 0
@@ -2173,7 +2154,7 @@ const Restaurants = () => {
                 {cartCount > 0 && (
                   <Text
                     style={{
-                      fontSize: '14px',
+                      fontSize: '13px',
                       fontWeight: 700,
                       lineHeight: 1
                     }}
@@ -2181,7 +2162,7 @@ const Restaurants = () => {
                     {cartCount > 99 ? '99+' : cartCount}
                   </Text>
                 )}
-                <IconShoppingCart size={62} style={{ color: '#ff5f1f' }} />
+                <IconShoppingCart size={28} style={{ color: '#ff5f1f' }} />
               </ActionIcon>
             </Group>
           </Group>
@@ -2207,23 +2188,32 @@ const Restaurants = () => {
                 }
               }}
             />
-            {/* Menu Hamburger Icon - Bottom Right */}
+            {/* Map / list toggle — end of search bar */}
             <ActionIcon
               variant="subtle"
               size="sm"
-              onClick={() => setShowMenuIcons(!showMenuIcons)}
+              data-map-view-toggle
+              title={showMapView ? 'View list' : 'View map'}
+              aria-label={showMapView ? 'View list' : 'View map'}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMapView((prev) => !prev);
+              }}
               style={{
                 position: 'absolute',
                 right: 8,
-                bottom: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
                 zIndex: 2,
                 backgroundColor: 'transparent',
-                color: '#a3a3a3',
+                color: '#171717',
               }}
             >
-              <IconMenu2 
-                size={16} 
-              />
+              {showMapView ? (
+                <IconBuildingStore size={20} />
+              ) : (
+                <IconMap2 size={20} />
+              )}
             </ActionIcon>
           </Box>
         </Box>
