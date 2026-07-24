@@ -43,6 +43,14 @@ export function MainCustomerAdPanel({
   const adRef = useRef(ad);
   adRef.current = ad;
 
+  const handleAdClick = (url: string) => {
+    if (/^https?:\/\//i.test(url) || url.startsWith("//")) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    navigate(url);
+  };
+
   const [displayed, setDisplayed] = useState<MainCustomerAdData | null>(ad);
   const [opacity, setOpacity] = useState(1);
 
@@ -87,7 +95,7 @@ export function MainCustomerAdPanel({
         href: mainAd.click_url,
         onClick: (e: React.MouseEvent) => {
           e.preventDefault();
-          navigate(mainAd.click_url!);
+          handleAdClick(mainAd.click_url!);
         },
       }
     : {};

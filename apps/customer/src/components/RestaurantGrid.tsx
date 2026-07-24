@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { notifications } from "@mantine/notifications";
-import RestaurantCard from "./RestaurantCard";
+import RestaurantCard, { type RestaurantCardVariant } from "./RestaurantCard";
 import { RequestBusinessModal } from "@/components/restaurant/RequestBusinessModal";
 import { hasLocationDisclosureConsent } from "@/utils/locationDisclosure";
 import { resolveMerchantLogoUrl } from "@/utils/merchantSeedLogos";
@@ -57,6 +57,36 @@ function isRetailOrApparel(cuisineType?: string): boolean {
   return RETAIL_CUISINE_KEYWORDS.some((k) => cat.includes(k));
 }
 
+/** Normalize merchant display names for client-side dedupe (seed spelling variants). */
+function normalizeMerchantName(name: string | undefined | null): string {
+  let n = (name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const aliases: Record<string, string> = {
+    "mcdonalds": "mcdonald's",
+    "papa johns": "papa john's",
+    "kengo sushi": "kengo sushi & yakitori",
+    "westfield franklin park": "franklin park mall",
+    "ye olde dirty bird": "ye olde durty bird",
+    "red robbin": "red robin",
+    "rosie's": "rosie's italian grille",
+    "rosiies": "rosie's italian grille",
+  };
+  if (aliases[n]) n = aliases[n];
+  return n;
+}
+
+/** Keep first occurrence per normalized merchant name (browse rails must not show seed dups). */
+function dedupeMerchantsByName<T extends { id: string; name?: string }>(list: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const row of list) {
+    const key = normalizeMerchantName(row.name);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(row);
+  }
+  return out;
+}
+
 // National chains that exist everywhere — bypass 25-mile distance filter.
 // Local hotspots (Tony Packo's, Ye Olde Durty Bird, etc.) are Toledo-only.
 const NATIONAL_CHAINS = new Set([
@@ -103,8 +133,11 @@ interface RestaurantGridProps {
   deliveryAddress?: string;
   cuisineFilter?: string;
   excludeCuisine?: string;
-  sectionTitle?: string;
+  /** Optional one-line reason under the title */
+  sectionSubtitle?: string;
   horizontal?: boolean;
+  /** food = restaurant rails; shelf = retail/mall tiles; default = legacy card */
+  cardVariant?: RestaurantCardVariant;
   categoryFilter?: string;
   customRestaurants?: Restaurant[]; // Pre-fetched restaurants to display (skips fetch)
   columns?: number;
@@ -134,7 +167,9 @@ const RestaurantGrid = ({
   cuisineFilter,
   excludeCuisine,
   sectionTitle,
+  sectionSubtitle,
   horizontal = false,
+  cardVariant = 'default',
   categoryFilter,
   customRestaurants,
   columns,
@@ -179,7 +214,7 @@ const RestaurantGrid = ({
         is_promoted: restaurant.is_promoted || false,
         marketplaceStatus: 'ACTIVE' as const,
       }));
-      setRestaurants(formatted);
+      setRestaurants(dedupeMerchantsByName(formatted));
       setLoading(false);
     } else if (useNearbyByLocation) {
       fetchNearbyByLocation();
@@ -304,6 +339,7 @@ const RestaurantGrid = ({
       if (cuisineKeywords?.length) {
         list = list.filter((r) => matchesCuisineKeywords(r, cuisineKeywords));
       }
+      list = dedupeMerchantsByName(list);
       if (excludeCuisine) {
         const excludeList = excludeCuisine.split(',').map(c => c.trim().toLowerCase());
         setRestaurants(list.filter(r => !r.cuisine_type || !excludeList.includes(r.cuisine_type.toLowerCase())));
@@ -365,6 +401,7 @@ const RestaurantGrid = ({
       if (cuisineKeywords?.length) {
         list = list.filter((r) => matchesCuisineKeywords(r, cuisineKeywords));
       }
+      list = dedupeMerchantsByName(list);
       if (excludeCuisine) {
         const excludeList = excludeCuisine.split(',').map(c => c.trim().toLowerCase());
         setRestaurants(list.filter(r => !r.cuisine_type || !excludeList.includes(r.cuisine_type.toLowerCase())));
@@ -480,7 +517,7 @@ const RestaurantGrid = ({
         }
       }
 
-      setRestaurants(filteredData);
+      setRestaurants(dedupeMerchantsByName(filteredData));
     } catch (error) {
       console.error("Error fetching restaurants:", error);
     } finally {
@@ -570,34 +607,75 @@ const RestaurantGrid = ({
   }
 
   const emptyMessage = sectionTitle ? `No ${sectionTitle.toLowerCase()} to show yet.` : 'No results.';
+  const isRail = horizontal;
+  const useDenseRails = isRail && (cardVariant === 'food' || cardVariant === 'shelf');
+  // Dense rails: food peeks, shelf is compact logo tiles
+  const tileWidth =
+    cardVariant === 'shelf' ? 128 : cardVariant === 'food' ? 'min(70vw, 260px)' : 280;
 
-  return <section className="py-2" style={{ backgroundColor: 'rgba(255, 255, 255, 1)', height: sectionHeight }}>
+  const sectionHeader = sectionTitle ? (
+    useDenseRails ? (
+      <div className="container mx-auto px-4 mb-1.5 flex items-end justify-between gap-2">
+        <h2 className="text-[16px] font-bold text-gray-900 tracking-tight m-0 leading-none">
+          {sectionTitle}
+        </h2>
+        {!isEmpty && (
+          <span className="text-[11px] font-semibold text-gray-400 tabular-nums flex-shrink-0">
+            {restaurants.length}
+          </span>
+        )}
+      </div>
+    ) : (
+      <div className="container mx-auto px-4 mb-1">
+        <h2 className="text-2xl font-bold text-gray-900">{sectionTitle}</h2>
+        {sectionSubtitle && (
+          <p className="text-sm text-gray-500 mt-0.5 m-0">{sectionSubtitle}</p>
+        )}
+      </div>
+    )
+  ) : null;
+
+  return <section className={useDenseRails ? 'py-0.5' : 'py-2'} style={{ backgroundColor: 'rgba(255, 255, 255, 1)', height: useDenseRails ? undefined : sectionHeight }}>
       {horizontal ? (
         <>
-          {sectionTitle && (
-            <div className="container mx-auto px-4 mb-1">
-              <h2 className="text-2xl font-bold text-gray-900">{sectionTitle}</h2>
-            </div>
-          )}
+          {sectionHeader}
           {isEmpty ? (
-            <div className="container mx-auto px-4 py-6 text-center text-gray-500 text-sm">{emptyMessage}</div>
+            <div className="container mx-auto px-4 py-4 text-center text-gray-500 text-sm">{emptyMessage}</div>
           ) : (
-          <div className="w-full overflow-x-auto scrollbar-hide" style={{
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-            WebkitOverflowScrolling: 'touch',
-            scrollBehavior: 'smooth'
-          }}>
-            <div className="flex space-x-4 px-4 pb-4" style={{ minWidth: 'max-content' }}>
+          <div
+            className="w-full overflow-x-auto scrollbar-hide"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+              scrollBehavior: 'smooth',
+              ...(useDenseRails
+                ? {
+                    scrollSnapType: 'x mandatory',
+                    scrollPaddingLeft: 16,
+                    scrollPaddingRight: 16,
+                  }
+                : {}),
+            }}
+          >
+            <div
+              className={`flex px-4 ${useDenseRails ? 'gap-2 pb-2' : 'space-x-3 pb-4'}`}
+              style={{ minWidth: 'max-content' }}
+            >
               {restaurants.map((restaurant, index) => (
                 <div
                   key={restaurant.id}
-                  className="flex-shrink-0 w-[280px] animate-slide-up"
-                  style={{ animationDelay: `${index * 100}ms` }}
+                  className="flex-shrink-0 animate-slide-up"
+                  style={{
+                    width: tileWidth,
+                    animationDelay: `${Math.min(index, 6) * 60}ms`,
+                    ...(useDenseRails ? { scrollSnapAlign: 'start' } : {}),
+                  }}
                 >
-                  <RestaurantCard {...formatRestaurantData(restaurant)} />
+                  <RestaurantCard {...formatRestaurantData(restaurant)} variant={cardVariant} />
                 </div>
               ))}
+              {useDenseRails && <div className="flex-shrink-0 w-1" aria-hidden />}
             </div>
           </div>
           )}
@@ -605,8 +683,11 @@ const RestaurantGrid = ({
       ) : (
         <div className="container mx-auto px-4">
           {sectionTitle && (
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">{sectionTitle}</h2>
+            <div className="mb-2 flex items-end justify-between gap-2">
+              <h2 className="text-[16px] font-bold text-gray-900 tracking-tight m-0 leading-none">{sectionTitle}</h2>
+              {!isEmpty && (
+                <span className="text-[11px] font-semibold text-gray-400 tabular-nums">{restaurants.length}</span>
+              )}
             </div>
           )}
           {!searchQuery && !deliveryAddress && !sectionTitle && <div className="text-center mb-8">
@@ -615,13 +696,13 @@ const RestaurantGrid = ({
           </div>}
 
           {isEmpty ? (
-            <div className="py-6 text-center text-gray-500 text-sm">{emptyMessage}</div>
+            <div className="py-4 text-center text-gray-500 text-sm">{emptyMessage}</div>
           ) : (
-          <div className={`grid gap-4 ${columns === 1 ? 'grid-cols-1' : columns === 2 ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'}`}>
+          <div className={`grid gap-2.5 ${columns === 1 ? 'grid-cols-1' : columns === 2 ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'}`}>
             {restaurants.map((restaurant, index) => <div key={restaurant.id} className="animate-slide-up" style={{
               animationDelay: `${index * 100}ms`
             }}>
-              <RestaurantCard {...formatRestaurantData(restaurant)} />
+              <RestaurantCard {...formatRestaurantData(restaurant)} variant={cardVariant} />
             </div>)}
           </div>
           )}

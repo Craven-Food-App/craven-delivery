@@ -46,8 +46,50 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": path.resolve(__dirname, "./src"),
         "@shared": path.resolve(__dirname, "../../src"),
+        // Force a single copy — @shared (repo-root src) otherwise resolves
+        // packages from root node_modules and breaks React/Mantine/Router
+        // context in Capacitor production builds.
+        react: path.resolve(__dirname, "./node_modules/react"),
+        "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+        "react-router": path.resolve(__dirname, "./node_modules/react-router"),
+        "react-router-dom": path.resolve(
+          __dirname,
+          "./node_modules/react-router-dom"
+        ),
+        "@mantine/core": path.resolve(__dirname, "./node_modules/@mantine/core"),
+        "@mantine/hooks": path.resolve(
+          __dirname,
+          "./node_modules/@mantine/hooks"
+        ),
+        "@mantine/notifications": path.resolve(
+          __dirname,
+          "./node_modules/@mantine/notifications"
+        ),
+        "@mantine/modals": path.resolve(
+          __dirname,
+          "./node_modules/@mantine/modals"
+        ),
+        "@mantine/dates": path.resolve(
+          __dirname,
+          "./node_modules/@mantine/dates"
+        ),
+        "@mantine/carousel": path.resolve(
+          __dirname,
+          "./node_modules/@mantine/carousel"
+        ),
       },
-      dedupe: ['react', 'react-dom'], // Add this to fix React context issue
+      dedupe: [
+        "react",
+        "react-dom",
+        "react-router",
+        "react-router-dom",
+        "@mantine/core",
+        "@mantine/hooks",
+        "@mantine/notifications",
+        "@mantine/modals",
+        "@mantine/dates",
+        "@mantine/carousel",
+      ],
     },
     build: {
       outDir: path.resolve(__dirname, "./dist"),
@@ -59,7 +101,13 @@ export default defineConfig(({ mode }) => {
     },
     optimizeDeps: {
       entries: ["index.html"],
-      include: ["react", "react-dom"],
+      include: [
+        "react",
+        "react-dom",
+        "react-router-dom",
+        "@mantine/core",
+        "@mantine/hooks",
+      ],
     },
   };
 });

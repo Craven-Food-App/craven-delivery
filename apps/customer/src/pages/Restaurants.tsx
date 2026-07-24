@@ -2581,22 +2581,20 @@ const Restaurants = () => {
               </Box>
             ) : (
               <>
-            {/* Main Customer Ad — random on load, cycles every 30s; smooth crossfade between creatives */}
+            {/* Top ad always stays */}
             <MainCustomerAdPanel ad={activeMainCustomerAd} maxHeight={240} variant="customer-mobile" />
 
             {/* Great Deals - Restaurants with Promotions */}
             {weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents).length > 0 && (
-              <Box px="md" pt="md" pb="sm" style={{ backgroundColor: 'white' }}>
-                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>
-                  Great Deals
-                </Title>
+              <Box px="md" pt={8} pb={4} style={{ backgroundColor: 'white' }}>
                 <RestaurantGrid 
                   searchQuery={searchQuery} 
                   deliveryAddress={location}
                   targetLocation={selectedAddressCoords}
                   cuisineFilter={undefined}
                   excludeCuisine={undefined}
-                  sectionTitle={undefined}
+                  sectionTitle="Great Deals"
+                  cardVariant="food"
                   horizontal={true}
                   customRestaurants={weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents)}
                 />
@@ -2605,8 +2603,8 @@ const Restaurants = () => {
 
             {/* ═══ FOOD & RESTAURANTS ═══ */}
             {!Capacitor.isNativePlatform() && (
-              <Box px="md" pt="md" pb={4} mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-                <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>
+              <Box px="md" pt={10} pb={2} mt={4} style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+                <Title order={3} fw={800} c="gray.9" style={{ fontSize: '14px', lineHeight: 1.2, margin: 0 }}>
                   Food & Restaurants
                 </Title>
               </Box>
@@ -2619,6 +2617,7 @@ const Restaurants = () => {
                 deliveryAddress={location}
                 targetLocation={selectedAddressCoords}
                 sectionTitle="Restaurants Near You"
+                cardVariant="food"
                 horizontal={true}
                 useNearbyByLocation={true}
                 marketplaceType="restaurant"
@@ -2632,6 +2631,7 @@ const Restaurants = () => {
                 deliveryAddress={location}
                 targetLocation={selectedAddressCoords}
                 sectionTitle="Shopping Centers Near You"
+                cardVariant="shelf"
                 horizontal={true}
                 useNearbyByLocation={true}
                 marketplaceType="mall"
@@ -2646,6 +2646,7 @@ const Restaurants = () => {
                 targetLocation={selectedAddressCoords}
                 cuisineFilter="late night hunger"
                 sectionTitle="Late Night Hunger"
+                cardVariant="food"
                 horizontal={true}
                 useMarketplaceCatalog={true}
                 marketplaceType="restaurant"
@@ -2660,6 +2661,7 @@ const Restaurants = () => {
                 targetLocation={selectedAddressCoords}
                 cuisineFilter="kids"
                 sectionTitle="Kids Menu"
+                cardVariant="food"
                 horizontal={true}
                 useMarketplaceCatalog={true}
                 marketplaceType="restaurant"
@@ -2667,8 +2669,8 @@ const Restaurants = () => {
             </div>
 
             {/* ═══ RETAIL & SHOPPING — one section, all retail (apparel + stores), never under restaurants ═══ */}
-            <Box px="md" pt="xs" pb={0} style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
-              <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, marginBottom: 4 }}>
+            <Box px="md" pt={8} pb={0} style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
+              <Title order={3} fw={800} c="gray.9" style={{ fontSize: '14px', lineHeight: 1.2, margin: 0, marginBottom: 2 }}>
                 Retail & Shopping
               </Title>
             </Box>
@@ -2679,6 +2681,7 @@ const Restaurants = () => {
                 deliveryAddress={location}
                 targetLocation={selectedAddressCoords}
                 sectionTitle="Retail Stores Near You"
+                cardVariant="shelf"
                 horizontal={true}
                 useNearbyByLocation={true}
                 marketplaceType="retail"
@@ -2692,6 +2695,7 @@ const Restaurants = () => {
                 deliveryAddress={location}
                 targetLocation={selectedAddressCoords}
                 sectionTitle="Cosmetic Stores"
+                cardVariant="shelf"
                 horizontal={true}
                 useMarketplaceCatalog={true}
                 marketplaceType="retail"
@@ -2706,6 +2710,7 @@ const Restaurants = () => {
                 deliveryAddress={location}
                 targetLocation={selectedAddressCoords}
                 sectionTitle="Pet Stores"
+                cardVariant="shelf"
                 horizontal={true}
                 useMarketplaceCatalog={true}
                 marketplaceType="retail"
@@ -2714,10 +2719,10 @@ const Restaurants = () => {
             </Box>
 
             {/* View more Section - Mobile (one card per row) */}
-            <Box px="md" py="xs" mt="xs" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+            <Box px="md" py={6} mt={4} style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
               <Box ref={resultsRef} id="view-more-section" data-section="view-more">
-                <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto', marginBottom: '16px' }}>
-                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>View more</Title>
+                <Group justify="space-between" gap="xs" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto', marginBottom: 8 }}>
+                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '16px', lineHeight: 1.2, margin: 0, padding: 0 }}>View more</Title>
                 </Group>
                 <RestaurantGrid
                   searchQuery={searchQuery}
@@ -2727,6 +2732,7 @@ const Restaurants = () => {
                   columns={1}
                   useMarketplaceCatalog={true}
                   marketplaceType="restaurant"
+                  cardVariant="food"
                 />
               </Box>
             </Box>
@@ -3494,6 +3500,7 @@ const Restaurants = () => {
                         excludeCuisine={undefined}
                         sectionTitle={undefined}
                         horizontal={true}
+                        cardVariant="food"
                         customRestaurants={weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents)}
                       />
                     </div>
@@ -3511,6 +3518,7 @@ const Restaurants = () => {
                       targetLocation={selectedAddressCoords}
                       sectionTitle="Restaurants Near You"
                       horizontal={true}
+                      cardVariant="food"
                       useNearbyByLocation={true}
                       marketplaceType="restaurant"
                     />
@@ -3523,6 +3531,7 @@ const Restaurants = () => {
                       targetLocation={selectedAddressCoords}
                       sectionTitle="Shopping Centers Near You"
                       horizontal={true}
+                      cardVariant="shelf"
                       useNearbyByLocation={true}
                       marketplaceType="mall"
                     />
@@ -3536,6 +3545,7 @@ const Restaurants = () => {
                       cuisineFilter="late night hunger"
                       sectionTitle="Late Night Hunger"
                       horizontal={true}
+                      cardVariant="food"
                       useMarketplaceCatalog={true}
                       marketplaceType="restaurant"
                     />
@@ -3549,6 +3559,7 @@ const Restaurants = () => {
                       cuisineFilter="kids"
                       sectionTitle="Kids Menu"
                       horizontal={true}
+                      cardVariant="food"
                       useMarketplaceCatalog={true}
                       marketplaceType="restaurant"
                     />
@@ -3566,6 +3577,7 @@ const Restaurants = () => {
                       targetLocation={selectedAddressCoords}
                       sectionTitle="Retail Stores Near You"
                       horizontal={true}
+                      cardVariant="shelf"
                       useNearbyByLocation={true}
                       marketplaceType="retail"
                     />
@@ -3578,6 +3590,7 @@ const Restaurants = () => {
                       targetLocation={selectedAddressCoords}
                       sectionTitle="Cosmetic Stores"
                       horizontal={true}
+                      cardVariant="shelf"
                       useMarketplaceCatalog={true}
                       marketplaceType="retail"
                       cuisineFilter="Cosmetics"
@@ -3591,6 +3604,7 @@ const Restaurants = () => {
                       targetLocation={selectedAddressCoords}
                       sectionTitle="Pet Stores"
                       horizontal={true}
+                      cardVariant="shelf"
                       useMarketplaceCatalog={true}
                       marketplaceType="retail"
                       cuisineFilter="Pet"
@@ -3659,6 +3673,7 @@ const Restaurants = () => {
                         cuisineFilter="apparel"
                         sectionTitle="Apparel Stores"
                         horizontal={true}
+                        cardVariant="shelf"
                         categoryFilter={apparelCategoryFilter !== 'all' ? apparelCategoryFilter : undefined}
                         useMarketplaceCatalog={true}
                         marketplaceType="retail"
@@ -3676,6 +3691,7 @@ const Restaurants = () => {
                       columns={1}
                       useMarketplaceCatalog={true}
                       marketplaceType="restaurant"
+                      cardVariant="food"
                     />
                   </div>
                 </>

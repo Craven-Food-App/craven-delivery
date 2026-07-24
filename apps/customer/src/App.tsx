@@ -74,10 +74,10 @@ function App() {
       return;
     }
 
-    // Show loading screen for minimum 6 seconds to allow full animation cycles
+    // Editorial splash — short brand beat (~2s), not a long animation loop
     const timer = setTimeout(() => {
       setShowLoadingScreen(false);
-    }, 6000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [isMobile]);

@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import { Button } from '@/components/ui/button';
 
 interface Props {
@@ -122,11 +123,11 @@ export class ErrorBoundary extends Component<Props, State> {
               We're sorry, but something unexpected happened. Our team has been notified.
             </p>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {(import.meta.env.DEV || Capacitor.isNativePlatform()) && this.state.error && (
               <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4 text-left">
                 <p className="text-sm font-medium text-red-800 mb-1">Error Details:</p>
                 <p className="text-xs text-red-700 font-mono break-all">
-                  {this.state.error.message}
+                  {this.state.error.message || '(empty message)'}
                 </p>
                 {this.state.error.stack && (
                   <details className="mt-2">
