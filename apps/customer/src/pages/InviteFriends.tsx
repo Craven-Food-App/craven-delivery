@@ -1,30 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Text, Title, Button, Group, Stack, Paper, Divider } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import {
   IconX,
-  IconUsers,
-  IconHelpCircle,
-  IconLink,
   IconMail,
   IconMessageCircle,
   IconShare2,
-  IconCopy
+  IconCopy,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useCraveMoreOffer } from '@/hooks/useCraveMoreOffer';
 import { useNewCustomer365ReferralPromo } from '@/hooks/useNewCustomer365ReferralPromo';
 import { useReferralTracker } from '@/hooks/useReferralTracker';
+import { useReferralInviteStats } from '@/hooks/useReferralInviteStats';
 import { NewCustomer365PromoCard } from '@/components/referral/NewCustomer365PromoCard';
 import { ReferralTracker } from '@/components/referral/ReferralTracker';
+import { InviteMissionBoard } from '@/components/referral/InviteMissionBoard';
 import cravenReferHero from '@/assets/crave_friend_invite .png';
 import { supabase } from '@/integrations/supabase/client';
+import { isValidPersonalReferralCode } from '@/lib/referralCodeGuards';
+import { logReferralInviteEvent } from '@/lib/logReferralInviteEvent';
 
 const InviteFriends: React.FC = () => {
   const navigate = useNavigate();
   const { cartCount } = useCart();
-  const isMobile = useIsMobile();
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const { offer } = useCraveMoreOffer();
   const { promo: promo365, loading: promo365Loading } = useNewCustomer365ReferralPromo();
@@ -34,37 +34,44 @@ const InviteFriends: React.FC = () => {
     error: trackerError,
     refresh: refreshTracker,
   } = useReferralTracker();
-  const [referralCode, setReferralCode] = useState<string>('CRAVEN10');
-  const [loadingCode, setLoadingCode] = useState<boolean>(true);
+  const {
+    stats: inviteStats,
+    loading: statsLoading,
+    refresh: refreshInviteStats,
+  } = useReferralInviteStats();
 
-  // Config-driven amounts so we can A/B or change later
+  const [referralCode, setReferralCode] = useState<string>('');
+  const [loadingCode, setLoadingCode] = useState(true);
+  const [sharing, setSharing] = useState(false);
+
   const BASE_CONFIG = {
     friendReward: 10,
     userReward: 10,
-    minOrder: 25
+    minOrder: 25,
   };
 
   const CRAVEMORE_CONFIG = {
     friendReward: 15,
     userReward: 20,
-    minOrder: 25
+    minOrder: 25,
   };
 
   const isCraveMore = offer?.currentMembership?.status === 'active';
   const config = isCraveMore ? CRAVEMORE_CONFIG : BASE_CONFIG;
+  const codeReady = isValidPersonalReferralCode(referralCode);
+  const referralLink = codeReady ? `https://cravenusa.com/r/${referralCode}` : '';
 
-  // Load or create a unique referral code for this customer
-  // IMPORTANT: Codes are PERMANENT - once created, they never change
   useEffect(() => {
     const loadReferralCode = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) {
-          setLoadingCode(false);
+          setReferralCode('');
           return;
         }
 
-        // FIRST: Always check for existing code (PERMANENT - never regenerate)
         const { data: existingCode, error: existingError } = await supabase
           .from('referral_codes')
           .select('code')
@@ -77,30 +84,32 @@ const InviteFriends: React.FC = () => {
           console.warn('Error loading referral code:', existingError);
         }
 
-        // If code exists, use it immediately (PERMANENT)
-        if (existingCode?.code) {
-          setReferralCode(existingCode.code);
-          setLoadingCode(false);
-          return; // Exit early - never call RPC if code exists
+        if (isValidPersonalReferralCode(existingCode?.code)) {
+          setReferralCode(existingCode!.code.toUpperCase());
+          return;
         }
 
-        // ONLY generate if no code exists (first time only)
-        // The RPC function also checks for existing codes as a safeguard
-        const { data: newCode, error: rpcError } = await supabase.rpc(
-          'generate_referral_code',
-          {
-            p_user_id: user.id,
-            p_user_type: 'customer',
-          }
-        );
+        const { data: newCode, error: rpcError } = await supabase.rpc('generate_referral_code', {
+          p_user_id: user.id,
+          p_user_type: 'customer',
+        });
 
         if (rpcError) {
           console.error('Error generating referral code:', rpcError);
-        } else if (newCode) {
-          setReferralCode(newCode);
+          notifications.show({
+            title: 'Invite code unavailable',
+            message: 'We could not load your personal invite code. Try again in a moment.',
+            color: 'red',
+          });
+          setReferralCode('');
+        } else if (isValidPersonalReferralCode(String(newCode || ''))) {
+          setReferralCode(String(newCode).toUpperCase());
+        } else {
+          setReferralCode('');
         }
       } catch (err) {
         console.error('Unexpected error loading referral code:', err);
+        setReferralCode('');
       } finally {
         setLoadingCode(false);
       }
@@ -109,31 +118,143 @@ const InviteFriends: React.FC = () => {
     loadReferralCode();
   }, []);
 
-  const referralLink = `https://cravenusa.com/r/${referralCode}`;
+  const buildInviteMessage = useCallback(() => {
+    return [
+      `Join me on Crave’n for delivery.`,
+      `Use my personal invite code ${referralCode} when you sign up (or open the link below).`,
+      `You’ll get welcome rewards on your first qualifying order — and it counts toward my 365-day free delivery prize.`,
+      ``,
+      referralLink,
+    ].join('\n');
+  }, [referralCode, referralLink]);
 
-  const copyReferralLink = async () => {
-    await navigator.clipboard.writeText(referralLink);
-    alert('Referral link copied'); // lightweight success feedback
+  const requireCode = () => {
+    if (loadingCode) {
+      notifications.show({
+        title: 'Almost ready',
+        message: 'Your personal invite code is still loading.',
+        color: 'orange',
+      });
+      return false;
+    }
+    if (!codeReady) {
+      notifications.show({
+        title: 'No invite code yet',
+        message: 'Sign in and wait for your personal code before sharing.',
+        color: 'red',
+      });
+      return false;
+    }
+    return true;
   };
 
-  const handleCopyPrimary = async () => {
-    await copyReferralLink();
+  const afterShare = async (channel: 'email' | 'sms' | 'copy_link' | 'copy_code' | 'share') => {
+    await logReferralInviteEvent({ channel, referralCode });
+    await refreshInviteStats();
+  };
+
+  const copyReferralLink = async () => {
+    if (!requireCode()) return;
+    setSharing(true);
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      await afterShare('copy_link');
+      notifications.show({
+        title: 'Link copied',
+        message: `Invite link with code ${referralCode} is on your clipboard.`,
+        color: 'green',
+      });
+    } catch {
+      notifications.show({
+        title: 'Copy failed',
+        message: 'Could not copy the link. Try again.',
+        color: 'red',
+      });
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const copyReferralCode = async () => {
+    if (!requireCode()) return;
+    setSharing(true);
+    try {
+      await navigator.clipboard.writeText(referralCode);
+      await afterShare('copy_code');
+      notifications.show({
+        title: 'Code copied',
+        message: `${referralCode} is ready to paste.`,
+        color: 'green',
+      });
+    } catch {
+      notifications.show({
+        title: 'Copy failed',
+        message: 'Could not copy the code. Try again.',
+        color: 'red',
+      });
+    } finally {
+      setSharing(false);
+    }
   };
 
   const shareByEmail = async () => {
-    const subject = encodeURIComponent("Crave’n – Try it and earn rewards");
-    const body = encodeURIComponent(
-      `I’m using Crave’n for delivery. Use my link to sign up and place your first order:\n\n${referralLink}`
-    );
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    if (!requireCode()) return;
+    setSharing(true);
+    try {
+      await afterShare('email');
+      const subject = encodeURIComponent('Your Crave’n invite');
+      const body = encodeURIComponent(buildInviteMessage());
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    } finally {
+      setSharing(false);
+    }
   };
 
   const shareByText = async () => {
-    const text = encodeURIComponent(
-      `Try Crave’n for food delivery. Use my link on your first order:\n${referralLink}`
-    );
-    window.location.href = `sms:?body=${text}`;
+    if (!requireCode()) return;
+    setSharing(true);
+    try {
+      await afterShare('sms');
+      const text = encodeURIComponent(buildInviteMessage());
+      window.location.href = `sms:?body=${text}`;
+    } finally {
+      setSharing(false);
+    }
   };
+
+  const shareNative = async () => {
+    if (!requireCode()) return;
+    if (!navigator.share) {
+      await copyReferralLink();
+      return;
+    }
+    setSharing(true);
+    try {
+      await navigator.share({
+        title: 'Crave’n invite',
+        text: buildInviteMessage(),
+        url: referralLink,
+      });
+      await afterShare('share');
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        notifications.show({
+          title: 'Share cancelled',
+          message: 'You can still copy your link or code below.',
+          color: 'gray',
+        });
+      }
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const displayCode = loadingCode ? 'Loading…' : codeReady ? referralCode : 'Unavailable';
+  const displayLink = loadingCode
+    ? 'Loading your invite link…'
+    : codeReady
+      ? referralLink
+      : 'Sign in to unlock your personal invite link';
 
   return (
     <Box
@@ -146,7 +267,6 @@ const InviteFriends: React.FC = () => {
             : 'calc(100px + env(safe-area-inset-bottom, 0px))',
       }}
     >
-      {/* Top Navigation - Fixed Header */}
       <Group
         p="md"
         style={{
@@ -177,13 +297,18 @@ const InviteFriends: React.FC = () => {
         <Button
           variant="subtle"
           onClick={() => navigate('/customer-support')}
-          style={{ padding: '8px', minWidth: 'auto', fontSize: '13px', fontWeight: 500, color: '#111827' }}
+          style={{
+            padding: '8px',
+            minWidth: 'auto',
+            fontSize: '13px',
+            fontWeight: 500,
+            color: '#111827',
+          }}
         >
           FAQ
         </Button>
       </Group>
 
-      {/* Content - offset below fixed header */}
       <Stack
         gap="lg"
         p="md"
@@ -193,14 +318,13 @@ const InviteFriends: React.FC = () => {
           paddingTop: 'calc(100px + env(safe-area-inset-top, 0px))',
         }}
       >
-        {/* Hero image + headline / subhead */}
         <Stack gap="md">
           <Box
             style={{
               display: 'flex',
               justifyContent: 'center',
               marginTop: 4,
-              marginBottom: 4
+              marginBottom: 4,
             }}
           >
             <img
@@ -210,28 +334,31 @@ const InviteFriends: React.FC = () => {
                 maxWidth: 260,
                 width: '100%',
                 height: 'auto',
-                display: 'block'
+                display: 'block',
               }}
             />
           </Box>
           <Stack gap={4}>
             <Title order={2} style={{ fontSize: 22, fontWeight: 700, color: '#111827' }}>
-              {isCraveMore ? 'CraveMore Members Earn More' : 'Earn $10 for Every Friend Who Orders'}
+              {isCraveMore
+                ? 'CraveMore Members Earn More'
+                : 'Earn $10 for Every Friend Who Orders'}
             </Title>
             <Text style={{ fontSize: 14, color: '#4b5563', lineHeight: 1.6 }}>
-              Invite friends to Crave’n. When they place their first qualifying order, you both earn rewards.
+              Share your personal invite code. Track every share, open, signup, and qualifying
+              order — then climb the invite ranks.
             </Text>
           </Stack>
         </Stack>
 
-        {/* New-customer 365 CraveMore promo (always visible; progress only when backend-eligible) */}
+        <InviteMissionBoard stats={inviteStats} loading={statsLoading} />
+
         <NewCustomer365PromoCard
           promo={promo365}
           loading={promo365Loading || loadingCode}
-          referralCode={referralCode}
+          referralCode={codeReady ? referralCode : undefined}
         />
 
-        {/* Reward breakdown */}
         <Paper radius="md" p="md" withBorder>
           <Stack gap="sm">
             <Text style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
@@ -255,8 +382,8 @@ const InviteFriends: React.FC = () => {
                   Your reward
                 </Text>
                 <Text style={{ fontSize: 13, color: '#4b5563' }}>
-                  You earn <strong>${config.userReward} in Crave’n credits</strong> after their order
-                  is completed.
+                  You earn <strong>${config.userReward} in Crave’n credits</strong> after their
+                  order is completed.
                 </Text>
                 <Text style={{ fontSize: 12, color: '#6b7280' }}>
                   Credits apply automatically to your account on eligible orders.
@@ -266,7 +393,6 @@ const InviteFriends: React.FC = () => {
           </Stack>
         </Paper>
 
-        {/* CraveMore banner when applicable */}
         {isCraveMore && (
           <Box
             style={{
@@ -282,7 +408,45 @@ const InviteFriends: React.FC = () => {
           </Box>
         )}
 
-        {/* Referral link module */}
+        <Stack gap="xs">
+          <Text style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
+            Your personal invite code
+          </Text>
+          <Box
+            style={{
+              borderRadius: 12,
+              border: '1px solid #e5e7eb',
+              padding: '12px 14px',
+              backgroundColor: '#111827',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 800,
+                color: '#ffffff',
+                letterSpacing: 1.5,
+                flex: 1,
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+              }}
+            >
+              {displayCode}
+            </Text>
+            <Button
+              size="xs"
+              variant="white"
+              onClick={copyReferralCode}
+              disabled={!codeReady || sharing}
+              style={{ paddingInline: 10, height: 32, fontWeight: 700 }}
+            >
+              Copy code
+            </Button>
+          </Box>
+        </Stack>
+
         <Stack gap="xs">
           <Text style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>Your invite link</Text>
           <Box
@@ -306,61 +470,87 @@ const InviteFriends: React.FC = () => {
                 wordBreak: 'break-all',
               }}
             >
-              {referralLink}
+              {displayLink}
             </Text>
             <Button
               size="xs"
               variant="subtle"
               onClick={copyReferralLink}
+              disabled={!codeReady || sharing}
               style={{ paddingInline: 8, height: 30 }}
             >
               <IconCopy size={14} />
             </Button>
           </Box>
+          {!codeReady && !loadingCode && (
+            <Text style={{ fontSize: 12, color: '#b91c1c' }}>
+              Sharing is locked until your personal code is ready. Placeholder promo codes are never
+              sent.
+            </Text>
+          )}
         </Stack>
 
-        {/* Share actions */}
         <Group grow gap="md">
           <Button
             size="md"
             leftSection={<IconMail size={18} />}
             onClick={shareByEmail}
+            disabled={!codeReady || sharing}
             style={{
               height: 48,
               fontSize: 14,
               fontWeight: 600,
-              background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+              background: codeReady
+                ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
+                : '#d1d5db',
               borderRadius: '999px',
               color: '#ffffff',
             }}
           >
             Email
           </Button>
-            <Button
+          <Button
             size="md"
             leftSection={<IconMessageCircle size={18} />}
             onClick={shareByText}
+            disabled={!codeReady || sharing}
             style={{
               height: 48,
               fontSize: 14,
               fontWeight: 600,
-              background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+              background: codeReady
+                ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
+                : '#d1d5db',
               borderRadius: '999px',
               color: '#ffffff',
             }}
-            >
+          >
             Text
-            </Button>
+          </Button>
         </Group>
+
+        {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
+          <Button
+            variant="outline"
+            size="md"
+            onClick={shareNative}
+            disabled={!codeReady || sharing}
+            style={{ height: 44, borderRadius: 999, fontSize: 14, fontWeight: 600 }}
+          >
+            Share invite
+          </Button>
+        )}
 
         <ReferralTracker
           referrals={referrals}
           loading={trackerLoading}
           error={trackerError}
-          onRefresh={refreshTracker}
+          onRefresh={() => {
+            refreshTracker();
+            refreshInviteStats();
+          }}
         />
 
-        {/* Reward activity */}
         <Button
           variant="outline"
           size="md"
@@ -375,7 +565,6 @@ const InviteFriends: React.FC = () => {
           View Wallet & Credits
         </Button>
 
-        {/* How It Works expandable section */}
         <Box
           style={{
             borderRadius: 16,
@@ -406,19 +595,19 @@ const InviteFriends: React.FC = () => {
                 <Group align="flex-start" gap="sm">
                   <Text style={{ fontSize: 13, fontWeight: 600, color: '#f97316' }}>1</Text>
                   <Text style={{ fontSize: 13, color: '#4b5563' }}>
-                    Share your Crave’n referral link with someone new.
+                    Share your personal Crave’n code or link — never a generic promo code.
                   </Text>
                 </Group>
                 <Group align="flex-start" gap="sm">
                   <Text style={{ fontSize: 13, fontWeight: 600, color: '#f97316' }}>2</Text>
                   <Text style={{ fontSize: 13, color: '#4b5563' }}>
-                    Your friend signs up and places a qualifying first order.
+                    Watch opens and signups land on your invite mission board.
                   </Text>
                 </Group>
                 <Group align="flex-start" gap="sm">
                   <Text style={{ fontSize: 13, fontWeight: 600, color: '#f97316' }}>3</Text>
                   <Text style={{ fontSize: 13, color: '#4b5563' }}>
-                    After delivery is completed, you earn Crave’n credits automatically.
+                    When their qualifying order completes, you earn credits and prize progress.
                   </Text>
                 </Group>
               </Stack>
@@ -426,7 +615,6 @@ const InviteFriends: React.FC = () => {
           )}
         </Box>
 
-        {/* Rules / guidelines */}
         <Stack gap={4}>
           <Text style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>Program details</Text>
           <Text style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6 }}>
@@ -436,8 +624,8 @@ const InviteFriends: React.FC = () => {
             • A minimum first order amount is required for rewards to apply.
           </Text>
           <Text style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6 }}>
-            • Credits are not cash, cannot be withdrawn, and can only be used on eligible
-            Crave’n orders.
+            • Credits are not cash, cannot be withdrawn, and can only be used on eligible Crave’n
+            orders.
           </Text>
           <Text style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6 }}>
             • Eligible new customers may also earn a limited 365-day CraveMore free-delivery prize
@@ -449,7 +637,13 @@ const InviteFriends: React.FC = () => {
           <Text
             component="a"
             href="/legal/referral"
-            style={{ fontSize: 12, color: '#ea580c', fontWeight: 600, textDecoration: 'underline', marginTop: 4 }}
+            style={{
+              fontSize: 12,
+              color: '#ea580c',
+              fontWeight: 600,
+              textDecoration: 'underline',
+              marginTop: 4,
+            }}
           >
             Full Referral Program Terms
           </Text>

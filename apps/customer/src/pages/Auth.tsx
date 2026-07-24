@@ -101,7 +101,13 @@ const Auth: React.FC = () => {
       if (error) throw error;
 
       if (referralCodeInput.trim()) {
-        savePendingReferralCode(referralCodeInput.trim());
+        const cleaned = referralCodeInput.trim().toUpperCase();
+        if (cleaned === 'CRAVEN10' || cleaned === 'CRAVE10') {
+          setError('That is a general promo code, not a personal invite. Ask your friend for their invite link.');
+          setLoading(false);
+          return;
+        }
+        savePendingReferralCode(cleaned);
       }
 
       if (data.user) {

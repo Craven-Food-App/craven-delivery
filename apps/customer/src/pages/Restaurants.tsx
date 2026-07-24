@@ -663,6 +663,11 @@ const Restaurants = () => {
         if (error) throw error;
 
         if (data.user) {
+          const { attributePendingReferralIfAny } = await import(
+            '@/lib/attributePendingReferral'
+          );
+          await attributePendingReferralIfAny(data.user.id);
+
           notifications.show({
             title: 'Account Created!',
             message: 'Please check your email to verify your account.',

@@ -3,11 +3,16 @@ import {
   clearPendingReferralCode,
   getPendingReferralCode,
 } from '@/lib/referralInviteStorage';
+import { normalizeReferralCode } from '@/lib/referralCodeGuards';
 
 /** After signup, attribute pending invite code to this user (idempotent). */
 export async function attributePendingReferralIfAny(userId?: string) {
-  const code = getPendingReferralCode();
-  if (!code) return { ok: false, skipped: true };
+  const raw = getPendingReferralCode();
+  const code = normalizeReferralCode(raw);
+  if (!code) {
+    if (raw) clearPendingReferralCode();
+    return { ok: false, skipped: true };
+  }
 
   const { data: { user } } = await supabase.auth.getUser();
   const uid = userId || user?.id;

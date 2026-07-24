@@ -1,24 +1,32 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Box, Text, Title, Button, Stack } from '@mantine/core';
 import { savePendingReferralCode } from '@/lib/referralInviteStorage';
+import { normalizeReferralCode } from '@/lib/referralCodeGuards';
+import { logReferralInviteEvent } from '@/lib/logReferralInviteEvent';
 
 /**
  * Landing for https://…/r/:code — stores invite code and sends user to signup.
  */
 const ReferralLanding: React.FC = () => {
-  const { code } = useParams<{ code: string }>();
+  const { code: rawCode } = useParams<{ code: string }>();
   const navigate = useNavigate();
+  const code = useMemo(() => normalizeReferralCode(rawCode), [rawCode]);
+  const invalidPlaceholder = Boolean(rawCode) && !code;
 
   useEffect(() => {
-    if (code) {
-      savePendingReferralCode(code);
-    }
+    if (!code) return;
+    savePendingReferralCode(code);
+    void logReferralInviteEvent({
+      channel: 'landing_open',
+      referralCode: code,
+      metadata: { source: 'referral_landing' },
+    });
   }, [code]);
 
   const goSignup = () => {
     if (code) savePendingReferralCode(code);
-    navigate('/auth', { state: { mode: 'signup', referralCode: code } });
+    navigate('/auth', { state: { mode: 'signup', referralCode: code || undefined } });
   };
 
   return (
@@ -34,21 +42,32 @@ const ReferralLanding: React.FC = () => {
     >
       <Stack gap="md" style={{ maxWidth: 400, width: '100%' }}>
         <Title order={2} style={{ fontSize: 24, fontWeight: 800, color: '#111827' }}>
-          You’re invited to Crave’n
+          {invalidPlaceholder ? 'This invite link is invalid' : 'You’re invited to Crave’n'}
         </Title>
-        <Text style={{ fontSize: 14, color: '#4b5563', lineHeight: 1.6 }}>
-          A friend shared invite code{' '}
-          <strong style={{ letterSpacing: 1 }}>{(code || '').toUpperCase()}</strong>. Create your
-          account with this code to unlock welcome rewards, then place your first order.
-        </Text>
+        {invalidPlaceholder ? (
+          <Text style={{ fontSize: 14, color: '#4b5563', lineHeight: 1.6 }}>
+            Generic promo codes cannot be used as personal invites. Ask your friend for their
+            Crave’n invite link or personal code.
+          </Text>
+        ) : (
+          <Text style={{ fontSize: 14, color: '#4b5563', lineHeight: 1.6 }}>
+            A friend shared invite code{' '}
+            <strong style={{ letterSpacing: 1 }}>{code || '—'}</strong>. Create your account with
+            this code to unlock welcome rewards, then place your first order.
+          </Text>
+        )}
         <Button
           size="md"
           onClick={goSignup}
+          disabled={invalidPlaceholder || !code}
           style={{
             height: 48,
             borderRadius: 999,
             fontWeight: 700,
-            background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+            background:
+              invalidPlaceholder || !code
+                ? '#d1d5db'
+                : 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
           }}
         >
           Sign up with this code

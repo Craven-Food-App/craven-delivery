@@ -133,7 +133,7 @@ export const NewCustomer365PromoCard: React.FC<Props> = ({
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
             }}
           >
-            {loading ? '…' : referralCode || '—'}
+            {loading ? '…' : referralCode && referralCode.length > 0 ? referralCode : 'Generating…'}
           </Text>
           <Text style={{ fontSize: 12, color: '#d1d5db', marginTop: 8, lineHeight: 1.45 }}>
             Friends must use this code or your invite link. Qualifying referrals on this code count
