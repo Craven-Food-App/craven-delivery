@@ -10,6 +10,7 @@ import merchantPinActive from '@/assets/merchant_pin.png';
 import merchantPinGrey from '@/assets/merchant_grey_pin.png';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
+import { resolveMerchantLogoUrl } from '@/utils/merchantSeedLogos';
 
 /** Map view + RPC fallback when geolocation is unavailable (matches RestaurantGrid). */
 const DEFAULT_CENTER: [number, number] = [-83.54, 41.65];
@@ -125,7 +126,7 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
       const mapRow = (r: any): MerchantLocation => ({
         id: r.id,
         name: r.name,
-        logo_url: r.image_url || r.logo_url || null,
+        logo_url: resolveMerchantLogoUrl(r.name, r.image_url, r.logo_url),
         image_url: r.image_url || null,
         latitude: Number(r.lat),
         longitude: Number(r.lng),

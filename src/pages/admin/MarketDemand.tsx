@@ -20,7 +20,8 @@ import {
   Divider,
   SimpleGrid,
 } from '@mantine/core';
-import { IconMail, IconUserPlus, IconRefresh, IconChartBar, IconChevronDown, IconChevronRight } from '@tabler/icons-react';
+import { IconMail, IconUserPlus, IconRefresh, IconChartBar, IconChevronDown, IconChevronRight, IconPhoto } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
 
 const MERCHANT_SIGNUP_URL = 'https://cravenusa.com/merchant';
 
@@ -50,6 +51,7 @@ const WHAT_MATTERS_LABELS: Record<string, string> = {
 export default function MarketDemand() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [backfillingLogos, setBackfillingLogos] = useState(false);
   const [reportDrawerOpen, setReportDrawerOpen] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState<{ id: string; name: string } | null>(null);
   const [requests, setRequests] = useState<any[]>([]);
@@ -131,6 +133,47 @@ export default function MarketDemand() {
     fetchDemand();
   }, []);
 
+  const backfillLogos = async () => {
+    setBackfillingLogos(true);
+    try {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('backfill_seeded_merchant_logos', {
+        p_overwrite_brandfetch: true,
+      });
+
+      if (!rpcError && rpcData) {
+        notifications.show({
+          title: 'Merchant logos updated',
+          message: `Master: ${rpcData.restaurants_master_updated ?? 0} · Restaurants: ${rpcData.restaurants_updated ?? 0}`,
+          color: 'green',
+        });
+        await fetchDemand();
+        return;
+      }
+
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('backfill-merchant-logos', {
+        body: { overwrite_brandfetch: true },
+      });
+      if (fnError) throw fnError;
+      if (fnData?.error) throw new Error(fnData.error);
+
+      notifications.show({
+        title: 'Merchant logos updated',
+        message: `Master: ${fnData?.restaurants_master_updated ?? 0}${fnData?.fallback ? ' (fallback)' : ''}`,
+        color: 'green',
+      });
+      await fetchDemand();
+    } catch (err: any) {
+      console.error('Logo backfill failed:', err);
+      notifications.show({
+        title: 'Logo backfill failed',
+        message: err?.message || 'Could not update merchant logos',
+        color: 'red',
+      });
+    } finally {
+      setBackfillingLogos(false);
+    }
+  };
+
   const copyInviteLink = () => {
     navigator.clipboard.writeText(MERCHANT_SIGNUP_URL);
   };
@@ -174,12 +217,24 @@ export default function MarketDemand() {
       <Stack gap="lg">
         <Group justify="space-between">
           <Title order={2}>Market Demand</Title>
-          <Button leftSection={<IconRefresh size={16} />} variant="light" onClick={fetchDemand} loading={loading}>
-            Refresh
-          </Button>
+          <Group gap="sm">
+            <Button
+              leftSection={<IconPhoto size={16} />}
+              variant="light"
+              color="orange"
+              onClick={backfillLogos}
+              loading={backfillingLogos}
+            >
+              Pull brand logos
+            </Button>
+            <Button leftSection={<IconRefresh size={16} />} variant="light" onClick={fetchDemand} loading={loading}>
+              Refresh
+            </Button>
+          </Group>
         </Group>
         <Text size="sm" c="dimmed">
           Restaurants requested by customers. Use &quot;Partnership report&quot; to view structured demand data for merchant outreach. When request count reaches 15, status becomes LEAD_READY.
+          &quot;Pull brand logos&quot; writes curated Brandfetch logos onto seeded merchants (keeps hand-uploaded seed storage logos).
         </Text>
 
         {loading ? (

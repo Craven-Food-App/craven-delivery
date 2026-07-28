@@ -106,6 +106,9 @@ verify_jwt = true
 [functions.admin-verify-business]
 verify_jwt = true
 
+[functions.backfill-merchant-logos]
+verify_jwt = true
+
 [functions.update-menu-preparation-status]
 verify_jwt = true
 
