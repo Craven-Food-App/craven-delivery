@@ -32,14 +32,15 @@ const handler = async (req: Request): Promise<Response> => {
     let headerTitle: string;
     let mainMessage: string;
     let passwordSection = '';
+    const isAccountSetup = Boolean(isNewSignup && presetPassword);
 
-    if (isNewSignup && presetPassword) {
-      subject = "🎉 Welcome to Crave'n! Your Account is Ready";
-      headerTitle = "Welcome to Crave'n!";
-      mainMessage = "Your account has been created successfully! You're now on the waitlist to become a Crave'n driver. 🚗✨";
+    if (isAccountSetup) {
+      subject = "Your Crave'n Feeder Account Is Ready";
+      headerTitle = "Account Created";
+      mainMessage = "Your Feeder account has been created. Continue the application in your browser to submit your information. Your account is not waitlisted or approved until the application is completed.";
       passwordSection = `
         <div style="background-color: #fff5ec; border: 2px solid #ff6b00; border-radius: 8px; padding: 25px; margin: 30px 0; text-align: center;">
-          <h3 style="margin: 0 0 15px 0; color: #ff6b00; font-size: 20px; font-weight: bold;">🔐 Your Login Credentials</h3>
+          <h3 style="margin: 0 0 15px 0; color: #ff6b00; font-size: 20px; font-weight: bold;">Your Login Credentials</h3>
           <p style="margin: 0 0 15px 0; color: #4a4a4a; font-size: 15px; line-height: 1.6;">
             Use these credentials to log in to your account:
           </p>
@@ -50,7 +51,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p style="margin: 0; color: #ff6b00; font-size: 20px; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 2px;">${presetPassword}</p>
           </div>
           <p style="margin: 15px 0 0 0; color: #d32f2f; font-size: 14px; font-weight: 600;">
-            ⚠️ Important: You will be required to change this password when you log in for the first time.
+            Important: You will be required to change this password when you log in for the first time.
           </p>
         </div>
       `;
@@ -83,15 +84,17 @@ const handler = async (req: Request): Promise<Response> => {
                     <!-- Header with Orange Banner -->
                     <tr>
                       <td style="background: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%); padding: 40px; text-align: center; border-radius: 8px 8px 0 0;">
-                        <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;">🎉 ${headerTitle}</h1>
-                        <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 18px;">You're Cleared to Drive!</p>
+                        <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;">${headerTitle}</h1>
+                        <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 18px;">
+                          ${isAccountSetup ? 'Continue Your Application' : "You're Cleared to Drive!"}
+                        </p>
                       </td>
                     </tr>
                     
                     <!-- Main Content -->
                     <tr>
                       <td style="padding: 40px;">
-                        <h2 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 24px;">Hi ${driverName}! 👋</h2>
+                        <h2 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 24px;">Hi ${driverName}!</h2>
                         
                         <p style="margin: 0 0 20px 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
                           ${mainMessage}
@@ -99,15 +102,28 @@ const handler = async (req: Request): Promise<Response> => {
                         
                         ${passwordSection}
                         
+                        ${isAccountSetup ? '' : `
                         <div style="background-color: #e8f5e9; border-left: 4px solid #4caf50; padding: 20px; margin: 30px 0;">
                           <h3 style="margin: 0 0 15px 0; color: #2e7d32; font-size: 18px;">💵 First Delivery Bonus</h3>
                           <p style="margin: 0; color: #2e7d32; font-size: 15px; line-height: 1.6;">
                             Earn an extra <strong>$25</strong> when you complete your first delivery!
                           </p>
                         </div>
+                        `}
                         
                         <div style="background-color: #fff5ec; border-left: 4px solid #ff6b00; padding: 20px; margin: 30px 0;">
-                          <h3 style="margin: 0 0 15px 0; color: #ff6b00; font-size: 18px;">📋 What's Next?</h3>
+                          <h3 style="margin: 0 0 15px 0; color: #ff6b00; font-size: 18px;">What's Next?</h3>
+                          ${isAccountSetup ? `
+                          <p style="margin: 0 0 15px 0; color: #4a4a4a; font-size: 15px; line-height: 1.8;">
+                            Return to the application already open in your browser and complete every step.
+                          </p>
+                          <ol style="margin: 0; padding-left: 20px; color: #4a4a4a; font-size: 15px; line-height: 1.8;">
+                            <li>Finish entering your application information</li>
+                            <li>Review and submit the application</li>
+                            <li>Wait for the Application Submitted screen</li>
+                            <li>Then check your email for the waitlist confirmation</li>
+                          </ol>
+                          ` : `
                           <p style="margin: 0 0 15px 0; color: #4a4a4a; font-size: 15px; line-height: 1.8;">
                             Complete a quick 10-15 minute onboarding process to get started:
                           </p>
@@ -118,15 +134,23 @@ const handler = async (req: Request): Promise<Response> => {
                             <li>Set up your payout method</li>
                             <li>Review the test delivery process</li>
                           </ol>
+                          `}
                         </div>
                         
                         <div style="text-align: center; margin: 40px 0 30px 0;">
-                          <a href="https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com/feeder-hub" 
+                          <a href="https://www.cravenusa.com/driver-onboarding/apply"
                              style="display: inline-block; background: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);">
-                            Start Onboarding Now →
+                            ${isAccountSetup ? 'Continue Application' : 'Start Onboarding Now'} →
                           </a>
                         </div>
                         
+                        ${isAccountSetup ? `
+                        <div style="background-color: #fff8e1; border: 1px solid #f5c26b; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                          <p style="margin: 0; color: #7a4a00; font-size: 14px; line-height: 1.6;">
+                            <strong>Do not see this email in your inbox?</strong> Check your Spam or Junk folder.
+                          </p>
+                        </div>
+                        ` : `
                         <div style="background-color: #f9f9f9; padding: 20px; border-radius: 6px; margin: 30px 0;">
                           <h3 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px;">📊 Quick Stats</h3>
                           <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #4a4a4a; font-size: 14px; line-height: 1.8;">
@@ -142,13 +166,14 @@ const handler = async (req: Request): Promise<Response> => {
                             <strong>⏱️ Important:</strong> Complete your onboarding within the next 7 days to maintain your approval status and claim your first delivery bonus!
                           </p>
                         </div>
+                        `}
                         
                         <p style="margin: 30px 0 0 0; color: #4a4a4a; font-size: 14px; line-height: 1.6;">
                           Questions? Reply to this email or check out our <a href="https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com/driver-guide" style="color: #ff6b00; text-decoration: none;">Driver Guide</a>.
                         </p>
                         
                         <p style="margin: 20px 0 0 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-                          Welcome aboard! 🧡<br>
+                          ${isAccountSetup ? 'Continue your application when ready.' : 'Welcome aboard!'}<br>
                           <strong>The Crave'n Team</strong>
                         </p>
                       </td>
@@ -157,7 +182,9 @@ const handler = async (req: Request): Promise<Response> => {
                     <!-- Footer -->
                     <tr>
                       <td style="background-color: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e5e5;">
-                        <p style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px; font-weight: bold;">Ready to Start Earning? 💰</p>
+                          <p style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px; font-weight: bold;">
+                            ${isAccountSetup ? 'Complete your application to continue' : 'Ready to Start Earning?'}
+                          </p>
                         <p style="margin: 0; color: #898989; font-size: 12px;">
                           © ${new Date().getFullYear()} Crave'n. All rights reserved.
                         </p>

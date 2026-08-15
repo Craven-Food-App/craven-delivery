@@ -414,80 +414,8 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
         }
       }
 
-      // 8. Send waitlist email
-      try {
-        const emailPayload = {
-          driverName: `${firstName}${middleName ? ' ' + middleName : ''} ${lastName}`.trim(),
-          driverEmail: values.email,
-          city: resolvedCity,
-          state: resolvedState,
-          waitlistPosition: waitlistPosition || 0,
-          location: regionName,
-          emailType: 'waitlist' as const
-        };
-
-        console.log('Sending waitlist email with payload:', { ...emailPayload, driverEmail: values.email });
-
-        const emailResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-driver-waitlist-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify(emailPayload),
-        });
-
-        const responseText = await emailResponse.text();
-        console.log('Email response status:', emailResponse.status);
-        console.log('Email response text:', responseText);
-
-        if (!emailResponse.ok) {
-          let errorData;
-          try {
-            errorData = JSON.parse(responseText);
-          } catch (e) {
-            errorData = { error: responseText };
-          }
-          
-          console.error('Waitlist email sending failed:', {
-            status: emailResponse.status,
-            statusText: emailResponse.statusText,
-            error: errorData
-          });
-          
-          toast({
-            title: "Email Warning",
-            description: `Application submitted, but email notification failed: ${errorData.error || 'Unknown error'}. Please check your email inbox.`,
-            variant: "default",
-          });
-        } else {
-          let result;
-          try {
-            result = JSON.parse(responseText);
-          } catch (e) {
-            result = { message: responseText };
-          }
-          console.log('Waitlist email sent successfully:', result);
-          
-          if (result.error) {
-            console.error('Email function returned error:', result.error);
-            toast({
-              title: "Email Warning",
-              description: `Application submitted, but email notification failed: ${result.error}. Please check your email inbox.`,
-              variant: "default",
-            });
-          }
-        }
-      } catch (emailError: any) {
-        console.error('Waitlist email sending error:', emailError);
-        toast({
-          title: "Email Warning",
-          description: `Application submitted, but email notification failed: ${emailError.message || 'Network error'}. Please check your email inbox.`,
-          variant: "default",
-        });
-      }
-
-      // 9. Notify CEO of new driver signup
+      // 8. Notify CEO of new driver signup. The driver's waitlist email is
+      // intentionally sent by WaitlistSuccessStep only after that screen mounts.
       try {
         const driverFullName = `${firstName}${middleName ? ' ' + middleName : ''} ${lastName}`.trim();
         const ceoEmails = ['tstroman.ceo@cravenusa.com', 'craven@usa.com'];
@@ -545,14 +473,17 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
         description: "Application submitted successfully!",
       });
 
-      // Continue to success step
+      // Continue to the submitted screen before any waitlist email is sent.
       onNext({
         applicationId: appData.id,
         driverId: appData.id,
         email: values.email,
+        driverName: `${firstName}${middleName ? ' ' + middleName : ''} ${lastName}`.trim(),
         city: resolvedCity,
         state: resolvedState,
         regionId,
+        regionName,
+        waitlistPosition: waitlistPosition || 0,
         ...values
       });
 

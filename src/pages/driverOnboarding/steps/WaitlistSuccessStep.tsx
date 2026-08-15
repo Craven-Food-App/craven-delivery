@@ -15,12 +15,21 @@ export const WaitlistSuccessStep: React.FC<WaitlistSuccessStepProps> = ({ applic
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchQueuePosition();
-  }, []);
+    // Let the submitted screen render first. Only then fetch the final queue
+    // position and send the driver's waitlist confirmation.
+    const timer = window.setTimeout(() => {
+      void finalizeSubmission();
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [applicationData?.applicationId]);
 
-  const fetchQueuePosition = async () => {
-    if (!applicationData?.applicationId) return;
+  const finalizeSubmission = async () => {
+    if (!applicationData?.applicationId) {
+      setLoading(false);
+      return;
+    }
 
+    let position = null;
     try {
       const { data, error } = await supabase.rpc('get_driver_queue_position', {
         driver_uuid: applicationData.applicationId
@@ -29,12 +38,60 @@ export const WaitlistSuccessStep: React.FC<WaitlistSuccessStepProps> = ({ applic
       if (error) {
         console.error('Error fetching queue position:', error);
       } else if (data && data[0]) {
-        setQueuePosition(data[0]);
+        position = data[0];
+        setQueuePosition(position);
       }
     } catch (error) {
       console.error('Error:', error);
     } finally {
       setLoading(false);
+    }
+
+    await sendWaitlistConfirmation(position);
+  };
+
+  const sendWaitlistConfirmation = async (position: any) => {
+    const applicationId = applicationData?.applicationId;
+    const driverEmail = applicationData?.email;
+    if (!applicationId || !driverEmail) return;
+
+    const deliveryKey = `driver-waitlist-email:${applicationId}`;
+    if (sessionStorage.getItem(deliveryKey)) return;
+    sessionStorage.setItem(deliveryKey, 'sending');
+
+    try {
+      const driverName =
+        applicationData?.driverName ||
+        [
+          applicationData?.legalFirstName,
+          applicationData?.legalMiddleName,
+          applicationData?.legalLastName,
+        ].filter(Boolean).join(' ') ||
+        'Crave’n Feeder';
+
+      const { error } = await supabase.functions.invoke('send-driver-waitlist-email', {
+        body: {
+          driverName,
+          driverEmail,
+          city: applicationData?.city,
+          state: applicationData?.state,
+          waitlistPosition:
+            position?.queue_position ||
+            applicationData?.waitlistPosition ||
+            0,
+          location:
+            position?.region_name ||
+            applicationData?.regionName ||
+            [applicationData?.city, applicationData?.state].filter(Boolean).join(', '),
+          emailType: 'waitlist',
+        },
+      });
+
+      if (error) throw error;
+      sessionStorage.setItem(deliveryKey, 'sent');
+    } catch (error) {
+      sessionStorage.removeItem(deliveryKey);
+      console.error('Waitlist confirmation email failed after submission:', error);
     }
   };
 
