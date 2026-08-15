@@ -249,8 +249,8 @@ const FeederHub = () => {
 
       // Show success message with instructions
       toast.success(
-        'Account created! Please check your email for your login credentials. You will be asked to set a new password on first login.',
-        { duration: 10000 }
+        'Account created! Check your email for login credentials — and check Spam/Junk if you do not see it. You will set a new password on first login.',
+        { duration: 12000 }
       );
 
       // Navigate to driver onboarding with email and phone

@@ -74,9 +74,9 @@ export const PhoneVerificationModal = ({
       }
 
       if (step === 1) {
-        toast.success("Verification email sent! Please check your email for the 4-digit code.");
+        toast.success("Verification email sent! Check your inbox and Spam/Junk for the 4-digit code.");
       } else {
-        toast.success("New code sent! Please check your email.");
+        toast.success("New code sent! Check your inbox and Spam/Junk.");
       }
       setCountdown(60);
     } catch (error: any) {
@@ -202,6 +202,14 @@ export const PhoneVerificationModal = ({
                 </>
               )}
             </p>
+            <div className="mx-auto max-w-sm rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left">
+              <p className="text-xs font-semibold text-amber-900">
+                Check your Spam or Junk folder
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-amber-800/90">
+                Confirmation emails sometimes land there. Open the message, then return here to enter the code and continue.
+              </p>
+            </div>
           </div>
 
           {/* Progress indicator */}

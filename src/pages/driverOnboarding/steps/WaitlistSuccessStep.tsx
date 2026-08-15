@@ -113,6 +113,23 @@ export const WaitlistSuccessStep: React.FC<WaitlistSuccessStepProps> = ({ applic
                 Check your inbox at <strong style={{ color: '#ff7a00' }}>{applicationData.email}</strong> for a confirmation
                 message with your waitlist position.
               </Text>
+              <Box
+                mt="sm"
+                ml="xl"
+                p="sm"
+                style={{
+                  backgroundColor: '#FFF7ED',
+                  border: '1px solid #FED7AA',
+                  borderRadius: '8px',
+                }}
+              >
+                <Text fw={600} size="xs" style={{ color: '#9A3412', marginBottom: 2 }}>
+                  Check Spam or Junk
+                </Text>
+                <Text size="xs" style={{ color: '#9A3412', lineHeight: 1.5 }}>
+                  Confirmation emails sometimes go to Spam or Junk. If you do not see it in your inbox, check there so you can continue with next steps.
+                </Text>
+              </Box>
             </Box>
             <Divider color="#E5E5E5" />
             <Box>
@@ -198,7 +215,7 @@ export const WaitlistSuccessStep: React.FC<WaitlistSuccessStepProps> = ({ applic
             </Box>
             <Text size="sm" style={{ color: '#666666', lineHeight: '1.6', paddingLeft: '24px' }}>
               We'll send you regular updates about our launch timeline and when you can
-              expect to start driving. Check your email regularly.
+              expect to start driving. Check your inbox regularly, including Spam or Junk.
             </Text>
           </Stack>
         </Box>
