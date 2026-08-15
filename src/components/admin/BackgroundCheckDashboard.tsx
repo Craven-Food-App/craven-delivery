@@ -18,6 +18,7 @@ import { emitDriverOperationsChange } from '@/lib/driverOperationsEvents';
 import { DriverStageBadge } from '@/components/admin/DriverStageBadge';
 import { DriverLifecycleDrawer } from '@/components/admin/DriverLifecycleDrawer';
 import { useSearchParams } from 'react-router-dom';
+import { logAuditTrail } from '@/utils/auditLogger';
 
 interface Application {
   id: string;
@@ -169,7 +170,7 @@ export default function BackgroundCheckDashboard() {
   const approveBackgroundCheck = async (app: Application) => {
     setProcessingId(app.id);
     try {
-      const { error } = await supabase
+      const { data: revokedApplication, error } = await supabase
         .from('craver_applications')
         .update({
           background_check: true,
@@ -220,6 +221,86 @@ export default function BackgroundCheckDashboard() {
     } catch (error) {
       console.error('Error rejecting:', error);
       toast.error('Failed to reject');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const unapproveBackgroundCheck = async (app: Application) => {
+    const reason = reviewNotes.trim();
+    if (!reason) {
+      toast.error('Please add a reason for revoking the clearance');
+      return;
+    }
+
+    const wasActive = app.status === 'approved';
+    const confirmed = window.confirm(
+      wasActive
+        ? `Revoke ${app.first_name} ${app.last_name}'s background clearance? This driver is active and will be returned to background review.`
+        : `Revoke ${app.first_name} ${app.last_name}'s background clearance and return them to review?`,
+    );
+    if (!confirmed) return;
+
+    setProcessingId(app.id);
+    try {
+      const revokedAt = new Date().toISOString();
+      const { error } = await supabase
+        .from('craver_applications')
+        .update({
+          background_check: false,
+          background_check_approved_at: null,
+          background_check_auto_approved: false,
+          status: 'under_review',
+          reviewer_notes: `Background clearance revoked: ${reason}`,
+          reviewed_at: revokedAt,
+        })
+        .eq('id', app.id)
+        .eq('background_check', true)
+        .select('id')
+        .maybeSingle();
+      if (error) throw error;
+      if (!revokedApplication) {
+        throw new Error('Background clearance changed before revocation completed');
+      }
+
+      await logAuditTrail({
+        actionType: 'update',
+        actionCategory: 'compliance',
+        actionDescription: `Revoked background clearance for ${app.first_name} ${app.last_name}`,
+        targetResourceType: 'craver_application',
+        targetResourceId: app.id,
+        targetResourceName: `${app.first_name} ${app.last_name}`,
+        oldValues: {
+          background_check: true,
+          background_check_approved_at: app.background_check_approved_at,
+          status: app.status,
+        },
+        newValues: {
+          background_check: false,
+          background_check_approved_at: null,
+          status: 'under_review',
+        },
+        metadata: { reason, was_active: wasActive, revoked_at: revokedAt },
+        severity: wasActive ? 'critical' : 'high',
+        requiresReview: wasActive,
+      });
+
+      emitDriverOperationsChange({
+        area: 'background-checks',
+        entityId: app.id,
+        action: 'clearance_revoked',
+      });
+      toast.success(
+        wasActive
+          ? `${app.first_name} ${app.last_name}'s clearance was revoked and active status removed`
+          : `${app.first_name} ${app.last_name}'s clearance was revoked`,
+      );
+      setSelectedApp(null);
+      setReviewNotes('');
+      await fetchApplications();
+    } catch (error) {
+      console.error('Error revoking background clearance:', error);
+      toast.error('Failed to revoke background clearance');
     } finally {
       setProcessingId(null);
     }
@@ -540,6 +621,28 @@ export default function BackgroundCheckDashboard() {
                       </div>
                     </div>
                   )}
+                  {bgStatus === 'approved' && (
+                    <div className="space-y-3 rounded-lg border border-red-200 bg-red-50 p-4">
+                      <div>
+                        <div className="text-sm font-semibold text-red-900">Revoke clearance</div>
+                        <p className="mt-0.5 text-xs text-red-800/80">
+                          This returns the driver to background review. If the driver is active, active status is removed immediately.
+                        </p>
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-red-900">
+                          Reason for revocation
+                        </label>
+                        <Textarea
+                          value={reviewNotes}
+                          onChange={e => setReviewNotes(e.target.value)}
+                          placeholder="Document why this clearance is being revoked..."
+                          rows={3}
+                          disabled={isProcessing}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {bgStatus === 'needs_review' && (
@@ -560,6 +663,20 @@ export default function BackgroundCheckDashboard() {
                     >
                       {isProcessing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-1" />}
                       Approve & Notify
+                    </Button>
+                  </DialogFooter>
+                )}
+                {bgStatus === 'approved' && (
+                  <DialogFooter className="pt-4">
+                    <Button
+                      variant="destructive"
+                      onClick={() => unapproveBackgroundCheck(selectedApp)}
+                      disabled={isProcessing || !reviewNotes.trim()}
+                    >
+                      {isProcessing
+                        ? <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        : <XCircle className="mr-1 h-4 w-4" />}
+                      Revoke Clearance
                     </Button>
                   </DialogFooter>
                 )}
