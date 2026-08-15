@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { requireAdmin } from '../_shared/adminAuth.ts';
 
 interface AutoActivateRequest {
   region_id: number;
@@ -9,6 +10,14 @@ Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req.headers.get('origin'));
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const gate = await requireAdmin(req, ["admin", "ceo", "coo", "chro"]);
+  if (!gate.ok) {
+    return new Response(JSON.stringify({ error: gate.error }), {
+      status: gate.status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {
@@ -65,6 +74,8 @@ Deno.serve(async (req) => {
       .select('id, first_name, last_name, email, priority_score')
       .eq('region_id', region_id)
       .eq('status', 'waitlist')
+      .eq('background_check', true)
+      .not('background_check_approved_at', 'is', null)
       .not('onboarding_completed_at', 'is', null)
       .order('priority_score', { ascending: false })
       .order('created_at', { ascending: true })
@@ -90,7 +101,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        'Authorization': req.headers.get('Authorization') || '',
       },
       body: JSON.stringify({
         driver_ids: waitlistDrivers.map(d => d.id),

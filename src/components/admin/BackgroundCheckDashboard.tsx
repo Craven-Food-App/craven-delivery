@@ -14,6 +14,10 @@ import {
   ChevronUp, Eye, AlertTriangle, Download, RefreshCw
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
+import { emitDriverOperationsChange } from '@/lib/driverOperationsEvents';
+import { DriverStageBadge } from '@/components/admin/DriverStageBadge';
+import { DriverLifecycleDrawer } from '@/components/admin/DriverLifecycleDrawer';
+import { useSearchParams } from 'react-router-dom';
 
 interface Application {
   id: string;
@@ -37,7 +41,10 @@ interface Application {
   status: string;
   background_check: boolean;
   background_check_consent: boolean;
+  background_check_initiated_at: string | null;
   background_check_approved_at: string | null;
+  onboarding_started_at?: string | null;
+  onboarding_completed_at?: string | null;
   created_at: string;
   reviewer_notes: string | null;
   ssn_last_four: string | null;
@@ -51,12 +58,14 @@ type SortDir = 'asc' | 'desc';
 type IconComponent = React.ComponentType<{ className?: string }>;
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: IconComponent }> = {
+  not_started: { label: 'Not Started', color: 'text-slate-600', bgColor: 'bg-slate-50 border-slate-200', icon: Shield },
   needs_review: { label: 'Needs Review', color: 'text-amber-700', bgColor: 'bg-amber-50 border-amber-200', icon: Clock },
   approved: { label: 'Cleared', color: 'text-emerald-700', bgColor: 'bg-emerald-50 border-emerald-200', icon: CheckCircle },
   rejected: { label: 'Rejected', color: 'text-red-700', bgColor: 'bg-red-50 border-red-200', icon: XCircle },
 };
 
 export default function BackgroundCheckDashboard() {
+  const [, setSearchParams] = useSearchParams();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -65,6 +74,7 @@ export default function BackgroundCheckDashboard() {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [lifecycleApp, setLifecycleApp] = useState<Application | null>(null);
   const [reviewNotes, setReviewNotes] = useState('');
   const [processingId, setProcessingId] = useState<string | null>(null);
 
@@ -98,14 +108,15 @@ export default function BackgroundCheckDashboard() {
   const getAppBgStatus = (app: Application): string => {
     if (app.status === 'rejected') return 'rejected';
     if (app.background_check && app.background_check_approved_at) return 'approved';
-    return 'needs_review';
+    if (app.background_check_initiated_at || app.status === 'under_review') return 'needs_review';
+    return 'not_started';
   };
 
   const counts = useMemo(() => {
     const c = { needs_review: 0, approved: 0, rejected: 0, all: 0 };
     applications.forEach(app => {
       const s = getAppBgStatus(app);
-      c[s as keyof typeof c]++;
+      if (s in c && s !== 'all') c[s as 'needs_review' | 'approved' | 'rejected']++;
       c.all++;
     });
     return c;
@@ -163,7 +174,7 @@ export default function BackgroundCheckDashboard() {
         .update({
           background_check: true,
           background_check_approved_at: new Date().toISOString(),
-          status: 'approved',
+          status: 'waitlist',
           reviewer_notes: reviewNotes.trim() || 'Background check approved by admin'
         })
         .eq('id', app.id);
@@ -175,7 +186,8 @@ export default function BackgroundCheckDashboard() {
         });
       } catch (e) { console.error('Email error:', e); }
 
-      toast.success(`${app.first_name} ${app.last_name} approved & notified`);
+      emitDriverOperationsChange({ area: 'background-checks', entityId: app.id, action: 'cleared_to_waitlist' });
+      toast.success(`${app.first_name} ${app.last_name} cleared and moved to the waitlist`);
       setSelectedApp(null);
       setReviewNotes('');
       fetchApplications();
@@ -200,6 +212,7 @@ export default function BackgroundCheckDashboard() {
         .eq('id', app.id);
       if (error) throw error;
 
+      emitDriverOperationsChange({ area: 'background-checks', entityId: app.id, action: 'rejected' });
       toast.success(`${app.first_name} ${app.last_name} rejected`);
       setSelectedApp(null);
       setReviewNotes('');
@@ -336,8 +349,9 @@ export default function BackgroundCheckDashboard() {
                 </TableHead>
                 <TableHead className="hidden lg:table-cell">Vehicle</TableHead>
                 <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('status')}>
-                  <div className="flex items-center gap-1">Status <SortIcon field="status" /></div>
+                  <div className="flex items-center gap-1">BG Status <SortIcon field="status" /></div>
                 </TableHead>
+                <TableHead className="hidden md:table-cell">Stage</TableHead>
                 <TableHead className="cursor-pointer select-none hidden sm:table-cell" onClick={() => toggleSort('date')}>
                   <div className="flex items-center gap-1">Applied <SortIcon field="date" /></div>
                 </TableHead>
@@ -402,6 +416,15 @@ export default function BackgroundCheckDashboard() {
                             {daysSinceApplied}d waiting
                           </div>
                         )}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <button
+                          type="button"
+                          className="text-left"
+                          onClick={() => setLifecycleApp(app)}
+                        >
+                          <DriverStageBadge record={app} />
+                        </button>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
                         {format(new Date(app.created_at), 'MMM d, yyyy')}
@@ -545,6 +568,22 @@ export default function BackgroundCheckDashboard() {
           })()}
         </DialogContent>
       </Dialog>
+
+      <DriverLifecycleDrawer
+        open={!!lifecycleApp}
+        onOpenChange={(open) => {
+          if (!open) setLifecycleApp(null);
+        }}
+        driver={lifecycleApp}
+        onNavigate={(tabId) => {
+          setLifecycleApp(null);
+          setSearchParams(previous => {
+            const next = new URLSearchParams(previous);
+            next.set('tab', tabId);
+            return next;
+          }, { replace: false });
+        }}
+      />
     </div>
   );
 }

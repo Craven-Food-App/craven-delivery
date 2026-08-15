@@ -84,11 +84,19 @@ export const DriverSupportDashboard = () => {
   const [messageText, setMessageText] = useState('');
   const [quickResponses, setQuickResponses] = useState<QuickResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [isOnline, setIsOnline] = useState(false);
+  const [isOnline, setIsOnline] = useState(() => {
+    try {
+      return localStorage.getItem('driver-support-agent-online') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [sessionStats, setSessionStats] = useState<SessionStats>({
     chatsHandled: 0,
     avgResponseTime: 0,
@@ -97,23 +105,43 @@ export const DriverSupportDashboard = () => {
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isOnlineRef = useRef(false);
 
   useEffect(() => {
+    let cleanupRealtime: (() => void) | undefined;
     fetchChats();
     fetchQuickResponses();
     fetchSessionStats();
-    setupRealtimeSubscription();
-
-    // Setup notification sound
+    void supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id || null));
     audioRef.current = new Audio('/craven-notification.wav');
+    cleanupRealtime = setupRealtimeSubscription();
+    return () => {
+      cleanupRealtime?.();
+      audioRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
-    if (selectedChat) {
-      fetchMessages(selectedChat.id);
-      setupMessageSubscription(selectedChat.id);
+    if (!selectedChat) {
+      setMessages([]);
+      return;
     }
-  }, [selectedChat]);
+    setMessages([]);
+    setMessagesLoading(true);
+    void fetchMessages(selectedChat.id).finally(() => setMessagesLoading(false));
+    const cleanup = setupMessageSubscription(selectedChat.id);
+    return cleanup;
+  }, [selectedChat?.id]);
+
+  useEffect(() => {
+    isOnlineRef.current = isOnline;
+  }, [isOnline]);
+
+  useEffect(() => {
+    if (!selectedChat) return;
+    const updated = chats.find(chat => chat.id === selectedChat.id);
+    if (updated) setSelectedChat(updated);
+  }, [chats, selectedChat?.id]);
 
   useEffect(() => {
     scrollToBottom();
@@ -197,11 +225,12 @@ export const DriverSupportDashboard = () => {
       setMessages((data as any) || []);
 
       // Mark messages as read
-      await supabase
+      const { error: readError } = await supabase
         .from('driver_support_messages')
         .update({ is_read: true })
         .eq('chat_id', chatId)
         .eq('sender_type', 'driver') as any;
+      if (readError) console.error('Error marking messages read:', readError);
     } catch (error: any) {
       console.error('Error fetching messages:', error);
       toast.error('Failed to load messages');
@@ -226,6 +255,22 @@ export const DriverSupportDashboard = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      if (selectedChat.agent_id && selectedChat.agent_id !== user.id) {
+        toast.error('This chat is assigned to another agent');
+        return;
+      }
+
+      const { data: latestChat, error: latestChatError } = await supabase
+        .from('driver_support_chats')
+        .select('agent_id, agent_response_count, created_at')
+        .eq('id', selectedChat.id)
+        .single() as any;
+      if (latestChatError) throw latestChatError;
+      if (latestChat.agent_id && latestChat.agent_id !== user.id) {
+        toast.error('This chat was claimed by another agent');
+        await fetchChats();
+        return;
+      }
 
       // Get chats handled today
       const startOfDay = new Date();
@@ -274,7 +319,7 @@ export const DriverSupportDashboard = () => {
             fetchChats();
             
             // Play notification sound for new chats
-            if (payload.eventType === 'INSERT' && isOnline) {
+            if (payload.eventType === 'INSERT' && isOnlineRef.current) {
               audioRef.current?.play().catch(() => {});
               toast.info('New driver support request', {
                 description: 'A driver needs assistance',
@@ -306,7 +351,7 @@ export const DriverSupportDashboard = () => {
           setMessages((prev) => [...prev, newMessage]);
           
           // Play sound for driver messages
-          if (newMessage.sender_type === 'driver' && isOnline) {
+          if (newMessage.sender_type === 'driver' && isOnlineRef.current) {
             audioRef.current?.play().catch(() => {});
           }
         }
@@ -344,16 +389,16 @@ export const DriverSupportDashboard = () => {
       // Update chat status and assign agent if not assigned
       const updates: any = {
         last_message_at: new Date().toISOString(),
-        agent_response_count: selectedChat.agent_response_count + 1,
+        agent_response_count: Number(latestChat.agent_response_count || 0) + 1,
       };
 
-      if (!selectedChat.agent_id) {
+      if (!latestChat.agent_id) {
         updates.agent_id = user.id;
         updates.status = 'in_progress';
       }
 
-      if (selectedChat.agent_response_count === 0 && selectedChat.created_at) {
-        const responseTime = Math.floor((Date.now() - new Date(selectedChat.created_at).getTime()) / 1000);
+      if (Number(latestChat.agent_response_count || 0) === 0 && latestChat.created_at) {
+        const responseTime = Math.floor((Date.now() - new Date(latestChat.created_at).getTime()) / 1000);
         updates.first_response_time_seconds = responseTime;
       }
 
@@ -390,9 +435,22 @@ export const DriverSupportDashboard = () => {
           agent_id: user.id,
           status: 'in_progress',
         })
-        .eq('id', chat.id);
+        .eq('id', chat.id)
+        .is('agent_id', null)
+        .select('id')
+        .maybeSingle();
 
       if (error) throw error;
+      const { data: claimed } = await supabase
+        .from('driver_support_chats')
+        .select('agent_id')
+        .eq('id', chat.id)
+        .maybeSingle() as any;
+      if (claimed?.agent_id !== user.id) {
+        toast.error('This chat was claimed by another agent');
+        await fetchChats();
+        return;
+      }
 
       toast.success('Chat claimed');
       setSelectedChat({ ...chat, agent_id: user.id, status: 'in_progress' });
@@ -408,6 +466,11 @@ export const DriverSupportDashboard = () => {
     if (!selectedChat) return;
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || selectedChat.agent_id !== user.id) {
+        toast.error('Only the assigned agent can resolve this chat');
+        return;
+      }
       const resolutionTime = Math.floor((Date.now() - new Date(selectedChat.created_at).getTime()) / 1000);
 
       const { error } = await supabase
@@ -417,7 +480,8 @@ export const DriverSupportDashboard = () => {
           resolved_at: new Date().toISOString(),
           resolution_time_seconds: resolutionTime,
         })
-        .eq('id', selectedChat.id);
+        .eq('id', selectedChat.id)
+        .eq('agent_id', user.id);
 
       if (error) throw error;
 
@@ -432,8 +496,14 @@ export const DriverSupportDashboard = () => {
   };
 
   const handleToggleOnline = () => {
-    setIsOnline(!isOnline);
-    toast.success(isOnline ? 'You are now offline' : 'You are now online');
+    const next = !isOnline;
+    setIsOnline(next);
+    try {
+      localStorage.setItem('driver-support-agent-online', String(next));
+    } catch {
+      // Session state still updates when storage is unavailable.
+    }
+    toast.success(next ? 'You are now online' : 'You are now offline');
   };
 
   const getCategoryIcon = (category: string) => {
@@ -686,6 +756,7 @@ export const DriverSupportDashboard = () => {
                   {selectedChat.status !== 'resolved' && (
                     <Button
                       onClick={handleResolveChat}
+                      disabled={selectedChat.agent_id !== currentUserId}
                       variant="outline"
                       size="sm"
                       className="border-green-500 text-green-600 hover:bg-green-50"
@@ -694,7 +765,15 @@ export const DriverSupportDashboard = () => {
                       Resolve
                     </Button>
                   )}
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!selectedChat.driver_profiles?.phone}
+                    onClick={() => {
+                      const phone = selectedChat.driver_profiles?.phone;
+                      if (phone) window.location.href = `tel:${phone}`;
+                    }}
+                  >
                     <Phone className="h-4 w-4" />
                   </Button>
                 </div>
@@ -704,7 +783,9 @@ export const DriverSupportDashboard = () => {
             {/* Messages */}
             <ScrollArea className="flex-1 p-6">
               <div className="space-y-4">
-                {messages.map((message) => (
+                {messagesLoading ? (
+                  <div className="py-10 text-center text-sm text-gray-500">Loading conversation…</div>
+                ) : messages.map((message) => (
                   <div
                     key={message.id}
                     className={`flex ${message.sender_type === 'driver' ? 'justify-start' : 'justify-end'}`}
@@ -735,7 +816,9 @@ export const DriverSupportDashboard = () => {
             </ScrollArea>
 
             {/* Quick Responses */}
-            {quickResponses.length > 0 && selectedChat.status !== 'resolved' && (
+            {quickResponses.length > 0 &&
+              selectedChat.status !== 'resolved' &&
+              selectedChat.agent_id === currentUserId && (
               <div className="px-6 py-3 border-t bg-gray-50">
                 <div className="flex items-center gap-2 mb-2">
                   <Zap className="h-4 w-4 text-orange-500" />
@@ -770,7 +853,7 @@ export const DriverSupportDashboard = () => {
                   >
                     Claim This Chat
                   </Button>
-                ) : (
+                ) : selectedChat.agent_id === currentUserId ? (
                   <div className="flex gap-3">
                     <Textarea
                       placeholder="Type your message..."
@@ -792,6 +875,10 @@ export const DriverSupportDashboard = () => {
                     >
                       <Send className="h-4 w-4" />
                     </Button>
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-center text-sm text-amber-800">
+                    This conversation is assigned to another agent.
                   </div>
                 )}
               </div>

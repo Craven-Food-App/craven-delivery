@@ -80,10 +80,12 @@ export const OrderAssignmentModal: React.FC<OrderAssignmentModalProps> = ({
       try {
         const { data: setting } = await supabase
           .from('driver_payout_settings')
-          .select('percentage')
+          .select('driver_delivery_fee_share_bps')
           .eq('is_active', true)
           .maybeSingle();
-        if (setting?.percentage != null) setPayoutPercent(Number(setting.percentage));
+        if (setting?.driver_delivery_fee_share_bps != null) {
+          setPayoutPercent(Number(setting.driver_delivery_fee_share_bps) / 100);
+        }
 
         const { data: order } = await supabase
           .from('orders')

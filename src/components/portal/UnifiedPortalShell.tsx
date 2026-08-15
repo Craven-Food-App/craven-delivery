@@ -72,6 +72,10 @@ export function UnifiedPortalShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(activeTabMeta?.section || null);
 
+  useEffect(() => {
+    if (activeTabMeta?.section) setExpandedSection(activeTabMeta.section);
+  }, [activeTabMeta?.section]);
+
   // Close mobile nav on tab change
   const handleTabChange = (tabId: string) => {
     onTabChange(tabId);
@@ -123,7 +127,7 @@ export function UnifiedPortalShell({
                       return (
                         <button
                           key={tab.id}
-                          onClick={() => onTabChange(tab.id)}
+                          onClick={() => handleTabChange(tab.id)}
                           className={cn(
                             'group flex w-full items-start gap-2.5 rounded-md border px-2.5 py-2 text-left transition-colors',
                             isActive
@@ -320,7 +324,7 @@ export function UnifiedPortalShell({
                   return (
                     <button
                       key={tab.id}
-                      onClick={() => onTabChange(tab.id)}
+                      onClick={() => handleTabChange(tab.id)}
                       className={cn(
                         'inline-flex flex-shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium whitespace-nowrap transition-colors',
                         isActive

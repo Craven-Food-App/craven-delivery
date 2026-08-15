@@ -1,0 +1,31 @@
+.cx-tablet-app {
+  min-height: 100%;
+  background: #0f172a;
+}
+
+.cx-tablet-app .cx-ops-shell {
+  min-height: 100vh;
+  padding: 12px 16px 18px;
+  box-sizing: border-box;
+}
+
+.cx-tablet-app .cx-board-col {
+  min-width: 0;
+  flex: 1;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.cx-tablet-app .cx-job-card {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.cx-tablet-app .cx-job-card:hover {
+  border-color: #f97316;
+}

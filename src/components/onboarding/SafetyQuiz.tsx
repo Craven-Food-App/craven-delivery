@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button, Radio, Progress, Stack, Text, Group, Box, Loader, Center, Badge } from '@mantine/core';
 import { useToast } from '@/hooks/use-toast';
@@ -18,9 +18,6 @@ interface QuizQuestion {
   display_order: number;
 }
 
-const TOTAL_POINTS = 25;
-const REQUIRED_POINTS = 24; // 95% of 25
-
 export const SafetyQuiz: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -30,6 +27,11 @@ export const SafetyQuiz: React.FC = () => {
   const [answers, setAnswers] = useState<string[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const totalPoints = useMemo(
+    () => questions.reduce((sum, question) => sum + Number(question.points || 0), 0),
+    [questions],
+  );
+  const requiredPoints = Math.ceil(totalPoints * 0.95);
 
   useEffect(() => {
     loadQuestions();
@@ -101,15 +103,15 @@ export const SafetyQuiz: React.FC = () => {
       }
     });
 
-    const percentage = (totalPointsEarned / TOTAL_POINTS) * 100;
-    const passed = totalPointsEarned >= REQUIRED_POINTS;
+    const percentage = totalPoints > 0 ? (totalPointsEarned / totalPoints) * 100 : 0;
+    const passed = totalPoints > 0 && totalPointsEarned >= requiredPoints;
     
     setShowResults(true);
 
     if (!passed) {
       toast({
         title: "Try Again",
-        description: `You scored ${totalPointsEarned}/${TOTAL_POINTS} points (${percentage.toFixed(0)}%). You need ${REQUIRED_POINTS} points (95%) to pass.`,
+        description: `You scored ${totalPointsEarned}/${totalPoints} points (${percentage.toFixed(0)}%). You need ${requiredPoints} points (95%) to pass.`,
         variant: "destructive",
       });
     }
@@ -124,12 +126,12 @@ export const SafetyQuiz: React.FC = () => {
       }
     });
 
-    const passed = totalPointsEarned >= REQUIRED_POINTS;
+    const passed = totalPoints > 0 && totalPointsEarned >= requiredPoints;
 
     if (!passed) {
       toast({
         title: "Quiz Not Passed",
-        description: `You scored ${totalPointsEarned}/${TOTAL_POINTS} points. You need ${REQUIRED_POINTS} points (95%) to complete this required task.`,
+        description: `You scored ${totalPointsEarned}/${totalPoints} points. You need ${requiredPoints} points (95%) to complete this required task.`,
         variant: "destructive",
       });
       return;
@@ -174,7 +176,7 @@ export const SafetyQuiz: React.FC = () => {
 
       toast({
         title: "Safety Quiz Passed! 🎉",
-        description: `Congratulations! You scored ${totalPointsEarned}/${TOTAL_POINTS} points.`,
+        description: `Congratulations! You scored ${totalPointsEarned}/${totalPoints} points.`,
       });
 
       setTimeout(() => navigate('/enhanced-onboarding'), 2000);
@@ -237,8 +239,8 @@ export const SafetyQuiz: React.FC = () => {
   }
 
   const totalPointsEarned = getTotalPointsEarned();
-  const percentage = (totalPointsEarned / TOTAL_POINTS) * 100;
-  const passed = totalPointsEarned >= REQUIRED_POINTS;
+  const percentage = totalPoints > 0 ? (totalPointsEarned / totalPoints) * 100 : 0;
+  const passed = totalPoints > 0 && totalPointsEarned >= requiredPoints;
 
   if (showResults) {
     return (
@@ -258,13 +260,13 @@ export const SafetyQuiz: React.FC = () => {
               </Group>
               <Box ta="center">
                 <Text fw={700} size="3xl" mb="xs" c={passed ? '#22c55e' : '#ef4444'}>
-                  {totalPointsEarned}/{TOTAL_POINTS}
+                  {totalPointsEarned}/{totalPoints}
                 </Text>
                 <Text size="lg" c="dimmed" mb="xs">
                   {percentage.toFixed(0)}% - {passed ? 'Passed!' : 'Not Passed'}
                 </Text>
                 <Badge color={passed ? 'green' : 'red'} size="lg">
-                  Need {REQUIRED_POINTS} points (95%) to pass
+                  Need {requiredPoints} points (95%) to pass
                 </Badge>
               </Box>
 
@@ -284,7 +286,7 @@ export const SafetyQuiz: React.FC = () => {
               ) : (
                 <Card p="md" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: '#ef4444' }}>
                   <Text c="#991b1b" ta="center">
-                    You need at least {REQUIRED_POINTS} points (95%) to pass. Please review the questions and try again.
+                    You need at least {requiredPoints} points (95%) to pass. Please review the questions and try again.
                   </Text>
                 </Card>
               )}
@@ -339,7 +341,7 @@ export const SafetyQuiz: React.FC = () => {
               </Group>
               <Progress value={progress} size="sm" color="blue" mb="xs" />
               <Text size="sm" c="dimmed">
-                Total: {TOTAL_POINTS} points | Need {REQUIRED_POINTS} points (95%) to pass
+                Total: {totalPoints} points | Need {requiredPoints} points (95%) to pass
               </Text>
             </div>
 

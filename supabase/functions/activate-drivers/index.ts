@@ -30,6 +30,12 @@ Deno.serve(async (req) => {
     );
 
     const { driver_ids } = await req.json() as ActivateDriversRequest;
+    if (!Array.isArray(driver_ids) || driver_ids.length === 0 || driver_ids.length > 100) {
+      return new Response(JSON.stringify({ error: 'driver_ids must contain 1 to 100 application IDs' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     console.log('Activating drivers:', driver_ids);
 
@@ -40,7 +46,7 @@ Deno.serve(async (req) => {
         // Get the application with user_id
         const { data: application, error: appError } = await supabaseClient
           .from('craver_applications')
-          .select('user_id, first_name, last_name, email, vehicle_type, vehicle_make, vehicle_model, vehicle_year, license_plate')
+          .select('user_id, first_name, last_name, email, vehicle_type, vehicle_make, vehicle_model, vehicle_year, license_plate, status, onboarding_completed_at, background_check, background_check_approved_at')
           .eq('id', driverId)
           .single();
 
@@ -50,19 +56,35 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        if (
+          application.status !== 'waitlist' ||
+          !application.onboarding_completed_at ||
+          !application.background_check ||
+          !application.background_check_approved_at
+        ) {
+          results.push({
+            driver_id: driverId,
+            success: false,
+            error: 'Driver is not eligible: background clearance, waitlist status, and completed onboarding are required',
+          });
+          continue;
+        }
+
         // Update craver_applications to 'approved' status
-        const { error: updateError } = await supabaseClient
+        const { data: activatedApplication, error: updateError } = await supabaseClient
           .from('craver_applications')
           .update({
             status: 'approved',
-            background_check: true,
-            background_check_approved_at: new Date().toISOString()
           })
-          .eq('id', driverId);
+          .eq('id', driverId)
+          .eq('status', 'waitlist')
+          .not('onboarding_completed_at', 'is', null)
+          .select('id')
+          .maybeSingle();
 
-        if (updateError) {
+        if (updateError || !activatedApplication) {
           console.error('Error updating application:', updateError);
-          results.push({ driver_id: driverId, success: false, error: updateError.message });
+          results.push({ driver_id: driverId, success: false, error: updateError?.message || 'Driver status changed before activation' });
           continue;
         }
 
@@ -108,24 +130,11 @@ Deno.serve(async (req) => {
           presetPassword = generatePassword();
           
           if (userExists && userId) {
-            // Update existing user's password
-            const { error: updatePasswordError } = await supabaseClient.auth.admin.updateUserById(
-              userId,
-              { password: presetPassword }
-            );
-            
-            if (updatePasswordError) {
-              console.error('Error updating user password:', updatePasswordError);
-            } else {
-              console.log('Password updated for existing user:', application.email);
-            }
-            
-            // Mark user as needing password reset
-            await supabaseClient
-              .from('user_profiles')
-              .update({ needs_password_reset: true })
-              .eq('user_id', userId);
+            // Existing credentials are never rotated by an activation action.
+            presetPassword = null;
+            console.log('Existing auth account retained for:', application.email);
           } else {
+            presetPassword = generatePassword();
             // Create new auth account
             const { data: newUser, error: signUpError } = await supabaseClient.auth.admin.createUser({
               email: application.email,

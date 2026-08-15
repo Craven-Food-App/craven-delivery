@@ -1,14 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import {
+  emitDriverOperationsChange,
+  subscribeToDriverOperationsChanges,
+} from '@/lib/driverOperationsEvents';
+import { deriveDriverLifecycle, isActivationEligible } from '@/lib/driverLifecycle';
+import { DriverStageBadge } from '@/components/admin/DriverStageBadge';
+import { DriverLifecycleDrawer } from '@/components/admin/DriverLifecycleDrawer';
 import {
   Users,
   Star,
@@ -45,13 +52,18 @@ interface Driver {
   priority_score: number;
   waitlist_position: number | null;
   created_at: string;
+  onboarding_started_at: string | null;
+  onboarding_completed_at: string | null;
+  background_check: boolean | null;
+  background_check_approved_at: string | null;
+  background_check_initiated_at: string | null;
   region_id?: number;
   is_seeded?: boolean;
   regions: {
     name: string;
     status: string;
     active_quota: number;
-  };
+  } | null;
 }
 
 interface RegionStats {
@@ -68,6 +80,7 @@ type SortField = 'name' | 'points' | 'position' | 'created_at' | 'city';
 type SortDir = 'asc' | 'desc';
 
 export const DriverWaitlistDashboard: React.FC = () => {
+  const [, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [regionStats, setRegionStats] = useState<RegionStats[]>([]);
@@ -85,6 +98,19 @@ export const DriverWaitlistDashboard: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    const channel = supabase
+      .channel('driver-waitlist-operations')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'craver_applications' }, () => loadData())
+      .subscribe();
+    const unsubscribe = subscribeToDriverOperationsChanges(detail => {
+      if (detail.area === 'applications' || detail.area === 'background-checks' || detail.area === 'onboarding') {
+        void loadData();
+      }
+    });
+    return () => {
+      void supabase.removeChannel(channel);
+      unsubscribe();
+    };
   }, []);
 
   const loadData = async () => {
@@ -93,7 +119,7 @@ export const DriverWaitlistDashboard: React.FC = () => {
 
       const { data: driversData, error: driversError } = await supabase
         .from('craver_applications')
-        .select(`*, regions!inner(name, status, active_quota)`)
+        .select(`*, regions(name, status, active_quota)`)
         .in('status', ['waitlist', 'approved'])
         .order('priority_score', { ascending: false });
 
@@ -179,6 +205,19 @@ export const DriverWaitlistDashboard: React.FC = () => {
     return result;
   }, [drivers, selectedRegion, statusFilter, searchTerm, sortField, sortDir]);
 
+  const activationEligibleDrivers = useMemo(
+    () => filteredDrivers.filter(driver => isActivationEligible(driver)),
+    [filteredDrivers],
+  );
+
+  const navigateToTab = (tabId: string) => {
+    setSearchParams(previous => {
+      const next = new URLSearchParams(previous);
+      next.set('tab', tabId);
+      return next;
+    }, { replace: false });
+  };
+
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
@@ -194,10 +233,22 @@ export const DriverWaitlistDashboard: React.FC = () => {
   };
 
   const activateDrivers = async (driverIds: string[]) => {
+    const eligibleIds = driverIds.filter(id => {
+      const driver = drivers.find(item => item.id === id);
+      return driver ? isActivationEligible(driver) : false;
+    });
+    if (eligibleIds.length === 0) {
+      toast({
+        title: 'No eligible drivers selected',
+        description: 'Drivers must be waitlisted with a cleared background check and completed onboarding before activation.',
+        variant: 'destructive',
+      });
+      return;
+    }
     try {
       setActivating(true);
       const { data, error } = await supabase.functions.invoke('activate-drivers', {
-        body: { driver_ids: driverIds },
+        body: { driver_ids: eligibleIds },
       });
       if (error) throw error;
 
@@ -209,6 +260,7 @@ export const DriverWaitlistDashboard: React.FC = () => {
       if (emailSentCount > 0) toast({ title: 'Emails Sent ✉️', description: `Sent to ${emailSentCount} driver(s).` });
       if (emailFailedCount > 0) toast({ title: 'Email Warning ⚠️', description: `Failed for ${emailFailedCount} driver(s).`, variant: 'destructive' });
 
+      emitDriverOperationsChange({ area: 'waitlist', action: 'drivers_activated' });
       await loadData();
       setSelectedDrivers([]);
     } catch (error) {
@@ -496,7 +548,7 @@ export const DriverWaitlistDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setSelectedDrivers(filteredDrivers.map(d => d.id))}
+                onClick={() => setSelectedDrivers(activationEligibleDrivers.map(d => d.id))}
                 className="text-xs"
               >
                 Select All
@@ -530,11 +582,11 @@ export const DriverWaitlistDashboard: React.FC = () => {
                   <th className="text-left p-3 w-10">
                     <input
                       type="checkbox"
-                      checked={selectedDrivers.length === filteredDrivers.length && filteredDrivers.length > 0}
+                      checked={selectedDrivers.length === activationEligibleDrivers.length && activationEligibleDrivers.length > 0}
                       onChange={() =>
-                        selectedDrivers.length === filteredDrivers.length
+                        selectedDrivers.length === activationEligibleDrivers.length
                           ? setSelectedDrivers([])
-                          : setSelectedDrivers(filteredDrivers.map(d => d.id))
+                          : setSelectedDrivers(activationEligibleDrivers.map(d => d.id))
                       }
                       className="rounded border-border"
                     />
@@ -550,7 +602,7 @@ export const DriverWaitlistDashboard: React.FC = () => {
                     </button>
                   </th>
                   <th className="text-left p-3 font-medium">Vehicle</th>
-                  <th className="text-left p-3 font-medium">Status</th>
+                  <th className="text-left p-3 font-medium">Stage</th>
                   <th className="text-left p-3">
                     <button onClick={() => toggleSort('points')} className="flex items-center gap-1 font-medium hover:text-foreground">
                       Points <SortIcon field="points" />
@@ -590,6 +642,12 @@ export const DriverWaitlistDashboard: React.FC = () => {
                           type="checkbox"
                           checked={selectedDrivers.includes(driver.id)}
                           onChange={() => toggleDriverSelection(driver.id)}
+                          disabled={!isActivationEligible(driver)}
+                          title={
+                            isActivationEligible(driver)
+                              ? 'Select driver'
+                              : deriveDriverLifecycle(driver).blockedReason || 'Not eligible for activation'
+                          }
                           className="rounded border-border"
                         />
                       </td>
@@ -619,21 +677,7 @@ export const DriverWaitlistDashboard: React.FC = () => {
                         )}
                       </td>
                       <td className="p-3">
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'text-xs font-medium',
-                            driver.status === 'approved'
-                              ? 'bg-green-500/10 text-green-700 border-green-200'
-                              : 'bg-amber-500/10 text-amber-700 border-amber-200'
-                          )}
-                        >
-                          {driver.status === 'approved' ? (
-                            <><CheckCircle className="h-3 w-3 mr-1" /> Active</>
-                          ) : (
-                            <><Clock className="h-3 w-3 mr-1" /> Waitlist</>
-                          )}
-                        </Badge>
+                        <DriverStageBadge record={driver} />
                       </td>
                       <td className="p-3">
                         <div className="flex items-center gap-1">
@@ -667,7 +711,12 @@ export const DriverWaitlistDashboard: React.FC = () => {
                               size="sm"
                               onClick={() => activateDrivers([driver.id])}
                               className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs px-3"
-                              disabled={activating}
+                              disabled={activating || !isActivationEligible(driver)}
+                              title={
+                                isActivationEligible(driver)
+                                  ? 'Activate driver'
+                                  : deriveDriverLifecycle(driver).blockedReason || 'Not eligible'
+                              }
                             >
                               Activate
                             </Button>
@@ -696,101 +745,36 @@ export const DriverWaitlistDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Driver Details Dialog */}
-      <Dialog open={!!viewingDriver} onOpenChange={() => setViewingDriver(null)}>
-        <DialogContent className="max-w-lg">
-          {viewingDriver && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-lg">
-                  {viewingDriver.first_name} {viewingDriver.last_name}
-                </DialogTitle>
-              </DialogHeader>
-
-              <div className="space-y-5 py-2">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Email</p>
-                    <p className="font-medium">{viewingDriver.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Location</p>
-                    <p className="font-medium">{viewingDriver.city}, {viewingDriver.state} {viewingDriver.zip_code}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Region</p>
-                    <p className="font-medium">{viewingDriver.regions.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Vehicle</p>
-                    <p className="font-medium capitalize">{viewingDriver.vehicle_type || '—'}</p>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Status</p>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        'text-xs',
-                        viewingDriver.status === 'approved'
-                          ? 'bg-green-500/10 text-green-700 border-green-200'
-                          : 'bg-amber-500/10 text-amber-700 border-amber-200'
-                      )}
-                    >
-                      {viewingDriver.status === 'approved' ? 'Active' : 'Waitlist'}
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Position</p>
-                    <p className="font-bold text-primary">
-                      {viewingDriver.waitlist_position ? `#${viewingDriver.waitlist_position}` : '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Priority Points</p>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-3.5 w-3.5 text-amber-500" />
-                      <span className="font-semibold">{viewingDriver.points}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Applied</p>
-                    <p className="font-medium">{new Date(viewingDriver.created_at).toLocaleDateString()}</p>
-                  </div>
-                </div>
-              </div>
-
-              <DialogFooter className="gap-2">
-                {viewingDriver.status === 'waitlist' && (
-                  <Button
-                    onClick={() => { activateDrivers([viewingDriver.id]); setViewingDriver(null); }}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                    disabled={activating}
-                  >
-                    <Zap className="h-4 w-4 mr-1.5" />
-                    Activate Driver
-                  </Button>
-                )}
-                {viewingDriver.status === 'approved' && (
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      resendActivationEmail(viewingDriver.id, viewingDriver.email, `${viewingDriver.first_name} ${viewingDriver.last_name}`)
-                    }
-                  >
-                    <Mail className="h-4 w-4 mr-1.5" />
-                    Resend Email
-                  </Button>
-                )}
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <DriverLifecycleDrawer
+        open={!!viewingDriver}
+        onOpenChange={(open) => {
+          if (!open) setViewingDriver(null);
+        }}
+        driver={
+          viewingDriver
+            ? {
+                ...viewingDriver,
+                region_name: viewingDriver.regions?.name || null,
+              }
+            : null
+        }
+        activating={activating}
+        onActivate={(driverId) => {
+          void activateDrivers([driverId]);
+          setViewingDriver(null);
+        }}
+        onResendEmail={(driver) => {
+          void resendActivationEmail(
+            driver.id,
+            driver.email || '',
+            `${driver.first_name || ''} ${driver.last_name || ''}`.trim(),
+          );
+        }}
+        onNavigate={(tabId) => {
+          setViewingDriver(null);
+          navigateToTab(tabId);
+        }}
+      />
     </div>
   );
 };

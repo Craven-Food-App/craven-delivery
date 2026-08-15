@@ -237,7 +237,7 @@ export const DriverQuizManagement: React.FC = () => {
           <div>
             <Text fw={600} size="xl">Driver Quiz Management</Text>
             <Text size="sm" c="dimmed">
-              Manage quiz questions for driver onboarding. Total active points: {totalPoints}/25
+              Manage quiz questions for driver onboarding. Total active points: {totalPoints}; passing score: {Math.ceil(totalPoints * 0.95)} (95%)
             </Text>
           </div>
           <Button

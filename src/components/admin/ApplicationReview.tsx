@@ -62,6 +62,10 @@ import {
 } from 'lucide-react';
 import { logApplicationAction } from '@/utils/auditLogger';
 import { cn } from '@/lib/utils';
+import { emitDriverOperationsChange } from '@/lib/driverOperationsEvents';
+import { DriverStageBadge } from '@/components/admin/DriverStageBadge';
+import { DriverLifecycleDrawer } from '@/components/admin/DriverLifecycleDrawer';
+import { useSearchParams } from 'react-router-dom';
 
 // ─── Status Config ──────────────────────────────────────────────────────────
 
@@ -124,6 +128,7 @@ type SortDir = 'asc' | 'desc';
 // ─── Component ──────────────────────────────────────────────────────────────
 
 const ApplicationReview: React.FC = () => {
+  const [, setSearchParams] = useSearchParams();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -133,6 +138,7 @@ const ApplicationReview: React.FC = () => {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [detailApp, setDetailApp] = useState<Application | null>(null);
+  const [lifecycleApp, setLifecycleApp] = useState<Application | null>(null);
   const [reviewNotes, setReviewNotes] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [documentViewer, setDocumentViewer] = useState({ isOpen: false, documentPath: '', documentName: '' });
@@ -232,23 +238,24 @@ const ApplicationReview: React.FC = () => {
       const { error } = await supabase
         .from('craver_applications')
         .update({
-          background_check: true,
-          background_check_approved_at: new Date().toISOString(),
-          status: 'approved',
+          background_check: false,
+          background_check_initiated_at: new Date().toISOString(),
+          background_check_estimated_completion: new Date(Date.now() + (3 * 24 * 60 * 60 * 1000)).toISOString(),
+          status: 'under_review',
           reviewed_at: new Date().toISOString(),
-          reviewer_notes: notes || 'Approved by admin',
+          reviewer_notes: notes || 'Application approved for background screening',
         })
         .eq('id', id);
       if (error) throw error;
 
-      // Try sending email
-      try {
-        await supabase.functions.invoke('send-driver-welcome-email', {
-          body: { driverName: `${app.first_name} ${app.last_name}`, driverEmail: app.email, isBackgroundCheckApproval: true },
-        });
-      } catch { /* email send is best-effort */ }
-
-      toast({ title: 'Application Approved ✅', description: `${app.first_name} ${app.last_name} has been approved.` });
+      await logApplicationAction('approve', id, `${app.first_name} ${app.last_name}`, {
+        email: app.email,
+        previous_status: app.status,
+        next_status: 'under_review',
+        workflow_action: 'approve_for_screening',
+      });
+      emitDriverOperationsChange({ area: 'applications', entityId: id, action: 'approved_for_screening' });
+      toast({ title: 'Sent to Background Screening', description: `${app.first_name} ${app.last_name} is ready for compliance review.` });
       setDetailApp(null);
       fetchApplications(true);
     } catch (error) {
@@ -267,6 +274,14 @@ const ApplicationReview: React.FC = () => {
         .update({ status: 'rejected', reviewed_at: new Date().toISOString(), reviewer_notes: notes })
         .eq('id', id);
       if (error) throw error;
+      const app = applications.find(a => a.id === id);
+      if (app) {
+        await logApplicationAction('reject', id, `${app.first_name} ${app.last_name}`, {
+          email: app.email,
+          previous_status: app.status,
+        });
+      }
+      emitDriverOperationsChange({ area: 'applications', entityId: id, action: 'rejected' });
       toast({ title: 'Application Rejected', description: 'The application has been rejected.', variant: 'destructive' });
       setDetailApp(null);
       fetchApplications(true);
@@ -299,12 +314,21 @@ const ApplicationReview: React.FC = () => {
     if (selectedIds.size === 0) return;
     setActionLoading(true);
     try {
+      const now = new Date();
       const { error } = await supabase
         .from('craver_applications')
-        .update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewer_notes: 'Bulk approved by admin' })
+        .update({
+          status: 'under_review',
+          background_check: false,
+          background_check_initiated_at: now.toISOString(),
+          background_check_estimated_completion: new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000)).toISOString(),
+          reviewed_at: now.toISOString(),
+          reviewer_notes: 'Bulk approved for background screening',
+        })
         .in('id', Array.from(selectedIds));
       if (error) throw error;
-      toast({ title: 'Bulk Approved', description: `${selectedIds.size} application(s) approved.` });
+      emitDriverOperationsChange({ area: 'applications', action: 'bulk_approved_for_screening' });
+      toast({ title: 'Sent to Screening', description: `${selectedIds.size} application(s) moved to background screening.` });
       setSelectedIds(new Set());
       fetchApplications(true);
     } catch {
@@ -483,7 +507,7 @@ const ApplicationReview: React.FC = () => {
                 </TableHead>
                 <SortHeader field="first_name">Applicant</SortHeader>
                 <SortHeader field="city">Location</SortHeader>
-                <SortHeader field="status">Status</SortHeader>
+                <SortHeader field="status">Stage</SortHeader>
                 <TableHead>Vehicle</TableHead>
                 <TableHead>Docs</TableHead>
                 <TableHead>BG Check</TableHead>
@@ -501,7 +525,6 @@ const ApplicationReview: React.FC = () => {
                 </TableRow>
               ) : (
                 filtered.map(app => {
-                  const sc = getStatusConfig(app.status);
                   const docs = docCount(app);
                   return (
                     <TableRow
@@ -528,7 +551,16 @@ const ApplicationReview: React.FC = () => {
                         {app.regions?.name && <p className="text-xs text-muted-foreground">{app.regions.name}</p>}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={sc.badgeVariant} className="text-xs">{sc.label}</Badge>
+                        <button
+                          type="button"
+                          className="text-left"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setLifecycleApp(app);
+                          }}
+                        >
+                          <DriverStageBadge record={app} />
+                        </button>
                       </TableCell>
                       <TableCell>
                         <span className="text-sm capitalize">{app.vehicle_type || '—'}</span>
@@ -759,6 +791,29 @@ const ApplicationReview: React.FC = () => {
         onClose={() => setDocumentViewer({ isOpen: false, documentPath: '', documentName: '' })}
         documentPath={documentViewer.documentPath}
         documentName={documentViewer.documentName}
+      />
+
+      <DriverLifecycleDrawer
+        open={!!lifecycleApp}
+        onOpenChange={(open) => {
+          if (!open) setLifecycleApp(null);
+        }}
+        driver={
+          lifecycleApp
+            ? {
+                ...lifecycleApp,
+                region_name: lifecycleApp.regions?.name || null,
+              }
+            : null
+        }
+        onNavigate={(tabId) => {
+          setLifecycleApp(null);
+          setSearchParams(previous => {
+            const next = new URLSearchParams(previous);
+            next.set('tab', tabId);
+            return next;
+          }, { replace: false });
+        }}
       />
     </div>
   );

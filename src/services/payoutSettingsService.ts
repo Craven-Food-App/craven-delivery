@@ -2,6 +2,7 @@
  * Service for managing driver payout settings
  */
 import { supabase } from '@/integrations/supabase/client';
+import { emitDriverOperationsChange } from '@/lib/driverOperationsEvents';
 
 export interface PayoutSettings {
   basePayCents: number;
@@ -32,8 +33,8 @@ export const payoutSettingsService = {
     }
 
     return {
-      basePayCents: Number(data.driver_base_pay_cents) || 250,
-      shareBps: Number(data.driver_delivery_fee_share_bps) || 7000,
+      basePayCents: data.driver_base_pay_cents == null ? 250 : Number(data.driver_base_pay_cents),
+      shareBps: data.driver_delivery_fee_share_bps == null ? 7000 : Number(data.driver_delivery_fee_share_bps),
     };
   },
 
@@ -47,25 +48,15 @@ export const payoutSettingsService = {
       throw new Error('User not authenticated');
     }
 
-    // Deactivate existing active row
-    await supabase
-      .from('driver_payout_settings')
-      .update({ is_active: false })
-      .eq('is_active', true);
-
-    // Insert new active row
-    const { error } = await supabase
-      .from('driver_payout_settings')
-      .insert({
-        driver_base_pay_cents: settings.basePayCents,
-        driver_delivery_fee_share_bps: settings.shareBps,
-        is_active: true,
-        updated_by: user.id,
-      });
+    const { error } = await supabase.rpc('set_active_driver_payout_settings', {
+      p_base_pay_cents: settings.basePayCents,
+      p_delivery_fee_share_bps: settings.shareBps,
+    });
 
     if (error) {
       throw new Error(`Failed to save payout settings: ${error.message}`);
     }
+    emitDriverOperationsChange({ area: 'payouts', action: 'settings_updated' });
   },
 };
 

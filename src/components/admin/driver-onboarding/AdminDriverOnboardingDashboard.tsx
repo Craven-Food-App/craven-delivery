@@ -19,6 +19,10 @@ import { format, differenceInDays } from 'date-fns';
 import { loadFeederSignatures } from '@/lib/feeder/recordSignature';
 import { openFeederAgreementsPrintWindow } from '@/lib/feeder/printAgreements';
 import { Printer } from 'lucide-react';
+import { subscribeToDriverOperationsChanges } from '@/lib/driverOperationsEvents';
+import { DriverStageBadge } from '@/components/admin/DriverStageBadge';
+import { DriverLifecycleDrawer } from '@/components/admin/DriverLifecycleDrawer';
+import { useSearchParams } from 'react-router-dom';
 
 interface DriverOnboardingData {
   id: string;
@@ -46,7 +50,11 @@ interface DriverOnboardingData {
     priority_score: number;
     region_id: number;
     created_at: string;
+    onboarding_started_at: string | null;
     onboarding_completed_at: string | null;
+    background_check: boolean | null;
+    background_check_approved_at: string | null;
+    background_check_initiated_at: string | null;
   };
   tasks: OnboardingTask[];
 }
@@ -68,6 +76,7 @@ type FilterTab = 'all' | 'in_progress' | 'completed' | 'not_started';
 type IconComp = React.ComponentType<{ className?: string }>;
 
 export function AdminDriverOnboardingDashboard() {
+  const [, setSearchParams] = useSearchParams();
   const [drivers, setDrivers] = useState<DriverOnboardingData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -76,9 +85,24 @@ export function AdminDriverOnboardingDashboard() {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [selectedDriver, setSelectedDriver] = useState<DriverOnboardingData | null>(null);
+  const [lifecycleDriver, setLifecycleDriver] = useState<DriverOnboardingData | null>(null);
 
   useEffect(() => {
     fetchDriverOnboardingData();
+    const channel = supabase
+      .channel('driver-onboarding-operations')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'onboarding_tasks' }, () => fetchDriverOnboardingData(true))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'craver_applications' }, () => fetchDriverOnboardingData(true))
+      .subscribe();
+    const unsubscribe = subscribeToDriverOperationsChanges(detail => {
+      if (detail.area === 'applications' || detail.area === 'background-checks' || detail.area === 'waitlist') {
+        void fetchDriverOnboardingData(true);
+      }
+    });
+    return () => {
+      void supabase.removeChannel(channel);
+      unsubscribe();
+    };
   }, []);
 
   const fetchDriverOnboardingData = async (isRefresh = false) => {
@@ -86,7 +110,7 @@ export function AdminDriverOnboardingDashboard() {
     try {
       const { data: applicationsData, error: applicationsError } = await supabase
         .from('craver_applications')
-        .select('id, user_id, first_name, last_name, email, phone, city, state, status, points, priority_score, region_id, created_at, onboarding_started_at, onboarding_completed_at')
+        .select('id, user_id, first_name, last_name, email, phone, city, state, status, points, priority_score, region_id, created_at, updated_at, onboarding_started_at, onboarding_completed_at, background_check, background_check_approved_at, background_check_initiated_at')
         .in('status', ['approved', 'waitlist'])
         .order('created_at', { ascending: false });
       if (applicationsError) throw applicationsError;
@@ -99,26 +123,32 @@ export function AdminDriverOnboardingDashboard() {
 
       const driversWithTasks = (applicationsData || []).map(app => {
         const driverTasks = (tasksData || []).filter(task => task.driver_id === app.id);
-        const allTasksCompleted = driverTasks.length > 0 && driverTasks.every(t => t.completed);
+        const hasStarted = Boolean(app.onboarding_started_at) || driverTasks.some(t => t.completed);
+        const completedTask = (...keys: string[]) =>
+          driverTasks.some(task => keys.includes(task.task_key) && task.completed);
         return {
           id: app.id,
           user_id: app.user_id,
           application_id: app.id,
-          current_step: 'in_progress',
-          profile_creation_completed: true,
-          orientation_video_watched: driverTasks.some(t => t.task_key === 'orientation_video' && t.completed),
-          safety_quiz_passed: driverTasks.some(t => (t.task_key === 'pass_safety_quiz' || t.task_key === 'safety_quiz') && t.completed),
-          payment_method_added: driverTasks.some(t => t.task_key === 'setup_cashapp_payouts' && t.completed),
-          w9_completed: false,
-          onboarding_completed_at: allTasksCompleted ? (app.onboarding_completed_at || new Date().toISOString()) : null,
+          current_step: app.onboarding_completed_at ? 'completed' : hasStarted ? 'in_progress' : 'not_started',
+          profile_creation_completed: completedTask('profile_creation', 'create_profile'),
+          orientation_video_watched: completedTask('orientation_video'),
+          safety_quiz_passed: completedTask('pass_safety_quiz', 'safety_quiz'),
+          payment_method_added: completedTask('setup_cashapp_payouts', 'payment_method'),
+          w9_completed: completedTask('w9', 'complete_w9', 'tax_documents'),
+          onboarding_completed_at: app.onboarding_completed_at,
           created_at: app.created_at,
-          updated_at: app.created_at,
+          updated_at: app.updated_at || app.created_at,
           application: {
             id: app.id, first_name: app.first_name, last_name: app.last_name,
             email: app.email, phone: app.phone, city: app.city, state: app.state,
             status: app.status, points: app.points, priority_score: app.priority_score,
             region_id: app.region_id, created_at: app.created_at,
-            onboarding_completed_at: app.onboarding_completed_at
+            onboarding_started_at: app.onboarding_started_at,
+            onboarding_completed_at: app.onboarding_completed_at,
+            background_check: app.background_check,
+            background_check_approved_at: app.background_check_approved_at,
+            background_check_initiated_at: app.background_check_initiated_at,
           },
           tasks: driverTasks
         };
@@ -355,7 +385,7 @@ export function AdminDriverOnboardingDashboard() {
                 <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('progress')}>
                   <div className="flex items-center gap-1">Progress <SortIcon field="progress" /></div>
                 </TableHead>
-                <TableHead className="hidden lg:table-cell">Status</TableHead>
+                <TableHead className="hidden lg:table-cell">Stage</TableHead>
                 <TableHead className="cursor-pointer select-none hidden lg:table-cell" onClick={() => toggleSort('points')}>
                   <div className="flex items-center gap-1">Points <SortIcon field="points" /></div>
                 </TableHead>
@@ -375,12 +405,8 @@ export function AdminDriverOnboardingDashboard() {
               ) : (
                 filtered.map(driver => {
                   const progress = getProgress(driver);
-                  const status = getDriverStatus(driver);
-                  const badge = STATUS_BADGE[status];
-                  const BadgeIcon = badge.icon;
                   const completedTasks = driver.tasks.filter(t => t.completed).length;
                   const totalTasks = driver.tasks.length;
-                  const daysSince = differenceInDays(new Date(), new Date(driver.created_at));
 
                   return (
                     <TableRow key={driver.id} className="hover:bg-muted/30 transition-colors">
@@ -417,16 +443,22 @@ export function AdminDriverOnboardingDashboard() {
                         </div>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <Badge variant="outline" className={`${badge.bg} ${badge.color} border text-xs`}>
-                          <BadgeIcon className="w-3 h-3 mr-1" />
-                          {badge.label}
-                        </Badge>
-                        {status === 'not_started' && daysSince > 7 && (
-                          <div className="flex items-center gap-1 text-[10px] text-amber-600 mt-1">
-                            <AlertTriangle className="w-3 h-3" />
-                            {daysSince}d inactive
-                          </div>
-                        )}
+                        <button
+                          type="button"
+                          className="text-left"
+                          onClick={() => setLifecycleDriver(driver)}
+                        >
+                          <DriverStageBadge
+                            record={{
+                              status: driver.application.status,
+                              background_check: driver.application.background_check,
+                              background_check_approved_at: driver.application.background_check_approved_at,
+                              background_check_initiated_at: driver.application.background_check_initiated_at,
+                              onboarding_started_at: driver.application.onboarding_started_at,
+                              onboarding_completed_at: driver.application.onboarding_completed_at,
+                            }}
+                          />
+                        </button>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <div className="flex items-center gap-1 text-sm">
@@ -606,6 +638,42 @@ export function AdminDriverOnboardingDashboard() {
           })()}
         </DialogContent>
       </Dialog>
+
+      <DriverLifecycleDrawer
+        open={!!lifecycleDriver}
+        onOpenChange={(open) => {
+          if (!open) setLifecycleDriver(null);
+        }}
+        driver={
+          lifecycleDriver
+            ? {
+                id: lifecycleDriver.id,
+                first_name: lifecycleDriver.application.first_name,
+                last_name: lifecycleDriver.application.last_name,
+                email: lifecycleDriver.application.email,
+                phone: lifecycleDriver.application.phone,
+                city: lifecycleDriver.application.city,
+                state: lifecycleDriver.application.state,
+                points: lifecycleDriver.application.points,
+                created_at: lifecycleDriver.application.created_at,
+                status: lifecycleDriver.application.status,
+                background_check: lifecycleDriver.application.background_check,
+                background_check_approved_at: lifecycleDriver.application.background_check_approved_at,
+                background_check_initiated_at: lifecycleDriver.application.background_check_initiated_at,
+                onboarding_started_at: lifecycleDriver.application.onboarding_started_at,
+                onboarding_completed_at: lifecycleDriver.application.onboarding_completed_at,
+              }
+            : null
+        }
+        onNavigate={(tabId) => {
+          setLifecycleDriver(null);
+          setSearchParams(previous => {
+            const next = new URLSearchParams(previous);
+            next.set('tab', tabId);
+            return next;
+          }, { replace: false });
+        }}
+      />
     </div>
   );
 }
