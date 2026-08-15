@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -79,6 +78,8 @@ interface RegionStats {
 type SortField = 'name' | 'points' | 'position' | 'created_at' | 'city';
 type SortDir = 'asc' | 'desc';
 
+const REGION_PREVIEW_COUNT = 8;
+
 export const DriverWaitlistDashboard: React.FC = () => {
   const [, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
@@ -94,6 +95,7 @@ export const DriverWaitlistDashboard: React.FC = () => {
   const [sortField, setSortField] = useState<SortField>('points');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [activating, setActivating] = useState(false);
+  const [showAllRegions, setShowAllRegions] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -209,6 +211,34 @@ export const DriverWaitlistDashboard: React.FC = () => {
     () => filteredDrivers.filter(driver => isActivationEligible(driver)),
     [filteredDrivers],
   );
+
+  // 100+ regions exist but most have no applicants, so the capacity grid leads
+  // with regions that have drivers or a queue and hides the idle remainder.
+  const rankedRegions = useMemo(
+    () =>
+      [...regionStats].sort(
+        (a, b) =>
+          b.waitlist_count - a.waitlist_count ||
+          b.current_active - a.current_active ||
+          a.region_name.localeCompare(b.region_name),
+      ),
+    [regionStats],
+  );
+
+  const engagedRegions = useMemo(
+    () => rankedRegions.filter(region => region.waitlist_count > 0 || region.current_active > 0),
+    [rankedRegions],
+  );
+
+  const visibleRegions = useMemo(() => {
+    if (selectedRegion !== 'all') {
+      return rankedRegions.filter(region => region.region_id.toString() === selectedRegion);
+    }
+    if (showAllRegions) return rankedRegions;
+    return engagedRegions.slice(0, REGION_PREVIEW_COUNT);
+  }, [rankedRegions, engagedRegions, selectedRegion, showAllRegions]);
+
+  const hiddenRegionCount = rankedRegions.length - visibleRegions.length;
 
   const navigateToTab = (tabId: string) => {
     setSearchParams(previous => {
@@ -412,100 +442,163 @@ export const DriverWaitlistDashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Region Cards */}
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Region Capacity</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {regionStats.map(stat => {
+      {/* Region Capacity */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Region Capacity
+          </h2>
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] text-muted-foreground tabular-nums">
+              {selectedRegion !== 'all'
+                ? 'Filtered to 1 region'
+                : showAllRegions
+                  ? `All ${rankedRegions.length} regions`
+                  : `${visibleRegions.length} with activity · ${rankedRegions.length} total`}
+            </p>
+            {selectedRegion === 'all' && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 px-2 text-[11px]"
+                onClick={() => setShowAllRegions(prev => !prev)}
+              >
+                {showAllRegions ? 'Show active only' : `Show all (${rankedRegions.length})`}
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2">
+          {visibleRegions.map(stat => {
             const ratio = stat.quota > 0 ? stat.current_active / stat.quota : 0;
+            const fillPct = Math.min(ratio * 100, 100);
             return (
-              <Card key={stat.region_id} className="shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-semibold text-foreground">{stat.region_name}</h3>
-                    </div>
-                    <Badge variant="outline" className={cn('text-xs font-medium capitalize', getStatusColor(stat.status))}>
+              <Card key={stat.region_id} className="shadow-sm">
+                <CardContent className="space-y-2 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="truncate text-sm font-semibold text-foreground">{stat.region_name}</h3>
+                    <Badge
+                      variant="outline"
+                      className={cn('h-5 shrink-0 px-1.5 text-[10px] font-medium capitalize', getStatusColor(stat.status))}
+                    >
                       {stat.status}
                     </Badge>
                   </div>
 
-                  <div className="space-y-2.5 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Active Drivers</span>
-                      <span className="font-semibold tabular-nums">{stat.current_active}/{stat.quota}</span>
+                  <div className="space-y-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-[11px] text-muted-foreground">Active</span>
+                      <span className="text-sm font-semibold tabular-nums text-foreground">
+                        {stat.current_active}
+                        <span className="text-muted-foreground">/{stat.quota}</span>
+                      </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Real Waitlist</span>
-                      <span className="font-semibold tabular-nums">{stat.waitlist_count}</span>
+                    <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={cn('h-full rounded-full transition-all', getCapacityColor(ratio))}
+                        style={{ width: `${fillPct}%` }}
+                      />
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Shown to Drivers</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Waitlist</p>
+                      <p className="text-sm font-semibold tabular-nums">{stat.waitlist_count}</p>
+                    </div>
+                    <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Shown</p>
                       {editingRegion === stat.region_id ? (
-                        <div className="flex gap-1.5 items-center">
+                        <div className="mt-0.5 flex items-center gap-1">
                           <Input
                             type="number"
                             value={newDisplayQuota}
                             onChange={e => setNewDisplayQuota(parseInt(e.target.value) || 0)}
-                            className="w-20 h-7 text-sm"
+                            className="h-6 w-14 px-1.5 text-xs"
                           />
-                          <Button size="sm" className="h-7 px-2 text-xs" onClick={() => updateDisplayQuota(stat.region_id, newDisplayQuota)}>
+                          <Button
+                            size="sm"
+                            className="h-6 px-1.5 text-[10px]"
+                            onClick={() => updateDisplayQuota(stat.region_id, newDisplayQuota)}
+                          >
                             Save
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingRegion(null)}>
-                            ✕
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-1 text-[10px]"
+                            onClick={() => setEditingRegion(null)}
+                          >
+                            ×
                           </Button>
                         </div>
                       ) : (
                         <button
-                          onClick={() => { setEditingRegion(stat.region_id); setNewDisplayQuota(stat.display_quota); }}
-                          className="font-semibold text-primary tabular-nums hover:underline"
+                          type="button"
+                          onClick={() => {
+                            setEditingRegion(stat.region_id);
+                            setNewDisplayQuota(stat.display_quota);
+                          }}
+                          className="text-sm font-semibold tabular-nums text-primary hover:underline"
+                          title="Edit display quota shown to drivers"
                         >
-                          {stat.display_quota} <span className="text-[10px] text-muted-foreground ml-0.5">Edit</span>
+                          {stat.display_quota}
                         </button>
                       )}
                     </div>
-
-                    {/* Capacity bar */}
-                    <div className="pt-1">
-                      <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={cn('h-full rounded-full transition-all', getCapacityColor(ratio))}
-                          style={{ width: `${Math.min(ratio * 100, 100)}%` }}
-                        />
-                      </div>
-                    </div>
                   </div>
 
-                  <Separator className="my-3" />
-
-                  <div className="flex gap-1.5">
-                    {['active', 'limited', 'paused'].map(s => (
-                      <Button
-                        key={s}
-                        size="sm"
-                        variant={stat.status === s ? 'default' : 'outline'}
-                        className={cn(
-                          'flex-1 h-7 text-xs capitalize',
-                          stat.status === s && s === 'active' && 'bg-green-600 hover:bg-green-700',
-                          stat.status === s && s === 'limited' && 'bg-amber-600 hover:bg-amber-700',
-                          stat.status === s && s === 'paused' && 'bg-red-600 hover:bg-red-700',
-                        )}
-                        disabled={stat.status === s}
-                        onClick={() => updateRegionStatus(stat.region_id, s)}
-                      >
-                        {s === 'active' && <Activity className="h-3 w-3 mr-1" />}
-                        {s === 'limited' && <AlertCircle className="h-3 w-3 mr-1" />}
-                        {s === 'paused' && <Pause className="h-3 w-3 mr-1" />}
-                        {s === 'active' ? 'Open' : s === 'limited' ? 'Limit' : 'Pause'}
-                      </Button>
-                    ))}
+                  <div className="grid grid-cols-3 overflow-hidden rounded-md border border-border">
+                    {([
+                      { id: 'active', label: 'Open', icon: Activity },
+                      { id: 'limited', label: 'Limit', icon: AlertCircle },
+                      { id: 'paused', label: 'Pause', icon: Pause },
+                    ] as const).map((option, index) => {
+                      const isSelected = stat.status === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          disabled={isSelected}
+                          onClick={() => updateRegionStatus(stat.region_id, option.id)}
+                          className={cn(
+                            'inline-flex h-7 items-center justify-center gap-1 text-[10px] font-semibold transition-colors',
+                            index > 0 && 'border-l border-border',
+                            isSelected
+                              ? option.id === 'active'
+                                ? 'bg-green-600 text-white'
+                                : option.id === 'limited'
+                                  ? 'bg-amber-600 text-white'
+                                  : 'bg-red-600 text-white'
+                              : 'bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
+                          )}
+                        >
+                          <option.icon className="h-3 w-3" />
+                          {option.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
             );
           })}
         </div>
+        {visibleRegions.length === 0 ? (
+          <p className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+            No regions have drivers or a waitlist yet.
+          </p>
+        ) : (
+          selectedRegion === 'all' && !showAllRegions && hiddenRegionCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAllRegions(true)}
+              className="w-full rounded-md border border-dashed border-border px-3 py-2 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+            >
+              {hiddenRegionCount} more {hiddenRegionCount === 1 ? 'region' : 'regions'} hidden (no drivers or queue)
+            </button>
+          )
+        )}
       </div>
 
       {/* Filters Bar */}
