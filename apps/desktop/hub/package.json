@@ -1,0 +1,112 @@
+{
+  "name": "@craven/desktop-hub",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "description": "Craven Hub internal operations desktop application",
+  "author": "Crave'n",
+  "scripts": {
+    "dev": "npx concurrently -k \"npx vite --config vite.config.ts --host 127.0.0.1\" \"npx wait-on http://127.0.0.1:8095 && npx electron . --dev\"",
+    "build": "npx vite build --config vite.config.ts",
+    "type-check": "npx tsc --noEmit -p tsconfig.json",
+    "pack": "npm run build && npx electron-builder --dir",
+    "dist:win": "npm run build && npx electron-builder --win nsis portable",
+    "dist:mac": "npm run build && npx electron-builder --mac",
+    "dist:mac:unsigned": "CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist:mac"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^8.0.4"
+  },
+  "build": {
+    "appId": "com.craven.hub.desktop",
+    "productName": "Craven Hub",
+    "asar": true,
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Craven Hub",
+      "deleteAppDataOnUninstall": false,
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
+    },
+    "mac": {
+      "category": "public.app-category.business",
+      "icon": "build/icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSCameraUsageDescription": "Craven Hub uses the camera when an internal portal requests video or document capture.",
+        "NSMicrophoneUsageDescription": "Craven Hub uses the microphone when an internal portal requests audio."
+      },
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "Craven Hub ${version}",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "protocols": [
+      {
+        "name": "Craven Hub",
+        "schemes": [
+          "craven-hub"
+        ]
+      }
+    ]
+  }
+}

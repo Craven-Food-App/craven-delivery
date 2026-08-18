@@ -41,10 +41,11 @@ const BusinessAuthGuard: React.FC<BusinessAuthGuardProps> = ({ children }) => {
         if (event === 'SIGNED_OUT' || !session) {
           setIsAuthenticated(false);
           startTransition(() => {
+            const isDesktopHub = Boolean((window as any).cravenDesktop);
             loginWithReturn(
               navigate,
-              typeof window !== 'undefined' ? window.location.pathname : location.pathname,
-              typeof window !== 'undefined' ? window.location.search : location.search,
+              isDesktopHub ? location.pathname : window.location.pathname,
+              isDesktopHub ? location.search : window.location.search,
             );
           });
         } else if (session?.user) {

@@ -1,0 +1,51 @@
+:root {
+  --craven-titlebar-height: 36px;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-width: 1080px;
+  background: hsl(var(--background));
+  overscroll-behavior: none;
+  padding-top: var(--craven-titlebar-height);
+}
+
+/* The desktop shell owns navigation; mobile-only install chrome is not useful. */
+.install-app-banner,
+[data-mobile-bottom-nav] {
+  display: none !important;
+}
+
+.craven-titlebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--craven-titlebar-height);
+  z-index: 1000;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.craven-no-drag,
+.craven-titlebar button,
+.craven-titlebar a,
+.craven-titlebar input {
+  -webkit-app-region: no-drag;
+}
+
+/* Viewport-height utilities have to leave room for the fixed title bar,
+   otherwise every portal scrolls by exactly the title bar height. */
+.min-h-screen {
+  min-height: calc(100vh - var(--craven-titlebar-height));
+}
+
+.h-screen {
+  height: calc(100vh - var(--craven-titlebar-height));
+}

@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => {
     base,
 
     server: {
-      host: "0.0.0.0",
+      host: true,
       port: 8080,
       strictPort: false,
       open: false,

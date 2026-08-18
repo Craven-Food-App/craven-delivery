@@ -286,7 +286,10 @@ const AttachmentList: React.FC<{ attachments: Attachment[] }> = ({ attachments }
   );
 };
 
-const MessagesTab: React.FC = () => {
+const MessagesTab: React.FC<{
+  initialMessageId?: string | null;
+  onMessageChange?: (messageId: string) => void;
+}> = ({ initialMessageId, onMessageChange }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -299,6 +302,7 @@ const MessagesTab: React.FC = () => {
   const [replyFiles, setReplyFiles] = useState<File[]>([]);
   const [composeMode, setComposeMode] = useState<'none' | 'new'>('none');
   const feedEndRef = useRef<HTMLDivElement | null>(null);
+  const openedDeepLinkRef = useRef<string | null>(null);
 
   const labelForUserId = useCallback(
     (userId: string) => recipients.find((r) => r.user_id === userId)?.label || 'Unknown',
@@ -530,6 +534,8 @@ const MessagesTab: React.FC = () => {
   const openThread = async (msg: Message) => {
     setComposeMode('none');
     setSelectedMessage(msg);
+    openedDeepLinkRef.current = msg.id;
+    onMessageChange?.(msg.id);
     if (currentUser && !msg.read_by.includes(currentUser.id)) {
       await supabase
         .from('internal_messages')
@@ -540,6 +546,42 @@ const MessagesTab: React.FC = () => {
     }
     await refreshThread(msg.id);
   };
+
+  useEffect(() => {
+    if (!initialMessageId || loading || openedDeepLinkRef.current === initialMessageId) return;
+    openedDeepLinkRef.current = initialMessageId;
+    let cancelled = false;
+
+    const openDeepLinkedThread = async () => {
+      let message = messages.find((item) => item.id === initialMessageId);
+      if (!message) {
+        const { data } = await supabase
+          .from('internal_messages')
+          .select('*')
+          .eq('id', initialMessageId)
+          .is('parent_id', null)
+          .maybeSingle();
+        if (data) {
+          const [nameMap, attachmentMap] = await Promise.all([
+            getNameMap([data.sender_id]),
+            fetchAttachments([data.id]),
+          ]);
+          message = {
+            ...data,
+            sender_name: nameMap.get(data.sender_id) || 'Unknown',
+            attachments: attachmentMap.get(data.id) || [],
+          } as Message;
+        }
+      }
+
+      if (!cancelled && message) await openThread(message);
+    };
+
+    void openDeepLinkedThread();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchAttachments, getNameMap, initialMessageId, loading, messages]);
 
   const sendReply = async () => {
     if (!currentUser || !selectedMessage || (!replyBody.trim() && replyFiles.length === 0)) return;

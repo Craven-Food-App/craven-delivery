@@ -1,383 +1,54 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import React from 'react';
 import { LogIn, User, Lock, Loader2, Mail, ArrowLeft } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { useBusinessAuth } from '@/hooks/useBusinessAuth';
+import { useToast } from '@/hooks/use-toast';
 // Import the background image
 import hubBackgroundImage from '@/assets/hub_background.png';
 
-/**
- * Normalize ?redirect= so navigation always targets an app path (leading /).
- * Values like "merchant-portal" would otherwise resolve relative to /business-auth and break.
- */
-function normalizeRedirectPath(raw: string | null | undefined): string {
-  const fallback = '/hub';
-  if (raw == null || typeof raw !== 'string') return fallback;
-  let path = raw.trim();
-  if (!path) return fallback;
-  if (/^https?:\/\//i.test(path)) {
-    try {
-      const u = new URL(path);
-      if (u.origin === window.location.origin) {
-        return `${u.pathname}${u.search}${u.hash}`;
-      }
-      return fallback;
-    } catch {
-      return fallback;
-    }
-  }
-  if (path.startsWith('//')) return fallback;
-  if (!path.startsWith('/')) path = `/${path}`;
-  return path;
-}
-
 const BusinessAuth: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState(null);
-  const [showResetPassword, setShowResetPassword] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [isResetting, setIsResetting] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
-  const [showUpdatePassword, setShowUpdatePassword] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const { toast } = useToast();
+  const location = useLocation();
 
-  // Get redirect parameter from URL (always a safe same-origin path)
-  const getRedirectPath = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    return normalizeRedirectPath(urlParams.get('redirect'));
-  };
-
-  const replaceLocationToRedirect = () => {
-    let path = getRedirectPath();
-    const next = new URL(path, window.location.origin);
-    const want = `${next.pathname}${next.search}`;
-    const cur = `${window.location.pathname}${window.location.search}`;
-    // Avoid reload loop (e.g. ?redirect=/business-auth while on this page)
-    if (want === cur || next.pathname === '/business-auth') {
-      path = '/hub';
-    }
-    window.location.replace(new URL(path, window.location.origin).href);
-  };
-
-  const redirectToExecutiveProfile = () => {
-    const origin = window.location.origin;
-    window.location.href = `${origin}/executive/profile?reset=true`;
-  };
-
-  // Check if user is already signed in
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const isRecovery = hashParams.get('type') === 'recovery';
-        if (user.user_metadata?.temp_password === true || isRecovery) {
-          redirectToExecutiveProfile();
-          return;
-        }
-        // Hard-navigate without setUser — avoids an infinite "Redirecting to portal..." state if navigation fails
-        replaceLocationToRedirect();
-        return;
-      }
-    };
-    
-    checkUser();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          // Check if user has a temporary password
-          const hasTempPassword = session.user.user_metadata?.temp_password === true;
-          
-          // Check if this is a password recovery session
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const isRecovery = hashParams.get('type') === 'recovery';
-          
-          if (hasTempPassword || isRecovery) {
-            setShowResetPassword(false);
-            setResetSent(false);
-            setUser(null);
-            redirectToExecutiveProfile();
-            return;
-          } else {
-            // Normal sign in
-            setUser(session.user);
-            toast({
-              title: "Welcome!",
-              description: "You've been signed in successfully.",
-            });
-            setTimeout(() => {
-              replaceLocationToRedirect();
-            }, 1000);
-          }
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-
-  // --- Login Submission ---
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email || !password) {
-      toast({
-        title: "Error",
-        description: "Please enter both email and password",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError) {
-        if (authError.message.includes('Invalid login credentials')) {
-          throw new Error('Invalid email or password. Please check your credentials.');
-        }
-        throw authError;
-      }
-
-      if (data.user) {
-        // Check if user has a temporary password
-        const hasTempPassword = data.user.user_metadata?.temp_password === true;
-        
-        if (hasTempPassword) {
-          redirectToExecutiveProfile();
-          return;
-        }
-
-        toast({
-          title: "Success!",
-          description: "Signing you in...",
-        });
-        setTimeout(() => {
-          replaceLocationToRedirect();
-        }, 1000);
-      }
-    } catch (error: any) {
-      console.error('Sign in error:', error);
-      setError(error.message || 'An error occurred during sign in');
-      toast({
-        title: "Sign In Failed",
-        description: error.message || 'An error occurred during sign in',
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // --- Password Reset ---
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!resetEmail) {
-      toast({
-        title: "Error",
-        description: "Please enter your email address",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsResetting(true);
-    setError(null);
-
-    try {
-      // Determine the correct redirect URL based on environment
-      // Priority: Environment variable > Production detection > Current origin
-      const getRedirectUrl = () => {
-        // Check for environment variable first (useful for development/testing)
-        const appBaseUrl =
-          import.meta.env.VITE_APP_BASE_URL ||
-          import.meta.env.APP_BASE_URL ||
-          import.meta.env.VITE_SITE_URL ||
-          import.meta.env.VITE_APP_URL;
-
-        if (appBaseUrl) {
-          const normalizedBase = appBaseUrl.replace(/\/+$/, '');
-          return `${normalizedBase}/executive/reset-password`;
-        }
-        
-        const hostname = window.location.hostname;
-        
-        // Production URLs - always use production URL for password reset emails
-        if (hostname.includes('cravenusa.com')) {
-          return `https://cravenusa.com/executive/reset-password`;
-        }
-        
-        // Lovable project URL (if deployed there)
-        if (hostname.includes('lovableproject.com')) {
-          return `https://${hostname}/executive/reset-password`;
-        }
-        
-        // Development - use production URL so email links work
-        // For local testing, set VITE_APP_BASE_URL environment variable to your production URL
-        // or use a tunnel service like ngrok
-        return `https://cravenusa.com/executive/reset-password`;
-      };
-      
-      const redirectUrl = getRedirectUrl();
-      
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: redirectUrl,
-      });
-
-      if (resetError) {
-        throw resetError;
-      }
-
-      setResetSent(true);
-      toast({
-        title: "Password Reset Email Sent",
-        description: "Please check your email for password reset instructions.",
-      });
-    } catch (error: any) {
-      console.error('Password reset error:', error);
-      setError(error.message || 'Failed to send password reset email');
-      toast({
-        title: "Error",
-        description: error.message || 'Failed to send password reset email',
-        variant: "destructive",
-      });
-    } finally {
-      setIsResetting(false);
-    }
-  };
-
-  // Handle password update after clicking reset link
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newPassword || !confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Please enter both password fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 6 characters",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsUpdatingPassword(true);
-    setError(null);
-
-    try {
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-        data: {
-          temp_password: false, // Clear temporary password flag
-          temp_password_set_at: null,
-        },
-      });
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      toast({
-        title: "Password Updated",
-        description: "Your password has been successfully updated. Signing you in...",
-      });
-
-      // If this was a temporary password change, sign in automatically
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Clear the form
-        setShowUpdatePassword(false);
-        setNewPassword('');
-        setConfirmPassword('');
-        setShowResetPassword(false);
-        setResetSent(false);
-        
-        // Clear URL parameters
+  const auth = useBusinessAuth({
+    search: location.search,
+    navigation: {
+      toRedirectTarget: (path) => {
+        const next = new URL(path, window.location.origin);
+        const want = `${next.pathname}${next.search}`;
+        const current = `${window.location.pathname}${window.location.search}`;
+        // Avoid reload loop (e.g. ?redirect=/business-auth while on this page)
+        const target = want === current || next.pathname === '/business-auth' ? '/hub' : path;
+        window.location.replace(new URL(target, window.location.origin).href);
+      },
+      toExecutiveProfile: () => {
+        window.location.href = `${window.location.origin}/executive/profile?reset=true`;
+      },
+      clearAuthParams: () => {
         window.history.replaceState({}, document.title, '/business-auth');
-        
-        // Redirect to hub (query was cleared above; getRedirectPath → /hub)
-        setTimeout(() => {
-          replaceLocationToRedirect();
-        }, 1000);
-      } else {
-        // Clear the form and show login
-        setShowUpdatePassword(false);
-        setNewPassword('');
-        setConfirmPassword('');
-        setShowResetPassword(false);
-        setResetSent(false);
-        
-        // Clear URL parameters
-        window.history.replaceState({}, document.title, '/business-auth');
-      }
-    } catch (error: any) {
-      console.error('Password update error:', error);
-      setError(error.message || 'Failed to update password');
-      toast({
-        title: "Error",
-        description: error.message || 'Failed to update password',
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdatingPassword(false);
-    }
+      },
+    },
+  });
+
+  const showResetPassword = auth.mode === 'reset';
+  const showUpdatePassword = auth.mode === 'updatePassword';
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void auth.signIn();
   };
 
-  // Check if this is a password reset callback
-  useEffect(() => {
-    const checkResetSession = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      
-      // Check if URL indicates password reset
-      const isResetFlow = urlParams.get('reset') === 'true' || hashParams.get('type') === 'recovery';
-      
-      if (isResetFlow) {
-        // Check if user has a valid session from the reset link
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          redirectToExecutiveProfile();
-        }
-      }
-    };
-    
-    checkResetSession();
-  }, []);
+  const handleResetPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    void auth.sendResetEmail();
+  };
 
-  if (user) {
+  const handleUpdatePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    void auth.updatePassword();
+  };
+
+  if (auth.isRedirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">
         <div className="text-center">
@@ -427,7 +98,7 @@ const BusinessAuth: React.FC = () => {
             </p>
           </div>
 
-          {error && (
+          {auth.error && (
             <div 
               className="mb-4 p-2.5 sm:p-3 rounded-lg border"
               style={{
@@ -435,11 +106,11 @@ const BusinessAuth: React.FC = () => {
                 borderColor: 'rgba(220, 38, 38, 0.4)',
               }}
             >
-              <p className="text-xs sm:text-sm text-red-400">{error}</p>
+              <p className="text-xs sm:text-sm text-red-400">{auth.error}</p>
             </div>
           )}
 
-          {resetSent && (
+          {auth.resetSent && (
             <div 
               className="mb-4 p-2.5 sm:p-3 rounded-lg border"
               style={{
@@ -483,15 +154,15 @@ const BusinessAuth: React.FC = () => {
                     type="password"
                     autoComplete="new-password"
                     required
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    value={auth.newPassword}
+                    onChange={(e) => auth.setNewPassword(e.target.value)}
                     placeholder="Enter new password"
                     className="w-full pl-8 sm:pl-9 md:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border rounded-lg focus:ring-[#ff7a45] focus:border-[#ff7a45] transition duration-150 text-white placeholder:text-gray-400"
                     style={{
                       background: 'rgba(255, 255, 255, 0.1)',
                       borderColor: 'rgba(255, 255, 255, 0.2)',
                     }}
-                    disabled={isUpdatingPassword}
+                    disabled={auth.isUpdatingPassword}
                   />
                 </div>
               </div>
@@ -508,29 +179,29 @@ const BusinessAuth: React.FC = () => {
                     type="password"
                     autoComplete="new-password"
                     required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    value={auth.confirmPassword}
+                    onChange={(e) => auth.setConfirmPassword(e.target.value)}
                     placeholder="Confirm new password"
                     className="w-full pl-8 sm:pl-9 md:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border rounded-lg focus:ring-[#ff7a45] focus:border-[#ff7a45] transition duration-150 text-white placeholder:text-gray-400"
                     style={{
                       background: 'rgba(255, 255, 255, 0.1)',
                       borderColor: 'rgba(255, 255, 255, 0.2)',
                     }}
-                    disabled={isUpdatingPassword}
+                    disabled={auth.isUpdatingPassword}
                   />
                 </div>
               </div>
 
               <button
                 type="submit"
-                disabled={isUpdatingPassword}
+                disabled={auth.isUpdatingPassword}
                 className={`w-full flex justify-center items-center py-2 sm:py-2.5 md:py-3 px-3 sm:px-4 border border-transparent rounded-lg text-white text-sm sm:text-base font-semibold shadow-lg transition duration-200 ease-in-out
-                  ${isUpdatingPassword
+                  ${auth.isUpdatingPassword
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-[#ff7a45] hover:bg-[#ff5a1f] focus:outline-none focus:ring-4 focus:ring-[#ff7a45] focus:ring-opacity-50 transform hover:scale-[1.01] active:scale-[0.98]'
                   }`}
               >
-                {isUpdatingPassword ? (
+                {auth.isUpdatingPassword ? (
                   <>
                     <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2 animate-spin" />
                     <span>Updating...</span>
@@ -544,7 +215,7 @@ const BusinessAuth: React.FC = () => {
               </button>
             </form>
             </div>
-          ) : showResetPassword && !resetSent ? (
+          ) : showResetPassword && !auth.resetSent ? (
             // Password Reset Form
             <form onSubmit={handleResetPassword} className="space-y-3 sm:space-y-4 md:space-y-5">
               <div>
@@ -559,29 +230,29 @@ const BusinessAuth: React.FC = () => {
                     type="email"
                     autoComplete="email"
                     required
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
+                    value={auth.resetEmail}
+                    onChange={(e) => auth.setResetEmail(e.target.value)}
                     placeholder="Enter your email address"
                     className="w-full pl-8 sm:pl-9 md:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border rounded-lg focus:ring-[#ff7a45] focus:border-[#ff7a45] transition duration-150 text-white placeholder:text-gray-400"
                     style={{
                       background: 'rgba(255, 255, 255, 0.1)',
                       borderColor: 'rgba(255, 255, 255, 0.2)',
                     }}
-                    disabled={isResetting}
+                    disabled={auth.isResetting}
                   />
                 </div>
               </div>
 
               <button
                 type="submit"
-                disabled={isResetting}
+                disabled={auth.isResetting}
                 className={`w-full flex justify-center items-center py-2 sm:py-2.5 md:py-3 px-3 sm:px-4 border border-transparent rounded-lg text-white text-sm sm:text-base font-semibold shadow-lg transition duration-200 ease-in-out
-                  ${isResetting
+                  ${auth.isResetting
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-[#ff7a45] hover:bg-[#ff5a1f] focus:outline-none focus:ring-4 focus:ring-[#ff7a45] focus:ring-opacity-50 transform hover:scale-[1.01] active:scale-[0.98]'
                   }`}
               >
-                {isResetting ? (
+                {auth.isResetting ? (
                   <>
                     <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2 animate-spin" />
                     <span>Sending...</span>
@@ -596,12 +267,7 @@ const BusinessAuth: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => {
-                  setShowResetPassword(false);
-                  setResetEmail('');
-                  setError(null);
-                  setResetSent(false);
-                }}
+                onClick={auth.cancelPasswordReset}
                 className="w-full flex justify-center items-center py-2 sm:py-2.5 md:py-3 px-3 sm:px-4 border rounded-lg text-gray-300 text-sm sm:text-base font-medium hover:text-white transition duration-150"
                 style={{
                   background: 'rgba(255, 255, 255, 0.05)',
@@ -628,15 +294,15 @@ const BusinessAuth: React.FC = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={auth.email}
+                  onChange={(e) => auth.setEmail(e.target.value)}
                   placeholder="Email Address"
                   className="w-full pl-8 sm:pl-9 md:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border rounded-lg focus:ring-[#ff7a45] focus:border-[#ff7a45] transition duration-150 text-white placeholder:text-gray-400"
                   style={{
                     background: 'rgba(255, 255, 255, 0.1)',
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                   }}
-                  disabled={isSubmitting || loading}
+                  disabled={auth.isSubmitting}
                 />
               </div>
             </div>
@@ -654,15 +320,15 @@ const BusinessAuth: React.FC = () => {
                   type="password"
                   autoComplete="current-password"
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={auth.password}
+                  onChange={(e) => auth.setPassword(e.target.value)}
                   placeholder="Password"
                   className="w-full pl-8 sm:pl-9 md:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base border rounded-lg focus:ring-[#ff7a45] focus:border-[#ff7a45] transition duration-150 text-white placeholder:text-gray-400"
                   style={{
                     background: 'rgba(255, 255, 255, 0.1)',
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                   }}
-                  disabled={isSubmitting || loading}
+                  disabled={auth.isSubmitting}
                 />
               </div>
             </div>
@@ -670,14 +336,14 @@ const BusinessAuth: React.FC = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isSubmitting || loading || !!error}
+              disabled={auth.isSubmitting}
               className={`w-full flex justify-center items-center py-2 sm:py-2.5 md:py-3 px-3 sm:px-4 border border-transparent rounded-lg text-white text-sm sm:text-base font-semibold shadow-lg transition duration-200 ease-in-out
-                ${isSubmitting || loading || !!error
+                ${auth.isSubmitting
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-[#ff7a45] hover:bg-[#ff5a1f] focus:outline-none focus:ring-4 focus:ring-[#ff7a45] focus:ring-opacity-50 transform hover:scale-[1.01] active:scale-[0.98]'
                 }`}
             >
-              {isSubmitting ? (
+              {auth.isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2 animate-spin" />
                   <span>Logging In...</span>
@@ -693,14 +359,13 @@ const BusinessAuth: React.FC = () => {
           )}
 
           {/* Footer Links */}
-          {!showResetPassword && !resetSent && !showUpdatePassword && (
+          {!showResetPassword && !auth.resetSent && !showUpdatePassword && (
             <div className="mt-3 sm:mt-4 md:mt-6 text-center text-xs sm:text-sm">
               <a 
                 href="#" 
                 onClick={(e) => {
                   e.preventDefault();
-                  setShowResetPassword(true);
-                  setResetEmail(email); // Pre-fill with the email they entered
+                  auth.startPasswordReset();
                 }}
                 className="font-medium text-[#ff7a45] hover:text-[#ff9c6e] transition duration-150 block sm:inline"
               >

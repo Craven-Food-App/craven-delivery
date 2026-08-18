@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppShell, Group, Title, Button, Tabs, Paper } from '@mantine/core';
 import { IconArrowLeft, IconBell, IconFile, IconCheckbox } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import cravenCLogo from '@/assets/craven-c-new.png';
 import MessagesTab from './tabs/MessagesTab';
 import AnnouncementsTab from './tabs/AnnouncementsTab';
@@ -10,6 +10,28 @@ import TasksTab from './tabs/TasksTab';
 
 const InternalCommsPortal: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const activeTab = ['messages', 'announcements', 'files', 'tasks'].includes(requestedTab || '')
+    ? requestedTab!
+    : 'messages';
+
+  const handleTabChange = (tab: string | null) => {
+    if (!tab) return;
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', tab);
+    if (tab !== 'messages') next.delete('message');
+    if (tab !== 'announcements') next.delete('announcement');
+    if (tab !== 'tasks') next.delete('task');
+    setSearchParams(next, { replace: true });
+  };
+
+  const handleMessageChange = (messageId: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', 'messages');
+    next.set('message', messageId);
+    setSearchParams(next, { replace: true });
+  };
 
   return (
     <AppShell header={{ height: 56 }} padding="md" bg="gray.0">
@@ -29,7 +51,7 @@ const InternalCommsPortal: React.FC = () => {
 
       <AppShell.Main>
         <Paper mx="auto" maw={1400} radius="md" p="md" withBorder>
-          <Tabs defaultValue="messages" keepMounted={false}>
+          <Tabs value={activeTab} onChange={handleTabChange} keepMounted={false}>
             <Tabs.List>
               <Tabs.Tab
                 value="messages"
@@ -49,7 +71,10 @@ const InternalCommsPortal: React.FC = () => {
             </Tabs.List>
 
             <Tabs.Panel value="messages" pt="md">
-              <MessagesTab />
+              <MessagesTab
+                initialMessageId={searchParams.get('message')}
+                onMessageChange={handleMessageChange}
+              />
             </Tabs.Panel>
             <Tabs.Panel value="announcements" pt="md">
               <AnnouncementsTab />

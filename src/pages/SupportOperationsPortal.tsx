@@ -1,5 +1,6 @@
 // @ts-nocheck
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import AdminAccessGuard from '@/components/AdminAccessGuard';
 import RefundManagement from '@/components/admin/RefundManagement';
 import DisputeResolution from '@/components/admin/DisputeResolution';
@@ -32,15 +33,45 @@ const TABS: PortalTab[] = [
 ];
 
 const SECTIONS = ['Operations', 'Compliance'];
+const TAB_IDS = new Set(TABS.map((tab) => tab.id));
 
 const SupportOperationsPortal: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('conversations');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    requestedTab && TAB_IDS.has(requestedTab) ? requestedTab : 'conversations',
+  );
   useActivityTracking('support-operations');
   useAutoLogout('support-operations');
 
+  useEffect(() => {
+    const nextTab = searchParams.get('tab');
+    if (nextTab && TAB_IDS.has(nextTab) && nextTab !== activeTab) setActiveTab(nextTab);
+  }, [activeTab, searchParams]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', tab);
+    if (tab !== 'conversations') next.delete('thread');
+    setSearchParams(next, { replace: true });
+  };
+
+  const handleThreadChange = (threadId: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', 'conversations');
+    next.set('thread', threadId);
+    setSearchParams(next, { replace: true });
+  };
+
   const renderContent = () => {
     switch (activeTab) {
-      case 'conversations': return <SupportConversationsInbox />;
+      case 'conversations': return (
+        <SupportConversationsInbox
+          initialThreadId={searchParams.get('thread')}
+          onThreadChange={handleThreadChange}
+        />
+      );
       case 'order-forensics': return <OrderForensicsViewer />;
       case 'refunds': return <RefundManagement />;
       case 'disputes': return <DisputeResolution />;
@@ -60,7 +91,7 @@ const SupportOperationsPortal: React.FC = () => {
         tabs={TABS}
         sections={SECTIONS}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         lastUpdated={new Date()}
       >
         {renderContent()}

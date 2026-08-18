@@ -1,0 +1,50 @@
+name: Build Craven Hub for macOS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build macOS installers
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/desktop/hub/package-lock.json
+
+      - name: Install shared application dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install desktop packaging dependencies
+        working-directory: apps/desktop/hub
+        run: npm ci --ignore-scripts=false
+
+      - name: Build and package unsigned macOS apps
+        working-directory: apps/desktop/hub
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run dist:mac
+
+      - name: Upload DMG and ZIP files
+        uses: actions/upload-artifact@v4
+        with:
+          name: craven-hub-macos
+          path: |
+            apps/desktop/hub/release/*.dmg
+            apps/desktop/hub/release/*.zip
+          if-no-files-found: error
+          retention-days: 14

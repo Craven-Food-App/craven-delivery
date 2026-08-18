@@ -199,24 +199,46 @@ const initPush = async (Capacitor: { isNativePlatform: () => boolean } | null) =
 const rootEl = document.getElementById('root');
 if (!rootEl) throw new Error('Root element #root not found');
 
-createRoot(rootEl).render(
-  <React.StrictMode>
-    <MUIThemeProvider theme={muiTheme}>
-      {/* MUI ThemeProvider PropTypes expect a single ReactNode; Fragment can fail validation in dev */}
-      <div>
-        <CssBaseline />
-        <MantineProvider theme={theme}>
-          <DatesProvider settings={{ firstDayOfWeek: 0 }}>
-            <ModalsProvider>
-              <Notifications />
-              <App />
-            </ModalsProvider>
-          </DatesProvider>
-        </MantineProvider>
-      </div>
-    </MUIThemeProvider>
-  </React.StrictMode>
-);
+const root = createRoot(rootEl);
+
+function renderFatal(error: unknown) {
+  const message = error instanceof Error ? error.stack || error.message : String(error);
+  root.render(
+    <div style={{ minHeight: '100vh', padding: 24, fontFamily: 'monospace', whiteSpace: 'pre-wrap', background: '#111', color: '#f5f5f5' }}>
+      {message}
+    </div>
+  );
+}
+
+window.addEventListener('error', (event) => {
+  if (event.error) renderFatal(event.error);
+});
+window.addEventListener('unhandledrejection', (event) => {
+  renderFatal(event.reason);
+});
+
+try {
+  root.render(
+    <React.StrictMode>
+      <MUIThemeProvider theme={muiTheme}>
+        {/* MUI ThemeProvider PropTypes expect a single ReactNode; Fragment can fail validation in dev */}
+        <div>
+          <CssBaseline />
+          <MantineProvider theme={theme}>
+            <DatesProvider settings={{ firstDayOfWeek: 0 }}>
+              <ModalsProvider>
+                <Notifications />
+                <App />
+              </ModalsProvider>
+            </DatesProvider>
+          </MantineProvider>
+        </div>
+      </MUIThemeProvider>
+    </React.StrictMode>
+  );
+} catch (error) {
+  renderFatal(error);
+}
 
 /** -----------------------------
  * Service Worker (PROD only, web only)

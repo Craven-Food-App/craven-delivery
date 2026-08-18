@@ -73,7 +73,13 @@ function relTime(iso: string) {
   return `${Math.floor(h / 24)}d`;
 }
 
-export default function SupportConversationsInbox() {
+export default function SupportConversationsInbox({
+  initialThreadId,
+  onThreadChange,
+}: {
+  initialThreadId?: string | null;
+  onThreadChange?: (threadId: string) => void;
+}) {
   const [threads, setThreads] = useState<ThreadRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -104,6 +110,17 @@ export default function SupportConversationsInbox() {
   }, []);
 
   useEffect(() => { loadThreads(); }, [loadThreads]);
+
+  useEffect(() => {
+    if (initialThreadId && threads.some((thread) => thread.id === initialThreadId)) {
+      setActiveId(initialThreadId);
+    }
+  }, [initialThreadId, threads]);
+
+  const selectThread = (threadId: string) => {
+    setActiveId(threadId);
+    onThreadChange?.(threadId);
+  };
 
   // Full-text lookup across message bodies (kicks in when search has 3+ chars)
   useEffect(() => {
@@ -314,7 +331,7 @@ export default function SupportConversationsInbox() {
             visible.map((t) => (
               <button
                 key={t.id}
-                onClick={() => setActiveId(t.id)}
+                onClick={() => selectThread(t.id)}
                 className={`flex w-full flex-col gap-1 border-b border-border/60 px-3 py-2.5 text-left transition-colors hover:bg-accent/40 ${activeId === t.id ? "bg-accent/60" : ""}`}
               >
                 <div className="flex items-center justify-between">

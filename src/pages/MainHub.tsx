@@ -255,7 +255,11 @@ const MainHub: React.FC = () => {
       } = await supabase.auth.getUser();
       if (!user) {
         // Always redirect to business auth with hq=true parameter
-        window.location.href = '/auth?hq=true&redirect=/hub';
+        if ((window as any).cravenDesktop) {
+          navigate('/auth?hq=true&redirect=/hub', { replace: true });
+        } else {
+          window.location.href = '/auth?hq=true&redirect=/hub';
+        }
         return;
       }
 
@@ -276,7 +280,11 @@ const MainHub: React.FC = () => {
     } catch (error) {
       console.error('Error checking user:', error);
       // Always redirect to business auth with hq=true parameter
-      window.location.href = '/auth?hq=true&redirect=/hub';
+      if ((window as any).cravenDesktop) {
+        navigate('/auth?hq=true&redirect=/hub', { replace: true });
+      } else {
+        window.location.href = '/auth?hq=true&redirect=/hub';
+      }
     }
   };
 
@@ -515,6 +523,10 @@ const MainHub: React.FC = () => {
       
       // Force redirect to business auth with hq=true parameter
       setTimeout(() => {
+        if ((window as any).cravenDesktop) {
+          navigate('/auth?hq=true', { replace: true });
+          return;
+        }
         const currentHost = window.location.hostname;
         if (currentHost === 'hq.cravenusa.com' || currentHost.includes('hq.')) {
           window.location.href = 'https://hq.cravenusa.com/auth?hq=true';
@@ -525,6 +537,10 @@ const MainHub: React.FC = () => {
     } catch (error) {
       console.error('Logout error:', error);
       // Force redirect even if signOut fails
+      if ((window as any).cravenDesktop) {
+        navigate('/auth?hq=true', { replace: true });
+        return;
+      }
       const currentHost = window.location.hostname;
       if (currentHost === 'hq.cravenusa.com' || currentHost.includes('hq.')) {
         window.location.href = 'https://hq.cravenusa.com/auth?hq=true';
@@ -2283,6 +2299,10 @@ const MainHub: React.FC = () => {
 
                                   // Special-case: Investor Relations should always use the public investor portal
                                   if (portal.id === "investors") {
+                                    if ((window as any).cravenDesktop) {
+                                      navigate('/investors/portal', { replace: false });
+                                      return;
+                                    }
                                     // Drop any ?hq=true flags by doing a full navigation
                                     window.location.href = "/investors/portal";
                                     return;
